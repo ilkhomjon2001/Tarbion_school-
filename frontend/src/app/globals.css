@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+:root {
+  --color-background: #f7f8f7;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f3f1;
+  --color-border: #e2e5e2;
+  --color-foreground: #171a17;
+  --color-foreground-muted: #5b625b;
+
+  --color-brand: #16803c;
+  --color-brand-dark: #0f5c2a;
+  --color-brand-foreground: #ffffff;
+  --color-brand-tint: #e7f4ec;
+
+  --color-success: #16803c;
+  --color-success-tint: #e7f4ec;
+  --color-warning: #b45309;
+  --color-warning-tint: #fdf1e0;
+  --color-danger: #b91c1c;
+  --color-danger-tint: #fbeaea;
+  --color-info: #1d4ed8;
+  --color-info-tint: #e8eefc;
+}
+
+@theme inline {
+  --color-background: var(--color-background);
+  --color-surface: var(--color-surface);
+  --color-surface-muted: var(--color-surface-muted);
+  --color-border: var(--color-border);
+  --color-foreground: var(--color-foreground);
+  --color-foreground-muted: var(--color-foreground-muted);
+
+  --color-brand: var(--color-brand);
+  --color-brand-dark: var(--color-brand-dark);
+  --color-brand-foreground: var(--color-brand-foreground);
+  --color-brand-tint: var(--color-brand-tint);
+
+  --color-success: var(--color-success);
+  --color-success-tint: var(--color-success-tint);
+  --color-warning: var(--color-warning);
+  --color-warning-tint: var(--color-warning-tint);
+  --color-danger: var(--color-danger);
+  --color-danger-tint: var(--color-danger-tint);
+  --color-info: var(--color-info);
+  --color-info-tint: var(--color-info-tint);
+
+  --font-sans: "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
