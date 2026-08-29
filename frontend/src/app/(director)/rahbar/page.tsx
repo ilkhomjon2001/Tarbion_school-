@@ -1,6 +1,14 @@
 import { Suspense } from "react";
 import { Card } from "@/components/ui/Card";
-import { AlertTriangleIcon, GraduationCapIcon, InfoIcon, UsersIcon, WalletIcon } from "@/components/ui/icons";
+import {
+  AlertTriangleIcon,
+  GraduationCapIcon,
+  InfoIcon,
+  MessageSquareIcon,
+  StarIcon,
+  UsersIcon,
+  WalletIcon,
+} from "@/components/ui/icons";
 import { AreaLineChart } from "@/components/director/charts";
 import { formatSom } from "@/lib/format";
 import { getDirectorOverview } from "@/lib/director/fetchers";
@@ -39,7 +47,7 @@ export default function DirectorHomePage() {
 async function KpiRow() {
   const overview = await getDirectorOverview();
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       <KpiCard
         icon={<UsersIcon className="h-5 w-5" />}
         label="Jami oʻquvchilar"
@@ -59,6 +67,19 @@ async function KpiRow() {
         value={`${overview.todayAttendancePercent}%`}
       />
       <KpiCard
+        icon={<StarIcon className="h-5 w-5" />}
+        label="Oʻrtacha ball"
+        value={overview.averageGrade.toFixed(1)}
+        note="Barcha sinflar boʻyicha"
+      />
+      <KpiCard
+        icon={<MessageSquareIcon className="h-5 w-5" />}
+        label="Ochiq murojaatlar"
+        value={String(overview.openRequestsCount)}
+        note={overview.openRequestsCount > 0 ? "Javob kutilmoqda" : "Hammasiga javob berilgan"}
+        noteTone={overview.openRequestsCount > 0 ? "warning" : "success"}
+      />
+      <KpiCard
         icon={<WalletIcon className="h-5 w-5" />}
         label="Oylik toʻlov tushumi"
         value={formatSom(overview.monthlyRevenue)}
@@ -69,6 +90,12 @@ async function KpiRow() {
     </div>
   );
 }
+
+const NOTE_TONE_CLASSES = {
+  neutral: "text-foreground-muted",
+  success: "text-success",
+  warning: "text-warning",
+} as const;
 
 function KpiCard({
   icon,
@@ -82,7 +109,7 @@ function KpiCard({
   label: string;
   value: string;
   note?: string;
-  noteTone?: "neutral" | "success";
+  noteTone?: keyof typeof NOTE_TONE_CLASSES;
   valueClassName?: string;
 }) {
   return (
@@ -94,19 +121,15 @@ function KpiCard({
         </span>
       </div>
       <p className={`font-bold text-foreground ${valueClassName}`}>{value}</p>
-      {note && (
-        <p className={`mt-1 text-xs ${noteTone === "success" ? "text-success" : "text-foreground-muted"}`}>
-          {note}
-        </p>
-      )}
+      {note && <p className={`mt-1 text-xs ${NOTE_TONE_CLASSES[noteTone]}`}>{note}</p>}
     </Card>
   );
 }
 
 function KpiSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {Array.from({ length: 4 }).map((_, i) => (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {Array.from({ length: 6 }).map((_, i) => (
         <Card key={i} className="h-28 animate-pulse" />
       ))}
     </div>

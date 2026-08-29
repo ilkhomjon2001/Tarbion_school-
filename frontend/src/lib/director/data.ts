@@ -290,52 +290,6 @@ export function teacherStatsFor(teacherId: string): TeacherStats {
   );
 }
 
-export const overview: DirectorOverview = {
-  totalStudents: 1420,
-  studentGrowthPercent: 2.4,
-  totalTeachers: teachers.filter((t) => t.status === "active").length,
-  todayAttendancePercent: 94,
-  monthlyRevenue: 245_000_000,
-  revenueVsPlanPercent: 5,
-  attendanceTrend: [
-    { dateLabel: "01 Sen", percent: 90 },
-    { dateLabel: "05 Sen", percent: 92 },
-    { dateLabel: "10 Sen", percent: 89 },
-    { dateLabel: "15 Sen", percent: 91 },
-    { dateLabel: "20 Sen", percent: 93 },
-    { dateLabel: "25 Sen", percent: 96 },
-    { dateLabel: "30 Sen", percent: 94 },
-  ],
-  alerts: [
-    {
-      id: "al-1",
-      level: "danger",
-      title: "Past davomat (11-B sinf)",
-      description: "Ushbu hafta davomat koʻrsatkichi 82% ga tushib ketdi.",
-    },
-    {
-      id: "al-2",
-      level: "info",
-      title: "Toʻlov kechikishlari",
-      description: "12 nafar oʻquvchining sentabr oyi toʻlovi kechikmoqda.",
-    },
-  ],
-  announcements: [
-    {
-      id: "an-1",
-      title: "Ota-onalar majlisi",
-      body: "Ertaga soat 15:00 da barcha sinf rahbarlari uchun umumiy majlis boʻlib oʻtadi.",
-      createdAtLabel: "Bugun, 09:30",
-    },
-    {
-      id: "an-2",
-      title: "Yangi oʻquv dasturi",
-      body: "Oktabr oyidan boshlab informatika fanidan yangilangan dastur joriy etiladi.",
-      createdAtLabel: "Kecha, 14:15",
-    },
-  ],
-};
-
 export const payments: PaymentRecord[] = [
   { id: "p-1", studentFullName: "Alisher Usmonov", className: "9-B", amount: 3_500_000, dueDate: "2026-09-05", status: "paid" },
   { id: "p-2", studentFullName: "Madina Nazarova", className: "9-B", amount: 3_500_000, dueDate: "2026-08-25", status: "overdue" },
@@ -401,6 +355,70 @@ export const parentRequests: ParentRequest[] = [
   },
 ];
 
+/**
+ * DIR-01/02: ochiq murojaatlar soni — `parentRequests`dan hisoblanadi,
+ * boshqa raqam bilan qo'lda takrorlanmaydi (yagona manba).
+ */
+const OPEN_REQUESTS_COUNT = parentRequests.filter((r) => r.status !== "closed").length;
+
+export const overview: DirectorOverview = {
+  totalStudents: 1420,
+  studentGrowthPercent: 2.4,
+  totalTeachers: teachers.filter((t) => t.status === "active").length,
+  todayAttendancePercent: 94,
+  averageGrade: 4.3,
+  openRequestsCount: OPEN_REQUESTS_COUNT,
+  monthlyRevenue: 245_000_000,
+  revenueVsPlanPercent: 5,
+  attendanceTrend: [
+    { dateLabel: "01 Sen", percent: 90 },
+    { dateLabel: "05 Sen", percent: 92 },
+    { dateLabel: "10 Sen", percent: 89 },
+    { dateLabel: "15 Sen", percent: 91 },
+    { dateLabel: "20 Sen", percent: 93 },
+    { dateLabel: "25 Sen", percent: 96 },
+    { dateLabel: "30 Sen", percent: 94 },
+  ],
+  alerts: [
+    {
+      id: "al-1",
+      level: "danger",
+      title: "Past davomat (11-B sinf)",
+      description: "Ushbu hafta davomat koʻrsatkichi 82% ga tushib ketdi.",
+    },
+    {
+      id: "al-2",
+      level: "info",
+      title: "Toʻlov kechikishlari",
+      description: "12 nafar oʻquvchining sentabr oyi toʻlovi kechikmoqda.",
+    },
+  ],
+  announcements: [
+    {
+      id: "an-1",
+      title: "Ota-onalar majlisi",
+      body: "Ertaga soat 15:00 da barcha sinf rahbarlari uchun umumiy majlis boʻlib oʻtadi.",
+      createdAtLabel: "Bugun, 09:30",
+    },
+    {
+      id: "an-2",
+      title: "Yangi oʻquv dasturi",
+      body: "Oktabr oyidan boshlab informatika fanidan yangilangan dastur joriy etiladi.",
+      createdAtLabel: "Kecha, 14:15",
+    },
+  ],
+};
+
+/** DIR-04: sinflar boʻyicha oʻzlashtirish reytingi (yuqoridan pastga). */
+const CLASS_AVERAGE_GRADE: Record<string, number> = {
+  "5-A": 4.6,
+  "10-A": 4.5,
+  "6-G": 4.4,
+  "9-B": 4.1,
+  "11-V": 4.0,
+  "11-B": 3.8,
+};
+
 export const reports: DirectorReports = {
   gradeDistribution: [
     { label: "2", count: 12 },
@@ -415,6 +433,39 @@ export const reports: DirectorReports = {
     { subject: "Fizika", average: 3.9 },
     { subject: "Ingliz tili", average: 4.4 },
     { subject: "Tarix", average: 4.3 },
+  ],
+  classRanking: schoolClasses
+    .map((cls) => ({ className: cls.name, averageGrade: CLASS_AVERAGE_GRADE[cls.name] ?? 0 }))
+    .sort((a, b) => b.averageGrade - a.averageGrade),
+  paymentTrend: [
+    { monthLabel: "Aprel", collectedPercent: 91 },
+    { monthLabel: "May", collectedPercent: 88 },
+    { monthLabel: "Iyun", collectedPercent: 94 },
+    { monthLabel: "Avgust", collectedPercent: 90 },
+    { monthLabel: "Sentabr", collectedPercent: 95 },
+  ],
+  atRiskStudents: [
+    {
+      id: "risk-1",
+      fullName: "Jaloliddin Mirzayev",
+      className: "11-B",
+      reason: "attendance",
+      detail: "Davomat: 78% (chegara: 85%)",
+    },
+    {
+      id: "risk-2",
+      fullName: "Sherzod Rustamov",
+      className: "9-B",
+      reason: "attendance",
+      detail: "Oxirgi haftada 2 marta sababsiz qoldirdi",
+    },
+    {
+      id: "risk-3",
+      fullName: "Kamola Yoqubova",
+      className: "10-A",
+      reason: "grades",
+      detail: "Oʻrtacha baho 4.6 dan 3.2 ga tushdi",
+    },
   ],
 };
 
