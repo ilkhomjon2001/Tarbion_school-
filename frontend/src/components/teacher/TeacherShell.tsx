@@ -20,7 +20,6 @@ const TODAY_LESSONS = DEMO_LESSONS;
 const NAV = [
   { href: "/teacher", label: "Bugungi darslar", icon: HomeIcon, exact: true },
   { href: "/teacher/jadval", label: "Dars jadvali", icon: CalendarIcon },
-  { href: "/teacher/davomat", label: "Davomat", icon: CheckIcon },
   { href: "/teacher/vazifa", label: "Uy vazifasi", icon: ClipboardIcon },
 ] as const;
 
@@ -201,15 +200,6 @@ function CalendarIcon() {
     <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="5" width="18" height="16" rx="2" />
       <path d="M3 10h18M8 3v4M16 3v4" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 11l3 3 8-8" />
-      <path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9" />
     </svg>
   );
 }
