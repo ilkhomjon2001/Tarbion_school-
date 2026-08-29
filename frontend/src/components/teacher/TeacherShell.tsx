@@ -17,11 +17,29 @@ const TODAY_LESSONS = DEMO_LESSONS;
  * 360px dan boshlab gorizontal siljish boʻlmasligi kerak).
  */
 
-const NAV = [
-  { href: "/teacher", label: "Bugungi darslar", icon: HomeIcon, exact: true },
-  { href: "/teacher/jadval", label: "Dars jadvali", icon: CalendarIcon },
-  { href: "/teacher/jurnal", label: "Sinf jurnali", icon: JournalIcon },
-  { href: "/teacher/vazifa", label: "Uy vazifasi", icon: ClipboardIcon },
+/**
+ * Menyu ikki guruhga boʻlingan: kundalik ish va sinf/fan boshqaruvi.
+ *
+ * Tekis roʻyxatda 6 ta band ustozni chalkashtiradi — nima kundalik, nima
+ * vaqti-vaqti bilan kerakligi bilinmaydi. Guruh sarlavhasi shuni ajratadi.
+ */
+const NAV_GROUPS = [
+  {
+    title: "Kundalik",
+    items: [
+      { href: "/teacher", label: "Bugungi darslar", icon: HomeIcon, exact: true },
+      { href: "/teacher/jadval", label: "Dars jadvali", icon: CalendarIcon },
+      { href: "/teacher/vazifa", label: "Uy vazifasi", icon: ClipboardIcon },
+    ],
+  },
+  {
+    title: "Sinf va fan",
+    items: [
+      { href: "/teacher/jurnal", label: "Sinf jurnali", icon: JournalIcon },
+      { href: "/teacher/test", label: "Testlar", icon: TestIcon },
+      { href: "/teacher/elon", label: "Eʼlonlar", icon: MegaphoneIcon },
+    ],
+  },
 ] as const;
 
 export function TeacherShell({
@@ -54,33 +72,40 @@ export function TeacherShell({
           </div>
 
           <nav className="flex-1 overflow-y-auto px-3 pb-2">
-            <ul className="space-y-1">
-              {NAV.map(({ href, label, icon: Icon, ...rest }) => {
-                const exact = "exact" in rest && rest.exact;
-                const active = exact ? pathname === href : pathname.startsWith(href);
-                return (
-                  <li key={href}>
-                    <Link
-                      href={href}
-                      onClick={() => setOpen(false)}
-                      aria-current={active ? "page" : undefined}
-                      className={`flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
-                        active
-                          ? "bg-brand-tint text-brand-dark"
-                          : "text-foreground-muted hover:bg-surface-muted hover:text-foreground"
-                      }`}
-                    >
-                      <span
-                        aria-hidden
-                        className={`h-5 w-0.5 rounded-full ${active ? "bg-brand" : "bg-transparent"}`}
-                      />
-                      <Icon />
-                      {label}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+            {NAV_GROUPS.map((group) => (
+              <div key={group.title} className="mb-4 last:mb-0">
+                <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wide text-foreground-muted/70">
+                  {group.title}
+                </p>
+                <ul className="space-y-1">
+                  {group.items.map(({ href, label, icon: Icon, ...rest }) => {
+                    const exact = "exact" in rest && rest.exact;
+                    const active = exact ? pathname === href : pathname.startsWith(href);
+                    return (
+                      <li key={href}>
+                        <Link
+                          href={href}
+                          onClick={() => setOpen(false)}
+                          aria-current={active ? "page" : undefined}
+                          className={`flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+                            active
+                              ? "bg-brand-tint text-brand-dark"
+                              : "text-foreground-muted hover:bg-surface-muted hover:text-foreground"
+                          }`}
+                        >
+                          <span
+                            aria-hidden
+                            className={`h-5 w-0.5 rounded-full ${active ? "bg-brand" : "bg-transparent"}`}
+                          />
+                          <Icon />
+                          {label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
 
             {/* Bugungi jadval — sidebardagi tez koʻrinish */}
             <div className="mt-5 border-t border-border pt-4">
@@ -205,6 +230,25 @@ function CalendarIcon() {
   );
 }
 
+
+function TestIcon() {
+  return (
+    <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 4H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3" />
+      <rect x="9" y="2.5" width="6" height="3.5" rx="1" />
+      <path d="M8.5 12l2 2 4-4" />
+    </svg>
+  );
+}
+
+function MegaphoneIcon() {
+  return (
+    <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 11v2a1 1 0 0 0 1 1h2l4 4V6L6 10H4a1 1 0 0 0-1 1Z" />
+      <path d="M14 8.5a4 4 0 0 1 0 7M17 6a7 7 0 0 1 0 12" />
+    </svg>
+  );
+}
 
 function JournalIcon() {
   return (

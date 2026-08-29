@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { StudentCard } from "@/components/teacher/StudentCard";
 import { TeacherShell } from "@/components/teacher/TeacherShell";
 import { buildInitialRows, DEMO_TEACHER } from "@/lib/teacher/data";
 import { classColor } from "@/lib/teacher/schedule";
@@ -40,6 +41,7 @@ export default function JournalPage() {
   const [view, setView] = useState<View>("students");
   const [stats, setStats] = useState<StudentStats[] | null>(null);
   const [lessons, setLessons] = useState<ConductedLesson[] | null>(null);
+  const [openStudent, setOpenStudent] = useState<StudentStats | null>(null);
 
   useEffect(() => {
     // localStorage faqat brauzerda.
@@ -163,9 +165,17 @@ export default function JournalPage() {
       </div>
 
       {view === "students" ? (
-        <StudentTable rows={rows} loading={stats === null} />
+        <StudentTable rows={rows} loading={stats === null} onOpen={setOpenStudent} />
       ) : (
         <LessonTable lessons={lessons} />
+      )}
+
+      {openStudent && (
+        <StudentCard
+          stats={openStudent}
+          className={selected}
+          onClose={() => setOpenStudent(null)}
+        />
       )}
 
       {summary.lessons === 0 && (
@@ -186,7 +196,15 @@ export default function JournalPage() {
 
 /* ---------- Oʻquvchilar jadvali ---------- */
 
-function StudentTable({ rows, loading }: { rows: StudentStats[]; loading: boolean }) {
+function StudentTable({
+  rows,
+  loading,
+  onOpen,
+}: {
+  rows: StudentStats[];
+  loading: boolean;
+  onOpen: (s: StudentStats) => void;
+}) {
   if (loading) {
     return <div className="h-64 animate-pulse rounded-xl border border-border bg-surface" />;
   }
@@ -220,7 +238,15 @@ function StudentTable({ rows, loading }: { rows: StudentStats[]; loading: boolea
                   {atRisk && <span aria-hidden className="absolute inset-y-0 left-0 w-[3px] bg-danger" />}
                   {i + 1}
                 </td>
-                <td className="px-4 py-2.5 font-medium">{s.fullName}</td>
+                <td className="px-4 py-2.5">
+                  <button
+                    type="button"
+                    onClick={() => onOpen(s)}
+                    className="font-medium underline-offset-2 hover:text-brand-dark hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                  >
+                    {s.fullName}
+                  </button>
+                </td>
                 <td className="px-3 py-2.5 text-center text-success">{s.present || "—"}</td>
                 <td className="px-3 py-2.5 text-center text-danger">{s.absent || "—"}</td>
                 <td className="px-3 py-2.5 text-center text-info">{s.excused || "—"}</td>
