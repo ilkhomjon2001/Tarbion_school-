@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { GradeBook } from "@/components/teacher/GradeBook";
 import {
@@ -40,23 +41,59 @@ import { TODAY } from "@/lib/teacher/schedule";
 type View = "grades" | "students" | "lessons";
 
 export default function JournalPage() {
-  const classes = myClasses();
-
-  const [selected, setSelected] = useState(classes[0]);
-  const [view, setView] = useState<View>("grades");
-  const [subject, setSubject] = useState(
-    mySubjectsIn(classes[0])[0] ?? allSubjectsIn(classes[0])[0],
+  // useSearchParams uchun Suspense chegarasi shart (Next.js 15).
+  return (
+    <Suspense fallback={null}>
+      <JournalContent />
+    </Suspense>
   );
+}
+
+/** Sinf uchun sukut boʻyicha fan: avval oʻzi oʻqitadigani. */
+function defaultSubject(className: string): string {
+  return mySubjectsIn(className)[0] ?? allSubjectsIn(className)[0];
+}
+
+function JournalContent() {
+  const classes = myClasses();
+  const search = useSearchParams();
+
+  /**
+   * Davomat saqlangandan keyin jurnal shu sinf va fanga ochiladi:
+   * /teacher/jurnal?sinf=11-A&fan=Algebra
+   *
+   * URL dan kelgan qiymat tekshiriladi — ustoz kira olmaydigan sinf
+   * yoki koʻra olmaydigan fan boʻlsa, sukut boʻyicha qiymat olinadi.
+   */
+  const [selected, setSelected] = useState(() => {
+    const c = search.get("sinf");
+    return c && classes.includes(c) ? c : classes[0];
+  });
+  const [view, setView] = useState<View>("grades");
+  const [subject, setSubject] = useState(() => {
+    const c = search.get("sinf");
+    const cls = c && classes.includes(c) ? c : classes[0];
+    const f = search.get("fan");
+    const allowed = isHomeroomOf(cls) ? allSubjectsIn(cls) : mySubjectsIn(cls);
+    return f && allowed.includes(f) ? f : defaultSubject(cls);
+  });
   const [stats, setStats] = useState<StudentStats[] | null>(null);
   const [lessons, setLessons] = useState<ConductedLesson[] | null>(null);
   const [openStudent, setOpenStudent] = useState<StudentStats | null>(null);
+
+  // Boshlangʻich sinf. Fan URL dan kelgan boʻlishi mumkin, shuning uchun
+  // uni faqat sinf HAQIQATAN almashganda qayta tanlaymiz.
+  const prevClass = useRef(selected);
 
   useEffect(() => {
     // localStorage faqat brauzerda.
     setStats(studentStats(selected));
     setLessons(conductedForClass(selected));
-    // Sinf almashganda oʻzi oʻqitadigan fan tanlansin.
-    setSubject(mySubjectsIn(selected)[0] ?? allSubjectsIn(selected)[0]);
+    if (prevClass.current !== selected) {
+      prevClass.current = selected;
+      // Sinf almashganda oʻzi oʻqitadigan fan tanlansin.
+      setSubject(defaultSubject(selected));
+    }
   }, [selected]);
 
   const roster = useMemo(() => buildInitialRows(selected), [selected]);

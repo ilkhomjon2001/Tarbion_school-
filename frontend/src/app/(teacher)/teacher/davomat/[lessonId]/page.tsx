@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TeacherShell } from "@/components/teacher/TeacherShell";
 import { TopicField } from "@/components/teacher/TopicField";
 import { hasPlan, planFor } from "@/lib/teacher/plan";
+import { canGrade } from "@/lib/teacher/roles";
 import { conductedCount, getAttendance, saveAttendance } from "@/lib/teacher/store";
 import {
   ATTENDANCE_LABELS,
@@ -57,6 +58,12 @@ export default function AttendancePage() {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+
+  // Davomat saqlangach jurnal oʻzi ochiladi — ustoz darsdan keyin
+  // baho qoʻyishga oʻtadi, bu eng koʻp takrorlanadigan yoʻl. Faqat
+  // oʻsha fandan baho qoʻyish huquqi bor ustoz uchun (roles.ts).
+  const [openingJournal, setOpeningJournal] = useState(false);
+  const redirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Oʻtilgan mavzu — rejadan avtomatik toʻladi, ustoz tahrirlay oladi.
   const [topic, setTopic] = useState("");
@@ -163,7 +170,30 @@ export default function AttendancePage() {
     setSavedAt(
       new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }),
     );
-  }, [params.lessonId, planIndex, readOnly, rows, saving, topic]);
+
+    // Jurnal shu sinf va shu fanga ochiladi. Bir soniya kutamiz —
+    // ustoz "saqlandi" ni koʻrsin va xohlasa toʻxtata olsin.
+    if (lesson && canGrade(lesson.className, lesson.subject)) {
+      setOpeningJournal(true);
+      redirectTimer.current = setTimeout(() => {
+        router.push(
+          `/teacher/jurnal?sinf=${encodeURIComponent(lesson.className)}`
+          + `&fan=${encodeURIComponent(lesson.subject)}`,
+        );
+      }, 1200);
+    }
+  }, [lesson, params.lessonId, planIndex, readOnly, router, rows, saving, topic]);
+
+  /** Ustoz jurnalga oʻtishni bekor qilsa. */
+  const cancelJournal = useCallback(() => {
+    if (redirectTimer.current) clearTimeout(redirectTimer.current);
+    redirectTimer.current = null;
+    setOpeningJournal(false);
+  }, []);
+
+  useEffect(() => () => {
+    if (redirectTimer.current) clearTimeout(redirectTimer.current);
+  }, []);
 
   // --- Klaviatura yorliqlari ---
   useEffect(() => {
@@ -432,12 +462,33 @@ export default function AttendancePage() {
                 <Counter label="Kechikdi" value={counts.late} tone="text-warning" />
               </dl>
 
-              <div className="flex items-center gap-3">
-                {savedAt && !dirty && (
-                  <span className="text-sm text-success">Saqlandi · {savedAt}</span>
-                )}
-                {dirty && (
-                  <span className="text-sm text-warning">Saqlanmagan oʻzgarish bor</span>
+              <div className="flex flex-wrap items-center gap-3">
+                {openingJournal ? (
+                  <span
+                    role="status"
+                    className="inline-flex items-center gap-2 text-sm text-success"
+                  >
+                    <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 12l6 6L20 6" />
+                    </svg>
+                    Saqlandi · jurnal ochilmoqda…
+                    <button
+                      type="button"
+                      onClick={cancelJournal}
+                      className="rounded-lg border border-border px-2.5 py-1 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                    >
+                      Shu yerda qolish
+                    </button>
+                  </span>
+                ) : (
+                  <>
+                    {savedAt && !dirty && (
+                      <span className="text-sm text-success">Saqlandi · {savedAt}</span>
+                    )}
+                    {dirty && (
+                      <span className="text-sm text-warning">Saqlanmagan oʻzgarish bor</span>
+                    )}
+                  </>
                 )}
                 {!readOnly && (
                   <button

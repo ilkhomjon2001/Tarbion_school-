@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { TeacherShell } from "@/components/teacher/TeacherShell";
 import { getSubmissions, saveSubmissions } from "@/lib/teacher/store";
@@ -39,7 +39,20 @@ export default function HomeworkReviewPage() {
   const [filter, setFilter] = useState<Filter>("pending");
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
-  const [dirty, setDirty] = useState(false);
+
+  // Baholash qator boʻyicha yuritiladi: ustoz bitta ishni tekshirib,
+  // darrov saqlab, keyingisiga oʻtadi. Umumiy "hammasini saqlash" ham
+  // qoladi, lekin endi u majburiy emas.
+  const [dirtyRows, setDirtyRows] = useState<Set<string>>(new Set());
+  const [savedRows, setSavedRows] = useState<Set<string>>(new Set());
+  const [savingRow, setSavingRow] = useState<string | null>(null);
+
+  // Oxirgi saqlangan holat. Bitta qatorni saqlaganda faqat oʻsha qator
+  // yozilishi uchun kerak — aks holda qoʻshni qatorlardagi saqlanmagan
+  // oʻzgarishlar ham bazaga tushib ketardi.
+  const persisted = useRef<SubmissionRow[] | null>(null);
+
+  const dirty = dirtyRows.size > 0;
 
   useEffect(() => {
     let alive = true;
@@ -51,6 +64,7 @@ export default function HomeworkReviewPage() {
       }
       setHomework(data.homework);
       setRows(data.rows);
+      persisted.current = data.rows;
     });
     return () => {
       alive = false;
@@ -78,7 +92,13 @@ export default function HomeworkReviewPage() {
 
   function update(id: string, patch: Partial<SubmissionRow>) {
     setRows((prev) => (prev ? prev.map((r) => (r.id === id ? { ...r, ...patch } : r)) : prev));
-    setDirty(true);
+    setDirtyRows((prev) => new Set(prev).add(id));
+    setSavedRows((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
   }
 
   function grade(row: SubmissionRow, score: number) {
@@ -89,12 +109,34 @@ export default function HomeworkReviewPage() {
     update(row.id, { status: "returned", score: null });
   }
 
+  /** UYV-03: bitta oʻquvchining ishini alohida saqlash. */
+  async function saveOne(row: SubmissionRow) {
+    if (savingRow || saving) return;
+    const base = persisted.current ?? rows ?? [];
+    const next = base.map((r) => (r.id === row.id ? row : r));
+
+    setSavingRow(row.id);
+    await saveSubmissions(params.id, next);
+    persisted.current = next;
+    setSavingRow(null);
+
+    setDirtyRows((prev) => {
+      const s = new Set(prev);
+      s.delete(row.id);
+      return s;
+    });
+    setSavedRows((prev) => new Set(prev).add(row.id));
+  }
+
+  /** Barcha saqlanmagan ishlarni bir yoʻla saqlash. */
   async function save() {
-    if (!rows || saving) return;
+    if (!rows || saving || savingRow) return;
     setSaving(true);
     await saveSubmissions(params.id, rows);
+    persisted.current = rows;
     setSaving(false);
-    setDirty(false);
+    setDirtyRows(new Set());
+    setSavedRows(new Set(rows.map((r) => r.id)));
     setSavedAt(
       new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }),
     );
@@ -133,7 +175,7 @@ export default function HomeworkReviewPage() {
             disabled={saving || !dirty}
             className="inline-flex h-9 items-center rounded-lg bg-brand px-4 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {saving ? "Saqlanmoqda…" : "Baholarni saqlash"}
+            {saving ? "Saqlanmoqda…" : `Hammasini saqlash (${dirtyRows.size})`}
           </button>
         </div>
       }
@@ -274,6 +316,31 @@ export default function HomeworkReviewPage() {
                     placeholder="Oʻquvchiga izoh yozing…"
                     className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none placeholder:text-foreground-muted/60 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
                   />
+
+                  {/* Har bir ishni alohida saqlash — ustoz bittasini
+                      tekshirib darrov yakunlaydi, roʻyxat oxirigacha
+                      kutib turmaydi. */}
+                  <div className="mt-3 flex flex-wrap items-center justify-end gap-3">
+                    {savedRows.has(row.id) && !dirtyRows.has(row.id) && (
+                      <span className="inline-flex items-center gap-1.5 text-sm text-success">
+                        <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M4 12l6 6L20 6" />
+                        </svg>
+                        Saqlandi
+                      </span>
+                    )}
+                    {dirtyRows.has(row.id) && (
+                      <span className="text-sm text-warning">Saqlanmagan</span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => saveOne(row)}
+                      disabled={!dirtyRows.has(row.id) || savingRow !== null || saving}
+                      className="inline-flex h-10 items-center rounded-lg bg-brand px-4 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {savingRow === row.id ? "Saqlanmoqda…" : "Shu ishni saqlash"}
+                    </button>
+                  </div>
                 </div>
               )}
             </li>
