@@ -28,3 +28,15 @@ egasining "tezroq demo ko'rish" so'roviga ko'ra CLAUDE.md dagi bosqich
 tartibidan chetga chiqib erta boshlandi. `lib/mock/fetchers.ts` real API
 bilan almashtirilganda komponentlar o'zgarmasligi uchun funksiya
 imzolari kelajakdagi endpoint javoblariga mos shakllantirilgan.
+
+## 2026-08-29 · Rahbariyat kabineti — mock data bilan erta prototip (T-050 dan tashqarida)
+`frontend/` ichida `/rahbar` (Direktor + Administrator) kabineti — bosh
+sahifa (KPI/grafik), ustozlar roʻyxati va profili, sinflar, dars jadvali
+quruvchisi, toʻlovlar, hisobotlar, murojaatlar — `lib/director/` orqali
+soxta maʼlumot bilan qilindi. Bu rasman TASKS.md dagi T-050…T-053
+(3-bosqich, DIR-01…DIR-08) bilan bir xil ish, lekin loyiha egasining
+soʻroviga koʻra CLAUDE.md dagi bosqich tartibidan chetga chiqib erta
+boshlandi (T-034 dagi kabi). Dars jadvali quruvchisi (`ScheduleBuilder`)
+ustozning bir vaqtda ikki sinfda bandligini (ziddiyat) frontendda
+ogohlantiradi — bu faqat UX yordamchisi, haqiqiy tekshiruv backend
+tomonida boʻlishi kerak.

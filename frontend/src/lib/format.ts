@@ -33,3 +33,10 @@ export function daysUntil(iso: string): number {
   const diffMs = target.getTime() - today.getTime();
   return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 }
+
+const somFormatter = new Intl.NumberFormat("uz-Latn", { maximumFractionDigits: 0 });
+
+/** Pul — har doim butun so'mda (CLAUDE.md: BIGINT, tiyin yo'q). */
+export function formatSom(amount: number): string {
+  return `${somFormatter.format(amount)} soʻm`;
+}
