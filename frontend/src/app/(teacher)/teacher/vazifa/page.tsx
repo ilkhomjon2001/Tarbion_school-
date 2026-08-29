@@ -70,7 +70,7 @@ export default function HomeworkListPage() {
         <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center">
           <p className="text-base font-medium">Hali vazifa berilmagan</p>
           <p className="mt-1 text-sm text-foreground-muted">
-            "Yangi vazifa berish" tugmasi orqali birinchi vazifani qoʻshing.
+            &ldquo;Yangi vazifa berish&rdquo; tugmasi orqali birinchi vazifani qoʻshing.
           </p>
         </div>
       ) : (
