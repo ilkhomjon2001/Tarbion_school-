@@ -1,0 +1,80 @@
+# ── Sirlar ───────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
+
+# ── Python / backend ─────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.python-version
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+# DIQQAT: uv.lock va alembic/versions/ commit QILINADI
+
+# ── Node / frontend ──────────────────────────────────────
+node_modules/
+.next/
+out/
+build/
+dist/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+.pnpm-store/
+.eslintcache
+# DIQQAT: pnpm-lock.yaml commit QILINADI
+
+# ── Testlar ──────────────────────────────────────────────
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
+# ── Baza va zaxira ───────────────────────────────────────
+*.sql.gz
+*.dump
+*.sqlite3
+backups/
+pgdata/
+
+# ── Yuklangan fayllar (lokal) ────────────────────────────
+uploads/
+media/
+storage/
+
+# ── Loglar ───────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+pnpm-debug.log*
+
+# ── IDE va OS ────────────────────────────────────────────
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ── Claude Code ──────────────────────────────────────────
+# .claude/ commit qilinadi (umumiy komandalar va skill'lar)
+# lekin shaxsiy sozlama emas:
+.claude/settings.local.json
+
+# ── Vaqtinchalik ─────────────────────────────────────────
+tmp/
+temp/
+*.tmp
+*.bak

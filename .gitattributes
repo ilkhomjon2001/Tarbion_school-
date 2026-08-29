@@ -1,0 +1,37 @@
+# Repo ichida HAR DOIM LF. Windows'da ikki kishi ishlaganda
+# CRLF/LF farqi butun faylni "o'zgargan" qilib ko'rsatadi va
+# soxta konflikt beradi. Shu qatorlar buni to'xtatadi.
+* text=auto eol=lf
+
+# Windows skriptlari CRLF bo'lishi shart
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.ps1   text eol=crlf
+
+# Linux skriptlari va konteynerlar
+*.sh         text eol=lf
+Dockerfile   text eol=lf
+*.dockerfile text eol=lf
+
+# Lock fayllar: diff ko'rsatilmasin, konflikt bo'lsa
+# qo'lda tuzatilmaydi — qayta generatsiya qilinadi
+pnpm-lock.yaml  -diff linguist-generated
+uv.lock         -diff linguist-generated
+package-lock.json -diff linguist-generated
+
+# Binary — merge qilishga urinilmasin
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.pdf  binary
+*.woff binary
+*.woff2 binary
+*.ttf  binary
+*.xlsx binary
+*.zip  binary
+
+# SVG matn sifatida diff qilinsin (logo o'zgarishini ko'rish uchun)
+*.svg text
