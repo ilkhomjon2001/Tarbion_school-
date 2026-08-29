@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 import { logout } from "@/lib/auth";
 import {
   BellIcon,
@@ -33,18 +34,8 @@ export function Sidebar({ student }: { student: Student }) {
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border bg-surface md:flex">
-      <div className="flex items-center gap-2.5 px-5 py-5">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-tint text-sm font-bold text-brand-dark">
-          T
-        </span>
-        <div className="min-w-0">
-          <p className="truncate font-serif text-lg font-bold leading-tight text-brand-dark">
-            Tarbion
-          </p>
-          <p className="truncate text-[11px] text-foreground-muted">
-            Taʼlim platformasi
-          </p>
-        </div>
+      <div className="px-5 py-5">
+        <BrandLogo variant="wordmark" className="h-6 w-auto" subtitle="Oʻquvchi kabineti" priority />
       </div>
 
       <nav aria-label="Asosiy navigatsiya" className="flex-1 overflow-y-auto px-3 py-2">

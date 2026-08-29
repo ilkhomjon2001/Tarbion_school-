@@ -27,6 +27,9 @@ import type {
 const KEY_ATTENDANCE = "tarbion.demo.attendance";
 const KEY_SUBMISSIONS = "tarbion.demo.submissions";
 const KEY_CONDUCTED = "tarbion.demo.conducted";
+const KEY_GRADES = "tarbion.demo.grades";
+const KEY_TESTS = "tarbion.demo.tests";
+const KEY_ANNOUNCEMENTS = "tarbion.demo.announcements";
 
 /**
  * Oʻtkazilgan dars yozuvi.
@@ -264,10 +267,132 @@ export async function saveSubmissions(
   return delay(undefined, 450);
 }
 
+// ─────────────────────────── Baholar (JUR-01..04) ───────────────────────────
+
+/** JUR-03: baho turlari va ularning vazni. */
+export type GradeKind = "current" | "control" | "term" | "annual";
+
+export const GRADE_KIND_LABELS: Record<GradeKind, string> = {
+  current: "Joriy",
+  control: "Nazorat ishi",
+  term: "Chorak",
+  annual: "Yillik",
+};
+
+/**
+ * Vaznlar — chorak bahosini hisoblashda ishlatiladi (JUR-04).
+ * Nazorat ishi joriy bahodan ogʻirroq: bitta nazorat 3 ta joriy bahoga teng.
+ */
+export const GRADE_WEIGHTS: Record<GradeKind, number> = {
+  current: 1,
+  control: 3,
+  term: 0, // chorak bahosining oʻzi hisobga kirmaydi
+  annual: 0,
+};
+
+/** JUR-02: baholash tizimi. */
+export type GradingScale = 5 | 100;
+
+export interface GradeEntry {
+  value: number;
+  kind: GradeKind;
+  comment?: string;
+}
+
+/** Kalit: "11-A|Matematika" -> studentId -> sana -> baho */
+type GradeBook = Record<string, Record<string, Record<string, GradeEntry>>>;
+
+export function courseKey(className: string, subject: string): string {
+  return `${className}|${subject}`;
+}
+
+export function getGrades(className: string, subject: string) {
+  const all = read<GradeBook[string]>(KEY_GRADES) as unknown as GradeBook;
+  return all[courseKey(className, subject)] ?? {};
+}
+
+export function saveGrade(
+  className: string,
+  subject: string,
+  studentId: string,
+  date: string,
+  entry: GradeEntry | null,
+): void {
+  const all = (read<unknown>(KEY_GRADES) as unknown as GradeBook) ?? {};
+  const key = courseKey(className, subject);
+  all[key] ??= {};
+  all[key][studentId] ??= {};
+  if (entry === null) {
+    delete all[key][studentId][date];
+  } else {
+    all[key][studentId][date] = entry;
+  }
+  write(KEY_GRADES, all as unknown as Record<string, unknown>);
+}
+
+/**
+ * Chorak bahosi (JUR-04): vaznli oʻrtacha.
+ *
+ * Nazorat ishi vazni 3, joriy baho 1. Chorak bahosi yaxlitlanadi —
+ * 4.5 va undan yuqorisi 5 ga.
+ */
+export function termAverage(
+  grades: Record<string, GradeEntry>,
+  scale: GradingScale,
+): { raw: number; rounded: number; count: number } | null {
+  const items = Object.values(grades).filter((g) => GRADE_WEIGHTS[g.kind] > 0);
+  if (items.length === 0) return null;
+
+  const totalWeight = items.reduce((s, g) => s + GRADE_WEIGHTS[g.kind], 0);
+  const sum = items.reduce((s, g) => s + g.value * GRADE_WEIGHTS[g.kind], 0);
+  const raw = sum / totalWeight;
+
+  // 100 ballik tizimda chorak bahosi ham 100 ballik boʻlib qoladi.
+  const rounded = scale === 5 ? Math.round(raw) : Math.round(raw);
+  return { raw, rounded, count: items.length };
+}
+
+// ─────────────────── Testlar va eʼlonlar (saqlanadi) ───────────────────
+
+/**
+ * Testlar va eʼlonlar avval faqat `useState` da edi — sahifa yangilansa
+ * yoʻqolardi. Demo koʻrsatish paytida bu noqulay chiqadi, shuning uchun
+ * ular ham xotiraga yoziladi.
+ */
+export function loadCollection<T>(kind: "tests" | "announcements", seed: T[]): T[] {
+  if (typeof window === "undefined") return seed;
+  const key = kind === "tests" ? KEY_TESTS : KEY_ANNOUNCEMENTS;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return seed;
+    const parsed = JSON.parse(raw) as T[];
+    return Array.isArray(parsed) ? parsed : seed;
+  } catch {
+    return seed;
+  }
+}
+
+export function saveCollection<T>(kind: "tests" | "announcements", items: T[]): void {
+  if (typeof window === "undefined") return;
+  const key = kind === "tests" ? KEY_TESTS : KEY_ANNOUNCEMENTS;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(items));
+  } catch {
+    /* xotira toʻlgan — demo toʻxtamasin */
+  }
+}
+
 /** Demo qayta boshlanganda tozalash. */
 export function resetDemo(): void {
   if (typeof window === "undefined") return;
-  for (const k of [KEY_ATTENDANCE, KEY_SUBMISSIONS, KEY_CONDUCTED]) {
+  for (const k of [
+    KEY_ATTENDANCE,
+    KEY_SUBMISSIONS,
+    KEY_CONDUCTED,
+    KEY_GRADES,
+    KEY_TESTS,
+    KEY_ANNOUNCEMENTS,
+  ]) {
     window.localStorage.removeItem(k);
   }
 }

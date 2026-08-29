@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { login } from "@/lib/auth";
@@ -67,15 +68,16 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
       {/* --- Chap: brend paneli --- */}
-      <div className="flex items-center justify-center bg-brand px-6 py-10 lg:w-2/5 lg:py-0">
-        <div className="text-center">
-          <p className="text-4xl font-bold tracking-tight text-brand-foreground sm:text-5xl">
-            Tarbion
-          </p>
-          <p className="mx-auto mt-3 max-w-[16rem] text-sm text-brand-foreground/85">
-            Tarbiyaga asoslangan zamonaviy taʼlim
-          </p>
-        </div>
+      <div className="flex items-center justify-center bg-brand px-6 py-12 lg:w-2/5 lg:py-0">
+        {/* Yashil fonda oq logotip — 560x87, 2x zichlikda toza chiqadi */}
+        <Image
+          src="/logo/tarbion-lockup-white.png"
+          alt="Tarbion — Tarbiyaga asoslangan zamonaviy taʼlim"
+          width={560}
+          height={87}
+          priority
+          className="h-auto w-full max-w-[280px]"
+        />
       </div>
 
       {/* --- Oʻng: forma --- */}

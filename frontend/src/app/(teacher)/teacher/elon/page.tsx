@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { TeacherShell } from "@/components/teacher/TeacherShell";
 import { DEMO_LESSONS } from "@/lib/teacher/data";
 import { classColor } from "@/lib/teacher/schedule";
+import { loadCollection, saveCollection } from "@/lib/teacher/store";
 import {
   DEMO_ANNOUNCEMENTS,
   type Announcement,
@@ -44,10 +45,16 @@ function recipientsFor(kind: AudienceKind, target: string): number {
 
 export default function AnnouncementsPage() {
   const [items, setItems] = useState<Announcement[]>(DEMO_ANNOUNCEMENTS);
+
+  useEffect(() => {
+    setItems(loadCollection("announcements", DEMO_ANNOUNCEMENTS));
+  }, []);
   const [showForm, setShowForm] = useState(false);
 
   function publish(a: Announcement) {
-    setItems((prev) => [a, ...prev]);
+    const next = [a, ...items];
+    setItems(next);
+    saveCollection("announcements", next);
     setShowForm(false);
   }
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 import {
   BarChartIcon,
   BellIcon,
@@ -75,12 +76,7 @@ export function DirectorMobileTopBar({ searchIndex }: { searchIndex: SearchIndex
           />
           <aside className="absolute inset-y-0 left-0 flex w-64 flex-col bg-surface shadow-lg">
             <div className="flex items-center justify-between px-5 py-5">
-              <div>
-                <p className="font-serif text-lg font-bold leading-tight text-brand-dark">
-                  Tarbion
-                </p>
-                <p className="text-[11px] text-foreground-muted">Rahbariyat kabineti</p>
-              </div>
+              <BrandLogo variant="wordmark" className="h-6 w-auto" subtitle="Rahbariyat kabineti" />
               <button
                 type="button"
                 aria-label="Yopish"
