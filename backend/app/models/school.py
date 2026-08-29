@@ -1,0 +1,134 @@
+"""Sinf, fan, oʻquvchi, vasiy va biriktirishlar (T-008, T-009).
+
+TZ: ADM-02..ADM-06, ADM-11, AUT-03.
+"""
+
+import enum
+import uuid
+from datetime import date
+
+from sqlalchemy import (
+    Date,
+    ForeignKey,
+    Index,
+    String,
+    UniqueConstraint,
+)
+from sqlalchemy.dialects.postgresql import UUID as PgUUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.models.base import Entity
+
+
+class GuardianRelation(str, enum.Enum):
+    FATHER = "father"
+    MOTHER = "mother"
+    GUARDIAN = "guardian"
+
+
+class Subject(Entity):
+    __tablename__ = "subjects"
+
+    name: Mapped[str] = mapped_column(String(80), unique=True, nullable=False)
+    short_name: Mapped[str] = mapped_column(String(20), default="")
+
+
+class SchoolClass(Entity):
+    """Sinf. Jadval nomi `classes` — `class` Python'da kalit soʻz."""
+
+    __tablename__ = "classes"
+    __table_args__ = (UniqueConstraint("academic_year_id", "name"),)
+
+    academic_year_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("academic_years.id"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(20), nullable=False)  # "11-A"
+    homeroom_teacher_id: Mapped[uuid.UUID | None] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True
+    )
+
+
+class ClassSubject(Entity):
+    """Sinfda oʻqitiladigan fan va haftalik soati (ADM-03)."""
+
+    __tablename__ = "class_subjects"
+    __table_args__ = (UniqueConstraint("class_id", "subject_id"),)
+
+    class_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("classes.id"), nullable=False
+    )
+    subject_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("subjects.id"), nullable=False
+    )
+    weekly_hours: Mapped[int] = mapped_column(default=1, nullable=False)
+
+
+class TeacherSubject(Entity):
+    """Ustoz qaysi fanni oʻqitishi (ADM-04)."""
+
+    __tablename__ = "teacher_subjects"
+    __table_args__ = (UniqueConstraint("teacher_id", "subject_id"),)
+
+    teacher_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+    )
+    subject_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("subjects.id"), nullable=False
+    )
+
+
+class Student(Entity):
+    """ADM-05. Arxivlangan oʻquvchi roʻyxatlarda koʻrinmaydi, hisobotda qoladi."""
+
+    __tablename__ = "students"
+    __table_args__ = (
+        Index("ix_students_class_active", "class_id", "is_archived"),
+        # Takroriy oʻquvchini aniqlash uchun (T-010 import tekshiruvi).
+        Index("ix_students_identity", "last_name", "first_name", "birth_date"),
+    )
+
+    # Oʻquvchining oʻz hisobi. 1-bosqichda majburiy emas — oʻquvchi kabineti
+    # 2-bosqichda (T-034), lekin bogʻlanish hozirdan bor, keyin migratsiya
+    # qayta yozilmasin.
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("users.id"), nullable=True, unique=True
+    )
+    class_id: Mapped[uuid.UUID | None] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("classes.id"), nullable=True
+    )
+
+    last_name: Mapped[str] = mapped_column(String(80), nullable=False)
+    first_name: Mapped[str] = mapped_column(String(80), nullable=False)
+    middle_name: Mapped[str | None] = mapped_column(String(80))
+    birth_date: Mapped[date | None] = mapped_column(Date)
+
+    @property
+    def full_name(self) -> str:
+        parts = [self.last_name, self.first_name, self.middle_name or ""]
+        return " ".join(p for p in parts if p).strip()
+
+
+class Guardian(Entity):
+    """AUT-03: bir vasiyda bir nechta farzand, bir oʻquvchida bir nechta vasiy.
+
+    Bu jadval 6-domen qoidasining manbai: ota-ona faqat shu yerdagi
+    bogʻlanish orqali koʻrinadigan oʻquvchilarni koʻra oladi.
+    """
+
+    __tablename__ = "guardians"
+    __table_args__ = (
+        UniqueConstraint("student_id", "user_id"),
+        Index("ix_guardians_user", "user_id", "is_archived"),
+    )
+
+    student_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("students.id"), nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    relation: Mapped[str] = mapped_column(String(20), nullable=False)
+    # Asosiy vasiy — xabarnoma birinchi navbatda shunga ketadi.
+    is_primary: Mapped[bool] = mapped_column(default=False, server_default="false", nullable=False)
+
+    student: Mapped[Student] = relationship(lazy="joined")
