@@ -2,12 +2,20 @@ export type AttendanceStatus = "present" | "absent" | "excused" | "late";
 
 export type HomeworkStatus = "assigned" | "submitted" | "late" | "graded";
 
-export type TestQuestionType = "single" | "multiple";
+export type TestQuestionType = "single" | "multiple" | "matching" | "open";
 
 export interface Student {
   id: string;
   fullName: string;
   className: string;
+  phone?: string;
+  email?: string;
+}
+
+export interface NotificationPreferences {
+  newGrade: boolean;
+  homeworkReminder: boolean;
+  announcements: boolean;
 }
 
 export interface ScheduleEntry {
@@ -43,14 +51,28 @@ export interface Homework {
   status: HomeworkStatus;
   grade?: number;
   teacherComment?: string;
+  submissionText?: string;
+}
+
+export interface MatchTarget {
+  id: string;
+  text: string;
 }
 
 export interface TestQuestion {
   id: string;
   text: string;
   type: TestQuestionType;
+  /** single/multiple uchun javob variantlari; matching uchun chap ustun. */
   options: { id: string; text: string }[];
+  /** single/multiple uchun toʻgʻri variant(lar) id'si. */
   correctOptionIds: string[];
+  /** matching uchun oʻng ustun (aralashtirib koʻrsatiladi). */
+  matchTargets?: MatchTarget[];
+  /** matching uchun toʻgʻri javob: options[].id -> matchTargets[].id. */
+  correctMatches?: Record<string, string>;
+  /** open uchun — avtomatik baholanmaydi, ustoz tekshiradi (TST-04). */
+  sampleAnswer?: string;
 }
 
 export interface TestItem {
@@ -70,6 +92,8 @@ export interface TestAttemptResult {
   totalQuestions: number;
   correctCount: number;
   passed: boolean;
+  /** Ustoz tomonidan tekshirilishi kerak boʻlgan ochiq savollar soni (TST-04). */
+  pendingReviewCount: number;
 }
 
 export type GradeType = "joriy" | "nazorat" | "chorak" | "yillik";
@@ -80,6 +104,9 @@ export interface GradeEntry {
   date: string;
   type: GradeType;
   value: number;
+  teacherName: string;
+  comment: string;
+  homeworkId?: string;
 }
 
 export interface SubjectGradeSummary {
@@ -106,4 +133,33 @@ export interface Announcement {
   body: string;
   publishedAt: string;
   audience: "school" | "class";
+}
+
+export interface ClassmateStat {
+  studentId: string;
+  fullName: string;
+  averageGrade: number;
+  attendancePercent: number;
+}
+
+export interface RankingEntry extends ClassmateStat {
+  rank: number;
+  score: number;
+  isCurrentUser: boolean;
+}
+
+export type MealType = "breakfast" | "lunch" | "snack";
+
+export interface MealItem {
+  id: string;
+  mealType: MealType;
+  time: string;
+  dishes: string[];
+  imageUrl?: string;
+}
+
+export interface DailyMenu {
+  date: string;
+  meals: MealItem[];
+  note?: string;
 }

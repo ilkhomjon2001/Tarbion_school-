@@ -1,4 +1,4 @@
-import type { AttendanceStatus, GradeType, HomeworkStatus } from "@/lib/types";
+import type { AttendanceStatus, GradeType, HomeworkStatus, MealType } from "@/lib/types";
 
 export const ATTENDANCE_LABELS: Record<AttendanceStatus, string> = {
   present: "Keldi",
@@ -39,4 +39,10 @@ export const GRADE_TYPE_LABELS: Record<GradeType, string> = {
   nazorat: "Nazorat ishi",
   chorak: "Chorak",
   yillik: "Yillik",
+};
+
+export const MEAL_TYPE_LABELS: Record<MealType, string> = {
+  breakfast: "Nonushta",
+  lunch: "Tushlik",
+  snack: "Kechki yengil taom",
 };
