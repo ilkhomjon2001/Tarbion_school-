@@ -117,6 +117,10 @@ export interface DirectorOverview {
   studentGrowthPercent: number;
   totalTeachers: number;
   todayAttendancePercent: number;
+  /** DIR-01: o'rtacha ball (barcha maktab bo'yicha). */
+  averageGrade: number;
+  /** DIR-02: ochiq (yopilmagan) murojaatlar soni. */
+  openRequestsCount: number;
   monthlyRevenue: number;
   revenueVsPlanPercent: number;
   attendanceTrend: AttendanceTrendPoint[];
@@ -134,10 +138,36 @@ export interface SubjectAveragePoint {
   average: number;
 }
 
+/** DIR-04: sinflar bo'yicha o'zlashtirish reytingi. */
+export interface ClassRankingEntry {
+  className: string;
+  averageGrade: number;
+}
+
+/** DIR-09 (qisman): to'lov yig'ilishi dinamikasi, oylar kesimida. */
+export interface PaymentTrendPoint {
+  monthLabel: string;
+  collectedPercent: number;
+}
+
+export type AtRiskReason = "attendance" | "grades";
+
+/** DIR-09: xavf ostidagi o'quvchilar — davomati past yoki bahosi keskin tushgan. */
+export interface AtRiskStudent {
+  id: string;
+  fullName: string;
+  className: string;
+  reason: AtRiskReason;
+  detail: string;
+}
+
 export interface DirectorReports {
   gradeDistribution: GradeDistributionBucket[];
   attendanceTrend: AttendanceTrendPoint[];
   subjectAverages: SubjectAveragePoint[];
+  classRanking: ClassRankingEntry[];
+  paymentTrend: PaymentTrendPoint[];
+  atRiskStudents: AtRiskStudent[];
 }
 
 // ─────────────────────── Dars jadvali quruvchisi ───────────────────────

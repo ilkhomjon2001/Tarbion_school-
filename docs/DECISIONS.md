@@ -55,3 +55,11 @@ sahifasidagi "Faol qurilmalar" roʻyxati **namunaviy** — faqat joriy
 qurilma haqiqiy (`navigator.userAgent`dan), qolganlari statik demo
 maʼlumot. Bu haqiqiy xavfsizlik chegarasi emas; backendda `refresh_tokens`
 jadvali (har biri alohida bekor qilinadigan) ulanganda almashtiriladi.
+
+## 2026-08-29 · DIR-08 hisobot eksporti — XLSX/PDF emas, CSV
+Rahbariyat hisobotlarini yuklab olish (DIR-08) uchun XLSX (`xlsx`/`exceljs`)
+yoki PDF (`jspdf`) kutubxonasi ulanmadi — bitta demo tugma uchun ortiqcha
+bog'liqlik. CSV browser ichida (`Blob` + `URL.createObjectURL`) hech qanday
+kutubxonasiz generatsiya qilinadi va Excel'da to'g'ridan-to'g'ri ochiladi.
+Backend qo'shilganda va real hisobot ehtiyoji kengaysa (formatlash, bir
+nechta varaq) XLSX'ga o'tish mumkin.
