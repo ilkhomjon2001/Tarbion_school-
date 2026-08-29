@@ -15,7 +15,7 @@ const FILTERS: { key: HomeworkStatus | "all"; label: string }[] = [
 ];
 
 export function HomeworkFilterList({ items }: { items: Homework[] }) {
-  const [filter, setFilter] = useState<HomeworkStatus | "all">("all");
+  const [filter, setFilter] = useState<HomeworkStatus | "all">("assigned");
   const filtered =
     filter === "all" ? items : items.filter((item) => item.status === filter);
 

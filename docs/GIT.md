@@ -17,15 +17,23 @@ git config --global core.longpaths true
 Repo ichida (klon qilgandan keyin, bir marta):
 
 ```bash
-git config pull.rebase true          # pull merge commit yasamaydi
+git config pull.rebase false         # merge bilan tortadi, tarix qayta yozilmaydi
 git config fetch.prune true          # o'chirilgan branch'lar tozalanadi
 git config push.autoSetupRemote true # yangi branch'ni -u siz push qilish
 git config rerere.enabled true       # konflikt yechimini eslab qoladi
 git config rerere.autoupdate true
 git config merge.conflictstyle zdiff3 # konflikt belgilari tushunarli bo'ladi
 git config diff.algorithm histogram   # diff aniqroq, soxta konflikt kam
-git config rebase.autoStash true
+git config merge.autoStash true       # yarim ish bilan merge qilsa saqlab turadi
 ```
+
+> **Nega rebase emas, merge.** Rebase tarixni qayta yozadi — push qilingan
+> branch'ni rebase qilgandan keyin `--force-with-lease` kerak bo'ladi. Ikki
+> kishi ishlaganda bu xavfli: force push sherikning ishini o'chirib
+> yuborishi yoki branch'lar chalkashib ketishi mumkin. Merge biroz
+> "iflosroq" tarix qoldiradi, lekin **hech qachon hech narsani yo'qotmaydi**
+> va force push umuman kerak bo'lmaydi. PR `--squash` bilan merge
+> qilingani uchun main'dagi tarix baribir toza qoladi.
 
 GitHub noreply email'ingizni bilish uchun: `gh api user --jq '"\(.id)+\(.login)@users.noreply.github.com"'`
 Repo ochiq, shuning uchun shaxsiy email commit tarixiga yozilmasin.
@@ -38,7 +46,7 @@ Repo ochiq, shuning uchun shaxsiy email commit tarixiga yozilmasin.
 
 ```bash
 git checkout main
-git pull                    # rebase bilan tortadi
+git pull                    # merge bilan tortadi
 git checkout -b feat/T-013-attendance
 ```
 
@@ -56,7 +64,7 @@ Kuniga kamida bir marta main'dagi yangilikni o'zingizga torting:
 
 ```bash
 git fetch origin
-git rebase origin/main
+git merge origin/main
 ```
 
 Bu muhim — kech qolgan branch qancha uzoq yashasa, konflikt shuncha og'ir bo'ladi.
@@ -64,9 +72,9 @@ Bu muhim — kech qolgan branch qancha uzoq yashasa, konflikt shuncha og'ir bo'l
 ### Tugaganda
 
 ```bash
-git fetch origin && git rebase origin/main   # oxirgi marta
-pytest -q                                    # testlar o'tishi shart
-git push --force-with-lease                  # rebase'dan keyin
+git fetch origin && git merge origin/main   # oxirgi marta
+pytest -q                                   # testlar o'tishi shart
+git push                                    # force KERAK EMAS
 gh pr create --fill
 ```
 
@@ -115,13 +123,13 @@ Turlar: `feat`, `fix`, `chore`, `docs`, `test`, `refactor`.
 
 ## 5. Konflikt chiqsa
 
-Vahima yo'q. Rebase paytida:
+Vahima yo'q. Merge paytida:
 
 ```bash
 git status                  # qaysi fayl konfliktda
 # faylni ochib <<<<<<< ||||||| ======= >>>>>>> belgilarini yeching
 git add <fayl>
-git rebase --continue
+git commit                  # merge'ni yakunlaydi
 ```
 
 `zdiff3` yoqilgani uchun konfliktda uch qism ko'rinadi:
@@ -131,7 +139,7 @@ O'rtadagi asl holat kim nimani o'zgartirganini aniq ko'rsatadi.
 Butunlay chalkashib ketsangiz — orqaga qaytish har doim mumkin:
 
 ```bash
-git rebase --abort
+git merge --abort
 ```
 
 **Lock fayl konflikti** (`pnpm-lock.yaml`, `uv.lock`) — qo'lda tuzatilmaydi:
@@ -146,7 +154,11 @@ git add pnpm-lock.yaml
 ## 6. Qilma
 
 - ❌ `main` ga to'g'ridan-to'g'ri push
-- ❌ `git push --force` (faqat `--force-with-lease`, faqat o'z branch'ingizga)
+- ❌ **`git push --force` va `--force-with-lease`** — bu oqimda umuman kerak emas.
+  Kerak bo'lib qolsa, demak nimadir noto'g'ri ketgan: to'xtang va sherik bilan
+  gaplashing
+- ❌ **Push qilingan branch'ni `git rebase` qilish** — tarixni qayta yozadi va
+  force push talab qiladi. Main'dan yangilash uchun `git merge origin/main`
 - ❌ Hamkasbning branch'iga push
 - ❌ Bir haftadan uzoq yashagan branch — bo'lib tashlang
 - ❌ `.env` ni commit qilish (`.gitignore` to'sadi, lekin `-f` bilan majburlamang)

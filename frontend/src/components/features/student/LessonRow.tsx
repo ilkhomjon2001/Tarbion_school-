@@ -1,3 +1,4 @@
+import { subjectColor } from "@/lib/subject-colors";
 import type { LessonSummary, ScheduleEntry } from "@/lib/types";
 
 export function LessonRow({
@@ -7,7 +8,9 @@ export function LessonRow({
 }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3">
-      <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg bg-brand-tint text-brand-dark">
+      <div
+        className={`flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg ${subjectColor(lesson.subject).block}`}
+      >
         <span className="text-sm font-semibold leading-none">
           {lesson.periodNumber}
         </span>

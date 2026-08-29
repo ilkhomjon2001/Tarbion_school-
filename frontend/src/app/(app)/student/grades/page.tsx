@@ -46,7 +46,12 @@ async function AttendanceSection() {
           {summary.percentPresent}% davomat
         </p>
       </div>
-      <AttendanceCalendar year={2026} monthIndex={7} days={summary.days} />
+      <AttendanceCalendar
+        year={2026}
+        monthIndex={7}
+        days={summary.days}
+        todayIso="2026-08-29"
+      />
     </Card>
   );
 }

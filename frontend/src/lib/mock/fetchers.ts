@@ -2,23 +2,32 @@ import "server-only";
 import {
   announcements,
   attendanceSummary,
+  classmateStats,
   currentStudent,
   homeworkList,
+  notificationPreferences,
   scheduleEntries,
   subjectGrades,
   testList,
   todayLessons,
+  weeklyMenu,
 } from "@/lib/mock/data";
 import type {
   Announcement,
   AttendanceSummary,
+  DailyMenu,
+  GradeEntry,
   Homework,
   LessonSummary,
+  NotificationPreferences,
+  RankingEntry,
   ScheduleEntry,
   Student,
   SubjectGradeSummary,
   TestItem,
 } from "@/lib/types";
+
+const TODAY_ISO = "2026-08-29";
 
 /**
  * Backend hali yoʻqligi sababli tarmoq kechikishini simulyatsiya qiladi —
@@ -84,4 +93,43 @@ export async function getRecentGrades(count = 3) {
     .flatMap((s) => s.entries)
     .sort((a, b) => (a.date < b.date ? 1 : -1))
     .slice(0, count);
+}
+
+export async function getGradeById(id: string): Promise<GradeEntry | null> {
+  const found =
+    subjectGrades.flatMap((s) => s.entries).find((entry) => entry.id === id) ?? null;
+  return delay(found);
+}
+
+export async function getAnnouncementById(id: string): Promise<Announcement | null> {
+  const found = announcements.find((item) => item.id === id) ?? null;
+  return delay(found);
+}
+
+export async function getWeeklyMenu(): Promise<DailyMenu[]> {
+  return delay(weeklyMenu);
+}
+
+export async function getTodayMenu(): Promise<DailyMenu | null> {
+  const found = weeklyMenu.find((day) => day.date === TODAY_ISO) ?? null;
+  return delay(found);
+}
+
+export async function getNotificationPreferences(): Promise<NotificationPreferences> {
+  return delay(notificationPreferences);
+}
+
+export async function getClassRanking(): Promise<RankingEntry[]> {
+  const ranked = classmateStats
+    .map((entry) => ({
+      ...entry,
+      score: Math.round((entry.averageGrade * 16 + entry.attendancePercent * 0.4) * 10) / 10,
+    }))
+    .sort((a, b) => b.score - a.score)
+    .map((entry, index) => ({
+      ...entry,
+      rank: index + 1,
+      isCurrentUser: entry.studentId === currentStudent.id,
+    }));
+  return delay(ranked);
 }

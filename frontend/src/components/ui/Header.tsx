@@ -9,7 +9,7 @@ export function Header({
   backHref?: string;
 }) {
   return (
-    <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-surface/95 px-4 py-3 backdrop-blur">
+    <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-surface/95 px-4 py-3 backdrop-blur md:hidden">
       {backHref ? (
         <Link
           href={backHref}

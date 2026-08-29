@@ -1,8 +1,12 @@
+import { computeWeightedAverage } from "@/lib/grades";
 import type {
   Announcement,
   AttendanceSummary,
+  ClassmateStat,
+  DailyMenu,
   GradeEntry,
   Homework,
+  NotificationPreferences,
   ScheduleEntry,
   Student,
   SubjectGradeSummary,
@@ -13,6 +17,14 @@ export const currentStudent: Student = {
   id: "std-1",
   fullName: "Aziza Karimova",
   className: "8-A",
+  phone: "+998 90 123 45 67",
+  email: "aziza.karimova@example.com",
+};
+
+export const notificationPreferences: NotificationPreferences = {
+  newGrade: true,
+  homeworkReminder: true,
+  announcements: true,
 };
 
 export const scheduleEntries: ScheduleEntry[] = [
@@ -56,6 +68,11 @@ export const homeworkList: Homework[] = [
     assignedDate: "2026-08-24",
     dueDate: "2026-08-29",
     status: "submitted",
+    submissionText:
+      "Mening orzuim shifokor boʻlish. Bolaligimdan buyon odamlarga yordam " +
+      "berishni yaxshi koʻraman. Shu sababli tibbiyot institutiga kirish uchun " +
+      "tayyorgarlik koʻryapman va biologiya hamda kimyo fanlariga koʻproq vaqt " +
+      "ajratyapman...",
   },
   {
     id: "hw-3",
@@ -68,6 +85,10 @@ export const homeworkList: Homework[] = [
     status: "graded",
     grade: 5,
     teacherComment: "Barcha savollarga toʻliq va aniq javob berilgan.",
+    submissionText:
+      "1-qonun: Kuch taʼsir etmasa, jism tinch holatda yoki toʻgʻri chiziqli " +
+      "tekis harakatda qoladi. 2-qonun: F=ma. 3-qonun: Har bir taʼsirga teng va " +
+      "qarama-qarshi aks taʼsir mavjud.",
   },
   {
     id: "hw-4",
@@ -173,6 +194,23 @@ export const testList: TestItem[] = [
         ],
         correctOptionIds: ["a", "c", "d"],
       },
+      {
+        id: "q3",
+        text: "Feʼllarni toʻgʻri Past Participle shakli bilan moslashtiring.",
+        type: "matching",
+        options: [
+          { id: "a", text: "go" },
+          { id: "b", text: "see" },
+          { id: "c", text: "eat" },
+        ],
+        correctOptionIds: [],
+        matchTargets: [
+          { id: "t1", text: "eaten" },
+          { id: "t2", text: "gone" },
+          { id: "t3", text: "seen" },
+        ],
+        correctMatches: { a: "t2", b: "t3", c: "t1" },
+      },
     ],
   },
   {
@@ -197,44 +235,155 @@ export const testList: TestItem[] = [
         ],
         correctOptionIds: ["b"],
       },
+      {
+        id: "q2",
+        text: "Mustaqillik yillaridagi eng muhim islohotlardan birini qisqacha tavsiflab bering.",
+        type: "open",
+        options: [],
+        correctOptionIds: [],
+        sampleAnswer:
+          "Masalan: milliy valyuta — soʻmning joriy etilishi (1994) yoki taʼlim tizimidagi islohotlar.",
+      },
     ],
   },
 ];
 
+const matematikaEntries: GradeEntry[] = [
+  {
+    id: "g1",
+    subject: "Matematika",
+    date: "2026-08-10",
+    type: "joriy",
+    value: 5,
+    teacherName: "Dilnoza Yusupova",
+    comment: "Kvadrat tenglamalarni yechishda barcha qadamlar toʻgʻri koʻrsatilgan.",
+  },
+  {
+    id: "g2",
+    subject: "Matematika",
+    date: "2026-08-17",
+    type: "joriy",
+    value: 4,
+    teacherName: "Dilnoza Yusupova",
+    comment: "Yechim toʻgʻri, lekin oxirgi misolda hisoblash xatosi bor edi.",
+  },
+  {
+    id: "g3",
+    subject: "Matematika",
+    date: "2026-08-24",
+    type: "nazorat",
+    value: 5,
+    teacherName: "Dilnoza Yusupova",
+    comment: "Nazorat ishi aʼlo darajada bajarilgan.",
+  },
+];
+
+const onaTiliEntries: GradeEntry[] = [
+  {
+    id: "g4",
+    subject: "Ona tili",
+    date: "2026-08-12",
+    type: "joriy",
+    value: 4,
+    teacherName: "Shoira Nabiyeva",
+    comment: "Insho mavzuga mos, ammo imlo xatolari uchrayapti.",
+  },
+  {
+    id: "g5",
+    subject: "Ona tili",
+    date: "2026-08-19",
+    type: "joriy",
+    value: 5,
+    teacherName: "Shoira Nabiyeva",
+    comment: "Ijodiy fikrlash va uslub aʼlo baholandi.",
+  },
+  {
+    id: "g6",
+    subject: "Ona tili",
+    date: "2026-08-26",
+    type: "joriy",
+    value: 4,
+    teacherName: "Shoira Nabiyeva",
+    comment: "Matn tuzilishi yaxshilangan, davom eting.",
+  },
+];
+
+const fizikaEntries: GradeEntry[] = [
+  {
+    id: "g7",
+    subject: "Fizika",
+    date: "2026-08-14",
+    type: "joriy",
+    value: 4,
+    teacherName: "Bahodir Rashidov",
+    comment: "Formulalarni qoʻllash toʻgʻri, tushuntirish yetarli.",
+  },
+  {
+    id: "g8",
+    subject: "Fizika",
+    date: "2026-08-21",
+    type: "nazorat",
+    value: 4,
+    teacherName: "Bahodir Rashidov",
+    comment: "Nazorat ishida asosiy formulalar toʻgʻri qoʻllangan.",
+  },
+  {
+    id: "g11",
+    subject: "Fizika",
+    date: "2026-08-27",
+    type: "joriy",
+    value: 5,
+    teacherName: "Bahodir Rashidov",
+    comment: "Barcha savollarga toʻliq va aniq javob berilgan.",
+    homeworkId: "hw-3",
+  },
+];
+
+const tarixEntries: GradeEntry[] = [
+  {
+    id: "g9",
+    subject: "Tarix",
+    date: "2026-08-11",
+    type: "joriy",
+    value: 3,
+    teacherName: "Otabek Qodirov",
+    comment: "Sanalarni aniqroq yodlash kerak, tahlil qismi yaxshi.",
+  },
+  {
+    id: "g10",
+    subject: "Tarix",
+    date: "2026-08-25",
+    type: "joriy",
+    value: 4,
+    teacherName: "Otabek Qodirov",
+    comment: "Oldingi baholardan yaxshilanish sezilyapti, davom eting.",
+  },
+];
+
+/**
+ * Har bir fanning oʻrtachasi endi qoʻlda kiritilmaydi — JUR-04 talabiga
+ * mos ravishda vaznlar asosida (grades.ts) avtomatik hisoblanadi.
+ */
 export const subjectGrades: SubjectGradeSummary[] = [
   {
     subject: "Matematika",
-    average: 4.6,
-    entries: [
-      { id: "g1", subject: "Matematika", date: "2026-08-10", type: "joriy", value: 5 },
-      { id: "g2", subject: "Matematika", date: "2026-08-17", type: "joriy", value: 4 },
-      { id: "g3", subject: "Matematika", date: "2026-08-24", type: "nazorat", value: 5 },
-    ] as GradeEntry[],
+    average: computeWeightedAverage(matematikaEntries),
+    entries: matematikaEntries,
   },
   {
     subject: "Ona tili",
-    average: 4.3,
-    entries: [
-      { id: "g4", subject: "Ona tili", date: "2026-08-12", type: "joriy", value: 4 },
-      { id: "g5", subject: "Ona tili", date: "2026-08-19", type: "joriy", value: 5 },
-      { id: "g6", subject: "Ona tili", date: "2026-08-26", type: "joriy", value: 4 },
-    ] as GradeEntry[],
+    average: computeWeightedAverage(onaTiliEntries),
+    entries: onaTiliEntries,
   },
   {
     subject: "Fizika",
-    average: 4.0,
-    entries: [
-      { id: "g7", subject: "Fizika", date: "2026-08-14", type: "joriy", value: 4 },
-      { id: "g8", subject: "Fizika", date: "2026-08-21", type: "nazorat", value: 4 },
-    ] as GradeEntry[],
+    average: computeWeightedAverage(fizikaEntries),
+    entries: fizikaEntries,
   },
   {
     subject: "Tarix",
-    average: 3.5,
-    entries: [
-      { id: "g9", subject: "Tarix", date: "2026-08-11", type: "joriy", value: 3 },
-      { id: "g10", subject: "Tarix", date: "2026-08-25", type: "joriy", value: 4 },
-    ] as GradeEntry[],
+    average: computeWeightedAverage(tarixEntries),
+    entries: tarixEntries,
   },
 ];
 
@@ -286,5 +435,87 @@ export const announcements: Announcement[] = [
     body: "Yangi oʻquv yilidan boshlab maktab kutubxonasi 08:00 dan 17:00 gacha ishlaydi.",
     publishedAt: "2026-08-24",
     audience: "school",
+  },
+];
+
+export const classmateStats: ClassmateStat[] = [
+  { studentId: "std-2", fullName: "Sardor Umarov", averageGrade: 4.8, attendancePercent: 98 },
+  { studentId: "std-3", fullName: "Madina Yusupova", averageGrade: 4.7, attendancePercent: 96 },
+  { studentId: "std-4", fullName: "Javlon Rashidov", averageGrade: 4.5, attendancePercent: 94 },
+  { studentId: "std-5", fullName: "Kamila Tosheva", averageGrade: 4.4, attendancePercent: 97 },
+  {
+    studentId: currentStudent.id,
+    fullName: currentStudent.fullName,
+    averageGrade:
+      Math.round(
+        (subjectGrades.reduce((sum, s) => sum + s.average, 0) / subjectGrades.length) * 10,
+      ) / 10,
+    attendancePercent: attendanceSummary.percentPresent,
+  },
+  { studentId: "std-6", fullName: "Sanjar Ibragimov", averageGrade: 4.0, attendancePercent: 90 },
+  { studentId: "std-7", fullName: "Nodira Xolova", averageGrade: 3.9, attendancePercent: 88 },
+  { studentId: "std-8", fullName: "Bekzod Nazarov", averageGrade: 3.8, attendancePercent: 85 },
+  { studentId: "std-9", fullName: "Dilshod Aminov", averageGrade: 3.6, attendancePercent: 82 },
+  { studentId: "std-10", fullName: "Zarina Saidova", averageGrade: 3.4, attendancePercent: 80 },
+];
+
+/**
+ * Keyingi 1 hafta (bugundan boshlab 7 kun). 1-sentabr — Mustaqillik kuni,
+ * dars boʻlmagani uchun oshxona ham ishlamaydi (teacher/schedule.ts dagi
+ * HOLIDAYS bilan mos).
+ */
+export const weeklyMenu: DailyMenu[] = [
+  {
+    date: "2026-08-29",
+    meals: [
+      { id: "m-0829-b", mealType: "breakfast", time: "08:00", dishes: ["Qaymoqli bo'tqa", "Non", "Choy"] },
+      { id: "m-0829-l", mealType: "lunch", time: "12:30", dishes: ["Sho'rva", "Manti", "Bahor salatasi", "Kompot"] },
+      { id: "m-0829-s", mealType: "snack", time: "16:00", dishes: ["Mevali salat", "Kefir"] },
+    ],
+  },
+  {
+    date: "2026-08-30",
+    meals: [
+      { id: "m-0830-b", mealType: "breakfast", time: "08:00", dishes: ["Bulgʻur bo'tqasi", "Pishloq", "Choy"] },
+      { id: "m-0830-l", mealType: "lunch", time: "12:30", dishes: ["Dimlama", "Yashil salat", "Non", "Kompot"] },
+      { id: "m-0830-s", mealType: "snack", time: "16:00", dishes: ["Tvorogli vareniki", "Sut"] },
+    ],
+  },
+  {
+    date: "2026-08-31",
+    meals: [
+      { id: "m-0831-b", mealType: "breakfast", time: "08:00", dishes: ["Sosiska qovurma", "Non", "Kakao"] },
+      { id: "m-0831-l", mealType: "lunch", time: "12:30", dishes: ["Sabzavotli osh", "Achchiq-chuchuk salat", "Non", "Kompot"] },
+      { id: "m-0831-s", mealType: "snack", time: "16:00", dishes: ["Vafli", "Kefir"] },
+    ],
+  },
+  {
+    date: "2026-09-01",
+    meals: [],
+    note: "Mustaqillik kuni — dars yoʻq, oshxona ishlamaydi.",
+  },
+  {
+    date: "2026-09-02",
+    meals: [
+      { id: "m-0902-b", mealType: "breakfast", time: "08:00", dishes: ["Qovurilgan tuxum", "Pomidor", "Non", "Choy"] },
+      { id: "m-0902-l", mealType: "lunch", time: "12:30", dishes: ["Moshxoʻrda", "Salat", "Non", "Kompot"] },
+      { id: "m-0902-s", mealType: "snack", time: "16:00", dishes: ["Mevali salat", "Yogurt"] },
+    ],
+  },
+  {
+    date: "2026-09-03",
+    meals: [
+      { id: "m-0903-b", mealType: "breakfast", time: "08:00", dishes: ["Asalli grenka", "Sut"] },
+      { id: "m-0903-l", mealType: "lunch", time: "12:30", dishes: ["Goʻshtli sho'rva", "Dimlangan tovuq", "Guruch", "Kompot"] },
+      { id: "m-0903-s", mealType: "snack", time: "16:00", dishes: ["Pishloqli krekerlar", "Kefir"] },
+    ],
+  },
+  {
+    date: "2026-09-04",
+    meals: [
+      { id: "m-0904-b", mealType: "breakfast", time: "08:00", dishes: ["Bulochka", "Murabbo", "Choy"] },
+      { id: "m-0904-l", mealType: "lunch", time: "12:30", dishes: ["Sabzavotli sho'rva", "Tovuq kotleti", "Kartoshka pyuresi", "Kompot"] },
+      { id: "m-0904-s", mealType: "snack", time: "16:00", dishes: ["Mevalar (uzum, olma)", "Ryajenka"] },
+    ],
   },
 ];
