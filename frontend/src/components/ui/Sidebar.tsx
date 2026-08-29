@@ -9,11 +9,11 @@ import {
   CalendarIcon,
   CheckSquareIcon,
   ClipboardIcon,
+  GraduationCapIcon,
   HomeIcon,
   LogoutIcon,
   StarIcon,
   TrophyIcon,
-  UtensilsIcon,
 } from "@/components/ui/icons";
 import type { Student } from "@/lib/types";
 
@@ -23,8 +23,8 @@ const NAV_ITEMS = [
   { href: "/student/homework", label: "Uy vazifasi", icon: ClipboardIcon },
   { href: "/student/tests", label: "Testlar", icon: CheckSquareIcon },
   { href: "/student/grades", label: "Baholar", icon: StarIcon },
+  { href: "/student/ustozlar", label: "Ustozlar", icon: GraduationCapIcon },
   { href: "/student/reyting", label: "Reyting", icon: TrophyIcon },
-  { href: "/student/oshxona", label: "Oshxona", icon: UtensilsIcon },
   { href: "/student/announcements", label: "Eʼlonlar", icon: BellIcon },
 ] as const;
 

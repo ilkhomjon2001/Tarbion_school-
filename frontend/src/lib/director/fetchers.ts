@@ -4,7 +4,6 @@ import {
   classesTaughtBy,
   initialScheduleGrid,
   overview,
-  parentRequests,
   payments,
   reports,
   schoolClasses,
@@ -17,7 +16,6 @@ import {
 import type {
   DirectorOverview,
   DirectorReports,
-  ParentRequest,
   PaymentRecord,
   SchoolClass,
   ScheduleGrid,
@@ -56,10 +54,6 @@ export async function getSchoolClass(id: string): Promise<SchoolClass | null> {
 
 export async function getPayments(): Promise<PaymentRecord[]> {
   return delay(payments);
-}
-
-export async function getParentRequests(): Promise<ParentRequest[]> {
-  return delay(parentRequests);
 }
 
 export async function getDirectorReports(): Promise<DirectorReports> {

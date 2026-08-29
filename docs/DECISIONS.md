@@ -63,3 +63,33 @@ bog'liqlik. CSV browser ichida (`Blob` + `URL.createObjectURL`) hech qanday
 kutubxonasiz generatsiya qilinadi va Excel'da to'g'ridan-to'g'ri ochiladi.
 Backend qo'shilganda va real hisobot ehtiyoji kengaysa (formatlash, bir
 nechta varaq) XLSX'ga o'tish mumkin.
+
+## 2026-08-29 · Murojaat/xodim maʼlumoti — `lib/school/` yagona manbasi
+Ilgari har kabinet ustozlarni va murojaatlarni oʻz mock faylida alohida
+saqlar edi: ota-ona `/ota-ona/murojaat` dan yozgan murojaat rahbariyatga
+umuman koʻrinmasdi. Endi `lib/school/staff.ts` (kim qaysi sinfda qaysi
+fandan dars beradi, kim sinf rahbari) va `lib/school/appeals.ts` (barcha
+murojaatlar + yozishmalar) — toʻrtala rol uchun ham yagona manba.
+Backendda bular `teachers` + `teaching_assignments` + `appeals` +
+`appeal_messages` jadvallariga almashtiriladi.
+
+## 2026-08-29 · Murojaat mavzu boʻyicha emas, ADRESAT boʻyicha yoʻnaltiriladi
+TZ MUR-02 "murojaat mavzusiga qarab masʼulga yoʻnaltiriladi" deydi. Loyiha
+egasining soʻroviga koʻra ota-ona endi toʻgʻridan-toʻgʻri KIMGA yozishini
+tanlaydi: rahbariyat / sinf rahbari / fan oʻqituvchisi (→ keyin fan).
+Sabab: ota-ona koʻpincha aniq odam bilan gaplashmoqchi, mavzu tasnifi esa
+noaniq boʻlib chiqadi. Har murojaat ochiq yozishma (chat) sifatida davom
+etadi — bu ham TZ'da yoʻq, alohida soʻrov.
+
+## 2026-08-29 · Tarbiyaviy va psixologik holat — TZ'dan tashqari
+TZ'da bu boʻlim umuman yoʻq (matnda "psixolog"/"tarbiyaviy" soʻzi
+uchramaydi). Loyiha egasi soʻrovi bilan qoʻshildi: tarbiyaviy izohni sinf
+rahbari va fan oʻqituvchilari, psixologik xulosani faqat maktab psixologi
+kiritadi. Yangi rol: `psychologist`. Maʼlumot nozik — backendda faqat
+vasiy, sinf rahbari, psixolog va rahbariyat koʻra olishi soʻrov darajasida
+cheklanishi SHART (CLAUDE.md 6-qoida), har biriga alohida test kerak.
+
+## 2026-08-29 · Oshxona menyusi oʻquvchidan ota-onaga koʻchirildi
+Menyu endi faqat `/ota-ona/oshxona` da. Sabab (loyiha egasi): ovqatni
+ota-ona tanlaydi va toʻlaydi, oʻquvchiga koʻrsatish shart emas. Eslatma:
+TZ 10-boʻlimi boʻyicha oshxona moduli shartnoma doirasidan tashqarida.

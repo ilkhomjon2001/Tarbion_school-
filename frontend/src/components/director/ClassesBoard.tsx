@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { PlusIcon, UsersIcon } from "@/components/ui/icons";
 import { reassignHomeroom } from "@/lib/director/data";
+import { subjectTeachersOf } from "@/lib/school/staff";
 import type { ClassStage, SchoolClass, Teacher } from "@/lib/director/types";
 
 const STAGE_FILTERS: { id: ClassStage | "all"; label: string }[] = [
@@ -200,6 +201,11 @@ export function ClassesBoard({
             </div>
           </div>
 
+          <SubjectTeachers className={selected.name} />
+
+          <h3 className="mb-1 mt-4 text-xs font-medium uppercase tracking-wide text-foreground-muted">
+            Oʻquvchilar
+          </h3>
           {selected.students.length === 0 ? (
             <p className="py-6 text-center text-sm text-foreground-muted">
               Roʻyxat hozircha boʻsh.
@@ -236,6 +242,51 @@ export function ClassesBoard({
             </table>
           )}
         </div>
+      )}
+    </div>
+  );
+}
+
+/** Sinfda qaysi fandan kim dars beradi — rahbariyat uchun. */
+function SubjectTeachers({ className }: { className: string }) {
+  const rows = subjectTeachersOf(className);
+
+  return (
+    <div>
+      <h3 className="mb-1.5 text-xs font-medium uppercase tracking-wide text-foreground-muted">
+        Fan oʻqituvchilari
+      </h3>
+      {rows.length === 0 ? (
+        <p className="rounded-lg bg-surface-muted px-3 py-2.5 text-sm text-foreground-muted">
+          Bu sinfga hali fan oʻqituvchilari biriktirilmagan.
+        </p>
+      ) : (
+        <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+          {rows.map(({ subject, teacher, hoursPerWeek, isHomeroom }) => (
+            <li
+              key={`${subject}-${teacher.id}`}
+              className="flex items-center gap-2.5 rounded-lg bg-surface-muted px-3 py-2"
+            >
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface text-[11px] font-semibold text-foreground-muted">
+                {teacher.initials}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium text-foreground">
+                  {subject}
+                </span>
+                <span className="block truncate text-xs text-foreground-muted">
+                  {teacher.fullName}
+                </span>
+              </span>
+              <span className="shrink-0 text-right">
+                {isHomeroom && <Badge tone="brand">Rahbar</Badge>}
+                <span className="mt-0.5 block text-[11px] text-foreground-muted">
+                  <span className="num">{hoursPerWeek}</span> soat
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

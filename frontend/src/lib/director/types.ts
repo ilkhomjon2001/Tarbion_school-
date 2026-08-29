@@ -68,29 +68,6 @@ export interface PaymentRecord {
   status: PaymentStatus;
 }
 
-export type RequestStatus = "new" | "in_progress" | "closed";
-
-export type RequestReplyAuthor = "maktab" | "ota-ona";
-
-export interface RequestReply {
-  id: string;
-  author: RequestReplyAuthor;
-  text: string;
-  createdAt: string;
-}
-
-export interface ParentRequest {
-  id: string;
-  parentName: string;
-  studentFullName: string;
-  className: string;
-  subject: string;
-  message: string;
-  createdAt: string;
-  status: RequestStatus;
-  replies: RequestReply[];
-}
-
 export interface AttendanceTrendPoint {
   dateLabel: string;
   percent: number;

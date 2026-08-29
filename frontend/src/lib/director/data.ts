@@ -7,7 +7,6 @@ import type {
   DirectorOverview,
   DirectorReports,
   LessonCell,
-  ParentRequest,
   PaymentRecord,
   SchoolClass,
   ScheduleGrid,
@@ -16,6 +15,7 @@ import type {
   Weekday,
 } from "@/lib/director/types";
 import { WEEKDAYS } from "@/lib/director/types";
+import { APPEALS, isOpen } from "@/lib/school/appeals";
 
 export const DEMO_DIRECTOR = {
   fullName: "Nortojiyeva Malika Aʼzamovna",
@@ -299,67 +299,12 @@ export const payments: PaymentRecord[] = [
   { id: "p-6", studentFullName: "Ravshan Abdullayev", className: "11-V", amount: 4_000_000, dueDate: "2026-09-05", status: "paid" },
 ];
 
-export const parentRequests: ParentRequest[] = [
-  {
-    id: "r-1",
-    parentName: "Nortojiyev Sherzod",
-    studentFullName: "Malika Nortojiyeva",
-    className: "5-A",
-    subject: "Ovqatlanish narxi haqida",
-    message: "Oshxona narxlari qachondan oshadi, oldindan xabar berilsinmi?",
-    createdAt: "2026-08-29 08:10",
-    status: "new",
-    replies: [],
-  },
-  {
-    id: "r-2",
-    parentName: "Nazarova Gulbahor",
-    studentFullName: "Madina Nazarova",
-    className: "9-B",
-    subject: "Toʻlov kechikishi",
-    message: "Sentabr toʻlovini 5 kunga kechiktirish mumkinmi?",
-    createdAt: "2026-08-28 17:45",
-    status: "in_progress",
-    replies: [
-      {
-        id: "r-2-1",
-        author: "maktab",
-        text: "Assalomu alaykum! Bu masalani buxgalteriya bilan aniqlashtirib, bugun kuningizda javob beramiz.",
-        createdAt: "2026-08-28 18:05",
-      },
-    ],
-  },
-  {
-    id: "r-3",
-    parentName: "Mirzayev Aziz",
-    studentFullName: "Jaloliddin Mirzayev",
-    className: "11-B",
-    subject: "Dars jadvali",
-    message: "Farzandimning payshanba kungi jadvali juda zich, koʻrib chiqsangiz.",
-    createdAt: "2026-08-26 11:20",
-    status: "closed",
-    replies: [
-      {
-        id: "r-3-1",
-        author: "maktab",
-        text: "Payshanba kungi jadval qayta koʻrib chiqildi, endi bir para kamaytirildi.",
-        createdAt: "2026-08-26 15:30",
-      },
-      {
-        id: "r-3-2",
-        author: "ota-ona",
-        text: "Rahmat, yordamingiz uchun!",
-        createdAt: "2026-08-26 16:00",
-      },
-    ],
-  },
-];
 
 /**
- * DIR-01/02: ochiq murojaatlar soni — `parentRequests`dan hisoblanadi,
- * boshqa raqam bilan qo'lda takrorlanmaydi (yagona manba).
+ * DIR-01/02: ochiq murojaatlar soni — barcha rollar uchun umumiy
+ * `lib/school/appeals` dan hisoblanadi, qoʻlda takrorlanmaydi.
  */
-const OPEN_REQUESTS_COUNT = parentRequests.filter((r) => r.status !== "closed").length;
+const OPEN_REQUESTS_COUNT = APPEALS.filter(isOpen).length;
 
 export const overview: DirectorOverview = {
   totalStudents: 1420,

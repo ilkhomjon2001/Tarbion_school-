@@ -7,6 +7,7 @@ import {
   CalendarIcon,
   CheckSquareIcon,
   ClipboardIcon,
+  GraduationCapIcon,
   HomeIcon,
   StarIcon,
 } from "@/components/ui/icons";
@@ -17,6 +18,7 @@ const NAV_ITEMS = [
   { href: "/student/homework", label: "Vazifalar", icon: ClipboardIcon },
   { href: "/student/tests", label: "Testlar", icon: CheckSquareIcon },
   { href: "/student/grades", label: "Baholar", icon: StarIcon },
+  { href: "/student/ustozlar", label: "Ustozlar", icon: GraduationCapIcon },
   { href: "/student/announcements", label: "Eʼlonlar", icon: BellIcon },
 ] as const;
 
