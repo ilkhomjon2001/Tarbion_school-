@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BellIcon } from "@/components/ui/icons";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 import { GlobalSearch } from "@/components/ui/GlobalSearch";
 import type { SearchIndexItem } from "@/lib/search";
 import type { Student } from "@/lib/types";
@@ -13,7 +14,7 @@ export function MobileTopBar({
 }) {
   return (
     <header className="flex items-center gap-2 border-b border-border bg-surface px-4 py-2.5 md:hidden">
-      <span className="shrink-0 font-serif text-base font-bold text-brand-dark">Tarbion</span>
+      <BrandLogo variant="wordmark" className="h-5 w-auto shrink-0" priority />
 
       <GlobalSearch
         index={searchIndex}

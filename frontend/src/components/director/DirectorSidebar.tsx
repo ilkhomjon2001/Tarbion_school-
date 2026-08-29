@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 import {
   BarChartIcon,
   GraduationCapIcon,
@@ -29,10 +30,7 @@ export function DirectorSidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border bg-surface md:flex">
       <div className="px-5 py-5">
-        <p className="truncate font-serif text-lg font-bold leading-tight text-brand-dark">
-          Tarbion
-        </p>
-        <p className="truncate text-[11px] text-foreground-muted">Rahbariyat kabineti</p>
+        <BrandLogo variant="wordmark" className="h-6 w-auto" subtitle="Rahbariyat kabineti" priority />
       </div>
 
       <nav aria-label="Asosiy navigatsiya" className="flex-1 overflow-y-auto px-3 py-2">

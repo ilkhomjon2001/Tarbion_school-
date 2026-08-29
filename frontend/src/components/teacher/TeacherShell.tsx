@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 import { useState } from "react";
 
 import { DEMO_LESSONS, DEMO_TEACHER } from "@/lib/teacher/data";
@@ -68,18 +68,7 @@ export function TeacherShell({
       >
         <div className="flex h-full flex-col">
           <div className="px-6 py-5">
-            {/* Logotip 320x71 da chiqarilgan — 2x zichlik uchun yetarli */}
-            <Image
-              src="/logo/tarbion-wordmark.png"
-              alt="Tarbion"
-              width={320}
-              height={71}
-              priority
-              className="h-7 w-auto"
-            />
-            <p className="mt-1.5 text-xs text-foreground-muted">
-              Tarbiyaga asoslangan zamonaviy taʼlim
-            </p>
+            <BrandLogo variant="wordmark" className="h-6 w-auto" subtitle="Ustoz kabineti" priority />
           </div>
 
           <nav className="flex-1 overflow-y-auto px-3 pb-2">
