@@ -21,7 +21,7 @@ farzandi kelmasa Telegram'ga xabar keladi.
 
 ## Infratuzilma
 
-### [ ] T-001 · Repo va muhit
+### [~] T-001 · Repo va muhit
 **TZ:** —
 **Kerak:** —
 
@@ -38,7 +38,7 @@ Backend — FastAPI + uv, `app/main.py` da `/health` endpoint. Frontend — Next
 
 ---
 
-### [ ] T-002 · Baza ulanishi va migratsiya tizimi
+### [~] T-002 · Baza ulanishi va migratsiya tizimi
 **TZ:** —
 **Kerak:** T-001
 
@@ -55,7 +55,7 @@ SQLAlchemy 2.0 async engine + session dependency. Alembic sozlanadi.
 
 ## Ma'lumot modeli va autentifikatsiya
 
-### [ ] T-003 · Foydalanuvchi va rol modellari
+### [~] T-003 · Foydalanuvchi va rol modellari
 **TZ:** AUT-04, AUT-07
 **Kerak:** T-002
 
@@ -72,7 +72,7 @@ Rollar: `student`, `parent`, `teacher`, `homeroom_teacher`, `admin`, `director`,
 
 ---
 
-### [ ] T-004 · Login, JWT, sessiya
+### [~] T-004 · Login, JWT, sessiya
 **TZ:** AUT-01, AUT-05, AUT-06, AUT-08
 **Kerak:** T-003
 
@@ -89,7 +89,7 @@ jadvali). Har kirish `login_log` ga yoziladi: sana, IP, user-agent.
 
 ---
 
-### [ ] T-005 · Rolga asoslangan kirish nazorati
+### [~] T-005 · Rolga asoslangan kirish nazorati
 **TZ:** NFR-08, 6-domen qoidasi
 **Kerak:** T-004
 
@@ -184,7 +184,7 @@ tasdiqlash va yozish. Qisman import qilinmaydi — hammasi yoki hech nima.
 
 ---
 
-### [ ] T-011 · Dars jadvali
+### [~] T-011 · Dars jadvali
 **TZ:** ADM-08, ADM-09
 **Kerak:** T-008
 
@@ -201,7 +201,7 @@ Frontend: haftalik grid ko'rinish, sinf yoki ustoz bo'yicha filtr.
 
 ---
 
-### [ ] T-012 · Darslarni generatsiya qilish
+### [~] T-012 · Darslarni generatsiya qilish
 **TZ:** ADM-08 (hosila)
 **Kerak:** T-011
 
@@ -218,7 +218,7 @@ Chorak boshlanganda avtomatik generatsiya, ta'til kunlari o'tkazib yuboriladi.
 
 ## Davomat
 
-### [ ] T-013 · Davomat modeli va API
+### [~] T-013 · Davomat modeli va API
 **TZ:** DAV-01, DAV-03, DAV-06, DAV-07
 **Kerak:** T-012
 
@@ -406,8 +406,8 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
 - [ ] T-029 · Baholar jurnali: model va API — JUR-01, JUR-02, JUR-03
 - [ ] T-030 · Jurnal ekrani (sinf × fan × sana) — JUR-01
 - [ ] T-031 · Chorak bahosini hisoblash va qo'lda tuzatish — JUR-04
-- [ ] T-032 · Uy vazifasi: berish va topshirish — UYV-01, UYV-02
-- [ ] T-033 · Uy vazifasini tekshirish va qaytarish — UYV-03, UYV-06
+- [~] T-032 · Uy vazifasi: berish va topshirish — UYV-01, UYV-02
+- [~] T-033 · Uy vazifasini tekshirish va qaytarish — UYV-03, UYV-06
 - [ ] T-034 · O'quvchi kabineti — jadval, vazifalar, natijalar
 - [ ] T-035 · Ota-ona kabineti: baholar va uy vazifasi — OTA-04, OTA-05
 - [ ] T-036 · Murojaatlar moduli — MUR-01…MUR-04
