@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { TeacherShell } from "@/components/teacher/TeacherShell";
+import { TodaySummary } from "@/components/teacher/TodaySummary";
 import { DEMO_DATE_LABEL } from "@/lib/teacher/data";
 import { getTodayLessons } from "@/lib/teacher/store";
 import type { TeacherLesson } from "@/lib/teacher/types";
@@ -27,6 +28,9 @@ export default function TeacherTodayPage() {
 
   return (
     <TeacherShell title="Bugungi darslar" subtitle={DEMO_DATE_LABEL}>
+      {/* Kutilayotgan ishlar — ustoz nima qilishi kerakligini darhol koʻrsin */}
+      <TodaySummary lessons={lessons} />
+
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">
         <section>
           {lessons === null ? (

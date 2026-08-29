@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { GradeBook } from "@/components/teacher/GradeBook";
 import { StudentCard } from "@/components/teacher/StudentCard";
 import { TeacherShell } from "@/components/teacher/TeacherShell";
 import { buildInitialRows, DEMO_TEACHER } from "@/lib/teacher/data";
@@ -32,13 +33,19 @@ import { TODAY } from "@/lib/teacher/schedule";
 /** Demo ustozi sinf rahbari boʻlgan sinflar. */
 const HOMEROOM_CLASSES = ["11-A"];
 
-type View = "students" | "lessons";
+type View = "grades" | "students" | "lessons";
+
+/** Sinf rahbari oʻz sinfida oʻqitadigan fanlar — baholar shu kesimda. */
+const CLASS_SUBJECTS: Record<string, string[]> = {
+  "11-A": ["Matematika", "Algebra"],
+};
 
 export default function JournalPage() {
   const isHomeroom = DEMO_TEACHER.roles.includes("homeroom_teacher");
 
   const [selected, setSelected] = useState(HOMEROOM_CLASSES[0]);
-  const [view, setView] = useState<View>("students");
+  const [view, setView] = useState<View>("grades");
+  const [subject, setSubject] = useState(CLASS_SUBJECTS[HOMEROOM_CLASSES[0]][0]);
   const [stats, setStats] = useState<StudentStats[] | null>(null);
   const [lessons, setLessons] = useState<ConductedLesson[] | null>(null);
   const [openStudent, setOpenStudent] = useState<StudentStats | null>(null);
@@ -143,6 +150,7 @@ export default function JournalPage() {
       <div role="tablist" aria-label="Koʻrinish" className="mb-4 flex gap-2">
         {(
           [
+            ["grades", "Baholar"],
             ["students", "Oʻquvchilar"],
             ["lessons", "Oʻtilgan darslar"],
           ] as const
@@ -164,11 +172,36 @@ export default function JournalPage() {
         ))}
       </div>
 
-      {view === "students" ? (
-        <StudentTable rows={rows} loading={stats === null} onOpen={setOpenStudent} />
-      ) : (
-        <LessonTable lessons={lessons} />
+      {view === "grades" && (
+        <>
+          {/* Baholar sinf × FAN kesimida — fan tanlanadi (JUR-01) */}
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="text-sm text-foreground-muted">Fan:</span>
+            {(CLASS_SUBJECTS[selected] ?? []).map((s) => (
+              <button
+                key={s}
+                type="button"
+                aria-pressed={subject === s}
+                onClick={() => setSubject(s)}
+                className={`h-9 rounded-lg border px-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+                  subject === s
+                    ? "border-brand bg-brand-tint text-brand-dark"
+                    : "border-border bg-surface text-foreground-muted hover:bg-surface-muted"
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+          <GradeBook className={selected} subject={subject} students={roster} />
+        </>
       )}
+
+      {view === "students" && (
+        <StudentTable rows={rows} loading={stats === null} onOpen={setOpenStudent} />
+      )}
+
+      {view === "lessons" && <LessonTable lessons={lessons} />}
 
       {openStudent && (
         <StudentCard

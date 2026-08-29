@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { TeacherShell } from "@/components/teacher/TeacherShell";
 import { DEMO_LESSONS } from "@/lib/teacher/data";
 import { classColor } from "@/lib/teacher/schedule";
+import { loadCollection, saveCollection } from "@/lib/teacher/store";
 import {
   DEMO_TESTS,
   TEST_STATUS_LABELS,
@@ -34,6 +35,16 @@ const STATUS_TONE: Record<TestStatus, string> = {
 
 export default function TestsPage() {
   const [tests, setTests] = useState<TestItem[]>(DEMO_TESTS);
+
+  // Xotiradan tiklash — sahifa yangilansa testlar yoʻqolmasin.
+  useEffect(() => {
+    setTests(loadCollection("tests", DEMO_TESTS));
+  }, []);
+
+  function persist(next: TestItem[]) {
+    setTests(next);
+    saveCollection("tests", next);
+  }
   const [openId, setOpenId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -41,21 +52,17 @@ export default function TestsPage() {
   const pending = tests.filter((t) => t.status === "draft").length;
 
   function addTest(t: TestItem) {
-    setTests((prev) => [t, ...prev]);
+    persist([t, ...tests]);
     setCreating(false);
     setOpenId(t.id);
   }
 
   function addQuestion(testId: string, q: TestQuestion) {
-    setTests((prev) =>
-      prev.map((t) => (t.id === testId ? { ...t, questions: [...t.questions, q] } : t)),
-    );
+    persist(tests.map((t) => (t.id === testId ? { ...t, questions: [...t.questions, q] } : t)));
   }
 
   function publish(testId: string) {
-    setTests((prev) =>
-      prev.map((t) => (t.id === testId ? { ...t, status: "published" as const } : t)),
-    );
+    persist(tests.map((t) => (t.id === testId ? { ...t, status: "published" as const } : t)));
   }
 
   return (
