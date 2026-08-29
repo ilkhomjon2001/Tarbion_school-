@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { PlusIcon, UsersIcon } from "@/components/ui/icons";
-import type { ClassStage, SchoolClass } from "@/lib/director/types";
+import { reassignHomeroom } from "@/lib/director/data";
+import type { ClassStage, SchoolClass, Teacher } from "@/lib/director/types";
 
 const STAGE_FILTERS: { id: ClassStage | "all"; label: string }[] = [
   { id: "all", label: "Barcha sinflar" },
@@ -12,9 +13,19 @@ const STAGE_FILTERS: { id: ClassStage | "all"; label: string }[] = [
   { id: "yuqori", label: "Yuqori" },
 ];
 
-export function ClassesBoard({ classes }: { classes: SchoolClass[] }) {
+export function ClassesBoard({
+  classes: initialClasses,
+  teachers: initialTeachers,
+}: {
+  classes: SchoolClass[];
+  teachers: Teacher[];
+}) {
+  const [classes, setClasses] = useState(initialClasses);
+  const [teachers, setTeachers] = useState(initialTeachers);
   const [stage, setStage] = useState<ClassStage | "all">("all");
-  const [selectedId, setSelectedId] = useState(classes[0]?.id ?? "");
+  const [selectedId, setSelectedId] = useState(initialClasses[0]?.id ?? "");
+  const [editingHomeroom, setEditingHomeroom] = useState(false);
+  const [draftTeacherId, setDraftTeacherId] = useState("");
 
   const filtered = useMemo(
     () => (stage === "all" ? classes : classes.filter((c) => c.stage === stage)),
@@ -22,6 +33,25 @@ export function ClassesBoard({ classes }: { classes: SchoolClass[] }) {
   );
 
   const selected = classes.find((c) => c.id === selectedId) ?? filtered[0] ?? null;
+
+  function openHomeroomEditor() {
+    if (!selected) return;
+    setDraftTeacherId(selected.homeroomTeacherId ?? "");
+    setEditingHomeroom(true);
+  }
+
+  function saveHomeroom() {
+    if (!selected) return;
+    const result = reassignHomeroom(classes, teachers, selected.id, draftTeacherId || null);
+    setClasses(result.classes);
+    setTeachers(result.teachers);
+    setEditingHomeroom(false);
+  }
+
+  // Yangi rahbar avvaldan boshqa sinfga biriktirilgan bo'lsa, ogohlantiramiz
+  // (saqlashda u sinfdan avtomatik olib tashlanadi).
+  const draftPreviousClass =
+    draftTeacherId && classes.find((c) => c.homeroomTeacherId === draftTeacherId && c.id !== selected?.id);
 
   return (
     <div>
@@ -56,7 +86,10 @@ export function ClassesBoard({ classes }: { classes: SchoolClass[] }) {
           <button
             key={cls.id}
             type="button"
-            onClick={() => setSelectedId(cls.id)}
+            onClick={() => {
+              setSelectedId(cls.id);
+              setEditingHomeroom(false);
+            }}
             className={`rounded-xl border bg-surface p-4 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand ${
               selected?.id === cls.id
                 ? "border-brand ring-1 ring-brand"
@@ -79,7 +112,9 @@ export function ClassesBoard({ classes }: { classes: SchoolClass[] }) {
               </span>
             </div>
             <p className="mt-3 text-xs text-foreground-muted">Sinf rahbari</p>
-            <p className="text-sm font-medium text-foreground">{cls.homeroomTeacherName}</p>
+            <p className="text-sm font-medium text-foreground">
+              {cls.homeroomTeacherName ?? <span className="italic text-foreground-muted">Tayinlanmagan</span>}
+            </p>
             <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
               <p className="text-xs text-foreground-muted">Oʻrtacha davomat</p>
               <p
@@ -96,10 +131,62 @@ export function ClassesBoard({ classes }: { classes: SchoolClass[] }) {
 
       {selected && (
         <div className="mt-5 rounded-xl border border-brand/40 bg-surface p-4">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
+          <div className="mb-3 flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
             <div>
               <h2 className="text-base font-semibold text-foreground">{selected.name} sinf</h2>
-              <p className="text-xs text-foreground-muted">Rahbar: {selected.homeroomTeacherName}</p>
+
+              {editingHomeroom ? (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <select
+                    value={draftTeacherId}
+                    onChange={(e) => setDraftTeacherId(e.target.value)}
+                    className="h-9 rounded-lg border border-border bg-surface px-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+                  >
+                    <option value="">Tayinlanmagan</option>
+                    {teachers
+                      .filter((t) => t.status === "active")
+                      .map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.fullName}
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={saveHomeroom}
+                    className="h-9 rounded-lg bg-brand px-3 text-xs font-medium text-brand-foreground hover:bg-brand-dark"
+                  >
+                    Saqlash
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingHomeroom(false)}
+                    className="h-9 rounded-lg px-3 text-xs font-medium text-foreground-muted hover:bg-surface-muted"
+                  >
+                    Bekor
+                  </button>
+                  {draftPreviousClass && (
+                    <p className="basis-full text-xs text-warning">
+                      Diqqat: bu ustoz hozir {draftPreviousClass.name} sinfiga rahbar — saqlansa,
+                      u yerdan avtomatik olib tashlanadi.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="mt-0.5 flex items-center gap-2 text-xs text-foreground-muted">
+                  Rahbar:{" "}
+                  <span className="font-medium text-foreground">
+                    {selected.homeroomTeacherName ?? "Tayinlanmagan"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={openHomeroomEditor}
+                    className="text-brand-dark underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                  >
+                    Oʻzgartirish
+                  </button>
+                </p>
+              )}
             </div>
             <div className="flex gap-4 text-sm">
               <span>

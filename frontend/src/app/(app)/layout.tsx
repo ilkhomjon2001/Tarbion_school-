@@ -1,3 +1,4 @@
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { BottomNav } from "@/components/ui/BottomNav";
 import { MobileTopBar } from "@/components/ui/MobileTopBar";
 import { Sidebar } from "@/components/ui/Sidebar";
@@ -24,16 +25,18 @@ export default async function AppLayout({
   const searchIndex = buildSearchIndex({ homework, tests, announcements });
 
   return (
-    <div className="min-h-full bg-background">
-      <Sidebar student={student} />
-      <div className="flex min-h-full flex-col md:pl-64">
-        <MobileTopBar student={student} searchIndex={searchIndex} />
-        <Topbar student={student} searchIndex={searchIndex} />
-        <div className="mx-auto w-full max-w-5xl flex-1 pb-20 md:pb-8">
-          {children}
+    <AuthGuard>
+      <div className="min-h-full bg-background">
+        <Sidebar student={student} />
+        <div className="flex min-h-full flex-col md:pl-64">
+          <MobileTopBar student={student} searchIndex={searchIndex} />
+          <Topbar student={student} searchIndex={searchIndex} />
+          <div className="mx-auto w-full max-w-5xl flex-1 pb-20 md:pb-8">
+            {children}
+          </div>
         </div>
+        <BottomNav />
       </div>
-      <BottomNav />
-    </div>
+    </AuthGuard>
   );
 }

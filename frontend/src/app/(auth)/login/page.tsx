@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { login } from "@/lib/auth";
 
 /**
  * Kirish sahifasi (AUT-01) — Stitch dizayni boʻyicha ikki ustunli:
@@ -11,6 +12,10 @@ import { useState } from "react";
  * Demo rejimi: backend hali ulanmagan, shuning uchun har qanday parol bilan
  * kiritadi. Xato va blok holatlari koʻrsatish uchun maxsus qiymatlar bor
  * (pastdagi maslahat qatoriga qara).
+ *
+ * "Ushbu qurilmada eslab qolish" — yoqilsa sessiya `localStorage`da (brauzer
+ * yopilsa ham saqlanadi), oʻchirilgan boʻlsa `sessionStorage`da (tab/brauzer
+ * yopilganda yoki "Chiqish" bosilganda yoʻqoladi). Qarang: `lib/auth.ts`.
  */
 
 const DEMO_PHONE = "+998 90 123 45 67";
@@ -23,6 +28,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [locked, setLocked] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [remember, setRemember] = useState(false);
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -55,7 +61,8 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/teacher");
+    login(remember);
+    router.push("/student");
   }
 
   return (
@@ -142,10 +149,24 @@ export default function LoginPage() {
               </div>
             )}
 
-            <div className="text-right">
+            <div className="flex items-start justify-between gap-3">
+              <label className="flex items-start gap-2 text-sm text-foreground">
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                />
+                <span>
+                  Ushbu qurilmada eslab qolish
+                  <span className="block text-xs text-foreground-muted">
+                    Umumiy yoki maktab kompyuterida yoqmang
+                  </span>
+                </span>
+              </label>
               <button
                 type="button"
-                className="text-sm text-brand-dark underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                className="shrink-0 text-sm text-brand-dark underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
               >
                 Parolni unutdingizmi?
               </button>

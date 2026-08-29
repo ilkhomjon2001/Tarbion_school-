@@ -81,11 +81,28 @@ refresh token 30 kun (`httpOnly`, `Secure`, `SameSite=Lax` cookie).
 5 marta noto'g'ri urinishdan keyin hisob 15 daqiqaga bloklanadi (`login_attempts`
 jadvali). Har kirish `login_log` ga yoziladi: sana, IP, user-agent.
 
+> **Qo'shimcha (2026-08-29, loyiha egasi so'rovi, TZ AUT-09 kengaytmasi):**
+> umumiy/maktab kompyuterlarida hisob ochiq qolib ketmasligi uchun (a)
+> login'da "ushbu qurilmada eslab qolish" katakchasi — belgilanmasa refresh
+> token faqat sessiya davomida yashaydi (brauzer yopilsa/"Chiqish" bosilsa
+> darhol bekor bo'lishi kerak); (b) profil/xavfsizlik bo'limida "Faol
+> qurilmalar" ro'yxati — har bir `login_log`/refresh-token yozuvi alohida
+> bekor qilinadigan (revoke) bo'lishi, "joriy qurilmadan tashqari
+> barchasi"ni bir amalda bekor qilish imkoni bilan. Frontendda
+> `lib/auth.ts` + `/student/profil` da `localStorage`/`sessionStorage`
+> asosida demo qilib qo'yilgan — bu haqiqiy himoya emas, shu yerdagi
+> `refresh_tokens`/`login_log` jadvali ulanganda almashtiriladi.
+
 **Tayyor:**
 - [ ] `POST /api/v1/auth/login`, `/refresh`, `/logout`, `/me` ishlaydi
 - [ ] Test: 5 xato urinish → 6-si `423 Locked`
 - [ ] Test: muddati o'tgan access token `401` beradi, refresh yangilaydi
 - [ ] Parolni o'zgartirish endpoint'i eski parolni so'raydi
+- [ ] "Eslab qolish" o'chirilgan bo'lsa, refresh token faqat sessiya
+      cookie sifatida beriladi (brauzer yopilganda amalda tugaydi)
+- [ ] `GET/DELETE /api/v1/auth/sessions` — foydalanuvchining faol
+      qurilmalari ro'yxati va birini/barchasini (joriydan tashqari)
+      bekor qilish
 
 ---
 

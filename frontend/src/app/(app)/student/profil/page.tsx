@@ -3,6 +3,8 @@ import { Card } from "@/components/ui/Card";
 import { Header } from "@/components/ui/Header";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ContactInfoForm } from "@/components/features/student/ContactInfoForm";
+import { DeviceSecurity } from "@/components/features/student/DeviceSecurity";
+import { LogoutButton } from "@/components/features/student/LogoutButton";
 import { PasswordChangeForm } from "@/components/features/student/PasswordChangeForm";
 import { NotificationPreferencesForm } from "@/components/features/student/NotificationPreferencesForm";
 import { getCurrentStudent, getNotificationPreferences } from "@/lib/mock/fetchers";
@@ -31,12 +33,23 @@ export default function ProfilePage() {
         </section>
 
         <section>
+          <h2 className="mb-2 text-sm font-semibold text-foreground">Faol qurilmalar</h2>
+          <Card>
+            <DeviceSecurity />
+          </Card>
+        </section>
+
+        <section>
           <h2 className="mb-2 text-sm font-semibold text-foreground">
             Bildirishnoma sozlamalari
           </h2>
           <Suspense fallback={<Skeleton className="h-40 w-full" />}>
             <NotificationSection />
           </Suspense>
+        </section>
+
+        <section>
+          <LogoutButton />
         </section>
       </div>
     </>
