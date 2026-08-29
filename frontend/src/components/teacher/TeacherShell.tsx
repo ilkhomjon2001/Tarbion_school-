@@ -4,7 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-import { DEMO_TEACHER } from "@/lib/teacher/data";
+import { DEMO_LESSONS, DEMO_TEACHER } from "@/lib/teacher/data";
+import { classColor } from "@/lib/teacher/schedule";
+
+const TODAY_LESSONS = DEMO_LESSONS;
 
 /**
  * Ustoz paneli qobigʻi — Stitch dizayni boʻyicha: chapda 260px doimiy
@@ -16,6 +19,7 @@ import { DEMO_TEACHER } from "@/lib/teacher/data";
 
 const NAV = [
   { href: "/teacher", label: "Bugungi darslar", icon: HomeIcon, exact: true },
+  { href: "/teacher/jadval", label: "Dars jadvali", icon: CalendarIcon },
   { href: "/teacher/davomat", label: "Davomat", icon: CheckIcon },
   { href: "/teacher/vazifa", label: "Uy vazifasi", icon: ClipboardIcon },
 ] as const;
@@ -49,7 +53,7 @@ export function TeacherShell({
             <p className="mt-0.5 text-xs text-foreground-muted">Taʼlim platformasi</p>
           </div>
 
-          <nav className="flex-1 px-3">
+          <nav className="flex-1 overflow-y-auto px-3 pb-2">
             <ul className="space-y-1">
               {NAV.map(({ href, label, icon: Icon, ...rest }) => {
                 const exact = "exact" in rest && rest.exact;
@@ -77,6 +81,47 @@ export function TeacherShell({
                 );
               })}
             </ul>
+
+            {/* Bugungi jadval — sidebardagi tez koʻrinish */}
+            <div className="mt-5 border-t border-border pt-4">
+              <div className="mb-2 flex items-center justify-between px-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-foreground-muted">
+                  Bugungi jadval
+                </p>
+                <Link
+                  href="/teacher/jadval"
+                  onClick={() => setOpen(false)}
+                  className="text-xs text-brand-dark underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                >
+                  Barchasi
+                </Link>
+              </div>
+
+              <ul className="space-y-1 px-1">
+                {TODAY_LESSONS.map((lesson) => (
+                  <li key={lesson.id}>
+                    <Link
+                      href={`/teacher/davomat/${lesson.id}`}
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                    >
+                      <span
+                        aria-hidden
+                        className={`h-8 w-1 shrink-0 rounded-full ${classColor(lesson.className).dot}`}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[13px] font-medium">
+                          {lesson.className} · {lesson.subject}
+                        </span>
+                        <span className="block truncate text-[11px] text-foreground-muted">
+                          {lesson.startTime} · {lesson.room}
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </nav>
 
           <div className="border-t border-border p-3">
@@ -147,6 +192,15 @@ function HomeIcon() {
     <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 10.5 12 3l9 7.5" />
       <path d="M5 9.5V21h14V9.5" />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
     </svg>
   );
 }
