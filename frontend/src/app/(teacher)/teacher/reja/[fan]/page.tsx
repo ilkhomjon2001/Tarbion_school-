@@ -7,6 +7,7 @@ import { TeacherShell } from "@/components/teacher/TeacherShell";
 import { planFor } from "@/lib/teacher/plan";
 import type { PlanCard } from "@/lib/teacher/plan-data";
 import { buildLessons, TODAY } from "@/lib/teacher/schedule";
+import { conductedCount } from "@/lib/teacher/store";
 import { CLASS_PROGRAM_YEAR } from "@/lib/teacher/terms";
 
 /**
@@ -72,7 +73,11 @@ export default function PlanBrowserPage() {
     const day = new Date(`${TODAY}T00:00:00`);
     return buildLessons(day, day)
       .filter((l) => l.subject === "Robototexnika")
-      .map((l) => ({ lesson: l, plan: planFor(l) }))
+      .map((l) => ({
+        lesson: l,
+        // Reja oʻtilgan darslar boʻyicha siljiydi, jadval boʻyicha emas.
+        plan: planFor(l, conductedCount(l.className, l.subject, l.date)),
+      }))
       .filter((x) => x.plan?.title);
   }, []);
 
