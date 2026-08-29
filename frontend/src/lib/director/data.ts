@@ -38,13 +38,14 @@ export const SUBJECT_LIST = [
   "Jismoniy tarbiya",
 ] as const;
 
-export const teachers: Teacher[] = [
+type RawTeacher = Omit<Teacher, "homeroomClassName">;
+
+const RAW_TEACHERS: RawTeacher[] = [
   {
     id: "t-1",
     fullName: "Anvarov Jamshid Odilovich",
     shortName: "J. Anvarov",
     subjects: ["Matematika", "Algebra"],
-    homeroomClassName: "10-A",
     weeklyLoadHours: 24,
     status: "active",
     phone: "+998 90 111 22 33",
@@ -56,7 +57,6 @@ export const teachers: Teacher[] = [
     fullName: "Karimova Nargiza Yusupovna",
     shortName: "N. Karimova",
     subjects: ["Ona tili", "Adabiyot"],
-    homeroomClassName: null,
     weeklyLoadHours: 18,
     status: "active",
     phone: "+998 91 222 33 44",
@@ -68,7 +68,6 @@ export const teachers: Teacher[] = [
     fullName: "Toshmatov Botir Rahimovich",
     shortName: "B. Toshmatov",
     subjects: ["Fizika"],
-    homeroomClassName: "11-B",
     weeklyLoadHours: 20,
     status: "archived",
     phone: "+998 93 333 44 55",
@@ -80,7 +79,6 @@ export const teachers: Teacher[] = [
     fullName: "Aliyeva Nigora Sobirovna",
     shortName: "N. Aliyeva",
     subjects: ["Ingliz tili"],
-    homeroomClassName: "6-G",
     weeklyLoadHours: 22,
     status: "active",
     phone: "+998 94 444 55 66",
@@ -92,7 +90,6 @@ export const teachers: Teacher[] = [
     fullName: "Rahimov Dilshod Ergashevich",
     shortName: "D. Rahimov",
     subjects: ["Tarix"],
-    homeroomClassName: "9-B",
     weeklyLoadHours: 19,
     status: "active",
     phone: "+998 97 555 66 77",
@@ -104,7 +101,6 @@ export const teachers: Teacher[] = [
     fullName: "Karimova Aziza Baxtiyorovna",
     shortName: "A. Karimova",
     subjects: ["Matematika", "Informatika"],
-    homeroomClassName: "5-A",
     weeklyLoadHours: 21,
     status: "active",
     phone: "+998 90 666 77 88",
@@ -116,7 +112,6 @@ export const teachers: Teacher[] = [
     fullName: "Sobirov Jasur Nabiyevich",
     shortName: "J. Sobirov",
     subjects: ["Jismoniy tarbiya"],
-    homeroomClassName: "11-V",
     weeklyLoadHours: 26,
     status: "active",
     phone: "+998 99 777 88 99",
@@ -128,7 +123,6 @@ export const teachers: Teacher[] = [
     fullName: "Yusupova Malika Farxodovna",
     shortName: "M. Yusupova",
     subjects: ["Kimyo", "Biologiya"],
-    homeroomClassName: null,
     weeklyLoadHours: 17,
     status: "active",
     phone: "+998 88 888 99 00",
@@ -155,12 +149,14 @@ function buildRoster(className: string, absentIndex?: number): ClassStudent[] {
   }));
 }
 
-export const schoolClasses: SchoolClass[] = [
+type RawClass = Omit<SchoolClass, "homeroomTeacherName">;
+
+const RAW_CLASSES: RawClass[] = [
   {
     id: "c-5a",
     name: "5-A",
     stage: "boshlangʻich",
-    homeroomTeacherName: "Karimova Aziza",
+    homeroomTeacherId: "t-6",
     studentCount: 24,
     averageAttendance: 96,
     students: buildRoster("5-A"),
@@ -169,7 +165,7 @@ export const schoolClasses: SchoolClass[] = [
     id: "c-6g",
     name: "6-G",
     stage: "boshlangʻich",
-    homeroomTeacherName: "Aliyeva Nigora",
+    homeroomTeacherId: "t-4",
     studentCount: 26,
     averageAttendance: 94,
     students: buildRoster("6-G"),
@@ -178,7 +174,7 @@ export const schoolClasses: SchoolClass[] = [
     id: "c-9b",
     name: "9-B",
     stage: "oʻrta",
-    homeroomTeacherName: "Rahimov Dilshod",
+    homeroomTeacherId: "t-5",
     studentCount: 28,
     averageAttendance: 92,
     students: buildRoster("9-B", 2),
@@ -187,7 +183,7 @@ export const schoolClasses: SchoolClass[] = [
     id: "c-10a",
     name: "10-A",
     stage: "yuqori",
-    homeroomTeacherName: "Anvarov Jamshid",
+    homeroomTeacherId: "t-1",
     studentCount: 21,
     averageAttendance: 98,
     students: buildRoster("10-A"),
@@ -196,7 +192,7 @@ export const schoolClasses: SchoolClass[] = [
     id: "c-11b",
     name: "11-B",
     stage: "yuqori",
-    homeroomTeacherName: "Toshmatov Botir",
+    homeroomTeacherId: "t-3",
     studentCount: 19,
     averageAttendance: 82,
     students: buildRoster("11-B"),
@@ -205,12 +201,29 @@ export const schoolClasses: SchoolClass[] = [
     id: "c-11v",
     name: "11-V",
     stage: "yuqori",
-    homeroomTeacherName: "Sobirov Jasur",
+    homeroomTeacherId: "t-7",
     studentCount: 20,
     averageAttendance: 88,
     students: buildRoster("11-V", 1),
   },
 ];
+
+/**
+ * `homeroomTeacherId` — yagona manba. Ikkala tomonning koʻrsatish uchun
+ * qulay maydonlari (`homeroomTeacherName`, `homeroomClassName`) shundan
+ * hisoblanadi, shuning uchun ular hech qachon bir-biridan uzilib qolmaydi.
+ */
+export const schoolClasses: SchoolClass[] = RAW_CLASSES.map((cls) => ({
+  ...cls,
+  homeroomTeacherName:
+    RAW_TEACHERS.find((t) => t.id === cls.homeroomTeacherId)?.shortName ?? null,
+}));
+
+export const teachers: Teacher[] = RAW_TEACHERS.map((teacher) => ({
+  ...teacher,
+  homeroomClassName:
+    RAW_CLASSES.find((c) => c.homeroomTeacherId === teacher.id)?.name ?? null,
+}));
 
 const TEACHER_STATS: Record<string, TeacherStats> = {
   "t-1": {
@@ -458,10 +471,42 @@ export function classesTaughtBy(teacherId: string): SchoolClass[] {
       }
     }
   }
-  const teacher = teachers.find((t) => t.id === teacherId);
-  if (teacher?.homeroomClassName) {
-    const homeroom = schoolClasses.find((c) => c.name === teacher.homeroomClassName);
-    if (homeroom) ids.add(homeroom.id);
-  }
+  const homeroom = schoolClasses.find((c) => c.homeroomTeacherId === teacherId);
+  if (homeroom) ids.add(homeroom.id);
   return schoolClasses.filter((c) => ids.has(c.id));
+}
+
+/**
+ * Sinf rahbarini almashtiradi (DEMO — faqat client holatida, backend
+ * ulanganda `PATCH /classes/{id}` chaqiradi). Bir ustoz bir vaqtda faqat
+ * bitta sinfga rahbar bo'lishi mumkin — tanlangan ustoz allaqachon boshqa
+ * sinfga rahbar bo'lsa, u yerdan avtomatik olib tashlanadi.
+ */
+export function reassignHomeroom(
+  classesList: SchoolClass[],
+  teachersList: Teacher[],
+  classId: string,
+  newTeacherId: string | null,
+): { classes: SchoolClass[]; teachers: Teacher[] } {
+  const newTeacherName = newTeacherId
+    ? (teachersList.find((t) => t.id === newTeacherId)?.shortName ?? null)
+    : null;
+
+  const updatedClasses = classesList.map((cls) => {
+    if (cls.id === classId) {
+      return { ...cls, homeroomTeacherId: newTeacherId, homeroomTeacherName: newTeacherName };
+    }
+    if (newTeacherId && cls.homeroomTeacherId === newTeacherId) {
+      return { ...cls, homeroomTeacherId: null, homeroomTeacherName: null };
+    }
+    return cls;
+  });
+
+  const updatedTeachers = teachersList.map((teacher) => ({
+    ...teacher,
+    homeroomClassName:
+      updatedClasses.find((c) => c.homeroomTeacherId === teacher.id)?.name ?? null,
+  }));
+
+  return { classes: updatedClasses, teachers: updatedTeachers };
 }

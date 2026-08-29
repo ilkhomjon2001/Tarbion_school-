@@ -17,7 +17,7 @@ export function TeacherTable({
   const [teachers, setTeachers] = useState(initialTeachers);
   const [subjectFilter, setSubjectFilter] = useState("");
   const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState({ fullName: "", subject: subjects[0] ?? "", homeroom: "" });
+  const [draft, setDraft] = useState({ fullName: "", subject: subjects[0] ?? "" });
 
   const filtered = useMemo(() => {
     if (!subjectFilter) return teachers;
@@ -34,7 +34,7 @@ export function TeacherTable({
         fullName: draft.fullName.trim(),
         shortName: short,
         subjects: draft.subject ? [draft.subject] : [],
-        homeroomClassName: draft.homeroom.trim() || null,
+        homeroomClassName: null,
         weeklyLoadHours: 0,
         status: "active",
         phone: "—",
@@ -43,7 +43,7 @@ export function TeacherTable({
       },
       ...prev,
     ]);
-    setDraft({ fullName: "", subject: subjects[0] ?? "", homeroom: "" });
+    setDraft({ fullName: "", subject: subjects[0] ?? "" });
     setAdding(false);
   }
 
@@ -118,13 +118,8 @@ export function TeacherTable({
                       ))}
                     </select>
                   </td>
-                  <td className="px-4 py-2.5">
-                    <input
-                      value={draft.homeroom}
-                      onChange={(e) => setDraft((d) => ({ ...d, homeroom: e.target.value }))}
-                      placeholder="masalan, 7-A"
-                      className="h-9 w-full rounded-md border border-border bg-surface px-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
-                    />
+                  <td className="px-4 py-2.5 text-xs italic text-foreground-muted">
+                    Sinflar sahifasidan tayinlanadi
                   </td>
                   <td className="px-4 py-2.5 text-foreground-muted">—</td>
                   <td className="px-4 py-2.5">

@@ -12,6 +12,7 @@ export interface Teacher {
   fullName: string;
   shortName: string;
   subjects: string[];
+  /** `schoolClasses[].homeroomTeacherId` asosida hisoblanadi. */
   homeroomClassName: string | null;
   weeklyLoadHours: number;
   status: TeacherStatus;
@@ -47,7 +48,10 @@ export interface SchoolClass {
   id: string;
   name: string;
   stage: ClassStage;
-  homeroomTeacherName: string;
+  /** Yagona manba — sinf rahbari shu orqali aniqlanadi. */
+  homeroomTeacherId: string | null;
+  /** `homeroomTeacherId` asosida hisoblanadi (koʻrsatish uchun qulaylik). */
+  homeroomTeacherName: string | null;
   studentCount: number;
   averageAttendance: number;
   students: ClassStudent[];

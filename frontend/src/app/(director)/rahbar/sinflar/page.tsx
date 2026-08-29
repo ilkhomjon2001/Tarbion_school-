@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { Card } from "@/components/ui/Card";
 import { ClassesBoard } from "@/components/director/ClassesBoard";
-import { getSchoolClasses } from "@/lib/director/fetchers";
+import { getSchoolClasses, getTeachers } from "@/lib/director/fetchers";
 
 export default function ClassesPage() {
   return (
@@ -20,6 +20,6 @@ export default function ClassesPage() {
 }
 
 async function ClassesSection() {
-  const classes = await getSchoolClasses();
-  return <ClassesBoard classes={classes} />;
+  const [classes, teachers] = await Promise.all([getSchoolClasses(), getTeachers()]);
+  return <ClassesBoard classes={classes} teachers={teachers} />;
 }
