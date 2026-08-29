@@ -5,7 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { TeacherShell } from "@/components/teacher/TeacherShell";
-import { getAttendance, saveAttendance } from "@/lib/teacher/store";
+import { TopicField } from "@/components/teacher/TopicField";
+import { hasPlan, planFor } from "@/lib/teacher/plan";
+import { conductedCount, getAttendance, saveAttendance } from "@/lib/teacher/store";
 import {
   ATTENDANCE_LABELS,
   ATTENDANCE_ORDER,
@@ -56,6 +58,12 @@ export default function AttendancePage() {
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
+  // Oʻtilgan mavzu — rejadan avtomatik toʻladi, ustoz tahrirlay oladi.
+  const [topic, setTopic] = useState("");
+  const [planIndex, setPlanIndex] = useState<number | null>(null);
+  const [planLabel, setPlanLabel] = useState<string | null>(null);
+  const [planTopic, setPlanTopic] = useState<string | null>(null);
+
   const rowRefs = useRef<(HTMLTableRowElement | null)[]>([]);
 
   useEffect(() => {
@@ -68,6 +76,22 @@ export default function AttendancePage() {
       }
       setLesson(data.lesson);
       setRows(data.rows);
+
+      // Reja HAQIQATDA oʻtilgan darslar boʻyicha siljiydi (plan.ts ga qara).
+      if (hasPlan(data.lesson.className)) {
+        const done = conductedCount(
+          data.lesson.className,
+          data.lesson.subject,
+          data.lesson.date,
+        );
+        const plan = planFor(data.lesson, done);
+        setPlanIndex(plan?.index ?? null);
+        setPlanLabel(plan?.title ? `${plan.human}-dars` : null);
+        setPlanTopic(plan?.title?.title ?? null);
+        setTopic(data.topic || plan?.title?.title || "");
+      } else {
+        setTopic(data.topic);
+      }
     });
     return () => {
       alive = false;
@@ -133,13 +157,13 @@ export default function AttendancePage() {
   const save = useCallback(async () => {
     if (!rows || readOnly || saving) return;
     setSaving(true);
-    await saveAttendance(params.lessonId, rows);
+    await saveAttendance(params.lessonId, rows, { topic, planIndex });
     setSaving(false);
     setDirty(false);
     setSavedAt(
       new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }),
     );
-  }, [params.lessonId, readOnly, rows, saving]);
+  }, [params.lessonId, planIndex, readOnly, rows, saving, topic]);
 
   // --- Klaviatura yorliqlari ---
   useEffect(() => {
@@ -252,6 +276,22 @@ export default function AttendancePage() {
             Dars tugaganidan 24 soat oʻtdi. Oʻzgartirish uchun administratorga
             murojaat qiling.
           </p>
+        </div>
+      )}
+
+      {/* Oʻtilgan mavzu — jurnalga shu yoziladi (JUR-01) */}
+      {rows !== null && (
+        <div className="mb-4 rounded-xl border border-border bg-surface p-4">
+          <TopicField
+            value={topic}
+            disabled={readOnly}
+            planLabel={planLabel}
+            planTopic={planTopic}
+            onChange={(v) => {
+              setTopic(v);
+              setDirty(true);
+            }}
+          />
         </div>
       )}
 
