@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { TeacherShell } from "@/components/teacher/TeacherShell";
+import { TopicField } from "@/components/teacher/TopicField";
 import { hasPlan, planFor } from "@/lib/teacher/plan";
 import { conductedCount, getAttendance, saveAttendance } from "@/lib/teacher/store";
 import {
@@ -61,6 +62,7 @@ export default function AttendancePage() {
   const [topic, setTopic] = useState("");
   const [planIndex, setPlanIndex] = useState<number | null>(null);
   const [planLabel, setPlanLabel] = useState<string | null>(null);
+  const [planTopic, setPlanTopic] = useState<string | null>(null);
 
   const rowRefs = useRef<(HTMLTableRowElement | null)[]>([]);
 
@@ -85,6 +87,7 @@ export default function AttendancePage() {
         const plan = planFor(data.lesson, done);
         setPlanIndex(plan?.index ?? null);
         setPlanLabel(plan?.title ? `${plan.human}-dars` : null);
+        setPlanTopic(plan?.title?.title ?? null);
         setTopic(data.topic || plan?.title?.title || "");
       } else {
         setTopic(data.topic);
@@ -279,32 +282,16 @@ export default function AttendancePage() {
       {/* Oʻtilgan mavzu — jurnalga shu yoziladi (JUR-01) */}
       {rows !== null && (
         <div className="mb-4 rounded-xl border border-border bg-surface p-4">
-          <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
-            <label htmlFor="lesson-topic" className="text-sm font-medium">
-              Oʻtilgan mavzu
-            </label>
-            {planLabel && (
-              <span className="rounded-full bg-brand-tint px-2.5 py-0.5 text-xs font-medium text-brand-dark">
-                Rejadan: {planLabel}
-              </span>
-            )}
-          </div>
-          <input
-            id="lesson-topic"
-            type="text"
+          <TopicField
             value={topic}
             disabled={readOnly}
-            onChange={(e) => {
-              setTopic(e.target.value);
+            planLabel={planLabel}
+            planTopic={planTopic}
+            onChange={(v) => {
+              setTopic(v);
               setDirty(true);
             }}
-            placeholder="Mavzu nomini kiriting…"
-            className="h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none placeholder:text-foreground-muted/60 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25 disabled:cursor-not-allowed disabled:bg-surface-muted/40"
           />
-          <p className="mt-1.5 text-xs text-foreground-muted">
-            Davomat bilan birga sinf jurnaliga yoziladi. Reja faqat davomat
-            saqlangandan keyin keyingi mavzuga oʻtadi.
-          </p>
         </div>
       )}
 

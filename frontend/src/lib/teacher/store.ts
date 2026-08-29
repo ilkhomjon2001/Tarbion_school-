@@ -105,6 +105,65 @@ export function journalFor(className: string, subject: string): ConductedLesson[
     .sort((a, b) => (a.date === b.date ? a.period - b.period : a.date < b.date ? -1 : 1));
 }
 
+/** Sinfning barcha oʻtilgan darslari (fandan qatʼi nazar). */
+export function conductedForClass(className: string): ConductedLesson[] {
+  return Object.values(getConducted())
+    .filter((c) => c.className === className)
+    .sort((a, b) => (a.date === b.date ? a.period - b.period : a.date < b.date ? -1 : 1));
+}
+
+export interface StudentStats {
+  studentId: string;
+  fullName: string;
+  present: number;
+  absent: number;
+  excused: number;
+  late: number;
+  total: number;
+  /** Qatnashish foizi (keldi + kechikdi hisobga olinadi). */
+  percent: number;
+}
+
+/**
+ * Har bir oʻquvchining davomat statistikasi (DAV-06).
+ *
+ * "Kechikdi" ham qatnashgan hisoblanadi — oʻquvchi darsda boʻlgan.
+ * Sababli qoldirish qatnashmagan, lekin sababi bor: foizga kirmaydi,
+ * alohida ustunda koʻrsatiladi.
+ */
+export function studentStats(className: string): StudentStats[] {
+  const lessons = conductedForClass(className);
+  const rows = read<AttendanceRow[]>(KEY_ATTENDANCE);
+  const byStudent = new Map<string, StudentStats>();
+
+  for (const lesson of lessons) {
+    for (const row of rows[lesson.lessonId] ?? []) {
+      let s = byStudent.get(row.studentId);
+      if (!s) {
+        s = {
+          studentId: row.studentId,
+          fullName: row.fullName,
+          present: 0,
+          absent: 0,
+          excused: 0,
+          late: 0,
+          total: 0,
+          percent: 100,
+        };
+        byStudent.set(row.studentId, s);
+      }
+      s[row.status] += 1;
+      s.total += 1;
+    }
+  }
+
+  const out = [...byStudent.values()];
+  for (const s of out) {
+    s.percent = s.total ? Math.round(((s.present + s.late) / s.total) * 100) : 100;
+  }
+  return out.sort((a, b) => a.fullName.localeCompare(b.fullName, "uz"));
+}
+
 // ---------- Darslar ----------
 
 export async function getTodayLessons(): Promise<TeacherLesson[]> {

@@ -20,10 +20,8 @@ const TODAY_LESSONS = DEMO_LESSONS;
 const NAV = [
   { href: "/teacher", label: "Bugungi darslar", icon: HomeIcon, exact: true },
   { href: "/teacher/jadval", label: "Dars jadvali", icon: CalendarIcon },
-  { href: "/teacher/reja", label: "Dars rejasi", icon: BookIcon },
   { href: "/teacher/jurnal", label: "Sinf jurnali", icon: JournalIcon },
   { href: "/teacher/vazifa", label: "Uy vazifasi", icon: ClipboardIcon },
-  { href: "/teacher/sinflarim", label: "Sinflarim", icon: UsersIcon },
 ] as const;
 
 export function TeacherShell({
@@ -207,14 +205,6 @@ function CalendarIcon() {
   );
 }
 
-function BookIcon() {
-  return (
-    <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5Z" />
-      <path d="M9 7h7M9 11h5" />
-    </svg>
-  );
-}
 
 function JournalIcon() {
   return (
@@ -225,15 +215,6 @@ function JournalIcon() {
   );
 }
 
-function UsersIcon() {
-  return (
-    <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="9" cy="8" r="3.2" />
-      <path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" />
-      <path d="M16.5 5.3a3.2 3.2 0 0 1 0 6.1M18 14.8c2.1.6 3.5 2.4 3.5 5.2" />
-    </svg>
-  );
-}
 
 function ClipboardIcon() {
   return (

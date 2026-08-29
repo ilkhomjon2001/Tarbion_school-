@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { LessonPlanPanel } from "@/components/teacher/LessonPlanPanel";
 import { TeacherShell } from "@/components/teacher/TeacherShell";
 import { DEMO_LESSONS } from "@/lib/teacher/data";
 import {
@@ -52,6 +53,8 @@ export default function SchedulePage() {
   const [view, setView] = useState<View>("week");
   const [anchor, setAnchor] = useState<Date>(new Date(`${TODAY}T00:00:00`));
   const [classFilter, setClassFilter] = useState<string>("all");
+  // Jadvalda bosilgan dars — pastda uning rejasi ochiladi.
+  const [picked, setPicked] = useState<ScheduleLesson | null>(null);
 
   // Koʻrinishga qarab sana oraligʻi.
   const { from, to } = useMemo(() => {
@@ -167,9 +170,18 @@ export default function SchedulePage() {
         </div>
       </div>
 
-      {view === "month" && <MonthView from={from} to={to} byDate={byDate} />}
-      {view === "week" && <WeekView from={from} byDate={byDate} />}
-      {view === "day" && <DayView date={iso(anchor)} lessons={byDate.get(iso(anchor)) ?? []} />}
+      {view === "month" && <MonthView from={from} to={to} byDate={byDate} onPick={setPicked} />}
+      {view === "week" && <WeekView from={from} byDate={byDate} onPick={setPicked} />}
+      {view === "day" && (
+        <DayView
+          date={iso(anchor)}
+          lessons={byDate.get(iso(anchor)) ?? []}
+          onPick={setPicked}
+        />
+      )}
+
+      {/* Tanlangan darsning rejasi — faqat shu darsning fani boʻyicha */}
+      {picked && <LessonPlanPanel lesson={picked} onClose={() => setPicked(null)} />}
 
       {/* --- Izoh (legend) --- */}
       <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-border bg-surface px-4 py-3 text-sm">
@@ -195,10 +207,12 @@ function MonthView({
   from,
   to,
   byDate,
+  onPick,
 }: {
   from: Date;
   to: Date;
   byDate: Map<string, ScheduleLesson[]>;
+  onPick: (lesson: ScheduleLesson) => void;
 }) {
   const days: Date[] = [];
   for (let d = new Date(from); d <= to; d = addDays(d, 1)) days.push(new Date(d));
@@ -248,7 +262,7 @@ function MonthView({
                 <ul className="space-y-0.5">
                   {items.slice(0, 3).map((lesson) => (
                     <li key={lesson.id}>
-                      <LessonChip lesson={lesson} compact />
+                      <LessonChip lesson={lesson} onPick={onPick} compact />
                     </li>
                   ))}
                   {items.length > 3 && (
@@ -268,7 +282,15 @@ function MonthView({
 
 /* ---------------- Hafta koʻrinishi ---------------- */
 
-function WeekView({ from, byDate }: { from: Date; byDate: Map<string, ScheduleLesson[]> }) {
+function WeekView({
+  from,
+  byDate,
+  onPick,
+}: {
+  from: Date;
+  byDate: Map<string, ScheduleLesson[]>;
+  onPick: (lesson: ScheduleLesson) => void;
+}) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(from, i));
   const periods = Object.keys(BELL_SCHEDULE).map(Number).sort((a, b) => a - b);
 
@@ -324,7 +346,7 @@ function WeekView({ from, byDate }: { from: Date; byDate: Map<string, ScheduleLe
                       isHoliday(date) ? "bg-surface-muted/50" : ""
                     }`}
                   >
-                    {lesson ? <LessonChip lesson={lesson} /> : null}
+                    {lesson ? <LessonChip lesson={lesson} onPick={onPick} /> : null}
                   </td>
                 );
               })}
@@ -338,7 +360,15 @@ function WeekView({ from, byDate }: { from: Date; byDate: Map<string, ScheduleLe
 
 /* ---------------- Kun koʻrinishi ---------------- */
 
-function DayView({ date, lessons }: { date: string; lessons: ScheduleLesson[] }) {
+function DayView({
+  date,
+  lessons,
+  onPick,
+}: {
+  date: string;
+  lessons: ScheduleLesson[];
+  onPick: (lesson: ScheduleLesson) => void;
+}) {
   if (isHoliday(date)) {
     return (
       <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center">
@@ -367,14 +397,21 @@ function DayView({ date, lessons }: { date: string; lessons: ScheduleLesson[] })
           >
             <span aria-hidden className={`w-1.5 shrink-0 ${color.dot}`} />
             <div className="flex flex-1 flex-wrap items-center justify-between gap-3 py-3 pr-4">
-              <div>
-                <p className="font-medium">
+              <button
+                type="button"
+                onClick={() => onPick(lesson)}
+                className="min-w-0 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              >
+                <span className="block font-medium">
                   {lesson.subject} · {lesson.className}
-                </p>
-                <p className="mt-0.5 text-sm text-foreground-muted">
+                </span>
+                <span className="mt-0.5 block text-sm text-foreground-muted">
                   {lesson.period}-para · {lesson.startTime}–{lesson.endTime} · {lesson.room}
-                </p>
-              </div>
+                </span>
+                <span className="mt-0.5 block text-xs text-brand-dark">
+                  Rejasini koʻrish →
+                </span>
+              </button>
               <TodayAction lesson={lesson} />
             </div>
           </li>
@@ -386,15 +423,25 @@ function DayView({ date, lessons }: { date: string; lessons: ScheduleLesson[] })
 
 /* ---------------- Umumiy ---------------- */
 
-function LessonChip({ lesson, compact }: { lesson: ScheduleLesson; compact?: boolean }) {
+function LessonChip({
+  lesson,
+  onPick,
+  compact,
+}: {
+  lesson: ScheduleLesson;
+  onPick: (lesson: ScheduleLesson) => void;
+  compact?: boolean;
+}) {
   const color = classColor(lesson.className);
-  const label = `${lesson.className} ${lesson.subject}, ${lesson.startTime}–${lesson.endTime}, ${lesson.room}`;
+  const label = `${lesson.className} ${lesson.subject}, ${lesson.startTime}–${lesson.endTime}, ${lesson.room}. Rejasini koʻrish`;
 
   return (
-    <span
+    <button
+      type="button"
+      onClick={() => onPick(lesson)}
       title={label}
       aria-label={label}
-      className={`block rounded px-1.5 py-1 text-left text-[11px] leading-tight ${color.block}`}
+      className={`block w-full rounded px-1.5 py-1 text-left text-[11px] leading-tight transition-opacity hover:opacity-85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand ${color.block}`}
     >
       <span className="block truncate font-semibold">
         {lesson.className} · {lesson.subject}
@@ -405,7 +452,7 @@ function LessonChip({ lesson, compact }: { lesson: ScheduleLesson; compact?: boo
         </span>
       )}
       <span className="block truncate opacity-90">{lesson.room}</span>
-    </span>
+    </button>
   );
 }
 
