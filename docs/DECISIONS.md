@@ -40,3 +40,18 @@ boshlandi (T-034 dagi kabi). Dars jadvali quruvchisi (`ScheduleBuilder`)
 ustozning bir vaqtda ikki sinfda bandligini (ziddiyat) frontendda
 ogohlantiradi — bu faqat UX yordamchisi, haqiqiy tekshiruv backend
 tomonida boʻlishi kerak.
+
+## 2026-08-29 · "Eslab qolish" va faol qurilmalar — frontend demo (AUT-09 kengaytmasi)
+Loyiha egasi aniq muammo koʻrsatdi: oʻquvchilar maktab umumiy
+kompyuterlariga kirib, hisobi ochiq qolib ketadi. TZ AUT-09 faqat kirish
+jurnalini (sana/IP/qurilma) talab qiladi — faol qurilmalarni koʻrish va
+bekor qilish, hamda "eslab qolish" tanlovi TZ'da yoʻq edi, lekin bu aniq
+soʻrov boʻyicha qoʻshildi (TASKS.md T-004 ga izoh yozildi).
+
+Backend hali yoʻq (T-004 bajarilmagan), shuning uchun hozircha faqat
+frontend: `lib/auth.ts` — "eslab qolish" yoqilsa `localStorage`, boʻlmasa
+`sessionStorage` (brauzer yopilsa/"Chiqish"da darhol oʻchadi). Profil
+sahifasidagi "Faol qurilmalar" roʻyxati **namunaviy** — faqat joriy
+qurilma haqiqiy (`navigator.userAgent`dan), qolganlari statik demo
+maʼlumot. Bu haqiqiy xavfsizlik chegarasi emas; backendda `refresh_tokens`
+jadvali (har biri alohida bekor qilinadigan) ulanganda almashtiriladi.

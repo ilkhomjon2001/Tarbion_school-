@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { logout } from "@/lib/auth";
 import {
   BellIcon,
   CalendarIcon,
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
 
 export function Sidebar({ student }: { student: Student }) {
   const pathname = usePathname();
+  const router = useRouter();
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border bg-surface md:flex">
@@ -87,13 +89,17 @@ export function Sidebar({ student }: { student: Student }) {
             </p>
           </div>
         </Link>
-        <Link
-          href="/login"
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-muted hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+        <button
+          type="button"
+          onClick={() => {
+            logout();
+            router.push("/login");
+          }}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-muted hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
         >
           <LogoutIcon className="h-5 w-5 shrink-0" />
           Chiqish
-        </Link>
+        </button>
       </div>
     </aside>
   );
