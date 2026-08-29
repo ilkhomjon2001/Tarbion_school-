@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -67,8 +68,18 @@ export function TeacherShell({
       >
         <div className="flex h-full flex-col">
           <div className="px-6 py-5">
-            <p className="text-xl font-bold tracking-tight text-brand">Tarbion</p>
-            <p className="mt-0.5 text-xs text-foreground-muted">Taʼlim platformasi</p>
+            {/* Logotip 320x71 da chiqarilgan — 2x zichlik uchun yetarli */}
+            <Image
+              src="/logo/tarbion-wordmark.png"
+              alt="Tarbion"
+              width={320}
+              height={71}
+              priority
+              className="h-7 w-auto"
+            />
+            <p className="mt-1.5 text-xs text-foreground-muted">
+              Tarbiyaga asoslangan zamonaviy taʼlim
+            </p>
           </div>
 
           <nav className="flex-1 overflow-y-auto px-3 pb-2">
