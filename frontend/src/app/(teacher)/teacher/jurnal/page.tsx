@@ -4,9 +4,16 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { GradeBook } from "@/components/teacher/GradeBook";
+import {
+  allSubjectsIn,
+  canGrade,
+  isHomeroomOf,
+  myClasses,
+  mySubjectsIn,
+} from "@/lib/teacher/roles";
 import { StudentCard } from "@/components/teacher/StudentCard";
 import { TeacherShell } from "@/components/teacher/TeacherShell";
-import { buildInitialRows, DEMO_TEACHER } from "@/lib/teacher/data";
+import { buildInitialRows } from "@/lib/teacher/data";
 import { classColor } from "@/lib/teacher/schedule";
 import {
   conductedForClass,
@@ -30,22 +37,16 @@ import { TODAY } from "@/lib/teacher/schedule";
  *   Darslar     — oʻtilgan darslar va mavzular
  */
 
-/** Demo ustozi sinf rahbari boʻlgan sinflar. */
-const HOMEROOM_CLASSES = ["11-A"];
-
 type View = "grades" | "students" | "lessons";
 
-/** Sinf rahbari oʻz sinfida oʻqitadigan fanlar — baholar shu kesimda. */
-const CLASS_SUBJECTS: Record<string, string[]> = {
-  "11-A": ["Matematika", "Algebra"],
-};
-
 export default function JournalPage() {
-  const isHomeroom = DEMO_TEACHER.roles.includes("homeroom_teacher");
+  const classes = myClasses();
 
-  const [selected, setSelected] = useState(HOMEROOM_CLASSES[0]);
+  const [selected, setSelected] = useState(classes[0]);
   const [view, setView] = useState<View>("grades");
-  const [subject, setSubject] = useState(CLASS_SUBJECTS[HOMEROOM_CLASSES[0]][0]);
+  const [subject, setSubject] = useState(
+    mySubjectsIn(classes[0])[0] ?? allSubjectsIn(classes[0])[0],
+  );
   const [stats, setStats] = useState<StudentStats[] | null>(null);
   const [lessons, setLessons] = useState<ConductedLesson[] | null>(null);
   const [openStudent, setOpenStudent] = useState<StudentStats | null>(null);
@@ -54,6 +55,8 @@ export default function JournalPage() {
     // localStorage faqat brauzerda.
     setStats(studentStats(selected));
     setLessons(conductedForClass(selected));
+    // Sinf almashganda oʻzi oʻqitadigan fan tanlansin.
+    setSubject(mySubjectsIn(selected)[0] ?? allSubjectsIn(selected)[0]);
   }, [selected]);
 
   const roster = useMemo(() => buildInitialRows(selected), [selected]);
@@ -89,28 +92,24 @@ export default function JournalPage() {
     };
   }, [rows, lessons]);
 
-  if (!isHomeroom) {
-    return (
-      <TeacherShell title="Sinf jurnali">
-        <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center">
-          <p className="text-base font-medium">Bu boʻlim sinf rahbari uchun</p>
-          <p className="mx-auto mt-1 max-w-md text-sm text-foreground-muted">
-            Sinf jurnalini faqat sinf rahbari koʻra oladi. Oʻz darsingiz
-            davomatini «Bugun» boʻlimidan belgilaysiz.
-          </p>
-        </div>
-      </TeacherShell>
-    );
-  }
+  const homeroom = isHomeroomOf(selected);
+
+  /**
+   * Koʻrinadigan fanlar:
+   *   sinf rahbari  — sinfdagi BARCHA fanlar (oʻzinikidan boshqasi faqat oʻqish)
+   *   fan ustozi    — faqat oʻzi oʻqitadigan fanlar
+   */
+  const visibleSubjects = homeroom ? allSubjectsIn(selected) : mySubjectsIn(selected);
+  const editable = canGrade(selected, subject);
 
   return (
     <TeacherShell
       title="Sinf jurnali"
-      subtitle={`${selected} · sinf rahbari · ${ACADEMIC_YEAR}${term ? ` · ${term.name}` : ""}`}
+      subtitle={`${selected} · ${homeroom ? "sinf rahbari" : "fan ustozi"} · ${ACADEMIC_YEAR}${term ? ` · ${term.name}` : ""}`}
     >
-      {HOMEROOM_CLASSES.length > 1 && (
+      {classes.length > 1 && (
         <div role="tablist" aria-label="Sinf" className="mb-4 flex flex-wrap gap-2">
-          {HOMEROOM_CLASSES.map((c) => (
+          {classes.map((c) => (
             <button
               key={c}
               type="button"
@@ -174,26 +173,51 @@ export default function JournalPage() {
 
       {view === "grades" && (
         <>
-          {/* Baholar sinf × FAN kesimida — fan tanlanadi (JUR-01) */}
+          {/* Fan tanlash. Oʻzi oʻqitadigan fanlar yashil nuqta bilan
+              belgilangan — baho faqat oʻshalarga qoʻyiladi (JUR-01). */}
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <span className="text-sm text-foreground-muted">Fan:</span>
-            {(CLASS_SUBJECTS[selected] ?? []).map((s) => (
-              <button
-                key={s}
-                type="button"
-                aria-pressed={subject === s}
-                onClick={() => setSubject(s)}
-                className={`h-9 rounded-lg border px-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
-                  subject === s
-                    ? "border-brand bg-brand-tint text-brand-dark"
-                    : "border-border bg-surface text-foreground-muted hover:bg-surface-muted"
-                }`}
-              >
-                {s}
-              </button>
-            ))}
+            {visibleSubjects.map((s) => {
+              const mine = canGrade(selected, s);
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  aria-pressed={subject === s}
+                  onClick={() => setSubject(s)}
+                  className={`inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+                    subject === s
+                      ? "border-brand bg-brand-tint text-brand-dark"
+                      : "border-border bg-surface text-foreground-muted hover:bg-surface-muted"
+                  }`}
+                >
+                  {mine && (
+                    <span
+                      aria-hidden
+                      className="h-1.5 w-1.5 rounded-full bg-brand"
+                      title="Oʻz faningiz"
+                    />
+                  )}
+                  {s}
+                  {!mine && <span className="sr-only">— faqat koʻrish</span>}
+                </button>
+              );
+            })}
           </div>
-          <GradeBook className={selected} subject={subject} students={roster} />
+
+          {homeroom && visibleSubjects.length > mySubjectsIn(selected).length && (
+            <p className="mb-3 text-xs text-foreground-muted">
+              Yashil nuqtali fanlar — oʻzingiz oʻqitadiganingiz, baho qoʻya
+              olasiz. Qolganlarini sinf rahbari sifatida faqat koʻrasiz.
+            </p>
+          )}
+
+          <GradeBook
+            className={selected}
+            subject={subject}
+            students={roster}
+            readOnly={!editable}
+          />
         </>
       )}
 

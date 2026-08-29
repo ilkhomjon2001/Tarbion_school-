@@ -38,12 +38,18 @@ export function GradeBook({
   className,
   subject,
   students,
+  readOnly = false,
 }: {
   className: string;
   subject: string;
   students: AttendanceRow[];
+  /** Sinf rahbari boshqa ustozning fanini faqat koʻradi. */
+  readOnly?: boolean;
 }) {
-  const [scale, setScale] = useState<GradingScale>(5);
+  // Soddalashtirildi: 5 ballik sukut boʻyicha. Maktab 100 ballikka
+  // oʻtsa, bu sozlama admin panelidan keladi — har ustoz har safar
+  // tanlab oʻtirmaydi.
+  const scale: GradingScale = 5;
   const [kind, setKind] = useState<GradeKind>("current");
   const [book, setBook] = useState<Record<string, Record<string, GradeEntry>>>({});
   const [active, setActive] = useState<{ studentId: string; date: string } | null>(null);
@@ -68,6 +74,7 @@ export function GradeBook({
   }, [className, subject]);
 
   function put(studentId: string, date: string, value: number | null) {
+    if (readOnly) return;
     const next = { ...book, [studentId]: { ...(book[studentId] ?? {}) } };
     if (value === null) {
       delete next[studentId][date];
@@ -82,7 +89,7 @@ export function GradeBook({
 
   // Klaviatura: katak tanlangan holda raqam bosish
   useEffect(() => {
-    if (!active) return;
+    if (!active || readOnly) return;
     function onKey(e: KeyboardEvent) {
       const t = e.target as HTMLElement | null;
       if (t?.tagName === "INPUT" || t?.tagName === "TEXTAREA") return;
@@ -131,49 +138,42 @@ export function GradeBook({
 
   return (
     <div>
-      {/* Sozlamalar — JUR-02, JUR-03 */}
-      <div className="mb-3 flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-foreground-muted">Baholash:</span>
+      {/* Boshqaruv — faqat bitta tanlov qoldi: qanday baho qoʻyilyapti */}
+      {readOnly ? (
+        <div className="mb-3 flex items-center gap-2 rounded-lg bg-surface-muted px-3 py-2 text-sm text-foreground-muted">
+          <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="4" y="10" width="16" height="10" rx="2" />
+            <path d="M8 10V7a4 4 0 1 1 8 0v3" />
+          </svg>
+          <span>
+            <span className="font-medium text-foreground">{subject}</span> — siz bu
+            fandan dars bermaysiz. Sinf rahbari sifatida faqat koʻrasiz.
+          </span>
+        </div>
+      ) : (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className="text-sm text-foreground-muted">Baho turi:</span>
           <div className="flex rounded-lg border border-border bg-surface p-0.5">
-            {([5, 100] as GradingScale[]).map((s) => (
-              <button
-                key={s}
-                type="button"
-                aria-pressed={scale === s}
-                onClick={() => setScale(s)}
-                className={`h-8 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
-                  scale === s ? "bg-brand text-brand-foreground" : "text-foreground-muted"
-                }`}
-              >
-                {s} ballik
-              </button>
-            ))}
+            {(Object.keys(GRADE_KIND_LABELS) as GradeKind[])
+              .filter((k) => GRADE_WEIGHTS[k] > 0)
+              .map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  aria-pressed={kind === k}
+                  onClick={() => setKind(k)}
+                  className={`h-8 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+                    kind === k
+                      ? "bg-brand text-brand-foreground"
+                      : "text-foreground-muted hover:bg-surface-muted"
+                  }`}
+                >
+                  {GRADE_KIND_LABELS[k]}
+                </button>
+              ))}
           </div>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-foreground-muted">Baho turi:</span>
-          {(Object.keys(GRADE_KIND_LABELS) as GradeKind[])
-            .filter((k) => GRADE_WEIGHTS[k] > 0)
-            .map((k) => (
-              <button
-                key={k}
-                type="button"
-                aria-pressed={kind === k}
-                onClick={() => setKind(k)}
-                className={`h-8 rounded-lg border px-2.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
-                  kind === k
-                    ? "border-brand bg-brand-tint text-brand-dark"
-                    : "border-border bg-surface text-foreground-muted hover:bg-surface-muted"
-                }`}
-              >
-                {GRADE_KIND_LABELS[k]}
-                <span className="ml-1 text-xs opacity-70">×{GRADE_WEIGHTS[k]}</span>
-              </button>
-            ))}
-        </div>
-      </div>
+      )}
 
       <div className="overflow-x-auto rounded-xl border border-border bg-surface">
         <table className="border-collapse text-sm">
@@ -235,6 +235,7 @@ export function GradeBook({
                       <td key={c.date} className="relative px-1 py-1.5 text-center">
                         <button
                           type="button"
+                          disabled={readOnly}
                           onClick={() =>
                             setActive(isActive ? null : { studentId: s.studentId, date: c.date })
                           }
@@ -243,12 +244,12 @@ export function GradeBook({
                             g
                               ? KIND_TONE[g.kind]
                               : "text-foreground-muted/40 hover:bg-surface-muted"
-                          } ${isActive ? "ring-2 ring-brand" : ""}`}
+                          } ${isActive ? "ring-2 ring-brand" : ""} ${readOnly ? "cursor-default" : ""}`}
                         >
                           {g ? g.value : "·"}
                         </button>
 
-                        {isActive && (
+                        {isActive && !readOnly && (
                           <GradePopover
                             boxRef={popRef}
                             scale={scale}
@@ -288,11 +289,13 @@ export function GradeBook({
         </table>
       </div>
 
-      <p className="mt-2.5 text-xs text-foreground-muted">
-        Katakni bosing va <Kbd>1</Kbd>–<Kbd>5</Kbd> raqamini bosing.{" "}
-        <Kbd>Backspace</Kbd> — bahoni oʻchiradi, <Kbd>Esc</Kbd> — yopadi. Chorak
-        bahosi vaznlar boʻyicha avtomatik hisoblanadi (nazorat ishi ×3, joriy ×1).
-      </p>
+      {!readOnly && (
+        <p className="mt-2.5 text-xs text-foreground-muted">
+          Katakni bosing va <Kbd>1</Kbd>–<Kbd>5</Kbd> raqamini bosing.{" "}
+          <Kbd>Backspace</Kbd> oʻchiradi, <Kbd>Esc</Kbd> yopadi. Chorak bahosi
+          avtomatik hisoblanadi — nazorat ishi joriy bahodan uch barobar ogʻirroq.
+        </p>
+      )}
     </div>
   );
 }

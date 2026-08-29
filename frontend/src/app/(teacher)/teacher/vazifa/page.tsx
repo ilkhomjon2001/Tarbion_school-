@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { TeacherShell } from "@/components/teacher/TeacherShell";
-import { getHomeworkList } from "@/lib/teacher/store";
+import { getHomeworkList, journalFor } from "@/lib/teacher/store";
 import type { HomeworkItem } from "@/lib/teacher/types";
 
 /**
@@ -152,6 +152,27 @@ export default function HomeworkListPage() {
 /** UYV-01: ustoz uy vazifasini beradi — matn, muddat, maksimal ball. */
 function NewHomeworkForm({ onClose }: { onClose: () => void }) {
   const [saved, setSaved] = useState(false);
+  const [className, setClassName] = useState("11-A");
+  const [subject, setSubject] = useState("Algebra");
+  const [title, setTitle] = useState("");
+  /** Davomatda biriktirilgan mavzu — sarlavha shundan avtomatik toʻladi. */
+  const [lessonTopic, setLessonTopic] = useState<string | null>(null);
+
+  /**
+   * Sinf va fan tanlanganda oxirgi oʻtilgan darsning mavzusi olinadi.
+   *
+   * Ustoz vazifa sarlavhasini qoʻldan yozib oʻtirmasin: u endigina
+   * davomat belgilab, mavzuni kiritgan — vazifa oʻsha mavzuga beriladi.
+   */
+  useEffect(() => {
+    const conducted = journalFor(className, subject);
+    const last = [...conducted].reverse().find((c) => c.topic.trim());
+    const topic = last?.topic.trim() ?? null;
+    setLessonTopic(topic);
+    // Ustoz hali qoʻlda yozmagan boʻlsa — mavzuni qoʻyamiz.
+    setTitle((prev) => (prev === "" || prev === lessonTopic ? (topic ?? "") : prev));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [className, subject]);
 
   function onSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -182,7 +203,8 @@ function NewHomeworkForm({ onClose }: { onClose: () => void }) {
         <Field label="Sinf" htmlFor="hw-class">
           <select
             id="hw-class"
-            defaultValue="11-A"
+            value={className}
+            onChange={(e) => setClassName(e.target.value)}
             className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
           >
             <option>11-A</option>
@@ -194,7 +216,8 @@ function NewHomeworkForm({ onClose }: { onClose: () => void }) {
         <Field label="Fan" htmlFor="hw-subject">
           <select
             id="hw-subject"
-            defaultValue="Algebra"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
             className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
           >
             <option>Algebra</option>
@@ -207,9 +230,33 @@ function NewHomeworkForm({ onClose }: { onClose: () => void }) {
           <input
             id="hw-title"
             required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             placeholder="Masalan: Kvadrat tenglamalar — 6-mashq"
             className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none placeholder:text-foreground-muted/60 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
           />
+          {lessonTopic ? (
+            <p className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-foreground-muted">
+              <span>
+                Oxirgi darsda oʻtilgan mavzu:{" "}
+                <span className="font-medium text-foreground">{lessonTopic}</span>
+              </span>
+              {title !== lessonTopic && (
+                <button
+                  type="button"
+                  onClick={() => setTitle(lessonTopic)}
+                  className="rounded-lg border border-border px-2 py-0.5 text-xs transition-colors hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                >
+                  Sarlavhaga qoʻyish
+                </button>
+              )}
+            </p>
+          ) : (
+            <p className="mt-1.5 text-xs text-foreground-muted">
+              Bu sinf va fandan hali dars oʻtilmagan — davomat belgilanganda
+              mavzu shu yerga avtomatik chiqadi.
+            </p>
+          )}
         </Field>
 
         <Field label="Tavsif" htmlFor="hw-desc" full>
