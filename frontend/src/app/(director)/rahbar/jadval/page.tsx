@@ -12,7 +12,7 @@ export default function DirectorSchedulePage() {
   return (
     <div className="p-4 md:p-6">
       <div className="mb-4">
-        <h1 className="text-xl font-bold text-foreground">Dars jadvali</h1>
+        <h1 className="text-h2 font-bold text-foreground">Dars jadvali</h1>
         <p className="text-sm text-foreground-muted">
           Sinf boʻyicha haftalik dars jadvalini tuzish — katakni bosib fan, ustoz va xonani
           belgilang.

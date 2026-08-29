@@ -233,7 +233,7 @@ export function TestRunner({ test }: { test: TestItem }) {
   return (
     <Card className="flex flex-col items-center gap-2 text-center">
       <p
-        className={`text-3xl font-bold ${result.passed ? "text-success" : "text-danger"}`}
+        className={`text-3xl font-bold num ${result.passed ? "text-success" : "text-danger"}`}
       >
         {result.score}%
       </p>

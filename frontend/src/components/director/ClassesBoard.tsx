@@ -122,7 +122,7 @@ export function ClassesBoard({
                   cls.averageAttendance < 85 ? "text-danger" : "text-success"
                 }`}
               >
-                {cls.averageAttendance}%
+                <span className="num">{cls.averageAttendance}%</span>
               </p>
             </div>
           </button>

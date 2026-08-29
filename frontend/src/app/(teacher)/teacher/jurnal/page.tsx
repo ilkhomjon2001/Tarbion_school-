@@ -323,7 +323,7 @@ function StudentTable({
                         />
                       </span>
                       <span className={`text-sm font-medium ${atRisk ? "text-danger" : ""}`}>
-                        {s.percent}%
+                        <span className="num">{s.percent}%</span>
                       </span>
                     </span>
                   )}
@@ -406,7 +406,7 @@ function Stat({
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
       <p className="text-xs uppercase tracking-wide text-foreground-muted">{label}</p>
-      <p className={`mt-1 text-2xl font-semibold ${tone}`}>{value}</p>
+      <p className={`mt-1 text-2xl font-semibold num ${tone}`}>{value}</p>
     </div>
   );
 }

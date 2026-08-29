@@ -25,7 +25,7 @@ export default async function GradeDetailPage({
       <Header title={grade.subject} backHref="/student/grades" />
       <div className="flex flex-col gap-4 p-4">
         <Card className="flex items-center gap-4">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-tint text-2xl font-bold text-brand-dark">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-tint text-2xl font-bold text-brand-dark num">
             {grade.value}
           </span>
           <div className="min-w-0">

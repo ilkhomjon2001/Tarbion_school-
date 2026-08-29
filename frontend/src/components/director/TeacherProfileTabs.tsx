@@ -61,15 +61,15 @@ function StatsTab({ stats }: { stats: TeacherStats }) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card>
           <p className="text-sm text-foreground-muted">Oʻrtacha baho</p>
-          <p className="mt-1 text-2xl font-bold text-brand-dark">{stats.averageGradeGiven || "—"}</p>
+          <p className="mt-1 text-2xl font-bold text-brand-dark num">{stats.averageGradeGiven || "—"}</p>
         </Card>
         <Card>
           <p className="text-sm text-foreground-muted">Davomat belgilash</p>
-          <p className="mt-1 text-2xl font-bold text-foreground">{stats.attendanceMarkingRate}%</p>
+          <p className="mt-1 text-2xl font-bold text-foreground num">{stats.attendanceMarkingRate}%</p>
         </Card>
         <Card>
           <p className="text-sm text-foreground-muted">Oʻtilgan darslar</p>
-          <p className="mt-1 text-2xl font-bold text-foreground">{stats.lessonsConducted}</p>
+          <p className="mt-1 text-2xl font-bold text-foreground num">{stats.lessonsConducted}</p>
         </Card>
       </div>
 

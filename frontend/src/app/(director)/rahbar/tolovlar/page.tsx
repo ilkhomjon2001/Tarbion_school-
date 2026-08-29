@@ -21,7 +21,7 @@ export default function PaymentsPage() {
   return (
     <div className="flex flex-col gap-5 p-4 md:p-6">
       <div>
-        <h1 className="text-xl font-bold text-foreground">Toʻlovlar holati</h1>
+        <h1 className="text-h2 font-bold text-foreground">Toʻlovlar holati</h1>
         <p className="text-sm text-foreground-muted">Oʻquvchilar boʻyicha toʻlov monitoringi</p>
       </div>
       <Suspense fallback={<Card className="h-96 animate-pulse" />}>
@@ -42,7 +42,7 @@ async function PaymentsSection() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card>
           <p className="text-sm text-foreground-muted">Bu oy tushum</p>
-          <p className="mt-1 text-xl font-bold text-foreground">{formatSom(total)}</p>
+          <p className="mt-1 text-xl font-bold text-foreground num">{formatSom(total)}</p>
         </Card>
         <Card>
           <p className="text-sm text-foreground-muted">Kechikkan toʻlovlar</p>

@@ -99,7 +99,7 @@ export function StudentCard({
                     />
                   </span>
                   <span className={`text-lg font-semibold ${atRisk ? "text-danger" : ""}`}>
-                    {stats.percent}%
+                    <span className="num">{stats.percent}%</span>
                   </span>
                 </div>
                 {atRisk && (

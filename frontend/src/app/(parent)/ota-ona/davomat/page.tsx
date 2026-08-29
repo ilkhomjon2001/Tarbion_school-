@@ -56,7 +56,7 @@ export default function ParentAttendancePage() {
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <p className="font-semibold">Avgust 2026</p>
           <p
-            className={`text-2xl font-bold ${summary.percent >= 90 ? "text-success" : "text-warning"}`}
+            className={`text-2xl font-bold num ${summary.percent >= 90 ? "text-success" : "text-warning"}`}
           >
             {summary.percent}%
           </p>

@@ -243,7 +243,7 @@ function Tile({
       className="block rounded-xl border border-border bg-surface p-4 transition-colors hover:border-brand/40 hover:bg-surface-muted/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
     >
       <p className="text-xs uppercase tracking-wide text-foreground-muted">{label}</p>
-      <p className={`mt-1 text-2xl font-semibold ${tone}`}>{value}</p>
+      <p className={`mt-1 text-2xl font-semibold num ${tone}`}>{value}</p>
       <p className="mt-0.5 truncate text-xs text-foreground-muted">{hint}</p>
     </Link>
   );

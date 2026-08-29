@@ -116,7 +116,7 @@ async function GreetingCard() {
   const firstName = student.fullName.split(" ")[0];
   return (
     <div>
-      <h1 className="font-serif text-2xl font-bold text-foreground sm:text-3xl">
+      <h1 className="text-h1 font-bold text-foreground">
         Assalomu alaykum, {student.fullName}
       </h1>
       <p className="mt-1 text-sm text-foreground-muted">

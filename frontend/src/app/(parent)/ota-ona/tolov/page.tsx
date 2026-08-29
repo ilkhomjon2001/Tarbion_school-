@@ -31,7 +31,7 @@ export default function ParentPaymentPage() {
         >
           {hasDebt ? "Toʻlanishi kerak" : "Qarzdorlik yoʻq"}
         </p>
-        <p className={`mt-1 text-3xl font-bold ${hasDebt ? "text-danger" : "text-success"}`}>
+        <p className={`mt-1 text-3xl font-bold num ${hasDebt ? "text-danger" : "text-success"}`}>
           {hasDebt ? formatSom(payment.balance) : "Toʻlangan"}
         </p>
         <p className={`mt-1 text-sm ${hasDebt ? "text-danger/85" : "text-success/85"}`}>
@@ -56,13 +56,13 @@ export default function ParentPaymentPage() {
           <dt className="text-xs uppercase tracking-wide text-foreground-muted">
             Oylik toʻlov
           </dt>
-          <dd className="mt-1 text-xl font-semibold">{formatSom(payment.monthlyFee)}</dd>
+          <dd className="mt-1 text-xl font-semibold num">{formatSom(payment.monthlyFee)}</dd>
         </div>
         <div className="rounded-xl border border-border bg-surface p-4">
           <dt className="text-xs uppercase tracking-wide text-foreground-muted">
             Oʻquvchi
           </dt>
-          <dd className="mt-1 text-xl font-semibold">
+          <dd className="mt-1 text-xl font-semibold num">
             {child.shortName}{" "}
             <span className="text-sm font-normal text-foreground-muted">
               · {child.className}

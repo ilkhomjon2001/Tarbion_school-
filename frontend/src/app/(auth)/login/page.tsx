@@ -83,7 +83,7 @@ export default function LoginPage() {
       {/* --- Oʻng: forma --- */}
       <div className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6">
         <div className="w-full max-w-[400px]">
-          <h1 className="text-2xl font-semibold">Xush kelibsiz</h1>
+          <h1 className="text-h2 font-bold">Xush kelibsiz</h1>
           <p className="mt-1 text-sm text-foreground-muted">
             Hisobingizga kirish uchun maʼlumotlarni kiriting.
           </p>

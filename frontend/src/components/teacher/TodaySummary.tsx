@@ -106,7 +106,7 @@ export function TodaySummary({ lessons }: { lessons: TeacherLesson[] | null }) {
               href={item.href}
               className={`flex h-full items-center gap-3 rounded-xl border px-4 py-3.5 transition-opacity hover:opacity-85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${tone[item.tone]}`}
             >
-              <span className="text-2xl font-bold tabular-nums">{item.count}</span>
+              <span className="text-2xl font-bold num">{item.count}</span>
               <span className="min-w-0 flex-1 text-sm font-medium leading-snug">
                 {item.label}
               </span>

@@ -136,7 +136,7 @@ export default function TeacherTodayPage() {
             <div className="mt-4">
               <div className="flex items-center justify-between text-xs text-foreground-muted">
                 <span>Davomat koʻrsatkichi</span>
-                <span>{Math.round((marked / total) * 100)}%</span>
+                <span className="num">{Math.round((marked / total) * 100)}%</span>
               </div>
               <div
                 role="progressbar"

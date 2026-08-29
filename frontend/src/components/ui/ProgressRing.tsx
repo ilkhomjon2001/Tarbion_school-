@@ -42,7 +42,7 @@ export function ProgressRing({
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-bold text-foreground">{clamped}%</span>
+        <span className="text-2xl font-bold text-foreground num">{clamped}%</span>
         <span className="text-[11px] text-foreground-muted">{label}</span>
       </div>
     </div>

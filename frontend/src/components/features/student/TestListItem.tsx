@@ -23,7 +23,7 @@ export function TestListItem({ test }: { test: TestItem }) {
       </div>
       {test.lastScore !== undefined ? (
         <Badge tone={test.lastScore >= test.passScore ? "success" : "danger"}>
-          {test.lastScore}%
+          <span className="num">{test.lastScore}%</span>
         </Badge>
       ) : exhausted ? (
         <Badge tone="neutral">Tugagan</Badge>

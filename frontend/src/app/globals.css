@@ -21,6 +21,37 @@
   --color-danger-tint: #fbeaea;
   --color-info: #1d4ed8;
   --color-info-tint: #e8eefc;
+
+  /* Shrift stacklari. Manba oʻzgaruvchilari (--font-inter, --font-onest)
+     layout.tsx da next/font orqali oʻrnatiladi — OS shriftiga tayanmaymiz,
+     chunki "Segoe UI" faqat Windowsda bor va har mashinada boshqacha
+     koʻrinardi.
+
+     Stacklar aynan shu yerda, `:root` da turadi: `@theme inline` tokenni
+     CSS oʻzgaruvchisi sifatida chiqarmaydi, faqat utilita ichiga
+     koʻchiradi. Base qatlami esa oʻzgaruvchiga murojaat qiladi. */
+  --font-sans-stack: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display-stack: var(--font-onest), var(--font-inter), ui-sans-serif, sans-serif;
+
+  /* Type shkalasi. Sarlavha oʻlchamlari shu yerdan olinadi, komponentda
+     ixtiyoriy text-* yozilmaydi. */
+  --text-h1: clamp(1.75rem, 4vw, 2.5rem);
+  --text-h1--line-height: 1.15;
+  --text-h1--letter-spacing: -0.02em;
+
+  --text-h2: 1.5rem;
+  --text-h2--line-height: 1.2;
+  --text-h2--letter-spacing: -0.01em;
+
+  --text-h3: 1.25rem;
+  --text-h3--line-height: 1.3;
+
+  --text-body: 1rem;
+  --text-body--line-height: 1.6;
+
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.4;
+  --text-caption--letter-spacing: 0.02em;
 }
 
 @theme inline {
@@ -45,11 +76,64 @@
   --color-info: var(--color-info);
   --color-info-tint: var(--color-info-tint);
 
-  --font-sans: "Segoe UI", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-serif), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-sans-stack);
+  --font-display: var(--font-display-stack);
+
+  --text-h1: var(--text-h1);
+  --text-h1--line-height: var(--text-h1--line-height);
+  --text-h1--letter-spacing: var(--text-h1--letter-spacing);
+
+  --text-h2: var(--text-h2);
+  --text-h2--line-height: var(--text-h2--line-height);
+  --text-h2--letter-spacing: var(--text-h2--letter-spacing);
+
+  --text-h3: var(--text-h3);
+  --text-h3--line-height: var(--text-h3--line-height);
+
+  --text-body: var(--text-body);
+  --text-body--line-height: var(--text-body--line-height);
+
+  --text-caption: var(--text-caption);
+  --text-caption--line-height: var(--text-caption--line-height);
+  --text-caption--letter-spacing: var(--text-caption--letter-spacing);
 }
 
-body {
-  background: var(--color-background);
-  color: var(--color-foreground);
+/* Raqamlar ustma-ust tushishi uchun — jadval, baho, foiz, summa.
+   Jadvallarda avtomatik (base qatlamida), qolgan joyda shu utilita. */
+@utility num {
+  font-variant-numeric: tabular-nums;
+}
+
+@layer base {
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+  }
+
+  /* Sarlavha oilasi bitta joyda belgilanadi. Komponentdagi text-*
+     utilitalari bu qoidadan ustun turadi — mavjud oʻlchamlar buzilmaydi. */
+  h1, h2, h3 {
+    font-family: var(--font-display-stack);
+  }
+  h1 {
+    font-size: var(--text-h1);
+    line-height: var(--text-h1--line-height);
+    letter-spacing: var(--text-h1--letter-spacing);
+  }
+  h2 {
+    font-size: var(--text-h2);
+    line-height: var(--text-h2--line-height);
+    letter-spacing: var(--text-h2--letter-spacing);
+  }
+  h3 {
+    font-size: var(--text-h3);
+    line-height: var(--text-h3--line-height);
+  }
+
+  /* Har qanday jadvaldagi raqam ustunlari tekis tursin. */
+  table {
+    font-variant-numeric: tabular-nums;
+  }
 }

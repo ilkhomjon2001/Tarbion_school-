@@ -31,7 +31,7 @@ export default async function TeacherProfilePage({
             {teacher.avatarInitials}
           </span>
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-bold text-foreground">{teacher.fullName}</h1>
+            <h1 className="truncate text-h2 font-bold text-foreground">{teacher.fullName}</h1>
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground-muted">
               <span>{teacher.subjects.join(", ")}</span>
               <span>{teacher.phone}</span>

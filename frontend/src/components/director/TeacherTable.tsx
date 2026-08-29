@@ -51,7 +51,7 @@ export function TeacherTable({
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Ustozlar roʻyxati</h1>
+          <h1 className="text-h2 font-bold text-foreground">Ustozlar roʻyxati</h1>
           <p className="text-sm text-foreground-muted">
             Maktabdagi barcha oʻqituvchilarni boshqarish va kuzatish
           </p>

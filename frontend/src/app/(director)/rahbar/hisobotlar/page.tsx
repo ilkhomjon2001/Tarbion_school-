@@ -7,7 +7,7 @@ export default function ReportsPage() {
   return (
     <div className="flex flex-col gap-5 p-4 md:p-6">
       <div>
-        <h1 className="text-xl font-bold text-foreground">Hisobotlar va analitika</h1>
+        <h1 className="text-h2 font-bold text-foreground">Hisobotlar va analitika</h1>
         <p className="text-sm text-foreground-muted">
           Baholar, davomat va fanlar boʻyicha umumiy koʻrsatkichlar
         </p>

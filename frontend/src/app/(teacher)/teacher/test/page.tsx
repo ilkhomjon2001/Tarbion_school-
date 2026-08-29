@@ -151,7 +151,7 @@ export default function TestsPage() {
                         <span
                           className={`font-medium ${test.averagePercent >= 60 ? "text-success" : "text-danger"}`}
                         >
-                          {test.averagePercent}%
+                          <span className="num">{test.averagePercent}%</span>
                         </span>
                       </span>
                     )}

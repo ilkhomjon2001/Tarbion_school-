@@ -10,7 +10,7 @@ export default function DirectorHomePage() {
   return (
     <div className="flex flex-col gap-5 p-4 md:p-6">
       <div>
-        <h1 className="text-xl font-bold text-foreground">Umumiy koʻrsatkichlar</h1>
+        <h1 className="text-h2 font-bold text-foreground">Umumiy koʻrsatkichlar</h1>
         <p className="text-sm text-foreground-muted">Maktab boʻyicha bugungi holat</p>
       </div>
 
@@ -76,7 +76,7 @@ function KpiCard({
   value,
   note,
   noteTone = "neutral",
-  valueClassName = "text-2xl",
+  valueClassName = "text-2xl num",
 }: {
   icon: React.ReactNode;
   label: string;

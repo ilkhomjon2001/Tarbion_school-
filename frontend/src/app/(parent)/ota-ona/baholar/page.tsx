@@ -42,7 +42,7 @@ export default function ParentGradesPage() {
         <p className="text-xs uppercase tracking-wide text-foreground-muted">
           Umumiy oʻrtacha
         </p>
-        <p className="mt-1 text-3xl font-bold text-brand-dark">{overall}</p>
+        <p className="mt-1 text-3xl font-bold text-brand-dark num">{overall}</p>
         <p className="mt-0.5 text-sm text-foreground-muted">
           {subjects.length} ta fan · joriy chorak
         </p>
