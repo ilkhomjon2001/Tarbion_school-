@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
+import { Lora } from "next/font/google";
 import "./globals.css";
+
+const lora = Lora({
+  subsets: ["latin"],
+  variable: "--font-serif",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Tarbion — Oʻquvchi kabineti",
@@ -12,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="uz" className="h-full antialiased">
+    <html lang="uz" className={`h-full antialiased ${lora.variable}`}>
       <body className="min-h-full font-sans">{children}</body>
     </html>
   );

@@ -26,7 +26,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Asosiy navigatsiya"
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       <ul className="mx-auto flex max-w-3xl overflow-x-auto">
         {NAV_ITEMS.map(({ href, label, icon: ItemIcon }) => {
