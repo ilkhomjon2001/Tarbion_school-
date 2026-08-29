@@ -355,6 +355,7 @@ export const parentRequests: ParentRequest[] = [
     message: "Oshxona narxlari qachondan oshadi, oldindan xabar berilsinmi?",
     createdAt: "2026-08-29 08:10",
     status: "new",
+    replies: [],
   },
   {
     id: "r-2",
@@ -365,6 +366,14 @@ export const parentRequests: ParentRequest[] = [
     message: "Sentabr toʻlovini 5 kunga kechiktirish mumkinmi?",
     createdAt: "2026-08-28 17:45",
     status: "in_progress",
+    replies: [
+      {
+        id: "r-2-1",
+        author: "maktab",
+        text: "Assalomu alaykum! Bu masalani buxgalteriya bilan aniqlashtirib, bugun kuningizda javob beramiz.",
+        createdAt: "2026-08-28 18:05",
+      },
+    ],
   },
   {
     id: "r-3",
@@ -375,6 +384,20 @@ export const parentRequests: ParentRequest[] = [
     message: "Farzandimning payshanba kungi jadvali juda zich, koʻrib chiqsangiz.",
     createdAt: "2026-08-26 11:20",
     status: "closed",
+    replies: [
+      {
+        id: "r-3-1",
+        author: "maktab",
+        text: "Payshanba kungi jadval qayta koʻrib chiqildi, endi bir para kamaytirildi.",
+        createdAt: "2026-08-26 15:30",
+      },
+      {
+        id: "r-3-2",
+        author: "ota-ona",
+        text: "Rahmat, yordamingiz uchun!",
+        createdAt: "2026-08-26 16:00",
+      },
+    ],
   },
 ];
 
