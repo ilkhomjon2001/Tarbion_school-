@@ -135,6 +135,14 @@ Bular eng ko'p xato qilinadigan joylar. Har birining sababi bor.
 
 ---
 
+## Jamoada ishlash
+
+Loyiha ikki kishi tomonidan qilinyapti. Branch, task olish, migratsiya
+konflikti va PR tartibi — `TEAMWORK.md` da. Kod yozishdan oldin shuni ham
+o'qib chiq.
+
+---
+
 ## Sen qanday ishlaysan
 
 1. `TASKS.md` dan **bitta** task ol. Bir vaqtda bir nechta taskni boshlama.
