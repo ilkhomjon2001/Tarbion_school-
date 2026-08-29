@@ -66,6 +66,14 @@ const WEEKLY_PATTERN: PatternEntry[] = [
   { weekday: 6, period: 2, className: "9-B", subject: "Matematika", room: "204-xona" },
   { weekday: 6, period: 4, className: "10-A", subject: "Geometriya", room: "301-xona" },
   { weekday: 6, period: 6, className: "11-A", subject: "Algebra", room: "204-xona" },
+
+  // Robototexnika — dars rejalar bazasida kontenti tayyor boʻlgan yagona fan.
+  // 7-A dastur boʻyicha 2-yilda (ESP32), 6-B 1-yilda (elektr asoslari).
+  { weekday: 1, period: 5, className: "7-A", subject: "Robototexnika", room: "IT-xona" },
+  { weekday: 4, period: 5, className: "7-A", subject: "Robototexnika", room: "IT-xona" },
+  { weekday: 2, period: 2, className: "6-B", subject: "Robototexnika", room: "IT-xona" },
+  { weekday: 5, period: 2, className: "6-B", subject: "Robototexnika", room: "IT-xona" },
+  { weekday: 6, period: 5, className: "7-A", subject: "Robototexnika", room: "IT-xona" },
 ];
 
 /** Taʼtil kunlari — bu sanalarda dars boʻlmaydi (T-012). */
@@ -136,6 +144,16 @@ export const CLASS_COLORS: Record<string, { block: string; dot: string }> = {
   "11-A": { block: "bg-brand text-brand-foreground", dot: "bg-brand" },
   "9-B": { block: "bg-info text-brand-foreground", dot: "bg-info" },
   "10-A": { block: "bg-warning text-brand-foreground", dot: "bg-warning" },
+  // Toʻldirilgan emas, konturli — mavjud tokenlar bilan beshta sinfni
+  // ajratish uchun. Yangi xom hex qoʻshilmaydi (CLAUDE.md).
+  "7-A": {
+    block: "bg-brand-tint text-brand-dark ring-1 ring-inset ring-brand/40",
+    dot: "bg-brand-tint ring-1 ring-inset ring-brand/50",
+  },
+  "6-B": {
+    block: "bg-info-tint text-info ring-1 ring-inset ring-info/40",
+    dot: "bg-info-tint ring-1 ring-inset ring-info/50",
+  },
 };
 
 export const FALLBACK_COLOR = {
