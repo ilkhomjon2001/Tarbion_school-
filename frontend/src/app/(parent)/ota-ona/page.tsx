@@ -5,7 +5,6 @@ import { useMemo } from "react";
 
 import { ParentShell } from "@/components/parent/ParentShell";
 import {
-  ANNOUNCEMENTS,
   attendanceForMonth,
   formatSom,
   HOMEWORK,
@@ -15,6 +14,11 @@ import {
   TODAY,
   TODAY_LABEL,
 } from "@/lib/parent/data";
+import {
+  newsForClass,
+  NEWS_KIND_LABELS,
+  NEWS_KIND_TONE,
+} from "@/lib/parent/news";
 import { useChild } from "@/lib/parent/useChild";
 
 /**
@@ -39,6 +43,7 @@ export default function ParentHomePage() {
   );
 
   const grades = RECENT_GRADES[child.id] ?? [];
+  const news = useMemo(() => newsForClass(child.className), [child.className]);
   const payment = PAYMENTS[child.id];
   const pendingHw = (HOMEWORK[child.id] ?? []).filter(
     (h) => h.status === "assigned" || h.status === "late",
@@ -166,23 +171,46 @@ export default function ParentHomePage() {
           </ul>
         </section>
 
-        {/* --- Eʼlonlar (OTA-08) --- */}
+        {/* --- Eʼlonlar va tadbirlar (OTA-08) --- */}
         <section>
-          <h2 className="mb-2.5 text-sm font-semibold">Eʼlonlar</h2>
+          <div className="mb-2.5 flex items-center justify-between">
+            <h2 className="text-sm font-semibold">Eʼlonlar va tadbirlar</h2>
+            <Link
+              href="/ota-ona/elonlar"
+              className="text-sm text-brand-dark underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+            >
+              Barchasi
+            </Link>
+          </div>
+
           <ul className="space-y-3">
-            {ANNOUNCEMENTS.slice(0, 3).map((a) => (
+            {news.slice(0, 3).map((a) => (
               <li
                 key={a.id}
                 className={`rounded-xl border bg-surface p-4 ${
                   a.important ? "border-warning/40" : "border-border"
                 }`}
               >
-                {a.important && (
-                  <span className="mb-1.5 inline-flex items-center rounded-full bg-warning-tint px-2.5 py-0.5 text-xs font-medium text-warning">
-                    Muhim
+                <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${NEWS_KIND_TONE[a.kind]}`}
+                  >
+                    {NEWS_KIND_LABELS[a.kind]}
                   </span>
-                )}
+                  {a.important && (
+                    <span className="rounded-full bg-warning-tint px-2.5 py-0.5 text-xs font-medium text-warning">
+                      Muhim
+                    </span>
+                  )}
+                </div>
                 <p className="font-medium">{a.title}</p>
+                {a.eventDate && (
+                  <p className="mt-1 text-sm text-info">
+                    {a.eventDate}
+                    {a.eventTime && `, ${a.eventTime}`}
+                    {a.place && ` · ${a.place}`}
+                  </p>
+                )}
                 <p className="mt-1 line-clamp-2 text-sm text-foreground-muted">{a.body}</p>
                 <p className="mt-2 text-xs text-foreground-muted">
                   {a.from} · {a.createdAt}

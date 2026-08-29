@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { logout } from "@/lib/auth";
 import { CHILDREN, type Child } from "@/lib/parent/data";
+import { unreadCount } from "@/lib/parent/news";
 
 /**
  * Ota-ona kabineti qobigʻi.
@@ -18,12 +20,25 @@ import { CHILDREN, type Child } from "@/lib/parent/data";
  * boʻlgan ota-ona uni birinchi qidiradi.
  */
 
+/**
+ * Telefonda pastki menyu — kundalik 5 ta amal.
+ *
+ * Eʼlonlar bu yerda YOʻQ: 360px da 6 ta band sigʻmaydi (har biriga 60px,
+ * "Bosh sahifa" yozuvi kesilib ketadi). Eʼlonlarga sarlavhadagi
+ * qoʻngʻiroq belgisi orqali kiriladi — oʻqilmagan xabar soni bilan.
+ */
 const NAV = [
   { href: "/ota-ona", label: "Bosh sahifa", icon: HomeIcon, exact: true },
   { href: "/ota-ona/davomat", label: "Davomat", icon: CalendarIcon },
   { href: "/ota-ona/baholar", label: "Baholar", icon: StarIcon },
   { href: "/ota-ona/tolov", label: "Toʻlov", icon: WalletIcon },
   { href: "/ota-ona/murojaat", label: "Murojaat", icon: ChatIcon },
+] as const;
+
+/** Katta ekranda joy yetarli — eʼlonlar ham roʻyxatda. */
+const SIDEBAR_NAV = [
+  ...NAV,
+  { href: "/ota-ona/elonlar", label: "Eʼlonlar", icon: BellIcon },
 ] as const;
 
 export function ParentShell({
@@ -39,6 +54,12 @@ export function ParentShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [unread, setUnread] = useState(0);
+
+  // localStorage faqat brauzerda — shuning uchun effekt ichida.
+  useEffect(() => {
+    setUnread(unreadCount(child.className));
+  }, [child.className, pathname]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -50,7 +71,7 @@ export function ParentShell({
 
         <nav aria-label="Asosiy navigatsiya" className="flex-1 overflow-y-auto px-3 py-2">
           <ul className="flex flex-col gap-1">
-            {NAV.map(({ href, label, icon: Icon, ...rest }) => {
+            {SIDEBAR_NAV.map(({ href, label, icon: Icon, ...rest }) => {
               const exact = "exact" in rest && rest.exact;
               const active = exact ? pathname === href : pathname.startsWith(href);
               return (
@@ -103,6 +124,22 @@ export function ParentShell({
             <h1 className="min-w-0 flex-1 truncate text-base font-semibold lg:text-lg">
               {title}
             </h1>
+
+            {/* Eʼlonlar — telefonda shu yerdan kiriladi (pastki menyuda joy yoʻq) */}
+            <Link
+              href="/ota-ona/elonlar"
+              aria-label={
+                unread > 0 ? `Eʼlonlar, ${unread} ta oʻqilmagan` : "Eʼlonlar"
+              }
+              className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand lg:hidden"
+            >
+              <BellIcon />
+              {unread > 0 && (
+                <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-brand-foreground">
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              )}
+            </Link>
           </div>
 
           {/* OTA-02: farzand almashtirgich */}
@@ -218,6 +255,15 @@ function ChatIcon() {
   return (
     <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8Z" />
+    </svg>
+  );
+}
+
+function BellIcon() {
+  return (
+    <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.7 21a2 2 0 0 1-3.4 0" />
     </svg>
   );
 }
