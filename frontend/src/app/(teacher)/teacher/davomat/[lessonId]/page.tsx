@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { TeacherShell } from "@/components/teacher/TeacherShell";
 import { TopicField } from "@/components/teacher/TopicField";
+import { GradeBook } from "@/components/teacher/GradeBook";
 import { hasPlan, planFor } from "@/lib/teacher/plan";
 import { canGrade } from "@/lib/teacher/roles";
 import { conductedCount, getAttendance, saveAttendance } from "@/lib/teacher/store";
@@ -59,11 +60,14 @@ export default function AttendancePage() {
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
-  // Davomat saqlangach jurnal oʻzi ochiladi — ustoz darsdan keyin
-  // baho qoʻyishga oʻtadi, bu eng koʻp takrorlanadigan yoʻl. Faqat
-  // oʻsha fandan baho qoʻyish huquqi bor ustoz uchun (roles.ts).
-  const [openingJournal, setOpeningJournal] = useState(false);
-  const redirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /**
+   * Davomat saqlangach jurnal SHU sahifada ochiladi — ustoz boshqa
+   * ekranga oʻtmaydi. Ish ketma-ketligi bitta oynada: mavzu → davomat →
+   * baho. Faqat oʻsha fandan baho qoʻyish huquqi bor ustozga (roles.ts).
+   */
+  const [journalOpen, setJournalOpen] = useState(false);
+  const [savedOnce, setSavedOnce] = useState(false);
+  const journalRef = useRef<HTMLDivElement>(null);
 
   // Oʻtilgan mavzu — rejadan avtomatik toʻladi, ustoz tahrirlay oladi.
   const [topic, setTopic] = useState("");
@@ -171,29 +175,20 @@ export default function AttendancePage() {
       new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }),
     );
 
-    // Jurnal shu sinf va shu fanga ochiladi. Bir soniya kutamiz —
-    // ustoz "saqlandi" ni koʻrsin va xohlasa toʻxtata olsin.
+    // Baho qoʻyish huquqi bor ustozga jurnal shu yerda ochiladi.
     if (lesson && canGrade(lesson.className, lesson.subject)) {
-      setOpeningJournal(true);
-      redirectTimer.current = setTimeout(() => {
-        router.push(
-          `/teacher/jurnal?sinf=${encodeURIComponent(lesson.className)}`
-          + `&fan=${encodeURIComponent(lesson.subject)}`,
-        );
-      }, 1200);
+      setSavedOnce(true);
+      setJournalOpen(true);
     }
-  }, [lesson, params.lessonId, planIndex, readOnly, router, rows, saving, topic]);
+  }, [lesson, params.lessonId, planIndex, readOnly, rows, saving, topic]);
 
-  /** Ustoz jurnalga oʻtishni bekor qilsa. */
-  const cancelJournal = useCallback(() => {
-    if (redirectTimer.current) clearTimeout(redirectTimer.current);
-    redirectTimer.current = null;
-    setOpeningJournal(false);
-  }, []);
-
-  useEffect(() => () => {
-    if (redirectTimer.current) clearTimeout(redirectTimer.current);
-  }, []);
+  // Jurnal ochilganda unga siljib boramiz — sahifa uzun, ustoz
+  // qayerga qarashini oʻzi izlab oʻtirmasin.
+  useEffect(() => {
+    if (journalOpen) {
+      journalRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [journalOpen]);
 
   // --- Klaviatura yorliqlari ---
   useEffect(() => {
@@ -463,32 +458,27 @@ export default function AttendancePage() {
               </dl>
 
               <div className="flex flex-wrap items-center gap-3">
-                {openingJournal ? (
-                  <span
-                    role="status"
-                    className="inline-flex items-center gap-2 text-sm text-success"
-                  >
+                {savedAt && !dirty && (
+                  <span className="inline-flex items-center gap-1.5 text-sm text-success">
                     <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M4 12l6 6L20 6" />
                     </svg>
-                    Saqlandi · jurnal ochilmoqda…
-                    <button
-                      type="button"
-                      onClick={cancelJournal}
-                      className="rounded-lg border border-border px-2.5 py-1 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-                    >
-                      Shu yerda qolish
-                    </button>
+                    Saqlandi · {savedAt}
                   </span>
-                ) : (
-                  <>
-                    {savedAt && !dirty && (
-                      <span className="text-sm text-success">Saqlandi · {savedAt}</span>
-                    )}
-                    {dirty && (
-                      <span className="text-sm text-warning">Saqlanmagan oʻzgarish bor</span>
-                    )}
-                  </>
+                )}
+                {dirty && (
+                  <span className="text-sm text-warning">Saqlanmagan oʻzgarish bor</span>
+                )}
+
+                {/* Saqlangach jurnal shu yerdan ochiladi. */}
+                {savedOnce && !journalOpen && (
+                  <button
+                    type="button"
+                    onClick={() => setJournalOpen(true)}
+                    className="inline-flex h-11 items-center gap-2 rounded-lg border border-brand px-4 text-sm font-semibold text-brand-dark transition-colors hover:bg-brand-tint focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                  >
+                    Jurnalni ochish
+                  </button>
                 )}
                 {!readOnly && (
                   <button
@@ -510,6 +500,44 @@ export default function AttendancePage() {
               </p>
             )}
           </div>
+
+          {/* --- Jurnal: shu darsga baho qoʻyish (JUR-01) ---
+              Davomat saqlangach shu yerda ochiladi. Ustoz boshqa ekranga
+              oʻtmaydi: mavzu, davomat va baho bitta oynada. */}
+          {journalOpen && lesson && (
+            <section
+              ref={journalRef}
+              className="mt-6 scroll-mt-20 rounded-xl border border-brand/30 bg-surface p-4"
+            >
+              <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="text-base font-semibold">
+                    Jurnal — {lesson.className} · {lesson.subject}
+                  </h2>
+                  <p className="mt-0.5 text-sm text-foreground-muted">
+                    {topic.trim()
+                      ? <>Mavzu: <span className="text-foreground">{topic.trim()}</span></>
+                      : "Mavzu biriktirilmagan — yuqoridagi maydonga yozing."}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setJournalOpen(false)}
+                  className="inline-flex h-9 shrink-0 items-center rounded-lg border border-border px-3 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                >
+                  Yopish
+                </button>
+              </div>
+
+              <GradeBook
+                className={lesson.className}
+                subject={lesson.subject}
+                students={rows}
+                editableDate={lesson.date}
+                showSummary={false}
+              />
+            </section>
+          )}
         </>
       )}
     </TeacherShell>

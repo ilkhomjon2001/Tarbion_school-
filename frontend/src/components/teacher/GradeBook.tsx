@@ -39,12 +39,28 @@ export function GradeBook({
   subject,
   students,
   readOnly = false,
+  editableDate = null,
+  showSummary = true,
 }: {
   className: string;
   subject: string;
   students: AttendanceRow[];
   /** Sinf rahbari boshqa ustozning fanini faqat koʻradi. */
   readOnly?: boolean;
+  /**
+   * Faqat shu sanaga baho qoʻyish mumkin, qolgan kunlar qulflangan.
+   * Ustoz oʻtgan kungi bahoni keyinchalik oʻzgartira olmaydi — baho
+   * qoʻyilgan kuni qoʻyiladi. Tuzatish kerak boʻlsa administrator
+   * orqali, audit yozuvi bilan (CLAUDE.md 4-qoida).
+   * `null` — barcha ustunlar ochiq (eski xatti-harakat).
+   */
+  editableDate?: string | null;
+  /**
+   * Oʻrtacha va Chorak ustunlari. Fan ustoziga koʻrsatilmaydi: chorak
+   * bahosini u qoʻymaydi, oraliq oʻrtacha esa hali toʻliq boʻlmagan
+   * maʼlumot ustidan xulosa — chalgʻitadi.
+   */
+  showSummary?: boolean;
 }) {
   // Soddalashtirildi: 5 ballik sukut boʻyicha. Maktab 100 ballikka
   // oʻtsa, bu sozlama admin panelidan keladi — har ustoz har safar
@@ -68,13 +84,27 @@ export function GradeBook({
     if (!term) return [];
     const from = new Date(`${term.startsOn}T00:00:00`);
     const to = new Date(`${TODAY}T00:00:00`);
-    return buildLessons(from, to)
+    const list = buildLessons(from, to)
       .filter((l) => l.className === className && l.subject === subject)
       .map((l) => ({ date: l.date, period: l.period }));
-  }, [className, subject]);
+
+    // Jadvalda boʻlmagan dars (almashtirish, qoʻshimcha) uchun ham baho
+    // qoʻyish mumkin boʻlsin — aks holda ustun yoʻqligi bahoni toʻsib qoʻyardi.
+    if (editableDate && !list.some((c) => c.date === editableDate)) {
+      list.push({ date: editableDate, period: 0 });
+      list.sort((a, b) => (a.date < b.date ? -1 : 1));
+    }
+    return list;
+  }, [className, subject, editableDate]);
+
+  /** Shu katakka baho qoʻyish mumkinmi. */
+  function canEdit(date: string): boolean {
+    if (readOnly) return false;
+    return editableDate === null || date === editableDate;
+  }
 
   function put(studentId: string, date: string, value: number | null) {
-    if (readOnly) return;
+    if (!canEdit(date)) return;
     const next = { ...book, [studentId]: { ...(book[studentId] ?? {}) } };
     if (value === null) {
       delete next[studentId][date];
@@ -89,7 +119,7 @@ export function GradeBook({
 
   // Klaviatura: katak tanlangan holda raqam bosish
   useEffect(() => {
-    if (!active || readOnly) return;
+    if (!active || !canEdit(active.date)) return;
     function onKey(e: KeyboardEvent) {
       const t = e.target as HTMLElement | null;
       if (t?.tagName === "INPUT" || t?.tagName === "TEXTAREA") return;
@@ -192,7 +222,11 @@ export function GradeBook({
                 <th
                   key={c.date}
                   scope="col"
-                  className="min-w-[52px] px-1 py-2 text-center text-xs font-medium text-foreground-muted"
+                  className={`min-w-[52px] px-1 py-2 text-center text-xs font-medium ${
+                    c.date === editableDate
+                      ? "bg-brand-tint text-brand-dark"
+                      : "text-foreground-muted"
+                  }`}
                 >
                   <span className="block">{c.date.slice(8)}</span>
                   <span className="block text-[10px] font-normal opacity-70">
@@ -200,24 +234,28 @@ export function GradeBook({
                   </span>
                 </th>
               ))}
-              <th
-                scope="col"
-                className="min-w-[64px] border-l border-border px-2 py-2 text-center text-xs font-medium text-foreground-muted"
-              >
-                Oʻrtacha
-              </th>
-              <th
-                scope="col"
-                className="min-w-[64px] px-2 py-2 text-center text-xs font-medium text-foreground-muted"
-              >
-                Chorak
-              </th>
+              {showSummary && (
+                <>
+                  <th
+                    scope="col"
+                    className="min-w-[64px] border-l border-border px-2 py-2 text-center text-xs font-medium text-foreground-muted"
+                  >
+                    Oʻrtacha
+                  </th>
+                  <th
+                    scope="col"
+                    className="min-w-[64px] px-2 py-2 text-center text-xs font-medium text-foreground-muted"
+                  >
+                    Chorak
+                  </th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
             {students.map((s) => {
               const row = book[s.studentId] ?? {};
-              const avg = termAverage(row, scale);
+              const avg = showSummary ? termAverage(row, scale) : null;
               return (
                 <tr key={s.studentId} className="border-b border-border last:border-0">
                   <th
@@ -231,25 +269,36 @@ export function GradeBook({
                     const g = row[c.date];
                     const isActive =
                       active?.studentId === s.studentId && active?.date === c.date;
+                    const editable = canEdit(c.date);
                     return (
-                      <td key={c.date} className="relative px-1 py-1.5 text-center">
+                      <td
+                        key={c.date}
+                        className={`relative px-1 py-1.5 text-center ${
+                          c.date === editableDate ? "bg-brand-tint/40" : ""
+                        }`}
+                      >
                         <button
                           type="button"
-                          disabled={readOnly}
+                          disabled={!editable}
                           onClick={() =>
                             setActive(isActive ? null : { studentId: s.studentId, date: c.date })
                           }
-                          aria-label={`${s.fullName}, ${c.date}${g ? `: ${g.value}` : " — baho yoʻq"}`}
+                          aria-label={
+                            `${s.fullName}, ${c.date}${g ? `: ${g.value}` : " — baho yoʻq"}`
+                            + (editable ? "" : " (qulflangan)")
+                          }
                           className={`h-8 w-8 rounded-lg text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand ${
                             g
                               ? KIND_TONE[g.kind]
-                              : "text-foreground-muted/40 hover:bg-surface-muted"
-                          } ${isActive ? "ring-2 ring-brand" : ""} ${readOnly ? "cursor-default" : ""}`}
+                              : "text-foreground-muted/40"
+                          } ${editable ? "hover:bg-surface-muted" : "cursor-default"} ${
+                            isActive ? "ring-2 ring-brand" : ""
+                          }`}
                         >
                           {g ? g.value : "·"}
                         </button>
 
-                        {isActive && !readOnly && (
+                        {isActive && editable && (
                           <GradePopover
                             boxRef={popRef}
                             scale={scale}
@@ -264,24 +313,28 @@ export function GradeBook({
                     );
                   })}
 
-                  <td className="border-l border-border px-2 py-1.5 text-center text-foreground-muted">
-                    {avg ? avg.raw.toFixed(1) : "—"}
-                  </td>
-                  <td className="px-2 py-1.5 text-center">
-                    {avg ? (
-                      <span
-                        className={`inline-flex h-7 w-7 items-center justify-center rounded-lg text-sm font-bold ${
-                          scale === 5 && avg.rounded < 3
-                            ? "bg-danger-tint text-danger"
-                            : "bg-brand-tint text-brand-dark"
-                        }`}
-                      >
-                        {avg.rounded}
-                      </span>
-                    ) : (
-                      <span className="text-foreground-muted">—</span>
-                    )}
-                  </td>
+                  {showSummary && (
+                    <>
+                      <td className="border-l border-border px-2 py-1.5 text-center text-foreground-muted">
+                        {avg ? avg.raw.toFixed(1) : "—"}
+                      </td>
+                      <td className="px-2 py-1.5 text-center">
+                        {avg ? (
+                          <span
+                            className={`inline-flex h-7 w-7 items-center justify-center rounded-lg text-sm font-bold ${
+                              scale === 5 && avg.rounded < 3
+                                ? "bg-danger-tint text-danger"
+                                : "bg-brand-tint text-brand-dark"
+                            }`}
+                          >
+                            {avg.rounded}
+                          </span>
+                        ) : (
+                          <span className="text-foreground-muted">—</span>
+                        )}
+                      </td>
+                    </>
+                  )}
                 </tr>
               );
             })}
@@ -292,8 +345,19 @@ export function GradeBook({
       {!readOnly && (
         <p className="mt-2.5 text-xs text-foreground-muted">
           Katakni bosing va <Kbd>1</Kbd>–<Kbd>5</Kbd> raqamini bosing.{" "}
-          <Kbd>Backspace</Kbd> oʻchiradi, <Kbd>Esc</Kbd> yopadi. Chorak bahosi
-          avtomatik hisoblanadi — nazorat ishi joriy bahodan uch barobar ogʻirroq.
+          <Kbd>Backspace</Kbd> oʻchiradi, <Kbd>Esc</Kbd> yopadi.
+          {editableDate && (
+            <>
+              {" "}Baho faqat <span className="font-medium text-foreground">
+                {editableDate.slice(8)}.{editableDate.slice(5, 7)}
+              </span>{" "}
+              ustuniga qoʻyiladi — oʻtgan kunlar qulflangan.
+            </>
+          )}
+          {showSummary && (
+            <> Chorak bahosi avtomatik hisoblanadi — nazorat ishi joriy
+            bahodan uch barobar ogʻirroq.</>
+          )}
         </p>
       )}
     </div>

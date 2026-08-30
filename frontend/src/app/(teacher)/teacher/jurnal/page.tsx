@@ -327,11 +327,16 @@ function JournalContent() {
             </p>
           )}
 
+          {/* Baho faqat bugungi ustunga qoʻyiladi — oʻtgan kunni ustoz
+              keyinchalik oʻzgartira olmaydi. Oʻrtacha va chorak faqat
+              sinf rahbariga: chorak bahosini fan ustozi qoʻymaydi. */}
           <GradeBook
             className={selected}
             subject={subject}
             students={roster}
             readOnly={!editable}
+            editableDate={TODAY}
+            showSummary={homeroom}
           />
         </>
       )}
