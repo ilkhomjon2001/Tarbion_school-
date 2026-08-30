@@ -338,7 +338,7 @@ ustunlar — paralar. Tez to'ldirish uchun.
 
 ## Ota-ona kabineti va bot
 
-### [ ] T-016 · Ota-ona kabineti — bosh sahifa va davomat
+### [~] T-016 · Ota-ona kabineti — bosh sahifa va davomat  ← ISHDA (Ikrom, 31-avgust)
 **TZ:** OTA-01, OTA-02, OTA-03, OTA-08
 **Kerak:** T-013, T-005
 **Frontend:** ✅ tayyor — `/ota-ona` — bugungi davomat va soʻnggi eʼlonlar, farzand almashtirgich. `/ota-ona/davomat` — oylik kalendar, sababli/sababsiz ranglar, oylik foiz. 360px dan ishlaydi.
