@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { AlertTriangleIcon } from "@/components/ui/icons";
+import { hardReload, isStaleBundleError } from "@/lib/errors";
 
 /**
  * Global xatolik chegarasi. Busiz server komponentidagi har qanday xato
@@ -19,6 +20,8 @@ export default function AppError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const stale = isStaleBundleError(error);
+
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -29,13 +32,16 @@ export default function AppError({
         <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-danger-tint text-danger">
           <AlertTriangleIcon className="h-6 w-6" />
         </span>
-        <h1 className="text-h3 font-semibold text-foreground">Xatolik yuz berdi</h1>
+        <h1 className="text-h3 font-semibold text-foreground">
+          {stale ? "Ilova yangilandi" : "Xatolik yuz berdi"}
+        </h1>
         <p className="mt-2 text-sm text-foreground-muted">
-          Sahifani yuklab boʻlmadi. Qayta urinib koʻring — muammo takrorlansa,
-          administratorga xabar bering.
+          {stale
+            ? "Sahifa eski nusxada ochilib qolgan. Sahifani yangilang — barcha maʼlumot joyida."
+            : "Sahifani yuklab boʻlmadi. Qayta urinib koʻring — muammo takrorlansa, administratorga xabar bering."}
         </p>
 
-        {error.digest && (
+        {error.digest && !stale && (
           <p className="num mt-3 rounded-lg bg-surface-muted px-3 py-2 text-xs text-foreground-muted">
             Xato kodi: {error.digest}
           </p>
@@ -44,10 +50,10 @@ export default function AppError({
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <button
             type="button"
-            onClick={reset}
+            onClick={stale ? hardReload : reset}
             className="focus-ring rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-dark"
           >
-            Qayta urinib koʻrish
+            {stale ? "Sahifani yangilash" : "Qayta urinib koʻrish"}
           </button>
           <Link
             href="/"

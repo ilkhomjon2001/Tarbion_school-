@@ -140,3 +140,11 @@ komponentidagi har qanday xato Next.js ning inglizcha standart ekranini
 koʻrsatardi. Endi: ildizda `error.tsx` + `not-found.tsx`, rahbariyat
 boʻlimida oʻz `error.tsx` (sidebar joyida qoladi) va `loading.tsx`.
 Backend ulanganda `console.error` oʻrniga kuzatuv xizmatiga yuboriladi.
+
+## 2026-08-30 · Eski bundle xatosi alohida ajratiladi
+Ilova qayta qurilganda (deploy yoki dev serverni qayta ishga tushirish)
+brauzerda ochiq turgan sahifa eski JS boʻlaklarini soʻrashda davom etadi —
+ular serverda yoʻq va sahifa xatolik chegarasiga tushadi. Bunda `reset()`
+foydasiz: boʻlak qaytib kelmaydi. `lib/errors.ts` shu holatni aniqlaydi
+(ChunkLoadError va shunga oʻxshash xabarlar) va tugmani "Sahifani
+yangilash" ga (`location.reload()`) almashtiradi.
