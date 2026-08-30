@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { GradeTrend, TrendBadge } from "@/components/parent/GradeTrend";
 import { ParentShell } from "@/components/parent/ParentShell";
+import { ExamResultsCard } from "@/components/shared/ExamResultsCard";
 import { HOMEWORK, RECENT_GRADES, SUBJECT_SUMMARY } from "@/lib/parent/data";
 import { useChild } from "@/lib/parent/useChild";
 
@@ -14,7 +15,7 @@ import { useChild } from "@/lib/parent/useChild";
  * tomoni — "oʻqishi qanday ketyapti?".
  */
 
-type View = "subjects" | "homework";
+type View = "subjects" | "exams" | "homework";
 
 const HW_LABELS: Record<string, { text: string; tone: string }> = {
   assigned: { text: "Topshirilmagan", tone: "bg-surface-muted text-foreground-muted" },
@@ -52,6 +53,7 @@ export default function ParentGradesPage() {
         {(
           [
             ["subjects", "Fanlar boʻyicha"],
+            ["exams", "Imtihonlar"],
             ["homework", "Uy vazifasi"],
           ] as const
         ).map(([key, label]) => (
@@ -72,7 +74,13 @@ export default function ParentGradesPage() {
         ))}
       </div>
 
-      {view === "subjects" ? (
+      {view === "exams" ? (
+        <ExamResultsCard
+          className={child.className}
+          identityKey={child.id}
+          title={`${child.shortName} — imtihon natijalari`}
+        />
+      ) : view === "subjects" ? (
         <>
           <ul className="mb-5 space-y-2.5">
             {subjects.map((s) => (

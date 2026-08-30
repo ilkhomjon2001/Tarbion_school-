@@ -178,6 +178,14 @@ export function SunriseIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function PhoneIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M6.5 3.5h3l1.4 3.5-2 1.4a12 12 0 0 0 6.7 6.7l1.4-2 3.5 1.4v3a2 2 0 0 1-2.2 2A17.2 17.2 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2Z" />
+    </Icon>
+  );
+}
+
 export function SettingsIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

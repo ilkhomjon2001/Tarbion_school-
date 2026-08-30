@@ -28,8 +28,13 @@ import {
   type AdminProfile,
   type AdminStudent,
   type AdminSubject,
+  type CallLog,
+  type CallOutcome,
   type ContractEndReason,
   type ContractEvent,
+  type Lead,
+  type LeadSource,
+  type LeadStage,
   type SchoolSettings,
   type UserAccount,
   type Application,
@@ -477,6 +482,149 @@ export function buildContractEvents(students: AdminStudent[]): ContractEvent[] {
   return [...starts, ...leavers].sort((a, b) => b.date.localeCompare(a.date));
 }
 
+// ─────────────────────────── Lidlar ───────────────────────────
+
+const LEAD_CHILDREN = [
+  ["Rahimov Aziz", 2016, "5-A"],
+  ["Toshpoʻlatova Sevara", 2015, "6-B"],
+  ["Xolmatov Doniyor", 2014, "7-A"],
+  ["Nazarova Shahzoda", 2017, "5-B"],
+  ["Ergashev Islom", 2013, "8-A"],
+  ["Qodirova Muslima", 2016, "6-A"],
+  ["Yusupov Behruz", 2015, "6-G"],
+  ["Sobirova Zilola", 2012, "9-A"],
+  ["Anvarov Timur", 2014, "7-B"],
+  ["Islomova Sabina", 2017, "5-A"],
+  ["Mirzayev Alibek", 2013, "8-B"],
+  ["Karimova Nilufar", 2016, "6-B"],
+] as const;
+
+const LEAD_STAGES_SEED: LeadStage[] = [
+  "yangi", "yangi", "yangi",
+  "boglanildi", "boglanildi", "boglanildi",
+  "tashrif", "tashrif",
+  "sinov_kuni", "sinov_kuni",
+  "ariza",
+  "rad",
+];
+
+const LEAD_SOURCES: LeadSource[] = [
+  "instagram", "telegram", "tavsiya", "sayt", "telefon", "tashrif",
+];
+
+const LEAD_NOTES: Record<LeadStage, string> = {
+  yangi: "Instagram orqali yozdi, narx soʻradi",
+  boglanildi: "Telefonda gaplashildi, tashrifga taklif qilindi",
+  tashrif: "Maktabni koʻrdi, oshxona va sport zali yoqdi",
+  sinov_kuni: "Sinov kuniga yozildi, sinfda bir kun boʻladi",
+  ariza: "Hujjatlar toʻplanmoqda",
+  rad: "Boshqa maktabni tanladi",
+};
+
+const LOST_REASONS = [
+  "Narx yuqori keldi",
+  "Boshqa maktabni tanladi",
+  "Uydan uzoq",
+  "Bu yil qoldirdi",
+];
+
+export function buildLeads(): Lead[] {
+  return LEAD_CHILDREN.map((row, i) => {
+    const [childName, birthYear, targetClass] = row;
+    const seed = hash(`lead-${childName}`);
+    const stage = LEAD_STAGES_SEED[i];
+    const family = childName.split(" ")[0];
+    const base = family.endsWith("a") ? family.slice(0, -1) : family;
+    const digits = String(100000000 + ((seed >>> 3) % 899999999));
+    return {
+      id: `lead-${i + 1}`,
+      childName,
+      birthYear,
+      targetClass,
+      parentName: `${base} ${GUARDIAN_FIRST[seed % GUARDIAN_FIRST.length]}`,
+      phone: `+998 ${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5, 7)} ${digits.slice(7, 9)}`,
+      source: LEAD_SOURCES[seed % LEAD_SOURCES.length],
+      stage,
+      note: LEAD_NOTES[stage],
+      ownerName: ADMIN_NAME,
+      // 1–20 sentabr oraligʻida kelgan.
+      createdAt: `2026-09-${String(1 + (seed % 20)).padStart(2, "0")}`,
+      // Keyingi qadam: baʼzilari kechikkan (18-sentabr), baʼzilari oldinda.
+      nextActionAt: `2026-09-${String(16 + ((seed >>> 5) % 10)).padStart(2, "0")}`,
+      lostReason: stage === "rad" ? LOST_REASONS[seed % LOST_REASONS.length] : undefined,
+    };
+  });
+}
+
+// ─────────────────────── Qoʻngʻiroqlar ───────────────────────
+
+const CALL_NOTES = [
+  "Narx va shartnoma shartlari tushuntirildi",
+  "Tashrif kuni kelishildi",
+  "Toʻlov muddati boʻyicha eslatildi",
+  "Farzandining davomati muhokama qilindi",
+  "Maʼlumotnoma tayyorligi haqida xabar berildi",
+  "Sinov kuni natijasi aytildi",
+  "Javob bermadi, keyinroq urinamiz",
+  "Ota-ona majlisi haqida ogohlantirildi",
+];
+
+const CALL_OUTCOMES: CallOutcome[] = [
+  "javob_berdi", "javob_berdi", "javob_berdi",
+  "javob_bermadi", "band", "qayta_qongiroq",
+];
+
+/**
+ * Qoʻngʻiroqlar logi. Yarmi lidlarga, yarmi mavjud oʻquvchilarning
+ * vasiylariga — shu sabab oʻquvchi profilidagi tarixda ham koʻrinadi.
+ */
+export function buildCalls(leads: Lead[], students: AdminStudent[]): CallLog[] {
+  const calls: CallLog[] = [];
+
+  leads.forEach((lead, i) => {
+    // Har bir lidga 1–3 ta qoʻngʻiroq.
+    const seed = hash(`call-${lead.id}`);
+    const count = 1 + (seed % 3);
+    for (let n = 0; n < count; n += 1) {
+      const s = hash(`${lead.id}-${n}`);
+      const outcome = CALL_OUTCOMES[s % CALL_OUTCOMES.length];
+      calls.push({
+        id: `call-l${i}-${n}`,
+        at: `2026-09-${String(10 + ((s >>> 3) % 11)).padStart(2, "0")} ${String(9 + (s % 9)).padStart(2, "0")}:${String((s >>> 7) % 60).padStart(2, "0")}`,
+        direction: n === 0 && lead.source === "telefon" ? "kirish" : "chiqish",
+        phone: lead.phone,
+        contactName: lead.parentName,
+        leadId: lead.id,
+        durationSec: outcome === "javob_berdi" ? 60 + ((s >>> 5) % 420) : (s >>> 5) % 25,
+        outcome,
+        note: CALL_NOTES[s % CALL_NOTES.length],
+        operator: ADMIN_NAME,
+      });
+    }
+  });
+
+  // Mavjud oʻquvchilarning vasiylariga qilingan qoʻngʻiroqlar.
+  [7, 23, 51, 96, 140, 187, 214, 268, 301, 333].forEach((index, n) => {
+    const student = students[index % students.length];
+    const s = hash(`call-s-${student.id}`);
+    const outcome = CALL_OUTCOMES[s % CALL_OUTCOMES.length];
+    calls.push({
+      id: `call-s${n}`,
+      at: `2026-09-${String(12 + ((s >>> 3) % 9)).padStart(2, "0")} ${String(9 + (s % 9)).padStart(2, "0")}:${String((s >>> 9) % 60).padStart(2, "0")}`,
+      direction: s % 3 === 0 ? "kirish" : "chiqish",
+      phone: student.guardianPhone,
+      contactName: student.guardianName,
+      studentId: student.id,
+      durationSec: outcome === "javob_berdi" ? 90 + ((s >>> 5) % 360) : (s >>> 5) % 20,
+      outcome,
+      note: CALL_NOTES[(s >>> 2) % CALL_NOTES.length],
+      operator: ADMIN_NAME,
+    });
+  });
+
+  return calls.sort((a, b) => b.at.localeCompare(a.at));
+}
+
 // ─────────────────────── Foydalanuvchilar ───────────────────────
 
 /**
@@ -489,6 +637,7 @@ export function buildUsers(): UserAccount[] {
     admin: "admin",
     teacher: "teacher",
     psychologist: "teacher",
+    academic: "academic",
   };
 
   const POSITION: Record<string, string> = {
@@ -496,6 +645,7 @@ export function buildUsers(): UserAccount[] {
     admin: "Maktab administratori",
     teacher: "Fan oʻqituvchisi",
     psychologist: "Psixolog",
+    academic: "Oʻquv boʻlimi mudiri",
   };
 
   const accounts: UserAccount[] = STAFF.map((person) => {

@@ -6,6 +6,7 @@ import {
   GraduationCapIcon,
   GridIcon,
   MessageSquareIcon,
+  PhoneIcon,
   SettingsIcon,
   ShieldIcon,
   UsersIcon,
@@ -23,8 +24,10 @@ import {
 export const ADMIN_NAV = [
   { href: "/admin", label: "Bosh sahifa", icon: GridIcon },
   { href: "/admin/oquvchilar", label: "Oʻquvchilar", icon: UsersIcon },
+  { href: "/admin/lidlar", label: "Lidlar", icon: PhoneIcon },
   { href: "/admin/qabul", label: "Qabul", icon: GraduationCapIcon },
   { href: "/admin/shartnomalar", label: "Shartnomalar", icon: ShieldIcon },
+  { href: "/admin/qongiroqlar", label: "Qoʻngʻiroqlar", icon: PhoneIcon },
   { href: "/admin/tolovlar", label: "Toʻlovlar", icon: WalletIcon },
   { href: "/admin/malumotnomalar", label: "Maʼlumotnomalar", icon: ClipboardIcon },
   { href: "/admin/murojaatlar", label: "Murojaatlar", icon: MessageSquareIcon },

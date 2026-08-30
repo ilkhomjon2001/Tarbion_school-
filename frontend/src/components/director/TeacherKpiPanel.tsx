@@ -46,7 +46,8 @@ export function TeacherKpiPanel({ kpi }: { kpi: TeacherKpi }) {
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-foreground">Umumiy KPI</p>
             <p className="text-xs text-foreground-muted">
-              Toʻrtta koʻrsatkich oʻrtachasi ·{" "}
+              <span className="num">{kpi.measuredCount}</span> ta koʻrsatkich
+              oʻrtachasi ({4 - kpi.measuredCount > 0 ? `${4 - kpi.measuredCount} tasi oʻlchanmagan` : "hammasi oʻlchangan"}) ·{" "}
               <span className="num">{kpi.studentsTaught}</span> oʻquvchi ·{" "}
               <span className="num">{kpi.weeklyHours}</span> soat/hafta
               {kpi.homeroomClass ? ` · ${kpi.homeroomClass} sinf rahbari` : ""}
@@ -76,25 +77,33 @@ export function TeacherKpiPanel({ kpi }: { kpi: TeacherKpi }) {
                   )}
                 </div>
                 <div className="shrink-0 text-right">
-                  <span className={`num text-2xl font-bold ${TONE_TEXT[tone]}`}>
-                    {score.score}
-                  </span>
-                  <span
-                    className={`num block text-xs ${
-                      score.delta >= 0 ? "text-success" : "text-danger"
-                    }`}
-                  >
-                    {score.delta >= 0 ? "+" : ""}
-                    {score.delta} oʻtgan chorakka
-                  </span>
+                  {score.available ? (
+                    <>
+                      <span className={`num text-2xl font-bold ${TONE_TEXT[tone]}`}>
+                        {score.score}
+                      </span>
+                      <span
+                        className={`num block text-xs ${
+                          score.delta >= 0 ? "text-success" : "text-danger"
+                        }`}
+                      >
+                        {score.delta >= 0 ? "+" : ""}
+                        {score.delta} oʻtgan chorakka
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-sm font-medium text-foreground-muted">—</span>
+                  )}
                 </div>
               </div>
 
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-muted">
-                <div
-                  className={`bar-fill h-full rounded-full ${TONE_BAR[tone]}`}
-                  style={{ width: `${score.score}%` }}
-                />
+                {score.available && (
+                  <div
+                    className={`bar-fill h-full rounded-full ${TONE_BAR[tone]}`}
+                    style={{ width: `${score.score}%` }}
+                  />
+                )}
               </div>
 
               <p className="mt-2 text-xs text-foreground">{score.detail}</p>
@@ -147,6 +156,7 @@ export function TeacherKpiPanel({ kpi }: { kpi: TeacherKpi }) {
                   <th className="py-2 pr-3">Sinf va fan</th>
                   <th className="py-2 pr-3">Oʻquvchi</th>
                   <th className="py-2 pr-3">Imtihon bali</th>
+                  <th className="py-2 pr-3">«2» olgan</th>
                   <th className="py-2 pr-3">Oʻrtacha baho</th>
                   <th className="py-2">Davomat</th>
                 </tr>
@@ -163,11 +173,29 @@ export function TeacherKpiPanel({ kpi }: { kpi: TeacherKpi }) {
                     </td>
                     <td className="num py-2 pr-3 text-foreground-muted">{row.studentCount}</td>
                     <td className="py-2 pr-3">
-                      <span
-                        className={`num font-semibold ${TONE_TEXT[kpiTone(row.examAverage)]}`}
-                      >
-                        {row.examAverage}
-                      </span>
+                      {row.hasExam ? (
+                        <span
+                          className={`num font-semibold ${TONE_TEXT[kpiTone(row.examAverage)]}`}
+                        >
+                          {row.examAverage}
+                        </span>
+                      ) : (
+                        <span
+                          className="text-xs text-foreground-muted"
+                          title="Bu sinf va fan boʻyicha imtihon oʻtkazilmagan"
+                        >
+                          imtihon yoʻq
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2 pr-3">
+                      {row.hasExam ? (
+                        <span className={`num ${row.failing > 0 ? "text-danger" : "text-foreground-muted"}`}>
+                          {row.failing}
+                        </span>
+                      ) : (
+                        <span className="text-foreground-muted">—</span>
+                      )}
                     </td>
                     <td className="num py-2 pr-3 text-foreground">{row.averageGrade}</td>
                     <td className="py-2">

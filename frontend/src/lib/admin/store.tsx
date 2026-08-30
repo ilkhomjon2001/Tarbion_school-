@@ -14,10 +14,12 @@ import {
   buildAppeals,
   buildApplications,
   buildAuditLog,
+  buildCalls,
   buildClasses,
   buildContractEvents,
   buildConversationNotes,
   buildDocumentRequests,
+  buildLeads,
   buildProfile,
   buildQuarters,
   buildRooms,
@@ -31,9 +33,12 @@ import {
   SURVEY_ROUND,
 } from "@/lib/admin/seed";
 import {
+  CALL_OUTCOME_LABELS,
   CONTRACT_END_REASONS,
   DEBT_ACTION_LABELS,
   DOCUMENT_TYPE_LABELS,
+  LEAD_PIPELINE,
+  LEAD_STAGE_LABELS,
   PAYMENT_METHOD_LABELS,
   type AdminClass,
   type AdminProfile,
@@ -42,12 +47,15 @@ import {
   type Application,
   type AuditAction,
   type AuditEntry,
+  type CallLog,
   type ContractEndReason,
   type ContractEvent,
   type ConversationNote,
   type DebtAction,
   type DebtActionType,
   type DocumentRequest,
+  type Lead,
+  type LeadStage,
   type PaymentEntry,
   type PaymentMethod,
   type Quarter,
@@ -90,6 +98,8 @@ export interface AdminState {
   rooms: Room[];
   quarters: Quarter[];
   contracts: ContractEvent[];
+  leads: Lead[];
+  calls: CallLog[];
   users: UserAccount[];
   /** Rol boʻyicha standart boʻlimlar — super admin oʻzgartira oladi. */
   roleSections: Record<UserRole, string[]>;
@@ -152,6 +162,10 @@ export type AdminEvent =
   | { type: "SET_USER_STATUS"; userId: string; status: "active" | "blocked" }
   | { type: "SET_ROLE_SECTIONS"; role: UserRole; sections: string[] }
   | { type: "UPDATE_SETTINGS"; settings: SchoolSettings }
+  | { type: "ADD_LEAD"; lead: Omit<Lead, "id" | "createdAt" | "ownerName"> }
+  | { type: "MOVE_LEAD"; leadId: string; stage: LeadStage; lostReason?: string }
+  | { type: "UPDATE_LEAD"; leadId: string; patch: Partial<Lead> }
+  | { type: "LOG_CALL"; call: Omit<CallLog, "id" | "operator"> }
   | { type: "CHANGE_CLASS"; studentIds: string[]; className: string }
   | {
       type: "ISSUE_DOCUMENT";
@@ -165,6 +179,7 @@ export type AdminEvent =
 
 function initialState(): AdminState {
   const students = buildStudents();
+  const leads = buildLeads();
   return {
     profile: buildProfile(),
     students,
@@ -181,6 +196,8 @@ function initialState(): AdminState {
     rooms: buildRooms(),
     quarters: buildQuarters(),
     contracts: buildContractEvents(students),
+    leads,
+    calls: buildCalls(leads, students),
     users: buildUsers(),
     roleSections: { ...ROLE_DEFAULT_SECTIONS },
     settings: buildSchoolSettings(),
@@ -751,6 +768,84 @@ function reducer(state: AdminState, event: AdminEvent): AdminState {
         ),
       };
 
+    case "ADD_LEAD": {
+      const lead: Lead = {
+        ...event.lead,
+        id: nextId("lead"),
+        ownerName: state.profile.fullName,
+        createdAt: nowLabel().slice(0, 10),
+      };
+      return {
+        ...state,
+        leads: [lead, ...state.leads],
+        audit: withAudit(
+          state,
+          "lead",
+          `${lead.childName} (${lead.targetClass})`,
+          `Yangi lid · ${lead.parentName} · ${lead.phone}`,
+        ),
+      };
+    }
+
+    case "MOVE_LEAD": {
+      const lead = state.leads.find((l) => l.id === event.leadId);
+      if (!lead) return state;
+      return {
+        ...state,
+        leads: state.leads.map((l) =>
+          l.id === event.leadId
+            ? {
+                ...l,
+                stage: event.stage,
+                lostReason: event.stage === "rad" ? event.lostReason : undefined,
+              }
+            : l,
+        ),
+        audit: withAudit(
+          state,
+          "lead",
+          `${lead.childName} (${lead.targetClass})`,
+          `${LEAD_STAGE_LABELS[lead.stage]} → ${LEAD_STAGE_LABELS[event.stage]}${
+            event.lostReason ? ` · ${event.lostReason}` : ""
+          }`,
+        ),
+      };
+    }
+
+    case "UPDATE_LEAD":
+      return {
+        ...state,
+        leads: state.leads.map((l) =>
+          l.id === event.leadId ? { ...l, ...event.patch } : l,
+        ),
+        audit: withAudit(
+          state,
+          "lead",
+          state.leads.find((l) => l.id === event.leadId)?.childName ?? "Lid",
+          "Maʼlumot yangilandi",
+        ),
+      };
+
+    case "LOG_CALL": {
+      const call: CallLog = {
+        ...event.call,
+        id: nextId("call"),
+        operator: state.profile.fullName,
+      };
+      return {
+        ...state,
+        calls: [call, ...state.calls],
+        audit: withAudit(
+          state,
+          "call",
+          `${call.contactName} · ${call.phone}`,
+          `${call.direction === "kirish" ? "Kirish" : "Chiqish"} · ${
+            CALL_OUTCOME_LABELS[call.outcome]
+          } · ${Math.round(call.durationSec / 60)} daq`,
+        ),
+      };
+    }
+
     case "SET_USER_ROLE": {
       const user = state.users.find((u) => u.id === event.userId);
       if (!user) return state;
@@ -1014,6 +1109,111 @@ export function useContractMonths(fromYear = 2026): ContractMonth[] {
   }, [contracts, fromYear]);
 }
 
+export interface LeadFunnel {
+  stage: LeadStage;
+  count: number;
+  /** Voronkaning boshiga nisbatan ulush, foizda. */
+  percent: number;
+}
+
+/** Lidlar voronkasi — qaysi bosqichda qancha qolgani. */
+export function useLeadFunnel(): { funnel: LeadFunnel[]; lost: number; conversion: number } {
+  const { leads } = useAdmin();
+  return useMemo(() => {
+    const active = leads.filter((l) => l.stage !== "rad");
+    const total = active.length || 1;
+    // Voronka kumulyativ: «tashrif» bosqichidagi lid «bogʻlanildi» dan
+    // ham oʻtgan, shuning uchun undan keyingilar ham sanaladi.
+    const funnel = LEAD_PIPELINE.map((stage, i) => {
+      const count = active.filter(
+        (l) => LEAD_PIPELINE.indexOf(l.stage) >= i,
+      ).length;
+      return { stage, count, percent: Math.round((count / total) * 100) };
+    });
+    const applied = leads.filter((l) => l.stage === "ariza").length;
+    return {
+      funnel,
+      lost: leads.filter((l) => l.stage === "rad").length,
+      conversion: leads.length ? Math.round((applied / leads.length) * 100) : 0,
+    };
+  }, [leads]);
+}
+
+/** Bitta oʻquvchi boʻyicha butun tarix — toʻlov, suhbat va qoʻngʻiroq. */
+export interface HistoryEntry {
+  id: string;
+  at: string;
+  kind: "payment" | "storno" | "call" | "note" | "document" | "contract";
+  title: string;
+  detail: string;
+}
+
+export function useStudentHistory(studentId: string): HistoryEntry[] {
+  const { payments, calls, notes, documents, contracts, appeals } = useAdmin();
+
+  return useMemo(() => {
+    const rows: HistoryEntry[] = [];
+
+    for (const p of payments.filter((x) => x.studentId === studentId)) {
+      rows.push({
+        id: p.id,
+        at: p.paidAt,
+        kind: p.kind === "storno" ? "storno" : "payment",
+        title: p.kind === "storno" ? "Storno" : "Toʻlov",
+        detail: `${formatSom(Math.abs(p.amount))}${p.receiptNo ? ` · chek ${p.receiptNo}` : ""}${p.note ? ` · ${p.note}` : ""}`,
+      });
+    }
+
+    for (const c of calls.filter((x) => x.studentId === studentId)) {
+      rows.push({
+        id: c.id,
+        at: c.at,
+        kind: "call",
+        title: `Qoʻngʻiroq — ${CALL_OUTCOME_LABELS[c.outcome]}`,
+        detail: `${c.contactName} · ${Math.round(c.durationSec / 60)} daq · ${c.note}`,
+      });
+    }
+
+    for (const d of documents.filter((x) => x.studentId === studentId && x.issuedAt)) {
+      rows.push({
+        id: d.id,
+        at: d.issuedAt as string,
+        kind: "document",
+        title: `Maʼlumotnoma № ${d.number}`,
+        detail: DOCUMENT_TYPE_LABELS[d.type],
+      });
+    }
+
+    for (const c of contracts.filter((x) => x.studentId === studentId)) {
+      rows.push({
+        id: c.id,
+        at: c.date,
+        kind: "contract",
+        title: c.type === "start" ? "Shartnoma ochildi" : "Shartnoma yopildi",
+        detail: c.note,
+      });
+    }
+
+    // Suhbat qaydnomalari murojaat orqali oʻquvchiga bogʻlanadi.
+    const myAppealIds = new Set(
+      appeals.filter((a) => a.studentFullName).map((a) => a.id),
+    );
+    for (const n of notes.filter((x) => myAppealIds.has(x.appealId))) {
+      const appeal = appeals.find((a) => a.id === n.appealId);
+      if (!appeal) continue;
+      rows.push({
+        id: n.id,
+        at: n.date,
+        kind: "note",
+        title: "Suhbat qaydnomasi",
+        detail: `${appeal.studentFullName} · ${n.summary}`,
+      });
+    }
+
+    return rows.sort((a, b) => b.at.localeCompare(a.at));
+  }, [payments, calls, notes, documents, contracts, appeals, studentId]);
+}
+
 /** Faol sinflar — qabul, koʻchirish va soʻrovnoma shu roʻyxatdan tanlaydi. */
 export function useActiveClasses(): AdminClass[] {
   const { classes } = useAdmin();
@@ -1035,7 +1235,7 @@ export interface AdminNotification {
  * qoʻngʻiroqdagi son ham oʻzgaradi.
  */
 export function useNotifications(): AdminNotification[] {
-  const { students, applications, documents, appeals, surveys } = useAdmin();
+  const { students, applications, documents, appeals, surveys, leads } = useAdmin();
 
   return useMemo(() => {
     const list: AdminNotification[] = [];
@@ -1103,8 +1303,24 @@ export function useNotifications(): AdminNotification[] {
       });
     }
 
+    // Kechikkan lid qadamlari — bugun qoʻngʻiroq qilish kerak boʻlganlar.
+    const today = nowLabel().slice(0, 10);
+    const overdueLeads = leads.filter(
+      (l) => l.stage !== "rad" && l.stage !== "ariza" && l.nextActionAt < today,
+    ).length;
+    if (overdueLeads > 0) {
+      list.push({
+        id: "n-lead",
+        title: "Lid kutmoqda",
+        detail: `${overdueLeads} ta lidda keyingi qadam kechikdi`,
+        href: "/admin/lidlar",
+        tone: "warning",
+        count: overdueLeads,
+      });
+    }
+
     return list;
-  }, [students, applications, documents, appeals, surveys]);
+  }, [students, applications, documents, appeals, surveys, leads]);
 }
 
 export function useFinanceSummary() {

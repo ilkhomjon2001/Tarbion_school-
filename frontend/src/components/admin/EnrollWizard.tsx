@@ -67,16 +67,37 @@ function emptyApplication(defaultClass: string): Application {
  *   2) qoʻlda — toʻrtala bosqich boshidan toʻldiriladi (ota-ona
  *      maktabga oʻzi kelgan holat).
  */
-export function EnrollWizard({ startBlank = false }: { startBlank?: boolean }) {
+export function EnrollWizard({
+  startBlank = false,
+  fromLeadId,
+}: {
+  startBlank?: boolean;
+  /** Lidlar boʻlimidan kelgan boʻlsa — forma oldindan toʻldiriladi. */
+  fromLeadId?: string;
+}) {
   const router = useRouter();
-  const { applications, students } = useAdmin();
+  const { applications, students, leads } = useAdmin();
   const classes = useActiveClasses();
   const dispatch = useAdminDispatch();
 
   const defaultClass = classes[0]?.name ?? "";
-  const [draft, setDraft] = useState<Application | null>(
-    startBlank ? emptyApplication(defaultClass) : null,
-  );
+  const [draft, setDraft] = useState<Application | null>(() => {
+    if (!startBlank) return null;
+    const blank = emptyApplication(defaultClass);
+    const lead = fromLeadId ? leads.find((l) => l.id === fromLeadId) : undefined;
+    if (!lead) return blank;
+    // Lidda bor maʼlumot koʻchiriladi, qolgani qoʻlda toʻldiriladi.
+    return {
+      ...blank,
+      studentFullName: lead.childName,
+      birthDate: `${lead.birthYear}-01-01`,
+      className: lead.targetClass,
+      guardianFullName: lead.parentName,
+      guardianPhone: lead.phone,
+      note: lead.note,
+      createdAt: `Liddan (${lead.createdAt})`,
+    };
+  });
   const [step, setStep] = useState(startBlank ? 0 : 2);
   const [done, setDone] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);

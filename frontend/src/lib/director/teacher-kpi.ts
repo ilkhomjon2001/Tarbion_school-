@@ -8,11 +8,13 @@
  * `proposed: true` bayrogʻi bilan belgilangan, tasdiqlangach olib
  * tashlanadi.
  *
- * Barcha raqamlar barqaror xeshdan chiqadi: sahifa har ochilganda bir xil
- * boʻladi. Backend ulanganda `teacher_kpi` koʻrinishi bilan almashtiriladi,
- * komponentlar oʻzgarmaydi.
+ * Birinchi koʻrsatkich HAQIQIY manbadan keladi — `lib/school/exams.ts`
+ * dagi imtihon natijalari. Qolgan uchtasi hali barqaror xeshdan (davomat
+ * jurnali va murojaat javoblari backendsiz oʻlchanmaydi). Backend
+ * ulanganda ular ham oʻz manbasiga ulanadi, komponentlar oʻzgarmaydi.
  */
 
+import { teacherExamSummary } from "@/lib/school/exams";
 import { assignmentsOfTeacher, homeroomClassOf, weeklyLoadOf } from "@/lib/school/staff";
 
 /** `school-data.ts` dagi bilan bir xil mantiq — `>>>` shart. */
@@ -73,6 +75,12 @@ export interface KpiScore {
   delta: number;
   /** Ballning ortidagi tushuntirish — "42 tadan 39 tasi" kabi. */
   detail: string;
+  /**
+   * Maʼlumot bormi. Imtihoni boʻlmagan ustozga 0 qoʻyish — yolgʻon:
+   * u yomon ishlagani emas, oʻlchanmagani. Umumiy ball hisoblanganda
+   * bunday koʻrsatkich CHIQARIB TASHLANADI.
+   */
+  available: boolean;
 }
 
 export interface SubjectResult {
@@ -81,6 +89,10 @@ export interface SubjectResult {
   averageGrade: number;
   /** Oylik imtihonning oʻrtacha bali, 100 ballik. */
   examAverage: number;
+  /** Shu sinf+fan boʻyicha imtihon oʻtkazilganmi. */
+  hasExam: boolean;
+  /** 60 balldan past olganlar soni. */
+  failing: number;
   /** Shu sinfdagi darslarida oʻquvchilar davomati. */
   attendancePercent: number;
   studentCount: number;
@@ -99,8 +111,10 @@ export interface RuleCompliance {
 
 export interface TeacherKpi {
   teacherId: string;
-  /** Toʻrtta KPI oʻrtachasi, 0–100. */
+  /** Oʻlchangan koʻrsatkichlar oʻrtachasi, 0–100. */
   overall: number;
+  /** Nechta koʻrsatkich boʻyicha maʼlumot bor (4 tadan). */
+  measuredCount: number;
   scores: KpiScore[];
   subjects: SubjectResult[];
   examTrend: ExamPoint[];
@@ -116,7 +130,6 @@ export interface TeacherKpi {
   homeroomClass: string | null;
 }
 
-const EXAM_MONTHS = ["Sentabr", "Oktabr", "Noyabr", "Dekabr", "Yanvar"];
 
 const RULE_ITEMS = [
   "Darsga oʻz vaqtida kirish",
@@ -129,38 +142,42 @@ export function teacherKpi(teacherId: string): TeacherKpi {
   const seed = hash(`kpi-${teacherId}`);
   const assignments = assignmentsOfTeacher(teacherId);
 
+  // ── Imtihon natijalari: HAQIQIY manbadan (`lib/school/exams.ts`) ──
+  const exams = teacherExamSummary(teacherId);
+  const examByClass = new Map(
+    exams.byClass.map((row) => [`${row.className}|${row.subject}`, row]),
+  );
+
   // ── Fanlar va sinflar kesimi ──
   const subjects: SubjectResult[] = assignments.map((a) => {
     const s = hash(`${teacherId}-${a.className}-${a.subject}`);
-    const examAverage = pick(s >>> 3, 58, 94);
+    const fromExam = examByClass.get(`${a.className}|${a.subject}`);
+    // Imtihon boʻlmagan sinf uchun oʻrtacha ball yoʻq — 0 emas, `null`
+    // boʻlishi kerak edi, lekin jadval sodda qolsin deb umumiy oʻrtacha
+    // olinadi va «imtihon boʻlmagan» deb belgilanadi.
+    const examAverage = fromExam?.average ?? exams.average;
     return {
       subject: a.subject,
       className: a.className,
-      // Oʻrtacha baho imtihon bali bilan bogʻliq boʻlsin — ikkisi
-      // qarama-qarshi chiqib qolmasin.
+      // Oʻrtacha baho imtihon bali bilan bogʻliq — ikkisi qarama-qarshi
+      // chiqib qolmasin.
       averageGrade: Number((2.6 + (examAverage / 100) * 2.3).toFixed(1)),
       examAverage,
+      hasExam: Boolean(fromExam),
+      failing: fromExam?.failing ?? 0,
       attendancePercent: pick(s >>> 7, 84, 99),
-      studentCount: pick(s, 18, 29),
+      studentCount: fromExam?.studentCount ?? pick(s, 18, 29),
     };
   });
 
   const studentsTaught = subjects.reduce((sum, s) => sum + s.studentCount, 0);
-  const examScore = subjects.length
-    ? Math.round(subjects.reduce((sum, s) => sum + s.examAverage, 0) / subjects.length)
-    : 0;
+  const examScore = exams.average;
 
-  // ── Imtihon dinamikasi ──
-  const examTrend: ExamPoint[] = EXAM_MONTHS.map((month, i) => {
-    const s = hash(`${teacherId}-exam-${month}`);
-    // Oxirgi nuqta joriy oʻrtachaga yaqinlashsin.
-    const drift = pick(s, 0, 10) - 5;
-    const weight = i / (EXAM_MONTHS.length - 1);
-    return {
-      month,
-      average: Math.max(40, Math.min(100, Math.round(examScore + drift * (1 - weight)))),
-    };
-  });
+  // ── Imtihon dinamikasi ── oylar imtihon jadvalidan keladi
+  const examTrend: ExamPoint[] = exams.trend.map((point) => ({
+    month: point.month,
+    average: point.average,
+  }));
 
   // ── Ichki qoidalar ──
   const rules: RuleCompliance[] = RULE_ITEMS.map((label, i) => {
@@ -193,36 +210,54 @@ export function teacherKpi(teacherId: string): TeacherKpi {
     Math.min(100, Math.round(markedInTime - gradeDelayDays * 4)),
   );
 
+  const hasLoad = assignments.length > 0;
+
   const scores: KpiScore[] = [
     {
       key: "exams",
       score: examScore,
       delta: pick(seed >>> 2, 0, 12) - 6,
-      detail: `${subjects.length} ta sinf boʻyicha oʻrtacha ball`,
+      detail:
+        exams.examCount > 0
+          ? `${exams.examCount} ta imtihon · ${exams.studentCount} ta natija boʻyicha`
+          : "Imtihon oʻtkazilmagan — baholanmaydi",
+      available: exams.examCount > 0,
     },
     {
       key: "rules",
       score: rulesScore,
       delta: pick(seed >>> 6, 0, 10) - 5,
       detail: `${rules.reduce((s, r) => s + r.done, 0)} / ${rules.reduce((s, r) => s + r.total, 0)} bajarilgan`,
+      available: true,
     },
     {
       key: "parents",
       score: parentsScore,
       delta: pick(seed >>> 10, 0, 14) - 7,
       detail: `${appealsAnswered}/${appealsReceived} murojaatga javob · soʻrovnoma ${parentSurveyScore}/5`,
+      available: true,
     },
     {
       key: "journal",
       score: journalScore,
       delta: pick(seed >>> 14, 0, 8) - 4,
-      detail: `Davomat oʻz vaqtida: ${markedInTime}% · baho kechikishi ${gradeDelayDays} kun`,
+      detail: hasLoad
+        ? `Davomat oʻz vaqtida: ${markedInTime}% · baho kechikishi ${gradeDelayDays} kun`
+        : "Dars yuklamasi yoʻq — baholanmaydi",
+      available: hasLoad,
     },
   ];
 
+  // Faqat oʻlchangan koʻrsatkichlar oʻrtachasi. Oʻlchanmagani 0 emas —
+  // aks holda yuklamasi yoʻq ustoz eng yomon koʻrinardi.
+  const measured = scores.filter((s) => s.available);
+
   return {
     teacherId,
-    overall: Math.round(scores.reduce((sum, s) => sum + s.score, 0) / scores.length),
+    overall: measured.length
+      ? Math.round(measured.reduce((sum, s) => sum + s.score, 0) / measured.length)
+      : 0,
+    measuredCount: measured.length,
     scores,
     subjects: subjects.sort((a, b) => b.examAverage - a.examAverage),
     examTrend,
