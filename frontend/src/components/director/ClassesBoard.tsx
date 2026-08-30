@@ -1,9 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { PlusIcon, UsersIcon } from "@/components/ui/icons";
 import { reassignHomeroom } from "@/lib/director/data";
+import {
+  attendanceOf,
+  classAttendanceStat,
+  isAtRisk,
+  studentsOfClass,
+} from "@/lib/director/school-data";
 import { subjectTeachersOf } from "@/lib/school/staff";
 import type { ClassStage, SchoolClass, Teacher } from "@/lib/director/types";
 
@@ -12,6 +18,15 @@ const STAGE_FILTERS: { id: ClassStage | "all"; label: string }[] = [
   { id: "boshlangʻich", label: "Boshlangʻich" },
   { id: "oʻrta", label: "Oʻrta" },
   { id: "yuqori", label: "Yuqori" },
+];
+
+/** Sinf tafsilotidagi davomat davri. */
+type ClassPeriod = "today" | "week" | "month";
+
+const CLASS_PERIODS: { id: ClassPeriod; label: string }[] = [
+  { id: "today", label: "Bugun" },
+  { id: "week", label: "Haftalik" },
+  { id: "month", label: "Oylik" },
 ];
 
 export function ClassesBoard({
@@ -27,6 +42,12 @@ export function ClassesBoard({
   const [selectedId, setSelectedId] = useState(initialClasses[0]?.id ?? "");
   const [editingHomeroom, setEditingHomeroom] = useState(false);
   const [draftTeacherId, setDraftTeacherId] = useState("");
+  const [period, setPeriod] = useState<ClassPeriod>("today");
+
+  const detailRef = useRef<HTMLDivElement>(null);
+  // Sahifa ochilganda pastga sakramasin — faqat foydalanuvchi kartochka
+  // bosgandan keyin siljitamiz.
+  const userPicked = useRef(false);
 
   const filtered = useMemo(
     () => (stage === "all" ? classes : classes.filter((c) => c.stage === stage)),
@@ -34,6 +55,20 @@ export function ClassesBoard({
   );
 
   const selected = classes.find((c) => c.id === selectedId) ?? filtered[0] ?? null;
+
+  useEffect(() => {
+    if (!userPicked.current) return;
+    const node = detailRef.current;
+    if (!node) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    node.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  }, [selectedId]);
+
+  function selectClass(id: string) {
+    userPicked.current = true;
+    setSelectedId(id);
+    setEditingHomeroom(false);
+  }
 
   function openHomeroomEditor() {
     if (!selected) return;
@@ -75,7 +110,7 @@ export function ClassesBoard({
         </div>
         <button
           type="button"
-          className="flex h-10 items-center gap-1.5 rounded-lg bg-brand px-3.5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          className="flex h-10 items-center gap-1.5 rounded-lg bg-brand px-3.5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-dark focus-ring"
         >
           <PlusIcon className="h-4 w-4" />
           Yangi sinf
@@ -87,14 +122,12 @@ export function ClassesBoard({
           <button
             key={cls.id}
             type="button"
-            onClick={() => {
-              setSelectedId(cls.id);
-              setEditingHomeroom(false);
-            }}
-            className={`rounded-xl border bg-surface p-4 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand ${
+            onClick={() => selectClass(cls.id)}
+            aria-pressed={selected?.id === cls.id}
+            className={`focus-ring rounded-xl border bg-surface p-4 text-left ${
               selected?.id === cls.id
-                ? "border-brand ring-1 ring-brand"
-                : "border-border hover:border-brand/40"
+                ? "border-brand shadow-sm ring-1 ring-brand"
+                : "card-interactive border-border"
             }`}
           >
             <div className="flex items-center justify-between">
@@ -117,7 +150,7 @@ export function ClassesBoard({
               {cls.homeroomTeacherName ?? <span className="italic text-foreground-muted">Tayinlanmagan</span>}
             </p>
             <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-              <p className="text-xs text-foreground-muted">Oʻrtacha davomat</p>
+              <p className="text-xs text-foreground-muted">Oylik davomat</p>
               <p
                 className={`text-sm font-semibold ${
                   cls.averageAttendance < 85 ? "text-danger" : "text-success"
@@ -131,7 +164,11 @@ export function ClassesBoard({
       </div>
 
       {selected && (
-        <div className="mt-5 rounded-xl border border-brand/40 bg-surface p-4">
+        <div
+          ref={detailRef}
+          key={selected.id}
+          className="animate-enter mt-5 scroll-mt-24 rounded-xl border border-brand/40 bg-surface p-4 shadow-sm"
+        >
           <div className="mb-3 flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
             <div>
               <h2 className="text-base font-semibold text-foreground">{selected.name} sinf</h2>
@@ -141,7 +178,7 @@ export function ClassesBoard({
                   <select
                     value={draftTeacherId}
                     onChange={(e) => setDraftTeacherId(e.target.value)}
-                    className="h-9 rounded-lg border border-border bg-surface px-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+                    className="h-9 rounded-lg border border-border bg-surface px-2 text-sm focus-ring"
                   >
                     <option value="">Tayinlanmagan</option>
                     {teachers
@@ -182,24 +219,24 @@ export function ClassesBoard({
                   <button
                     type="button"
                     onClick={openHomeroomEditor}
-                    className="text-brand-dark underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                    className="text-brand-dark underline-offset-2 hover:underline focus-ring"
                   >
                     Oʻzgartirish
                   </button>
                 </p>
               )}
             </div>
-            <div className="flex gap-4 text-sm">
-              <span>
-                <span className="font-semibold text-foreground">{selected.studentCount}</span>{" "}
-                <span className="text-foreground-muted">oʻquvchi</span>
-              </span>
-              <span>
-                <span className="font-semibold text-success">{selected.averageAttendance}%</span>{" "}
-                <span className="text-foreground-muted">davomat</span>
-              </span>
-            </div>
+            <span className="text-sm">
+              <span className="num font-semibold text-foreground">{selected.studentCount}</span>{" "}
+              <span className="text-foreground-muted">oʻquvchi</span>
+            </span>
           </div>
+
+          <ClassAttendance
+            schoolClass={selected}
+            period={period}
+            onPeriodChange={setPeriod}
+          />
 
           <SubjectTeachers className={selected.name} />
 
@@ -211,39 +248,194 @@ export function ClassesBoard({
               Roʻyxat hozircha boʻsh.
             </p>
           ) : (
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
-                  <th className="py-2">F.I.Sh</th>
-                  <th className="py-2">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selected.students.map((student) => (
-                  <tr key={student.id} className="border-t border-border">
-                    <td className="flex items-center gap-2.5 py-2.5">
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-[11px] font-semibold text-foreground-muted">
-                        {student.fullName
-                          .split(" ")
-                          .slice(0, 2)
-                          .map((p) => p[0])
-                          .join("")}
-                      </span>
-                      {student.fullName}
-                    </td>
-                    <td className="py-2.5">
-                      <Badge tone={student.status === "active" ? "success" : "danger"}>
-                        {student.status === "active" ? "Faol" : "Sababsiz"}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <StudentTable schoolClass={selected} period={period} />
           )}
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Sinf davomati uch davrda: bugungi holat (kim keldi/kelmadi) hamda
+ * haftalik va oylik oʻrtacha. Bugungi kun bilan cheklanib qolsak,
+ * "kecha ham shundaymidi" degan savolga javob boʻlmaydi.
+ */
+function ClassAttendance({
+  schoolClass,
+  period,
+  onPeriodChange,
+}: {
+  schoolClass: SchoolClass;
+  period: ClassPeriod;
+  onPeriodChange: (next: ClassPeriod) => void;
+}) {
+  const total = schoolClass.students.length;
+  const presentToday = schoolClass.students.filter((s) => s.status === "active").length;
+  const todayPercent = total === 0 ? 0 : Math.round((presentToday / total) * 100);
+
+  const stat =
+    period === "today" ? null : classAttendanceStat(schoolClass.name, period);
+  const percent = stat ? stat.averagePercent : todayPercent;
+
+  return (
+    <div className="mb-4 rounded-lg border border-border bg-surface-muted/50 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-xs font-medium uppercase tracking-wide text-foreground-muted">
+          Davomat
+        </h3>
+        <div
+          role="group"
+          aria-label="Davomat davri"
+          className="flex gap-1 rounded-lg border border-border bg-surface p-1"
+        >
+          {CLASS_PERIODS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onPeriodChange(p.id)}
+              aria-pressed={period === p.id}
+              className={`focus-ring rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                period === p.id
+                  ? "bg-brand text-brand-foreground"
+                  : "text-foreground-muted hover:bg-surface-muted"
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-3">
+        <span
+          className={`num text-2xl font-bold ${
+            isAtRisk(percent) ? "text-danger" : "text-success"
+          }`}
+        >
+          {percent}%
+        </span>
+        <div className="h-2 min-w-[120px] flex-1 overflow-hidden rounded-full bg-surface">
+          <div
+            className={`bar-fill h-full rounded-full ${
+              percent >= 90 ? "bg-success" : percent >= 85 ? "bg-warning" : "bg-danger"
+            }`}
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+      </div>
+
+      <p className="mt-1.5 text-xs text-foreground-muted">
+        {period === "today" ? (
+          <>
+            Bugun <span className="num font-medium text-foreground">{presentToday}</span> ta
+            oʻquvchi keldi,{" "}
+            <span className="num font-medium text-danger">{total - presentToday}</span> ta kelmadi.
+          </>
+        ) : (
+          <>
+            {period === "week" ? "Shu haftadagi" : "Shu oydagi"} oʻrtacha davomat ·{" "}
+            {stat && stat.atRiskCount > 0 ? (
+              <>
+                <span className="num font-medium text-danger">{stat.atRiskCount}</span> ta oʻquvchi
+                85% dan past
+              </>
+            ) : (
+              "xavf ostidagi oʻquvchi yoʻq"
+            )}
+          </>
+        )}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Oʻquvchilar roʻyxati. "Bugun" davrida holat belgisi, hafta/oy davrida
+ * shu oʻquvchining davomat foizi koʻrsatiladi — shunda almashtirgich
+ * sinf darajasida ham, oʻquvchi darajasida ham maʼnoli boʻladi.
+ */
+function StudentTable({
+  schoolClass,
+  period,
+}: {
+  schoolClass: SchoolClass;
+  period: ClassPeriod;
+}) {
+  const records = useMemo(() => {
+    const map = new Map(studentsOfClass(schoolClass.name).map((s) => [s.id, s]));
+    return schoolClass.students.map((student) => {
+      const record = map.get(student.id);
+      return {
+        ...student,
+        percent: record && period !== "today" ? attendanceOf(record, period) : null,
+      };
+    });
+  }, [schoolClass, period]);
+
+  // Hafta/oy koʻrinishida eng past koʻrsatkich tepada tursin.
+  const rows =
+    period === "today"
+      ? records
+      : [...records].sort((a, b) => (a.percent ?? 0) - (b.percent ?? 0));
+
+  return (
+    <table className="w-full border-collapse text-sm">
+      <thead>
+        <tr className="text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
+          <th className="py-2">F.I.Sh</th>
+          <th className="w-40 py-2">{period === "today" ? "Status" : "Davomat"}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((student) => (
+          <tr
+            key={student.id}
+            className="border-t border-border transition-colors hover:bg-surface-muted/50"
+          >
+            <td className="flex items-center gap-2.5 py-2.5">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-[11px] font-semibold text-foreground-muted">
+                {student.fullName
+                  .split(" ")
+                  .slice(0, 2)
+                  .map((p) => p[0])
+                  .join("")}
+              </span>
+              {student.fullName}
+            </td>
+            <td className="py-2.5">
+              {student.percent === null ? (
+                <Badge tone={student.status === "active" ? "success" : "danger"}>
+                  {student.status === "active" ? "Faol" : "Sababsiz"}
+                </Badge>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <span className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-surface-muted">
+                    <span
+                      className={`bar-fill block h-full rounded-full ${
+                        student.percent >= 90
+                          ? "bg-success"
+                          : student.percent >= 85
+                            ? "bg-warning"
+                            : "bg-danger"
+                      }`}
+                      style={{ width: `${student.percent}%` }}
+                    />
+                  </span>
+                  <span
+                    className={`num text-xs font-medium ${
+                      isAtRisk(student.percent) ? "text-danger" : "text-foreground"
+                    }`}
+                  >
+                    {student.percent}%
+                  </span>
+                </span>
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
