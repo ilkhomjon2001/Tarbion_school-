@@ -15,10 +15,9 @@
  * frontendda boʻlimni yashirish faqat qulaylik.
  */
 
-import { ROLE_CABINET, type UserRole } from "@/lib/roles";
+import { ROLE_CABINET, type Cabinet, type UserRole } from "@/lib/roles";
 
-/** Boʻlim tegishli boʻlgan kabinet. */
-export type Cabinet = Exclude<UserRole, "superadmin">;
+export type { Cabinet };
 
 export const CABINET_LABELS: Record<Cabinet, string> = {
   student: "Oʻquvchi kabineti",
@@ -26,6 +25,7 @@ export const CABINET_LABELS: Record<Cabinet, string> = {
   parent: "Ota-ona kabineti",
   director: "Rahbariyat kabineti",
   admin: "Administrator kabineti",
+  academic: "Oʻquv boʻlimi kabineti",
 };
 
 export interface Section {
@@ -79,11 +79,20 @@ export const SECTIONS: Section[] = [
   { id: "/rahbar/tolovlar", label: "Toʻlovlar", cabinet: "director" },
   { id: "/rahbar/hisobotlar", label: "Hisobotlar", cabinet: "director" },
 
+  // ── Oʻquv boʻlimi ──
+  { id: "/oquv-bolim", label: "Bosh sahifa", cabinet: "academic", locked: true },
+  { id: "/oquv-bolim/imtihonlar", label: "Imtihonlar", cabinet: "academic" },
+  { id: "/oquv-bolim/natijalar", label: "Natijalar", cabinet: "academic" },
+  { id: "/oquv-bolim/rejalar", label: "Dars rejalari", cabinet: "academic" },
+  { id: "/oquv-bolim/ustozlar", label: "Ustozlar faoliyati", cabinet: "academic" },
+
   // ── Administrator ──
   { id: "/admin", label: "Bosh sahifa", cabinet: "admin", locked: true },
   { id: "/admin/oquvchilar", label: "Oʻquvchilar", cabinet: "admin" },
+  { id: "/admin/lidlar", label: "Lidlar", cabinet: "admin" },
   { id: "/admin/qabul", label: "Qabul", cabinet: "admin" },
   { id: "/admin/shartnomalar", label: "Shartnomalar", cabinet: "admin" },
+  { id: "/admin/qongiroqlar", label: "Qoʻngʻiroqlar", cabinet: "admin" },
   { id: "/admin/tolovlar", label: "Toʻlovlar", cabinet: "admin" },
   { id: "/admin/malumotnomalar", label: "Maʼlumotnomalar", cabinet: "admin" },
   { id: "/admin/murojaatlar", label: "Murojaatlar", cabinet: "admin" },
@@ -116,6 +125,7 @@ export const ROLE_DEFAULT_SECTIONS: Record<UserRole, string[]> = {
   teacher: sectionsOfCabinet("teacher").map((s) => s.id),
   parent: sectionsOfCabinet("parent").map((s) => s.id),
   director: sectionsOfCabinet("director").map((s) => s.id),
+  academic: sectionsOfCabinet("academic").map((s) => s.id),
   admin: sectionsOfCabinet("admin")
     .filter((s) => !s.superadminOnly)
     .map((s) => s.id),

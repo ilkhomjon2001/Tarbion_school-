@@ -10,7 +10,12 @@
  * almashtiriladi.
  */
 
-export type StaffRole = "teacher" | "director" | "admin" | "psychologist";
+export type StaffRole =
+  | "teacher"
+  | "director"
+  | "admin"
+  | "psychologist"
+  | "academic";
 
 export type StaffStatus = "active" | "archived";
 
@@ -31,6 +36,7 @@ export const STAFF: Staff[] = [
   { id: "s-dir", fullName: "Nortojiyeva Malika Aʼzamovna", shortName: "M. Nortojiyeva", role: "director", subjects: [], initials: "MN", phone: "+998 90 100 00 01", email: "malika.n@tarbion.uz", status: "active" },
   { id: "s-adm", fullName: "Qodirov Bahodir Toʻlqinovich", shortName: "B. Qodirov", role: "admin", subjects: [], initials: "BQ", phone: "+998 90 100 00 02", email: "bahodir.q@tarbion.uz", status: "active" },
   { id: "s-psy", fullName: "Ismoilova Dilnoza Faridovna", shortName: "D. Ismoilova", role: "psychologist", subjects: [], initials: "DI", phone: "+998 90 100 00 03", email: "dilnoza.i@tarbion.uz", status: "active" },
+  { id: "s-acad", fullName: "Yoʻldoshev Rustam Sobirovich", shortName: "R. Yoʻldoshev", role: "academic", subjects: [], initials: "RY", phone: "+998 90 100 00 04", email: "rustam.y@tarbion.uz", status: "active" },
 
   { id: "t-1", fullName: "Anvarov Jamshid Odilovich", shortName: "J. Anvarov", role: "teacher", subjects: ["Matematika", "Algebra", "Geometriya"], initials: "JA", phone: "+998 90 111 22 33", email: "jamshid@tarbion.uz", status: "active" },
   { id: "t-2", fullName: "Karimova Nargiza Yusupovna", shortName: "N. Karimova", role: "teacher", subjects: ["Ona tili", "Adabiyot"], initials: "NK", phone: "+998 91 222 33 44", email: "nargiza@tarbion.uz", status: "active" },
@@ -58,6 +64,8 @@ export const PSYCHOLOGIST = STAFF.find((s) => s.role === "psychologist")!;
 export const DIRECTOR = STAFF.find((s) => s.role === "director")!;
 /** Administrator — admin kabinetiga kirgan xodim. */
 export const ADMINISTRATOR = STAFF.find((s) => s.role === "admin")!;
+/** Oʻquv boʻlimi mudiri — imtihon va dars rejasi masʼuli. */
+export const ACADEMIC_HEAD = STAFF.find((s) => s.role === "academic")!;
 
 // ───────────────────────── Dars yuklamasi ─────────────────────────
 

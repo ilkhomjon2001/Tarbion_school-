@@ -13,6 +13,7 @@ export type UserRole =
   | "parent"
   | "director"
   | "admin"
+  | "academic"
   | "superadmin";
 
 export const ROLE_LABELS: Record<UserRole, string> = {
@@ -21,6 +22,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   parent: "Ota-ona",
   director: "Rahbariyat",
   admin: "Administrator",
+  academic: "Oʻquv boʻlimi",
   superadmin: "Super administrator",
 };
 
@@ -30,6 +32,7 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   parent: "Farzand natijalari, toʻlov",
   director: "Hisobot va analitika",
   admin: "Qabul, toʻlov, hujjatlar",
+  academic: "Imtihonlar, dars rejasi, sifat",
   superadmin: "Foydalanuvchilar, huquqlar, sozlamalar",
 };
 
@@ -40,17 +43,22 @@ export const ROLE_HOME: Record<UserRole, string> = {
   parent: "/ota-ona",
   director: "/rahbar",
   admin: "/admin",
+  academic: "/oquv-bolim",
   // Super administrator ham admin kabinetida ishlaydi — farqi huquqlarda.
   superadmin: "/admin",
 };
 
+/** Kabinetga ega rollar — super admin adminnikida ishlaydi. */
+export type Cabinet = Exclude<UserRole, "superadmin">;
+
 /** Qaysi kabinetni ochadi — AuthGuard shu boʻyicha tekshiradi. */
-export const ROLE_CABINET: Record<UserRole, Exclude<UserRole, "superadmin">> = {
+export const ROLE_CABINET: Record<UserRole, Cabinet> = {
   student: "student",
   teacher: "teacher",
   parent: "parent",
   director: "director",
   admin: "admin",
+  academic: "academic",
   superadmin: "admin",
 };
 

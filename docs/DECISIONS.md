@@ -264,3 +264,45 @@ maʼlumot (davomat 24 soat ichida belgilangan darslar ulushi). Interfeysda
 olib tashlanadi yoki koʻrsatkich almashtiriladi. Har bir ball ostida
 nimadan hisoblangani yozilgan: rahbar raqamni tekshira olmasa KPI
 ishonchsiz boʻlib qoladi.
+
+## 2026-08-30 · Imtihonlar — yagona manba, holat sanadan
+`lib/school/exams.ts` — imtihon jadvali va natijalari uchun YAGONA manba.
+Oʻquv boʻlimi kiritadi; ustoz KPI si, oʻquvchi va ota-ona kabinetlari
+aynan shu yerdan oʻqiydi, ikkinchi roʻyxat yuritilmaydi.
+
+Imtihon holati (`rejada` / `otkazildi`) SANADAN chiqadi, qoʻlda
+yozilmaydi. Birinchi urinishda bosqichga qoʻlda `status` bergan edim —
+natijada oktabr imtihonlari «oʻtkazildi» deb koʻrinib, natijasi
+boʻlmasdi. Sanadan hisoblaganda bunday ziddiyat boʻlmaydi.
+
+Imtihon bali oʻquvchining davomatiga bogʻlangan: kam qatnashgan
+oʻquvchi pastroq ball oladi. Aks holda «92% davomat, 41 ball» kabi
+bir-biriga qarama-qarshi raqamlar chiqib qolardi.
+
+## 2026-08-30 · KPI: oʻlchanmagan koʻrsatkich 0 emas
+Yuklamasi yoʻq ustoz (t-16 — sinf rahbari, lekin fan oʻqitmaydi)
+imtihon KPI si boʻyicha 0 ball olardi va roʻyxatda eng yomon boʻlib
+koʻrinardi. Bu yolgʻon: u yomon ishlagani emas, oʻlchanmagani.
+
+Endi `KpiScore.available` bayrogʻi bor; umumiy ball faqat OʻLCHANGAN
+koʻrsatkichlar oʻrtachasidan chiqadi va interfeysda «—» koʻrsatiladi.
+Saralashda ham oʻlchanmaganlari oxirga tushadi, pastki ball sifatida
+emas.
+
+## 2026-08-30 · Oʻquv boʻlimi — oltinchi kabinet
+Yangi rol `academic` va `/oquv-bolim` kabineti: imtihon eʼlon qilish,
+natija kiritish, dars rejasi nazorati, ustozlar faoliyati. Rahbariyatdan
+farqi — bu maʼlumot KIRITADIGAN rol, faqat kuzatmaydi.
+
+Dars rejasi nazorati `lib/teacher/plan.ts` dagi qoidaga tayanadi: reja
+OʻTILGAN darslar boʻyicha siljiydi, jadval boʻyicha emas. Shu sabab dars
+bekor qilinsa reja oldinga ketmaydi va sinfning orqada qolgani
+koʻrinadi.
+
+## 2026-08-30 · Kabinetlar orasidagi id koʻprigi
+Oʻquvchi va ota-ona kabinetlari alohida mock maʼlumotdan qurilgan
+(`lib/mock/data.ts`, `lib/parent/data.ts`) va ularning id lari
+`ALL_STUDENTS` bilan mos kelmaydi. Imtihon natijasini koʻrsatish uchun
+`examIdentityFor(className, key)` — kabinet oʻquvchisini oʻsha sinfdagi
+haqiqiy yozuvga BARQAROR bogʻlaydi. Backend ulanganda kerak boʻlmaydi:
+id bitta boʻladi. Uni oʻsha vaqtda olib tashlash kerak.

@@ -5,7 +5,12 @@ import { Header } from "@/components/ui/Header";
 import { ListSkeleton, Skeleton } from "@/components/ui/Skeleton";
 import { AttendanceCalendar } from "@/components/features/student/AttendanceCalendar";
 import { SubjectGradeCard } from "@/components/features/student/SubjectGradeCard";
-import { getAttendanceSummary, getSubjectGrades } from "@/lib/mock/fetchers";
+import { ExamResultsCard } from "@/components/shared/ExamResultsCard";
+import {
+  getAttendanceSummary,
+  getCurrentStudent,
+  getSubjectGrades,
+} from "@/lib/mock/fetchers";
 
 export default function GradesPage() {
   return (
@@ -27,6 +32,15 @@ export default function GradesPage() {
           </h2>
           <Suspense fallback={<ListSkeleton count={4} />}>
             <GradesSection />
+          </Suspense>
+        </section>
+
+        <section>
+          <h2 className="mb-2 text-sm font-semibold text-foreground">
+            Imtihonlar
+          </h2>
+          <Suspense fallback={<ListSkeleton count={3} />}>
+            <ExamsSection />
           </Suspense>
         </section>
       </div>
@@ -68,4 +82,9 @@ async function GradesSection() {
       ))}
     </div>
   );
+}
+
+async function ExamsSection() {
+  const student = await getCurrentStudent();
+  return <ExamResultsCard className={student.className} identityKey={student.id} />;
 }

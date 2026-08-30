@@ -489,6 +489,7 @@ export function buildUsers(): UserAccount[] {
     admin: "admin",
     teacher: "teacher",
     psychologist: "teacher",
+    academic: "academic",
   };
 
   const POSITION: Record<string, string> = {
@@ -496,6 +497,7 @@ export function buildUsers(): UserAccount[] {
     admin: "Maktab administratori",
     teacher: "Fan oʻqituvchisi",
     psychologist: "Psixolog",
+    academic: "Oʻquv boʻlimi mudiri",
   };
 
   const accounts: UserAccount[] = STAFF.map((person) => {
