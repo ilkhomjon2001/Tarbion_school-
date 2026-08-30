@@ -137,9 +137,10 @@ Bular eng ko'p xato qilinadigan joylar. Har birining sababi bor.
 
 ## Jamoada ishlash
 
-Loyiha ikki kishi tomonidan qilinyapti. Branch, task olish, migratsiya
-konflikti va PR tartibi — `TEAMWORK.md` da. Kod yozishdan oldin shuni ham
-o'qib chiq.
+Loyiha ikki kishi tomonidan qilinyapti. Ikkalasi ham to'g'ridan-to'g'ri
+`main` da ishlaydi — branch va PR yo'q. Kundalik tartib, konflikt yechish va
+"qilma" ro'yxati — `docs/GIT.md`. Task olish va migratsiya konflikti —
+`TEAMWORK.md` da. Kod yozishdan oldin ikkalasini ham o'qib chiq.
 
 ---
 

@@ -6,13 +6,19 @@ domen qoidalari va kodlash konvensiyalari bundan tashqari, ular ham amal qiladi.
 
 ---
 
-## 1. Branch tartibi
+## 1. Ish tartibi
 
-- `main` — doim ishlaydigan holatda. To'g'ridan to'g'ri `main`ga push qilinmaydi.
-- Har bir task o'z branch'ida: `feat/T-013-davomat-api` (task kodi + qisqa nom).
-- Tugagach — Pull Request oching, `main`ga shu orqali qo'shiladi.
-- PR kamida **bitta boshqa sherik tomonidan ko'rib chiqilgach** merge qilinadi.
-  Kichik/xatarsiz o'zgarish (masalan, matn xatosi) bundan mustasno.
+**Branch va PR yo'q.** Ikkalamiz ham to'g'ridan-to'g'ri `main` da ishlaymiz —
+robbitquiz loyihasidagidek. U yerda bu usul muammosiz ishlagan.
+
+- Kunni `git pull` bilan boshlang.
+- Push qilishdan **oldin yana `git pull`** qiling. Shu bitta odat konfliktning
+  90 foizini yo'q qiladi.
+- Tez-tez push qiling — kuniga bir marta emas. Har bir tugagan bo'lak
+  push qilinsa, konflikt kichik va yechishga oson bo'ladi.
+- `git push --force` **hech qachon** ishlatilmaydi.
+
+To'liq tartib va konflikt yechish: `docs/GIT.md`.
 
 ## 2. Task olish tartibi
 
@@ -29,19 +35,19 @@ domen qoidalari va kodlash konvensiyalari bundan tashqari, ular ham amal qiladi.
 Eng ko'p konflikt shu yerda chiqadi — ikkovi parallel ravishda yangi model
 qo'shsa, migratsiya zanjiri (`down_revision`) to'qnashadi.
 
-- Migratsiya yozishdan **oldin** `main`dan `git pull`, eng oxirgi revisiyaga
+- Migratsiya yozishdan **oldin** `git pull` qiling, eng oxirgi revisiyaga
   asoslaning.
 - Migratsiya faylini task kodi bilan nomlang: `xxxx_t013_attendance_records.py`.
-- PR ochishdan oldin `alembic upgrade head` bilan o'z branch'ingizda albatta
-  tekshiring — chain uzilmaganini tasdiqlang.
-- Agar merge paytida ikkita migratsiya to'qnashsa: kim keyin merge qilsa, o'sha
-  o'z migratsiyasining `down_revision`'ini yangilab qayta yozadi (fayl nomini
-  o'zgartirmaydi, faqat zanjirni tuzatadi).
+- Push qilishdan oldin `alembic upgrade head` bilan albatta tekshiring —
+  chain uzilmaganini tasdiqlang.
+- Agar `git pull` paytida ikkita migratsiya to'qnashsa: kim keyin pull qilsa,
+  o'sha o'z migratsiyasining `down_revision`'ini yangilab qayta yozadi (fayl
+  nomini o'zgartirmaydi, faqat zanjirni tuzatadi).
 
 ## 4. `.env` va sekretlar
 
 - Har kim o'z lokal `.env` faylini saqlaydi, git'ga tushmaydi.
-- Yangi kalit qo'shsangiz — `.env.example`ga ham qo'shing va PR'da sheriklarga
+- Yangi kalit qo'shsangiz — `.env.example`ga ham qo'shing va sherigingizga
   aytib qo'ying (Telegram/chat orqali), aks holda ularning muhiti ishlamay
   qoladi.
 
@@ -59,12 +65,12 @@ qo'shsa, migratsiya zanjiri (`down_revision`) to'qnashadi.
   qisqa kelishib oling, keyin yozing. Faqat o'z modulingizga tegishli lokal
   qaror bo'lsa — yozib, xabar berish yetarli.
 
-## 7. Commit va PR
+## 7. Commit
 
 - Commit format o'zgarmaydi: `feat(attendance): DAV-01 davomat belgilash`.
-- PR tavsifida: qaysi task, qaysi "Tayyor" bandlari yopilgani, qanday test
-  qilingani yoziladi.
-- Bitta PR = bitta task. Aralashtirmang.
+- Bitta commit = bitta task. Aralashtirmang.
+- Commit xabarida: qaysi task, qaysi "Tayyor" bandlari yopilgani. Test qilingan
+  bo'lsa — nima tekshirilgani.
 
 ## 8. Aloqa
 
