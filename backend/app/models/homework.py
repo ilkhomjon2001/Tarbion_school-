@@ -26,7 +26,7 @@ from app.models.base import Entity
 from app.models.school import Student
 
 
-class SubmissionStatus(str, enum.Enum):
+class SubmissionStatus(enum.StrEnum):
     ASSIGNED = "assigned"  # berilgan, hali topshirilmagan
     SUBMITTED = "submitted"  # topshirilgan, tekshirilmagan
     LATE = "late"  # UYV-04: muddatdan keyin topshirilgan
@@ -43,7 +43,7 @@ SUBMISSION_LABELS_UZ: dict[str, str] = {
 }
 
 
-class GradeKind(str, enum.Enum):
+class GradeKind(enum.StrEnum):
     """JUR-03: baho turlari. Har birining vazni sozlanadi."""
 
     CURRENT = "current"  # joriy
@@ -52,7 +52,7 @@ class GradeKind(str, enum.Enum):
     ANNUAL = "annual"  # yillik
 
 
-class GradingScale(str, enum.Enum):
+class GradingScale(enum.StrEnum):
     """JUR-02: baholash tizimi sozlanadi — 5 ballik yoki 100 ballik."""
 
     FIVE = "five"
@@ -129,7 +129,9 @@ class HomeworkSubmission(Entity):
     )
 
     status: Mapped[str] = mapped_column(
-        String(12), default=SubmissionStatus.ASSIGNED.value, server_default="assigned",
+        String(12),
+        default=SubmissionStatus.ASSIGNED.value,
+        server_default="assigned",
         nullable=False,
     )
     answer_text: Mapped[str | None] = mapped_column(Text)

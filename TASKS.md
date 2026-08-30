@@ -46,9 +46,11 @@ Backend — FastAPI + uv, `app/main.py` da `/health` endpoint. Frontend — Next
 
 **Tayyor:**
 - [ ] `docker compose up -d` bilan Postgres ko'tariladi
-- [ ] `uvicorn app.main:app --reload` → `GET /health` `{"status":"ok"}` qaytaradi
-- [ ] `pnpm dev` → Next.js bosh sahifasi ochiladi
-- [ ] `.env.example` da barcha kerakli kalitlar bor, haqiqiy sekret yo'q
+      — `docker-compose.yml` yozilgan, lekin ish mashinasida Docker o'rnatilmagan.
+      Baza masalasi hal bo'lgach tekshiriladi.
+- [x] `uvicorn app.main:app --reload` → `GET /health` `{"status":"ok"}` qaytaradi
+- [x] `pnpm dev` → Next.js bosh sahifasi ochiladi
+- [x] `.env.example` da barcha kerakli kalitlar bor, haqiqiy sekret yo'q
 
 ---
 

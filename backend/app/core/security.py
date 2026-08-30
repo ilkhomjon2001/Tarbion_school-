@@ -57,7 +57,7 @@ def create_token(
     now = utcnow()
     ttl = (
         timedelta(minutes=settings.access_token_ttl_minutes)
-        if token_type == "access"
+        if token_type == "access"  # noqa: S105 — parol emas, token turi
         else timedelta(days=settings.refresh_token_ttl_days)
     )
     token_id = jti or uuid.uuid4()
@@ -69,7 +69,7 @@ def create_token(
         "iat": int(now.timestamp()),
         "exp": int((now + ttl).timestamp()),
     }
-    if token_type == "access":
+    if token_type == "access":  # noqa: S105 — parol emas, token turi
         # Rollar faqat access tokenda — refresh token bilan huquq oshirib
         # bo'lmaydi, har yangilashda baza qayta o'qiladi.
         payload["roles"] = roles or []

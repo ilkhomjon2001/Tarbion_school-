@@ -6,7 +6,7 @@ shuning uchun har xatoning o'zbekcha matni bor.
 """
 
 from fastapi import Request, status
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import JSONResponse
 
 
 class AppError(Exception):
@@ -69,9 +69,7 @@ class EditWindowClosedError(AppError):
 
     status_code = status.HTTP_403_FORBIDDEN
     code = "muddat_tugadi"
-    message = (
-        "Bu darsni tahrirlash muddati tugagan. Administratorga murojaat qiling."
-    )
+    message = "Bu darsni tahrirlash muddati tugagan. Administratorga murojaat qiling."
 
 
 class ConflictError(AppError):
@@ -83,23 +81,23 @@ class ConflictError(AppError):
 
 
 class ValidationError(AppError):
-    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
     code = "notogri_qiymat"
     message = "Kiritilgan maʼlumot notoʻgʻri."
 
 
-async def app_error_handler(_: Request, exc: Exception) -> ORJSONResponse:
+async def app_error_handler(_: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, AppError)
     body: dict[str, object] = {"code": exc.code, "message": exc.message}
     if exc.details:
         body["details"] = exc.details
     headers = {"WWW-Authenticate": "Bearer"} if exc.status_code == 401 else None
-    return ORJSONResponse(status_code=exc.status_code, content=body, headers=headers)
+    return JSONResponse(status_code=exc.status_code, content=body, headers=headers)
 
 
-async def unhandled_error_handler(_: Request, exc: Exception) -> ORJSONResponse:
+async def unhandled_error_handler(_: Request, exc: Exception) -> JSONResponse:
     """Kutilmagan xato — ichki tafsilot foydalanuvchiga chiqmaydi."""
-    return ORJSONResponse(
+    return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "code": "ichki_xato",

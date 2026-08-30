@@ -20,7 +20,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Entity
 
 
-class GuardianRelation(str, enum.Enum):
+class GuardianRelation(enum.StrEnum):
     FATHER = "father"
     MOTHER = "mother"
     GUARDIAN = "guardian"

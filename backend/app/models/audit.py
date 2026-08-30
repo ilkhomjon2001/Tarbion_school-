@@ -9,7 +9,8 @@ import uuid
 from typing import Any
 
 from sqlalchemy import ForeignKey, Index, String
-from sqlalchemy.dialects.postgresql import INET, JSONB, UUID as PgUUID
+from sqlalchemy.dialects.postgresql import INET, JSONB
+from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import AppendOnly

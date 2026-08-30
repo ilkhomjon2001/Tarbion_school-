@@ -96,9 +96,7 @@ async def accessible_class_ids(session: AsyncSession, user: CurrentUser) -> set[
     return ids
 
 
-async def accessible_student_ids(
-    session: AsyncSession, user: CurrentUser
-) -> set[uuid.UUID] | None:
+async def accessible_student_ids(session: AsyncSession, user: CurrentUser) -> set[uuid.UUID] | None:
     """Foydalanuvchi koʻra oladigan oʻquvchilar. `None` = hammasi.
 
     - admin / direktor / superadmin → hammasi

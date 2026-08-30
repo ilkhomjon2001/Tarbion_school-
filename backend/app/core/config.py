@@ -1,15 +1,14 @@
 """Muhit sozlamalari. Barcha sekret .env dan olinadi, kodda yozilmaydi."""
 
 from functools import lru_cache
+from typing import Annotated
 
 from pydantic import Field, PostgresDsn, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     # --- Umumiy ---
     app_env: str = "development"
@@ -46,7 +45,10 @@ class Settings(BaseSettings):
     cookie_domain: str | None = None
 
     # --- CORS ---
-    cors_origins: list[str] = ["http://localhost:3000"]
+    # `NoDecode` shart: pydantic-settings murakkab tipni .env dan o'qiyotganda
+    # avval JSON deb parse qilishga urinadi va "http://a,http://b" da yiqiladi.
+    # NoDecode bilan xom qator validatorga yetib keladi.
+    cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
 
     # --- Domen qoidalari ---
     # DAV-03: davomat dars TUGAGANIDAN keyin 24 soat ustoz uchun ochiq.

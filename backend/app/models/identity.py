@@ -14,13 +14,14 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import INET, UUID as PgUUID
+from sqlalchemy.dialects.postgresql import INET
+from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import AppendOnly, Base, Entity, UUIDPk
 
 
-class RoleName(str, enum.Enum):
+class RoleName(enum.StrEnum):
     STUDENT = "student"
     PARENT = "parent"
     TEACHER = "teacher"
@@ -71,7 +72,7 @@ class User(Entity):
 
     @property
     def short_name(self) -> str:
-        """"Aliyev S." koʻrinishi — jadval ustunlariga sigʻishi uchun."""
+        """ "Aliyev S." koʻrinishi — jadval ustunlariga sigʻishi uchun."""
         initial = f"{self.first_name[0]}." if self.first_name else ""
         return f"{self.last_name} {initial}".strip()
 
@@ -104,9 +105,7 @@ class RefreshToken(Base, UUIDPk):
     """
 
     __tablename__ = "refresh_tokens"
-    __table_args__ = (
-        Index("ix_refresh_tokens_user_active", "user_id", "revoked_at"),
-    )
+    __table_args__ = (Index("ix_refresh_tokens_user_active", "user_id", "revoked_at"),)
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         PgUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False

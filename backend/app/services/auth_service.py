@@ -120,8 +120,12 @@ async def authenticate(
     # AUT-06: har kirish jurnalga.
     session.add(LoginLog(user_id=user.id, ip_address=ip, user_agent=(user_agent or "")[:255]))
     audit_service.record(
-        session, object_type="user", object_id=user.id, action=AuditAction.LOGIN,
-        actor_id=user.id, ip=ip,
+        session,
+        object_type="user",
+        object_id=user.id,
+        action=AuditAction.LOGIN,
+        actor_id=user.id,
+        ip=ip,
     )
 
     access, _ = create_token(user.id, "access", roles=user.role_names)
@@ -176,7 +180,9 @@ async def rotate_refresh(
     from app.core.security import decode_token
 
     try:
-        payload = decode_token(raw_token, "refresh")
+        # Natija kerak emas — imzo, muddat va turi tekshirilsa yetarli.
+        # Kimning tokeni ekani bazadagi yozuvdan aniqlanadi, JWT ichidan emas.
+        decode_token(raw_token, "refresh")
     except PyJWTError as exc:
         raise AuthRequiredError from exc
 
@@ -194,8 +200,12 @@ async def rotate_refresh(
             .values(revoked_at=utcnow(), revoked_reason="reuse_detected")
         )
         audit_service.record(
-            session, object_type="refresh_token", object_id=stored.id,
-            action="reuse_detected", actor_id=stored.user_id, ip=ip,
+            session,
+            object_type="refresh_token",
+            object_id=stored.id,
+            action="reuse_detected",
+            actor_id=stored.user_id,
+            ip=ip,
         )
         await session.commit()
         raise AuthRequiredError("Sessiya xavfsizlik sababli tugatildi. Qaytadan kiring.")
@@ -233,8 +243,11 @@ async def revoke_session(session: AsyncSession, *, raw_token: str | None) -> Non
         stored.revoked_at = utcnow()
         stored.revoked_reason = "logout"
         audit_service.record(
-            session, object_type="user", object_id=stored.user_id,
-            action=AuditAction.LOGOUT, actor_id=stored.user_id,
+            session,
+            object_type="user",
+            object_id=stored.user_id,
+            action=AuditAction.LOGOUT,
+            actor_id=stored.user_id,
         )
     await session.commit()
 
@@ -265,8 +278,13 @@ async def change_password(
         .values(revoked_at=utcnow(), revoked_reason="password_changed")
     )
     audit_service.record(
-        session, object_type="user", object_id=user.id, action=AuditAction.UPDATE,
-        new={"password": "***"}, actor_id=user.id, ip=ip,
+        session,
+        object_type="user",
+        object_id=user.id,
+        action=AuditAction.UPDATE,
+        new={"password": "***"},
+        actor_id=user.id,
+        ip=ip,
     )
     await session.commit()
 

@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# Namuna fayl git'da BO'LADI — sherikning muhiti ishlashi uchun kerak.
+!.env.example
 
 # vercel
 .vercel

@@ -19,10 +19,7 @@ _REDACTED = {"password", "password_hash", "token", "token_hash", "secret"}
 def _clean(payload: dict[str, Any] | None) -> dict[str, Any] | None:
     if not payload:
         return None
-    return {
-        k: ("***" if k in _REDACTED else _jsonable(v))
-        for k, v in payload.items()
-    }
+    return {k: ("***" if k in _REDACTED else _jsonable(v)) for k, v in payload.items()}
 
 
 def _jsonable(value: Any) -> Any:
