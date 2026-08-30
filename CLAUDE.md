@@ -31,7 +31,7 @@ sababini `docs/DECISIONS.md` ga yoz.
 ```
 frontend/    Next.js 15 (App Router) · TypeScript · Tailwind v4 · TanStack Query
 backend/     Python 3.12 · FastAPI · SQLAlchemy 2.0 (async) · Alembic · Pydantic v2
-db           PostgreSQL 16
+db           PostgreSQL 18
 auth         JWT — access 15 daqiqa, refresh 30 kun, rotatsiya + qayta
              ishlatishni aniqlash. Token httpOnly cookie da
 bot/         aiogram 3 (backend bilan umumiy DB va umumiy access qatlami)

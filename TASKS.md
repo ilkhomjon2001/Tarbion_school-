@@ -41,13 +41,13 @@ farzandi kelmasa Telegram'ga xabar keladi.
 
 Monorepo skeletini yarat: `backend/`, `frontend/`, `bot/`, `docs/`.
 Backend — FastAPI + uv, `app/main.py` da `/health` endpoint. Frontend — Next.js 15
-+ TypeScript + Tailwind v4. `docker-compose.yml` da faqat PostgreSQL 16.
++ TypeScript + Tailwind v4. `docker-compose.yml` da faqat PostgreSQL 18.
 `.env.example`, `.gitignore`, `README.md` (ishga tushirish buyruqlari).
 
 **Tayyor:**
-- [ ] `docker compose up -d` bilan Postgres ko'tariladi
-      — `docker-compose.yml` yozilgan, lekin ish mashinasida Docker o'rnatilmagan.
-      Baza masalasi hal bo'lgach tekshiriladi.
+- [x] Postgres ko'tarildi — ish mashinasida lokal PostgreSQL 18.4 ishlatilyapti
+      (`tarbion` roli, `tarbion` va `tarbion_test` bazalari). `docker-compose.yml`
+      ham yozilgan, Docker o'rnatilgan mashinada `docker compose up -d` ishlaydi.
 - [x] `uvicorn app.main:app --reload` → `GET /health` `{"status":"ok"}` qaytaradi
 - [x] `pnpm dev` → Next.js bosh sahifasi ochiladi
 - [x] `.env.example` da barcha kerakli kalitlar bor, haqiqiy sekret yo'q

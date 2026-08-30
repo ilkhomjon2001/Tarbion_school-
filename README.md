@@ -19,7 +19,7 @@ Xavfsizlik — [`docs/XAVFSIZLIK.md`](docs/XAVFSIZLIK.md).
 | pnpm | corepack orqali | `corepack pnpm --version` |
 | Python | 3.12 | `python --version` |
 | uv | 0.5+ | `uv --version` |
-| PostgreSQL | 16 | `docker compose up -d` yoki lokal oʻrnatma |
+| PostgreSQL | 18 | `docker compose up -d` yoki lokal oʻrnatma |
 
 ---
 
@@ -37,8 +37,21 @@ docker compose logs -f db      # "database system is ready" chiqishini kuting
 `tarbion` (ishchi) va `tarbion_test` (testlar uchun) bazalari
 avtomatik yaratiladi.
 
-Docker yoʻq boʻlsa — PostgreSQL 16 ni lokal oʻrnating va
-`backend/.env` dagi `DATABASE_URL` ni oʻzingiznikiga moslang.
+**Docker yoʻq boʻlsa** — PostgreSQL 18 ni lokal oʻrnating, soʻng rol va
+bazalarni bir marta yarating:
+
+```sql
+CREATE ROLE tarbion WITH LOGIN PASSWORD 'tarbion';
+CREATE DATABASE tarbion      OWNER tarbion ENCODING 'UTF8';
+CREATE DATABASE tarbion_test OWNER tarbion ENCODING 'UTF8';
+```
+
+```bash
+psql -U postgres -h 127.0.0.1 -f - < shu-sql
+```
+
+Parol boshqacha boʻlsa `backend/.env` dagi `DATABASE_URL` va
+`TEST_DATABASE_URL` ni moslang.
 
 ### 2. Backend
 

@@ -427,3 +427,16 @@ Toshkentdan kechikish 60–80 ms o'rniga 5–10 ms bo'ladi.
 
 Yuristdan tasdiq kutilmoqda. Hal bo'lmaguncha ishlab chiqarish serveriga
 real o'quvchi ma'lumoti yuklanmaydi.
+
+## 2026-08-30 · PostgreSQL 16 emas, 18
+
+Ish mashinasida PostgreSQL 18.4 o'rnatilgan edi. Ikkita yo'l bor edi:
+lokalga qo'shimcha 16 o'rnatish yoki hujjatdagi versiyani 18 ga ko'tarish.
+
+18 tanlandi: hozir ishlab chiqarish bazasi hali yaratilmagan, demak
+"pastga tushirish" majburiyati yo'q. Dev va prod bir xil major versiyada
+bo'lishi kerak — aks holda 18 da ishlagan so'rov 16 da boshqacha
+rejalashtirilishi mumkin.
+
+`docker-compose.yml` ham `postgres:18-alpine` ga o'tkazildi — Docker
+ishlatadigan odam ham xuddi shu versiyani oladi.
