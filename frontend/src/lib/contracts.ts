@@ -11,6 +11,9 @@
  *   GradeKind         → backend/app/models/homework.py
  *   GradingScale      → backend/app/models/homework.py
  *   BackendRole       → backend/app/models/identity.py
+ *   AppealTarget      → backend/app/models/appeals.py
+ *   AppealStatus      → backend/app/models/appeals.py
+ *   ContactKind       → backend/app/models/appeals.py
  *
  * Ikkalasi ajralib ketmasligi uchun tekshiruv bor:
  *   pnpm check:contracts
@@ -219,3 +222,51 @@ export const ROLE_PRIORITY: BackendRole[] = [
   "parent",
   "student",
 ];
+
+// ───────────────────────── Murojaatlar ─────────────────────────
+
+/** Murojaat kimga yoʻnaltirilgan (`backend/app/models/appeals.py`). */
+export type AppealTarget = "management" | "homeroom" | "subject_teacher";
+
+export const APPEAL_TARGETS: AppealTarget[] = [
+  "management",
+  "homeroom",
+  "subject_teacher",
+];
+
+export const APPEAL_TARGET_LABELS: Record<AppealTarget, string> = {
+  management: "Rahbariyat",
+  homeroom: "Sinf rahbari",
+  subject_teacher: "Fan oʻqituvchisi",
+};
+
+export type AppealStatus = "new" | "in_review" | "answered" | "closed";
+
+export const APPEAL_STATUSES: AppealStatus[] = [
+  "new",
+  "in_review",
+  "answered",
+  "closed",
+];
+
+export const APPEAL_STATUS_LABELS: Record<AppealStatus, string> = {
+  new: "Yangi",
+  in_review: "Koʻrib chiqilmoqda",
+  answered: "Javob berildi",
+  closed: "Yopilgan",
+};
+
+/**
+ * Administratorning ichki suhbat qaydi turi. Bu yozuv ota-onaga ham,
+ * ustozga ham koʻrsatilmaydi — backendda alohida endpointda va faqat
+ * administrator/rahbariyat uchun.
+ */
+export type ContactKind = "phone" | "in_person" | "online";
+
+export const CONTACT_KINDS: ContactKind[] = ["phone", "in_person", "online"];
+
+export const CONTACT_KIND_LABELS: Record<ContactKind, string> = {
+  phone: "Telefon",
+  in_person: "Yuzma-yuz",
+  online: "Onlayn",
+};

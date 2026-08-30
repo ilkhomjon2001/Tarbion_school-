@@ -25,7 +25,7 @@ import argparse
 import asyncio
 import json
 import sys
-from datetime import date, time, timedelta
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -39,6 +39,10 @@ from app.core.security import hash_password
 from app.core.timeutil import combine_local
 from app.models import (
     AcademicYear,
+    Appeal,
+    AppealMessage,
+    AppealNote,
+    AppealStatus,
     AttendanceRecord,
     AttendanceStatus,
     BellSchedule,
@@ -94,6 +98,9 @@ def pick(seed: int, low: int, high: int) -> int:
 # Bogʻliqlik tartibida — bola jadvallar oldin.
 TRUNCATE_ORDER = [
     "audit_log",
+    "appeal_notes",
+    "appeal_messages",
+    "appeals",
     "grades",
     "attendance_records",
     "homework_submissions",
@@ -348,6 +355,7 @@ async def seed(session: AsyncSession, data: dict[str, Any]) -> None:
 
     # Har bir oʻquvchiga bitta vasiy hisobi (AUT-03). Telefon raqami
     # takrorlanmasligi kerak — `users.phone` unique.
+    parents: dict[str, User] = {}
     for i, s in enumerate(data["students"]):
         if s["ref"] not in students:
             continue
@@ -372,6 +380,7 @@ async def seed(session: AsyncSession, data: dict[str, Any]) -> None:
                 is_primary=True,
             )
         )
+        parents[s["ref"]] = parent
         guardian_rows += 1
     await session.flush()
     print(f"  oʻquvchilar: {len(students)} · vasiylar: {guardian_rows}")
@@ -478,6 +487,131 @@ async def seed(session: AsyncSession, data: dict[str, Any]) -> None:
 
     await session.commit()
     print(f"  darslar: {lesson_rows} · davomat: {attendance_rows} · baholar: {grade_rows}")
+
+    # ── Murojaatlar (MUR-01…MUR-06) ──
+    await seed_appeals(session, data, students, parents, staff, classes, subjects)
+
+
+async def seed_appeals(
+    session: AsyncSession,
+    data: dict[str, Any],
+    students: dict[str, Student],
+    parents: dict[str, User],
+    staff: dict[str, User],
+    classes: dict[str, SchoolClass],
+    subjects: dict[str, Subject],
+) -> None:
+    """Demo yozishmalar.
+
+    Murojaat muallifi — oʻquvchining vasiy hisobi, "demo ota-ona" emas:
+    shunda ota-ona kabinetiga kirgan foydalanuvchi oʻz murojaatini
+    haqiqatan koʻradi va kirish nazorati demo maʼlumotda ham sinaladi.
+    """
+    appeals = data.get("appeals", [])
+    if not appeals:
+        return
+
+    by_ref: dict[str, Appeal] = {}
+    message_rows = 0
+
+    for a in appeals:
+        student = students.get(a["studentRef"])
+        author = parents.get(a["studentRef"])
+        if student is None or author is None:
+            continue
+
+        cls = classes.get(a["className"])
+        if a["target"] == "homeroom":
+            assignee_id = cls.homeroom_teacher_id if cls else None
+        elif a["target"] == "subject_teacher":
+            assignee = staff.get(a["assigneeRef"] or "")
+            assignee_id = assignee.id if assignee else None
+        else:
+            # Rahbariyat: masʼul biriktirilmagan — administrator taqsimlaydi.
+            assignee_id = None
+
+        subject = subjects.get(a["subject"]) if a.get("subject") else None
+        created = parse_moment(a["createdAt"])
+        last = parse_moment(a["messages"][-1]["createdAt"]) if a["messages"] else created
+
+        appeal = Appeal(
+            student_id=student.id,
+            author_id=author.id,
+            target=a["target"],
+            assignee_id=assignee_id,
+            subject_id=subject.id if subject else None,
+            title=a["title"],
+            status=a["status"],
+            created_at=created,
+            due_at=combine_local(date.fromisoformat(a["dueAt"]), time(18, 0)),
+            closed_at=last if a["status"] == AppealStatus.CLOSED.value else None,
+            last_message_at=last,
+        )
+        session.add(appeal)
+        await session.flush()
+        by_ref[a["ref"]] = appeal
+
+        for m in a["messages"]:
+            if m["author"] == "parent":
+                author_id = author.id
+            else:
+                writer = staff.get(m["staffRef"] or "")
+                author_id = writer.id if writer else (assignee_id or author.id)
+            session.add(
+                AppealMessage(
+                    appeal_id=appeal.id,
+                    author_id=author_id,
+                    body=m["text"],
+                    created_at=parse_moment(m["createdAt"]),
+                )
+            )
+            message_rows += 1
+
+    # Ichki qaydlar — administrator nomidan. Ota-ona va ustoz koʻrmaydi.
+    admin = staff.get("s-adm")
+    note_rows = 0
+    if admin is not None:
+        for n in data.get("appealNotes", []):
+            appeal = by_ref.get(n["appealRef"])
+            if appeal is None:
+                continue
+            session.add(
+                AppealNote(
+                    appeal_id=appeal.id,
+                    author_id=admin.id,
+                    kind=n["kind"],
+                    summary=n["summary"],
+                    about_teacher_id=(
+                        staff[n["aboutTeacherRef"]].id
+                        if n.get("aboutTeacherRef") in staff
+                        else None
+                    ),
+                    teacher_rating=n.get("teacherRating"),
+                    teacher_comment=n.get("teacherComment"),
+                )
+            )
+            note_rows += 1
+
+    await session.commit()
+    print(
+        f"  murojaatlar: {len(by_ref)} · xabarlar: {message_rows} · ichki qayd: {note_rows}"
+    )
+
+
+def parse_moment(value: str) -> datetime:
+    """"2026-08-27 09:20" yoki "2026-08-27" → UTC datetime.
+
+    Mock'dagi vaqt MAHALLIY (Asia/Tashkent). To'g'ridan-to'g'ri UTC deb
+    saqlansa yozishma besh soat oldinga surilib ketardi.
+    """
+    value = value.strip()
+    if " " in value:
+        day_part, time_part = value.split(" ", 1)
+        hour, minute = (int(x) for x in time_part.split(":")[:2])
+    else:
+        day_part, hour, minute = value, 9, 0
+    return combine_local(date.fromisoformat(day_part), time(hour, minute))
+
 
 
 async def main() -> None:

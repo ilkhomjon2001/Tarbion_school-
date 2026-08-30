@@ -5,6 +5,17 @@ shu yerda roʻyxatdan oʻtishi shart — aks holda jadval migratsiyaga tushmaydi
 """
 
 from app.models.academic import AcademicYear, BellSchedule, Holiday, Term
+from app.models.appeals import (
+    APPEAL_STATUS_LABELS_UZ,
+    APPEAL_TARGET_LABELS_UZ,
+    CONTACT_KIND_LABELS_UZ,
+    Appeal,
+    AppealMessage,
+    AppealNote,
+    AppealStatus,
+    AppealTarget,
+    ContactKind,
+)
 from app.models.attendance import ATTENDANCE_LABELS_UZ, AttendanceRecord, AttendanceStatus
 from app.models.audit import AuditAction, AuditLog
 from app.models.base import AppendOnly, Base, Entity
@@ -41,11 +52,16 @@ from app.models.school import (
 )
 
 __all__ = [
-    "ATTENDANCE_LABELS_UZ",
-    "SCALE_MAX",
-    "SUBMISSION_LABELS_UZ",
     "AcademicYear",
+    "APPEAL_STATUS_LABELS_UZ",
+    "APPEAL_TARGET_LABELS_UZ",
+    "Appeal",
+    "AppealMessage",
+    "AppealNote",
+    "AppealStatus",
+    "AppealTarget",
     "AppendOnly",
+    "ATTENDANCE_LABELS_UZ",
     "AttendanceRecord",
     "AttendanceStatus",
     "AuditAction",
@@ -53,6 +69,8 @@ __all__ = [
     "Base",
     "BellSchedule",
     "ClassSubject",
+    "CONTACT_KIND_LABELS_UZ",
+    "ContactKind",
     "Entity",
     "Grade",
     "GradeKind",
@@ -69,11 +87,13 @@ __all__ = [
     "RefreshToken",
     "Role",
     "RoleName",
+    "SCALE_MAX",
     "ScheduleEntry",
     "SchoolClass",
     "Student",
-    "SubmissionStatus",
     "Subject",
+    "SUBMISSION_LABELS_UZ",
+    "SubmissionStatus",
     "TeacherSubject",
     "Term",
     "User",

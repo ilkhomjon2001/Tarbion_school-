@@ -16,6 +16,12 @@ import { DIRECTOR, staffById } from "@/lib/school/staff";
 type Tab = "management" | "teachers";
 
 /**
+ * ESLATMA (2026-08-30): rahbariyat sahifasi endi `LiveAppeals` ni
+ * ishlatadi. Bu komponent mock `APPEALS` ustida ishlaydi va hozircha
+ * hech qayerda chaqirilmaydi — mock qatlami olib tashlanganda oʻchiriladi.
+ */
+
+/**
  * Rahbariyat uchun murojaatlar boshqaruvi.
  *
  * Ikki oqim ajratilgan (loyiha egasi soʻrovi):
@@ -28,8 +34,8 @@ type Tab = "management" | "teachers";
 export function AppealsBoard({ appeals }: { appeals: Appeal[] }) {
   const [tab, setTab] = useState<Tab>("management");
 
-  const management = useMemo(() => appeals.filter((a) => a.target === "rahbariyat"), [appeals]);
-  const teachers = useMemo(() => appeals.filter((a) => a.target !== "rahbariyat"), [appeals]);
+  const management = useMemo(() => appeals.filter((a) => a.target === "management"), [appeals]);
+  const teachers = useMemo(() => appeals.filter((a) => a.target !== "management"), [appeals]);
   const stats = useMemo(() => appealStatsByClass(appeals), [appeals]);
 
   const shown = tab === "management" ? management : teachers;

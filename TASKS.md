@@ -490,8 +490,14 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
   - Frontend: ✅ tayyor — `/student/*` — 12 sahifa
 - [ ] T-035 · Ota-ona kabineti: baholar va uy vazifasi — OTA-04, OTA-05
   - Frontend: ✅ tayyor — `/ota-ona/baholar`
-- [ ] T-036 · Murojaatlar moduli — MUR-01…MUR-04
-  - Frontend: ✅ tayyor — `/ota-ona/murojaat`, `/teacher/murojaat`, `/rahbar/murojaatlar`, `/admin/murojaatlar` — admin oʻzi ham yozishma boshlay oladi
+- [~] T-036 · Murojaatlar moduli — MUR-01…MUR-04
+  - Backend: ✅ `appeals` + `appeal_messages` + `appeal_notes`, 12 endpoint, 30 test
+  - Frontend: ✅ ota-ona, administrator va rahbariyat sahifalari BAZADAN oʻqiydi
+  - Ustoz kabineti (`/teacher/murojaat`) hali mock ustida — keyingi qadam
+  - Ochiq savol: administrator ota-ona NOMIDAN murojaat ocha oladimi?
+    Mockda bunday tugma bor edi, backendda yoʻl ataylab yopiq — murojaatni
+    faqat ota-onaning oʻzi ochadi. Loyiha egasidan javob kutilmoqda;
+    `components/admin/ConversationsBoard.tsx` shu sabab oʻchirilmadi.
 - [ ] T-037 · Sababli qoldirish arizasi — DAV-04
   - Frontend: ⬜ yoʻq
 - [ ] T-038 · 2-bosqich xabarnomalari — Ilova B (2-bosqich qatorlari)

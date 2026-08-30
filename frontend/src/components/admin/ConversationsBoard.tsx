@@ -34,6 +34,17 @@ const FILTER_LABELS: Record<Filter, string> = {
 };
 
 /**
+ * ESLATMA (2026-08-30): administrator sahifasi endi `LiveAppeals` ni
+ * ishlatadi — murojaatlar bazadan oʻqiladi. Bu komponent OʻCHIRILMADI,
+ * chunki unda hal qilinmagan bitta oqim bor: `NewAppealDialog` —
+ * administrator ota-ona NOMIDAN murojaat ochishi (telefon qoʻngʻirogʻini
+ * qayd qilish). Backendda bu yoʻl ataylab yopiq: murojaatni faqat
+ * ota-onaning oʻzi ocha oladi. Qaysi biri toʻgʻri ekani loyiha egasidan
+ * soʻraladi — javob kelgach bu fayl yo oʻchiriladi, yo oqim backendga
+ * koʻchiriladi.
+ */
+
+/**
  * Ota-ona bilan yozishma va suhbat qaydnomasi.
  *
  * Yozishmaning oʻzi `lib/school/appeals.ts` dan — ota-ona va ustoz

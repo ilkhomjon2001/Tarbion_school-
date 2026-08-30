@@ -512,3 +512,46 @@ kesimida koʻradi, shuning uchun u `is_staff_wide` ga kiritildi.
 MUHIM cheklov: bu faqat oʻquvchi va sinf koʻrinishi. Moliya endpointlari
 paydo boʻlganda ular `is_staff_wide` ga TAYANMASLIGI kerak — oʻquv boʻlimi
 toʻlov va qarzdorlikni koʻrmaydi. Izoh `access.py` da qoldirildi.
+
+
+## 2026-08-30 — Murojaatlar moduli: kirish nazorati va ruxsat chegaralari
+
+**Bitta endpoint, uchta kabinet.** `/api/v1/appeals` ota-onaga, ustozga va
+administratorga bir xil javob beradi; kim nimani koʻrishini
+`appeals_service._scope()` soʻrovga shart qoʻshib hal qiladi. Rol boʻyicha
+uchta alohida endpoint yozilmadi: bu uchta joyda uchta kirish nazorati
+degani va biri kechroq unutilardi.
+
+**Oʻquv boʻlimi (`academic`) murojaatlarni koʻrmaydi.** `access.py` dagi
+`is_staff_wide` unga butun maktab kesimini ochadi, lekin murojaatda oilaviy
+holat, toʻlov qiyinchiligi va sogʻliq haqida gap boradi. Shu sabab bu modul
+`is_staff_wide` ga tayanmaydi — ruxsat alohida roʻyxat bilan
+(`APPEAL_WIDE_ROLES`). Bu `access.py` izohidagi «moliya endpointlari alohida
+tekshiruv qoʻyadi» qoidasining aynan shu holati.
+
+**Ichki qaydlar alohida endpointda.** `appeal_notes` — maktabning oʻz
+kuzatuvi («otasi bilan telefonda gaplashildi, toʻlovni suradi»). U
+`AppealOut` ichida qaytarilmaydi: bitta unutilgan maydon butun qaydni
+ota-onaga koʻrsatib yuborardi.
+
+**`assignee_id` soʻrovdan olinmaydi.** Sinf rahbari bolaning sinfidan
+hisoblanadi; fan oʻqituvchisi esa tekshiriladi — tanlangan xodim shu bolaga
+haqiqatan dars berayotgani `lessons` dan qaraladi. Aks holda ota-ona «fan
+oʻqituvchisi» niqobida istagan xodimga yozib yuborardi.
+
+**Murojaat yoʻnalishi kodlari inglizcha.** `management` / `homeroom` /
+`subject_teacher` — mockdagi `rahbariyat` / `sinf_rahbari` /
+`fan_oqituvchisi` oʻrniga. Sabab `GradeKind` bilan bir xil: kod inglizcha,
+yorliq oʻzbekcha, va kod backend enum'idan `contracts.ts` orqali keladi.
+`pnpm check:contracts` endi bu uchtasini ham tekshiradi.
+
+**Javob muddati — 3 kun** (`RESPONSE_DAYS`). Yaratilishda `due_at` ga yozib
+qoʻyiladi va keyin qayta hisoblanmaydi: aks holda konstanta oʻzgarganda
+«muddati oʻtdi» hisoboti oʻtmishni ham qayta yozardi.
+
+**Ichki qaydda ustoz baholash maydonlari saqlab qolindi.** Administrator
+kabinetidagi mavjud forma suhbatni ustozga bogʻlab, 1..5 baho va izoh
+soʻrardi. Integratsiya funksiya yoʻqotish boʻlmasligi uchun
+`appeal_notes` ga `about_teacher_id`, `teacher_rating`, `teacher_comment`
+qoʻshildi. Chegara (1..5) bazada ham — bu qiymat keyinchalik ustozlar
+faoliyati hisobotiga tushadi.

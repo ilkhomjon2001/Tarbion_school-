@@ -12,33 +12,33 @@
  * faqat oʻz murojaatlarini, ustoz faqat oʻziga kelganini koʻradi.
  */
 
+import {
+  APPEAL_STATUS_LABELS,
+  APPEAL_TARGET_LABELS,
+  type AppealStatus,
+  type AppealTarget,
+} from "@/lib/contracts";
 import { staffById, type Staff } from "@/lib/school/staff";
 
-/** Murojaat kimga yoʻnaltirilgan. */
-export type AppealTarget = "rahbariyat" | "sinf_rahbari" | "fan_oqituvchisi";
-
-export const APPEAL_TARGET_LABELS: Record<AppealTarget, string> = {
-  rahbariyat: "Rahbariyat",
-  sinf_rahbari: "Sinf rahbari",
-  fan_oqituvchisi: "Fan oʻqituvchisi",
-};
-
-export type AppealStatus = "new" | "in_review" | "answered" | "closed";
-
-export const APPEAL_STATUS_LABELS: Record<AppealStatus, string> = {
-  new: "Yangi",
-  in_review: "Koʻrib chiqilmoqda",
-  answered: "Javob berildi",
-  closed: "Yopilgan",
-};
+// Kod va yorliqlar backend enum'ining aksi — `lib/contracts.ts` da.
+// Bu yerda qayta eʼlon qilinmaydi (CLAUDE.md: «frontendda yangi kod
+// oʻylab topilmaydi»). Qayta eksport — eski importlar buzilmasin uchun.
+export { APPEAL_STATUS_LABELS, APPEAL_TARGET_LABELS };
+export type { AppealStatus, AppealTarget };
 
 export type MessageAuthor = "parent" | "staff";
 
 export interface AppealMessage {
   id: string;
   author: MessageAuthor;
-  /** Xodim yozgan boʻlsa — uning id'si. */
+  /** Xodim yozgan boʻlsa — uning id'si (mock maʼlumot uchun). */
   staffId?: string;
+  /**
+   * Backenddan kelgan muallif ismi. Mock'da xodim `staffId` orqali
+   * topiladi; API'da id — UUID va `STAFF` roʻyxatida yoʻq, shuning uchun
+   * ism javob bilan birga keladi.
+   */
+  authorName?: string;
   text: string;
   createdAt: string;
 }
@@ -46,9 +46,11 @@ export interface AppealMessage {
 export interface Appeal {
   id: string;
   target: AppealTarget;
-  /** Murojaat yoʻnaltirilgan xodim (rahbariyat uchun ham toʻldiriladi). */
+  /** Murojaat yoʻnaltirilgan xodim. Rahbariyat uchun boʻsh boʻlishi mumkin. */
   assigneeId: string;
-  /** Faqat `fan_oqituvchisi` uchun. */
+  /** Backenddan kelgan masʼul ismi — `STAFF` da topilmaganda ishlatiladi. */
+  assigneeName?: string;
+  /** Faqat `subject_teacher` uchun. */
   subject?: string;
   className: string;
   studentFullName: string;
@@ -67,7 +69,7 @@ export const CURRENT_PARENT = "Abdullayev Rustam";
 export const APPEALS: Appeal[] = [
   {
     id: "ap-1",
-    target: "fan_oqituvchisi",
+    target: "subject_teacher",
     assigneeId: "t-1",
     subject: "Algebra",
     className: "11-A",
@@ -101,7 +103,7 @@ export const APPEALS: Appeal[] = [
   },
   {
     id: "ap-2",
-    target: "sinf_rahbari",
+    target: "homeroom",
     assigneeId: "t-1",
     className: "11-A",
     studentFullName: "Abdullayev Alisher",
@@ -128,7 +130,7 @@ export const APPEALS: Appeal[] = [
   },
   {
     id: "ap-3",
-    target: "rahbariyat",
+    target: "management",
     assigneeId: "s-dir",
     className: "6-B",
     studentFullName: "Abdullayeva Zarina",
@@ -149,7 +151,7 @@ export const APPEALS: Appeal[] = [
   // Boshqa ota-onalardan kelgan murojaatlar — rahbariyat statistikasi uchun.
   {
     id: "ap-4",
-    target: "rahbariyat",
+    target: "management",
     assigneeId: "s-dir",
     className: "11-B",
     studentFullName: "Jaloliddin Mirzayev",
@@ -176,7 +178,7 @@ export const APPEALS: Appeal[] = [
   },
   {
     id: "ap-5",
-    target: "fan_oqituvchisi",
+    target: "subject_teacher",
     assigneeId: "t-3",
     subject: "Fizika",
     className: "11-B",
@@ -197,7 +199,7 @@ export const APPEALS: Appeal[] = [
   },
   {
     id: "ap-6",
-    target: "sinf_rahbari",
+    target: "homeroom",
     assigneeId: "t-3",
     className: "11-B",
     studentFullName: "Jaloliddin Mirzayev",
@@ -217,7 +219,7 @@ export const APPEALS: Appeal[] = [
   },
   {
     id: "ap-7",
-    target: "rahbariyat",
+    target: "management",
     assigneeId: "s-dir",
     className: "5-A",
     studentFullName: "Malika Nortojiyeva",
@@ -237,7 +239,7 @@ export const APPEALS: Appeal[] = [
   },
   {
     id: "ap-8",
-    target: "fan_oqituvchisi",
+    target: "subject_teacher",
     assigneeId: "t-2",
     subject: "Ona tili",
     className: "9-B",
@@ -265,7 +267,7 @@ export const APPEALS: Appeal[] = [
   },
   {
     id: "ap-9",
-    target: "sinf_rahbari",
+    target: "homeroom",
     assigneeId: "t-5",
     className: "9-B",
     studentFullName: "Sherzod Rustamov",
@@ -296,12 +298,12 @@ export function isOpen(appeal: Appeal): boolean {
 
 /** Rahbariyatga kelgan murojaatlar. */
 export function appealsForManagement(list: Appeal[] = APPEALS): Appeal[] {
-  return list.filter((a) => a.target === "rahbariyat");
+  return list.filter((a) => a.target === "management");
 }
 
 /** Ustozlarga (sinf rahbari yoki fan oʻqituvchisi) kelgan murojaatlar. */
 export function appealsForTeachers(list: Appeal[] = APPEALS): Appeal[] {
-  return list.filter((a) => a.target !== "rahbariyat");
+  return list.filter((a) => a.target !== "management");
 }
 
 /** Muayyan xodimga kelgan murojaatlar — ustoz kabineti uchun. */
@@ -338,7 +340,7 @@ export function appealStatsByClass(list: Appeal[] = APPEALS): ClassAppealStat[] 
     };
     stat.total += 1;
     if (isOpen(appeal)) stat.open += 1;
-    if (appeal.target === "rahbariyat") stat.toManagement += 1;
+    if (appeal.target === "management") stat.toManagement += 1;
     else stat.toTeachers += 1;
     map.set(appeal.className, stat);
   }

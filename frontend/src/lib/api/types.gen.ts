@@ -5,6 +5,326 @@ export type ClientOptions = {
 };
 
 /**
+ * AppealAssigneeOut
+ *
+ * Ota-ona murojaat yozayotganda tanlaydigan fan oʻqituvchisi.
+ *
+ * Roʻyxat SERVERDA quriladi — bolaning darslaridan. Frontend butun
+ * xodimlar roʻyxatini olib, oʻzi filtrlashi notoʻgʻri boʻlardi: bu
+ * maktabning butun kadrlar tarkibini ota-onaga koʻrsatardi (X-6).
+ */
+export type AppealAssigneeOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Subject Name
+     */
+    subject_name: string;
+};
+
+/**
+ * AppealChildOut
+ *
+ * Ota-onaning bitta farzandi va unga yozish mumkin boʻlgan xodimlar.
+ */
+export type AppealChildOut = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Class Name
+     */
+    class_name: string | null;
+    /**
+     * Homeroom Teacher Name
+     */
+    homeroom_teacher_name: string | null;
+    /**
+     * Teachers
+     */
+    teachers?: Array<AppealAssigneeOut>;
+};
+
+/**
+ * AppealCreateIn
+ */
+export type AppealCreateIn = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    target: AppealTarget;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Body
+     */
+    body: string;
+    /**
+     * Subject Id
+     */
+    subject_id?: string | null;
+    /**
+     * Assignee Id
+     */
+    assignee_id?: string | null;
+};
+
+/**
+ * AppealMessageOut
+ */
+export type AppealMessageOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Author Id
+     */
+    author_id: string;
+    /**
+     * Author Name
+     */
+    author_name: string;
+    /**
+     * Body
+     */
+    body: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * AppealNoteCreateIn
+ */
+export type AppealNoteCreateIn = {
+    kind: ContactKind;
+    /**
+     * Summary
+     */
+    summary: string;
+    /**
+     * About Teacher Id
+     */
+    about_teacher_id?: string | null;
+    /**
+     * Teacher Rating
+     */
+    teacher_rating?: number | null;
+    /**
+     * Teacher Comment
+     */
+    teacher_comment?: string | null;
+};
+
+/**
+ * AppealNoteOut
+ *
+ * ICHKI qayd — faqat administrator va rahbariyat javobida chiqadi.
+ */
+export type AppealNoteOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Appeal Id
+     */
+    appeal_id: string;
+    kind: ContactKind;
+    /**
+     * Summary
+     */
+    summary: string;
+    /**
+     * Author Id
+     */
+    author_id: string;
+    /**
+     * Author Name
+     */
+    author_name: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * About Teacher Id
+     */
+    about_teacher_id?: string | null;
+    /**
+     * About Teacher Name
+     */
+    about_teacher_name?: string | null;
+    /**
+     * Teacher Rating
+     */
+    teacher_rating?: number | null;
+    /**
+     * Teacher Comment
+     */
+    teacher_comment?: string | null;
+};
+
+/**
+ * AppealOptionsOut
+ *
+ * MUR-01 formasi uchun kerak boʻlgan hamma narsa — BITTA soʻrovda.
+ *
+ * Aks holda forma ochilganda uch-toʻrt soʻrov ketardi: farzandlar, sinf
+ * rahbari, fan oʻqituvchilari, fanlar.
+ */
+export type AppealOptionsOut = {
+    /**
+     * Children
+     */
+    children?: Array<AppealChildOut>;
+};
+
+/**
+ * AppealOut
+ *
+ * Roʻyxat va kartochka uchun umumiy koʻrinish.
+ *
+ * `messages` roʻyxatda boʻsh keladi va faqat bitta murojaat ochilganda
+ * toʻldiriladi: 100 ta murojaatning barcha yozishmasini bir soʻrovda
+ * yuborish ham sekin, ham keraksiz.
+ */
+export type AppealOut = {
+    /**
+     * Id
+     */
+    id: string;
+    target: AppealTarget;
+    status: AppealStatus;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Student Name
+     */
+    student_name: string;
+    /**
+     * Class Name
+     */
+    class_name: string | null;
+    /**
+     * Author Id
+     */
+    author_id: string;
+    /**
+     * Author Name
+     */
+    author_name: string;
+    /**
+     * Assignee Id
+     */
+    assignee_id: string | null;
+    /**
+     * Assignee Name
+     */
+    assignee_name: string | null;
+    /**
+     * Subject Name
+     */
+    subject_name: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Due At
+     */
+    due_at: string | null;
+    /**
+     * Closed At
+     */
+    closed_at: string | null;
+    /**
+     * Last Message At
+     */
+    last_message_at: string | null;
+    /**
+     * Message Count
+     */
+    message_count?: number;
+    /**
+     * Messages
+     */
+    messages?: Array<AppealMessageOut>;
+};
+
+/**
+ * AppealStatus
+ */
+export type AppealStatus = 'new' | 'in_review' | 'answered' | 'closed';
+
+/**
+ * AppealSummaryOut
+ *
+ * Kirish qutisi boshidagi raqamlar — foydalanuvchi kesimida.
+ */
+export type AppealSummaryOut = {
+    /**
+     * Total
+     */
+    total: number;
+    /**
+     * New
+     */
+    new: number;
+    /**
+     * Open
+     */
+    open: number;
+    /**
+     * Overdue
+     */
+    overdue: number;
+};
+
+/**
+ * AppealTarget
+ *
+ * Murojaat kimga yoʻnaltirilgan.
+ */
+export type AppealTarget = 'management' | 'homeroom' | 'subject_teacher';
+
+/**
+ * AssignIn
+ */
+export type AssignIn = {
+    /**
+     * Assignee Id
+     */
+    assignee_id: string;
+};
+
+/**
  * AttendancePoint
  */
 export type AttendancePoint = {
@@ -19,22 +339,35 @@ export type AttendancePoint = {
 };
 
 /**
- * ChangePasswordIn
+ * ClassAppealStatOut
  *
- * Parolni almashtirish (AUT-08).
- *
- * Eski parol soʻraladi — ochiq qolgan sessiyani topgan odam hisobni
- * butunlay egallab olmasin.
+ * MUR-06: qaysi sinfda murojaat koʻp.
  */
-export type ChangePasswordIn = {
+export type ClassAppealStatOut = {
     /**
-     * Current Password
+     * Class Name
      */
-    current_password: string;
+    class_name: string;
     /**
-     * New Password
+     * Total
      */
-    new_password: string;
+    total: number;
+    /**
+     * Open
+     */
+    open: number;
+    /**
+     * To Management
+     */
+    to_management: number;
+    /**
+     * To Teachers
+     */
+    to_teachers: number;
+    /**
+     * Overdue
+     */
+    overdue: number;
 };
 
 /**
@@ -66,6 +399,13 @@ export type ClassRowOut = {
      */
     average_grade: number;
 };
+
+/**
+ * ContactKind
+ *
+ * Administratorning ichki suhbat qaydi turi (ADM-16).
+ */
+export type ContactKind = 'phone' | 'in_person' | 'online';
 
 /**
  * DirectorOverviewOut
@@ -136,6 +476,16 @@ export type LoginIn = {
 };
 
 /**
+ * MessageCreateIn
+ */
+export type MessageCreateIn = {
+    /**
+     * Body
+     */
+    body: string;
+};
+
+/**
  * ReadinessOut
  *
  * Ilova soʻrov qabul qilishga tayyormi.
@@ -152,6 +502,13 @@ export type ReadinessOut = {
      * Database
      */
     database: boolean;
+};
+
+/**
+ * StatusUpdateIn
+ */
+export type StatusUpdateIn = {
+    status: AppealStatus;
 };
 
 /**
@@ -344,31 +701,6 @@ export type AuthMeResponses = {
 
 export type AuthMeResponse = AuthMeResponses[keyof AuthMeResponses];
 
-export type AuthChangePasswordData = {
-    body: ChangePasswordIn;
-    path?: never;
-    query?: never;
-    url: '/api/v1/auth/change-password';
-};
-
-export type AuthChangePasswordErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type AuthChangePasswordError = AuthChangePasswordErrors[keyof AuthChangePasswordErrors];
-
-export type AuthChangePasswordResponses = {
-    /**
-     * Successful Response
-     */
-    204: void;
-};
-
-export type AuthChangePasswordResponse = AuthChangePasswordResponses[keyof AuthChangePasswordResponses];
-
 export type DirectorOverviewData = {
     body?: never;
     path?: never;
@@ -436,6 +768,303 @@ export type DirectorTeachersResponses = {
 };
 
 export type DirectorTeachersResponse = DirectorTeachersResponses[keyof DirectorTeachersResponses];
+
+export type AppealsListAppealsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Status
+         */
+        status?: AppealStatus | null;
+        /**
+         * Target
+         */
+        target?: AppealTarget | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/appeals';
+};
+
+export type AppealsListAppealsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AppealsListAppealsError = AppealsListAppealsErrors[keyof AppealsListAppealsErrors];
+
+export type AppealsListAppealsResponses = {
+    /**
+     * Response Appeals List Appeals
+     *
+     * Successful Response
+     */
+    200: Array<AppealOut>;
+};
+
+export type AppealsListAppealsResponse = AppealsListAppealsResponses[keyof AppealsListAppealsResponses];
+
+export type AppealsCreateAppealData = {
+    body: AppealCreateIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/appeals';
+};
+
+export type AppealsCreateAppealErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AppealsCreateAppealError = AppealsCreateAppealErrors[keyof AppealsCreateAppealErrors];
+
+export type AppealsCreateAppealResponses = {
+    /**
+     * Successful Response
+     */
+    201: AppealOut;
+};
+
+export type AppealsCreateAppealResponse = AppealsCreateAppealResponses[keyof AppealsCreateAppealResponses];
+
+export type AppealsAppealsSummaryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/appeals/summary';
+};
+
+export type AppealsAppealsSummaryResponses = {
+    /**
+     * Successful Response
+     */
+    200: AppealSummaryOut;
+};
+
+export type AppealsAppealsSummaryResponse = AppealsAppealsSummaryResponses[keyof AppealsAppealsSummaryResponses];
+
+export type AppealsStatsClassesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/appeals/stats/classes';
+};
+
+export type AppealsStatsClassesResponses = {
+    /**
+     * Response Appeals Stats Classes
+     *
+     * Successful Response
+     */
+    200: Array<ClassAppealStatOut>;
+};
+
+export type AppealsStatsClassesResponse = AppealsStatsClassesResponses[keyof AppealsStatsClassesResponses];
+
+export type AppealsComposeOptionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/appeals/options';
+};
+
+export type AppealsComposeOptionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AppealOptionsOut;
+};
+
+export type AppealsComposeOptionsResponse = AppealsComposeOptionsResponses[keyof AppealsComposeOptionsResponses];
+
+export type AppealsGetAppealData = {
+    body?: never;
+    path: {
+        /**
+         * Appeal Id
+         */
+        appeal_id: string;
+    };
+    query?: never;
+    url: '/api/v1/appeals/{appeal_id}';
+};
+
+export type AppealsGetAppealErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AppealsGetAppealError = AppealsGetAppealErrors[keyof AppealsGetAppealErrors];
+
+export type AppealsGetAppealResponses = {
+    /**
+     * Successful Response
+     */
+    200: AppealOut;
+};
+
+export type AppealsGetAppealResponse = AppealsGetAppealResponses[keyof AppealsGetAppealResponses];
+
+export type AppealsAddMessageData = {
+    body: MessageCreateIn;
+    path: {
+        /**
+         * Appeal Id
+         */
+        appeal_id: string;
+    };
+    query?: never;
+    url: '/api/v1/appeals/{appeal_id}/messages';
+};
+
+export type AppealsAddMessageErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AppealsAddMessageError = AppealsAddMessageErrors[keyof AppealsAddMessageErrors];
+
+export type AppealsAddMessageResponses = {
+    /**
+     * Successful Response
+     */
+    201: AppealMessageOut;
+};
+
+export type AppealsAddMessageResponse = AppealsAddMessageResponses[keyof AppealsAddMessageResponses];
+
+export type AppealsUpdateStatusData = {
+    body: StatusUpdateIn;
+    path: {
+        /**
+         * Appeal Id
+         */
+        appeal_id: string;
+    };
+    query?: never;
+    url: '/api/v1/appeals/{appeal_id}/status';
+};
+
+export type AppealsUpdateStatusErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AppealsUpdateStatusError = AppealsUpdateStatusErrors[keyof AppealsUpdateStatusErrors];
+
+export type AppealsUpdateStatusResponses = {
+    /**
+     * Successful Response
+     */
+    200: AppealOut;
+};
+
+export type AppealsUpdateStatusResponse = AppealsUpdateStatusResponses[keyof AppealsUpdateStatusResponses];
+
+export type AppealsUpdateAssigneeData = {
+    body: AssignIn;
+    path: {
+        /**
+         * Appeal Id
+         */
+        appeal_id: string;
+    };
+    query?: never;
+    url: '/api/v1/appeals/{appeal_id}/assignee';
+};
+
+export type AppealsUpdateAssigneeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AppealsUpdateAssigneeError = AppealsUpdateAssigneeErrors[keyof AppealsUpdateAssigneeErrors];
+
+export type AppealsUpdateAssigneeResponses = {
+    /**
+     * Successful Response
+     */
+    200: AppealOut;
+};
+
+export type AppealsUpdateAssigneeResponse = AppealsUpdateAssigneeResponses[keyof AppealsUpdateAssigneeResponses];
+
+export type AppealsListNotesData = {
+    body?: never;
+    path: {
+        /**
+         * Appeal Id
+         */
+        appeal_id: string;
+    };
+    query?: never;
+    url: '/api/v1/appeals/{appeal_id}/notes';
+};
+
+export type AppealsListNotesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AppealsListNotesError = AppealsListNotesErrors[keyof AppealsListNotesErrors];
+
+export type AppealsListNotesResponses = {
+    /**
+     * Response Appeals List Notes
+     *
+     * Successful Response
+     */
+    200: Array<AppealNoteOut>;
+};
+
+export type AppealsListNotesResponse = AppealsListNotesResponses[keyof AppealsListNotesResponses];
+
+export type AppealsCreateNoteData = {
+    body: AppealNoteCreateIn;
+    path: {
+        /**
+         * Appeal Id
+         */
+        appeal_id: string;
+    };
+    query?: never;
+    url: '/api/v1/appeals/{appeal_id}/notes';
+};
+
+export type AppealsCreateNoteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AppealsCreateNoteError = AppealsCreateNoteErrors[keyof AppealsCreateNoteErrors];
+
+export type AppealsCreateNoteResponses = {
+    /**
+     * Successful Response
+     */
+    201: AppealNoteOut;
+};
+
+export type AppealsCreateNoteResponse = AppealsCreateNoteResponses[keyof AppealsCreateNoteResponses];
 
 export type ServiceHealthData = {
     body?: never;

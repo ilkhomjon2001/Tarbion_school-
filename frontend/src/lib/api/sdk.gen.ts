@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRefreshData, AuthRefreshResponses, DirectorClassesData, DirectorClassesResponses, DirectorOverviewData, DirectorOverviewErrors, DirectorOverviewResponses, DirectorTeachersData, DirectorTeachersResponses, ServiceHealthData, ServiceHealthResponses, ServiceReadinessData, ServiceReadinessResponses } from './types.gen';
+import type { AppealsAddMessageData, AppealsAddMessageErrors, AppealsAddMessageResponses, AppealsAppealsSummaryData, AppealsAppealsSummaryResponses, AppealsComposeOptionsData, AppealsComposeOptionsResponses, AppealsCreateAppealData, AppealsCreateAppealErrors, AppealsCreateAppealResponses, AppealsCreateNoteData, AppealsCreateNoteErrors, AppealsCreateNoteResponses, AppealsGetAppealData, AppealsGetAppealErrors, AppealsGetAppealResponses, AppealsListAppealsData, AppealsListAppealsErrors, AppealsListAppealsResponses, AppealsListNotesData, AppealsListNotesErrors, AppealsListNotesResponses, AppealsStatsClassesData, AppealsStatsClassesResponses, AppealsUpdateAssigneeData, AppealsUpdateAssigneeErrors, AppealsUpdateAssigneeResponses, AppealsUpdateStatusData, AppealsUpdateStatusErrors, AppealsUpdateStatusResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRefreshData, AuthRefreshResponses, DirectorClassesData, DirectorClassesResponses, DirectorOverviewData, DirectorOverviewErrors, DirectorOverviewResponses, DirectorTeachersData, DirectorTeachersResponses, ServiceHealthData, ServiceHealthResponses, ServiceReadinessData, ServiceReadinessResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -46,23 +46,6 @@ export const authLogout = <ThrowOnError extends boolean = false>(options?: Optio
 export const authMe = <ThrowOnError extends boolean = false>(options?: Options<AuthMeData, ThrowOnError>): RequestResult<AuthMeResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AuthMeResponses, unknown, ThrowOnError>({ url: '/api/v1/auth/me', ...options });
 
 /**
- * Change Password
- *
- * Foydalanuvchi oʻz parolini almashtiradi.
- *
- * Boshlangʻich 5 xonali parol shu yerda doimiysiga almashtiriladi va
- * `must_change_password` oʻchadi.
- */
-export const authChangePassword = <ThrowOnError extends boolean = false>(options: Options<AuthChangePasswordData, ThrowOnError>): RequestResult<AuthChangePasswordResponses, AuthChangePasswordErrors, ThrowOnError> => (options.client ?? client).post<AuthChangePasswordResponses, AuthChangePasswordErrors, ThrowOnError>({
-    url: '/api/v1/auth/change-password',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
  * Overview
  *
  * DIR-01: umumiy koʻrsatkichlar.
@@ -86,6 +69,124 @@ export const directorClasses = <ThrowOnError extends boolean = false>(options?: 
  * DIR-04: ustozlar faoliyati — yuklama, oʻtilgan dars, qoʻyilgan baho.
  */
 export const directorTeachers = <ThrowOnError extends boolean = false>(options?: Options<DirectorTeachersData, ThrowOnError>): RequestResult<DirectorTeachersResponses, unknown, ThrowOnError> => (options?.client ?? client).get<DirectorTeachersResponses, unknown, ThrowOnError>({ url: '/api/v1/director/teachers', ...options });
+
+/**
+ * List Appeals
+ *
+ * Foydalanuvchi koʻrishga haqli murojaatlar.
+ *
+ * Ota-ona oʻzinikini, ustoz oʻziga kelganini, administrator hammasini
+ * koʻradi — bir xil endpoint, kesimni server hal qiladi.
+ */
+export const appealsListAppeals = <ThrowOnError extends boolean = false>(options?: Options<AppealsListAppealsData, ThrowOnError>): RequestResult<AppealsListAppealsResponses, AppealsListAppealsErrors, ThrowOnError> => (options?.client ?? client).get<AppealsListAppealsResponses, AppealsListAppealsErrors, ThrowOnError>({ url: '/api/v1/appeals', ...options });
+
+/**
+ * Create Appeal
+ *
+ * MUR-01: ota-ona yangi murojaat yozadi.
+ */
+export const appealsCreateAppeal = <ThrowOnError extends boolean = false>(options: Options<AppealsCreateAppealData, ThrowOnError>): RequestResult<AppealsCreateAppealResponses, AppealsCreateAppealErrors, ThrowOnError> => (options.client ?? client).post<AppealsCreateAppealResponses, AppealsCreateAppealErrors, ThrowOnError>({
+    url: '/api/v1/appeals',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Appeals Summary
+ *
+ * Kirish qutisi boshidagi raqamlar — foydalanuvchi kesimida.
+ */
+export const appealsAppealsSummary = <ThrowOnError extends boolean = false>(options?: Options<AppealsAppealsSummaryData, ThrowOnError>): RequestResult<AppealsAppealsSummaryResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AppealsAppealsSummaryResponses, unknown, ThrowOnError>({ url: '/api/v1/appeals/summary', ...options });
+
+/**
+ * Stats Classes
+ *
+ * MUR-06: sinflar kesimi — qayerda muammo koʻp.
+ */
+export const appealsStatsClasses = <ThrowOnError extends boolean = false>(options?: Options<AppealsStatsClassesData, ThrowOnError>): RequestResult<AppealsStatsClassesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AppealsStatsClassesResponses, unknown, ThrowOnError>({ url: '/api/v1/appeals/stats/classes', ...options });
+
+/**
+ * Compose Options
+ *
+ * MUR-01 formasi uchun: farzandlar va ularga dars beradigan xodimlar.
+ */
+export const appealsComposeOptions = <ThrowOnError extends boolean = false>(options?: Options<AppealsComposeOptionsData, ThrowOnError>): RequestResult<AppealsComposeOptionsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AppealsComposeOptionsResponses, unknown, ThrowOnError>({ url: '/api/v1/appeals/options', ...options });
+
+/**
+ * Get Appeal
+ *
+ * Bitta murojaat — yozishmasi bilan.
+ *
+ * Ichki qaydlar (`AppealNote`) bu javobda YOʻQ: ular alohida endpointda
+ * va faqat administratorga.
+ */
+export const appealsGetAppeal = <ThrowOnError extends boolean = false>(options: Options<AppealsGetAppealData, ThrowOnError>): RequestResult<AppealsGetAppealResponses, AppealsGetAppealErrors, ThrowOnError> => (options.client ?? client).get<AppealsGetAppealResponses, AppealsGetAppealErrors, ThrowOnError>({ url: '/api/v1/appeals/{appeal_id}', ...options });
+
+/**
+ * Add Message
+ *
+ * MUR-03: yozishmani davom ettirish.
+ */
+export const appealsAddMessage = <ThrowOnError extends boolean = false>(options: Options<AppealsAddMessageData, ThrowOnError>): RequestResult<AppealsAddMessageResponses, AppealsAddMessageErrors, ThrowOnError> => (options.client ?? client).post<AppealsAddMessageResponses, AppealsAddMessageErrors, ThrowOnError>({
+    url: '/api/v1/appeals/{appeal_id}/messages',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Update Status
+ *
+ * MUR-05: holatni oʻzgartirish — xodim tomonidan.
+ */
+export const appealsUpdateStatus = <ThrowOnError extends boolean = false>(options: Options<AppealsUpdateStatusData, ThrowOnError>): RequestResult<AppealsUpdateStatusResponses, AppealsUpdateStatusErrors, ThrowOnError> => (options.client ?? client).patch<AppealsUpdateStatusResponses, AppealsUpdateStatusErrors, ThrowOnError>({
+    url: '/api/v1/appeals/{appeal_id}/status',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Update Assignee
+ *
+ * Rahbariyatga kelgan murojaatni masʼulga biriktirish (administrator).
+ */
+export const appealsUpdateAssignee = <ThrowOnError extends boolean = false>(options: Options<AppealsUpdateAssigneeData, ThrowOnError>): RequestResult<AppealsUpdateAssigneeResponses, AppealsUpdateAssigneeErrors, ThrowOnError> => (options.client ?? client).patch<AppealsUpdateAssigneeResponses, AppealsUpdateAssigneeErrors, ThrowOnError>({
+    url: '/api/v1/appeals/{appeal_id}/assignee',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List Notes
+ *
+ * ADM-16: ichki suhbat qaydlari — FAQAT administrator va rahbariyat.
+ */
+export const appealsListNotes = <ThrowOnError extends boolean = false>(options: Options<AppealsListNotesData, ThrowOnError>): RequestResult<AppealsListNotesResponses, AppealsListNotesErrors, ThrowOnError> => (options.client ?? client).get<AppealsListNotesResponses, AppealsListNotesErrors, ThrowOnError>({ url: '/api/v1/appeals/{appeal_id}/notes', ...options });
+
+/**
+ * Create Note
+ *
+ * ADM-16: telefon/yuzma-yuz/onlayn suhbat qaydi.
+ */
+export const appealsCreateNote = <ThrowOnError extends boolean = false>(options: Options<AppealsCreateNoteData, ThrowOnError>): RequestResult<AppealsCreateNoteResponses, AppealsCreateNoteErrors, ThrowOnError> => (options.client ?? client).post<AppealsCreateNoteResponses, AppealsCreateNoteErrors, ThrowOnError>({
+    url: '/api/v1/appeals/{appeal_id}/notes',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * Health
