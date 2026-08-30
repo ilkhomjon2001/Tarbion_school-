@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { AreaLineChart, SimpleBarChart } from "@/components/director/charts";
+import { AttendanceByClass } from "@/components/director/AttendanceByClass";
 import { ExportReportButton } from "@/components/director/ExportReportButton";
 import { getDirectorReports } from "@/lib/director/fetchers";
 import type { AtRiskReason } from "@/lib/director/types";
@@ -25,6 +26,8 @@ export default function ReportsPage() {
           <ExportSection />
         </Suspense>
       </div>
+      <AttendanceByClass />
+
       <Suspense fallback={<ReportsSkeleton />}>
         <ReportsSection />
       </Suspense>

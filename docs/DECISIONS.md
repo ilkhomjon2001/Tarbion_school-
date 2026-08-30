@@ -93,3 +93,25 @@ cheklanishi SHART (CLAUDE.md 6-qoida), har biriga alohida test kerak.
 Menyu endi faqat `/ota-ona/oshxona` da. Sabab (loyiha egasi): ovqatni
 ota-ona tanlaydi va toʻlaydi, oʻquvchiga koʻrsatish shart emas. Eslatma:
 TZ 10-boʻlimi boʻyicha oshxona moduli shartnoma doirasidan tashqarida.
+
+## 2026-08-30 · TZ hisoboti bekor — talab endi loyiha egasidan keladi
+Loyiha egasi: "TZ da yoʻq juda koʻp narsalar qoʻshiladi, TZ boʻyicha
+hisobot bermaymiz ham; TZ eng kam talab". Shu sabab bundan keyin yangi
+funksiya TZ'da yoʻqligi uchun soʻroq qilinmaydi — TZ minimal chegara
+sifatida qoladi, ustiga qoʻshilgani normal holat. DIR-xx/MUR-xx kabi
+kodlar kodda izoh sifatida qoladi (kelib chiqishini bilish uchun), lekin
+qamrov argumenti sifatida ishlatilmaydi.
+
+## 2026-08-30 · Demo oʻquvchilar qoʻlda emas, deterministik generatsiya
+16 sinf va ~370 oʻquvchi uchun mock maʼlumotni qoʻlda yozish amaliy emas.
+`lib/director/school-data.ts` ism fondidan FNV-1a xesh asosida barqaror
+generatsiya qiladi: bir xil sinf har safar bir xil oʻquvchi, toʻlov va
+davomatni beradi (sahifa yangilanganda raqam sakramaydi).
+Diqqat: bit siljitishda `>>` emas, `>>>` ishlatiladi — `>>` uint32 ni
+int32 ga aylantirib manfiy indeks berib qoʻygan va build buzilgan edi.
+
+## 2026-08-30 · Rahbariyat ustoz/sinf roʻyxati ham `lib/school/` dan
+`lib/director/data.ts` dagi qoʻlda yozilgan `teachers` va `schoolClasses`
+olib tashlandi — endi `lib/school/staff.ts` + `school-data.ts` dan hosil
+qilinadi. Ustoz yuklamasi (`weeklyLoadHours`) ham qoʻlda emas, haqiqiy
+dars biriktirmalari yigʻindisidan hisoblanadi.

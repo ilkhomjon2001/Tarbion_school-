@@ -89,7 +89,25 @@ export interface DirectorAnnouncement {
   createdAtLabel: string;
 }
 
+/** Bosh sahifa koʻrsatkichlari qaysi davr uchun hisoblansin. */
+export type OverviewPeriod = "month" | "year";
+
+export const OVERVIEW_PERIOD_LABELS: Record<OverviewPeriod, string> = {
+  month: "Oylik",
+  year: "Yillik",
+};
+
+/** Shartnomalar harakati: nechta qoʻshildi, nechta ketdi. */
+export interface ContractSummary {
+  startCount: number;
+  joined: number;
+  left: number;
+  current: number;
+  net: number;
+}
+
 export interface DirectorOverview {
+  period: OverviewPeriod;
   totalStudents: number;
   studentGrowthPercent: number;
   totalTeachers: number;
@@ -98,8 +116,15 @@ export interface DirectorOverview {
   averageGrade: number;
   /** DIR-02: ochiq (yopilmagan) murojaatlar soni. */
   openRequestsCount: number;
-  monthlyRevenue: number;
-  revenueVsPlanPercent: number;
+  /** Davr boʻyicha yigʻilgan tushum, soʻmda. */
+  revenue: number;
+  /** Davr boʻyicha yigʻilishi kerak boʻlgan summa, soʻmda. */
+  expectedRevenue: number;
+  /** Qarzdorlik summasi, soʻmda. */
+  debtAmount: number;
+  /** Qarzdorlik foizi. */
+  debtPercent: number;
+  contracts: ContractSummary;
   attendanceTrend: AttendanceTrendPoint[];
   alerts: DirectorAlert[];
   announcements: DirectorAnnouncement[];
