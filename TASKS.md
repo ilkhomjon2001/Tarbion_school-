@@ -10,6 +10,19 @@ Har bir taskda:
 
 Belgilar: `[ ]` boshlanmagan · `[~]` ishda · `[x]` tugagan
 
+**Frontend** qatori — mock maʼlumot ustidagi prototip holati:
+✅ tayyor · 🟡 qisman · ⬜ yoʻq. Prototip tayyor boʻlishi taskni YOPMAYDI:
+`[x]` uchun backend, migratsiya va testlar ham kerak. Bu qator faqat
+backendga oʻtganda nima qolganini koʻrsatadi.
+
+**Holat (30-avgust 2026):** 56 ta taskdan frontend prototipi
+✅ 26 tasida tayyor · 🟡 12 tasida qisman · ⬜ 18 tasida yoʻq.
+Backend tomondan hech bir task yopilmagan — 10 tasi `[~]` (boshlangan).
+
+Eng katta boʻshliq: `backend/app/main.py`, `api/v1/`, alembic va `bot/`
+umuman yoʻq. Shu sabab 1-bosqichning hech bir «Tayyor» mezoni bajarilmagan,
+frontend esa 2- va 3-bosqich ekranlarigacha borib qoʻygan.
+
 ---
 
 # 1-BOSQICH — Asos, davomat, ota-ona kabineti (1–4 hafta)
@@ -24,6 +37,7 @@ farzandi kelmasa Telegram'ga xabar keladi.
 ### [~] T-001 · Repo va muhit
 **TZ:** —
 **Kerak:** —
+**Frontend:** 🟡 qisman — `frontend/` toʻliq ishlaydi: Next 15 + TS + Tailwind v4, 53 sahifa quriladi. `backend/app/` da core+models+services bor, `main.py` va `/health` yoʻq. `bot/`, `docker-compose.yml`, `.env.example`, `README.md` yoʻq.
 
 Monorepo skeletini yarat: `backend/`, `frontend/`, `bot/`, `docs/`.
 Backend — FastAPI + uv, `app/main.py` da `/health` endpoint. Frontend — Next.js 15
@@ -41,6 +55,7 @@ Backend — FastAPI + uv, `app/main.py` da `/health` endpoint. Frontend — Next
 ### [~] T-002 · Baza ulanishi va migratsiya tizimi
 **TZ:** —
 **Kerak:** T-001
+**Frontend:** ⬜ yoʻq — Backend ishi — frontendga aloqasi yoʻq. `models/base.py` bor, alembic sozlanmagan.
 
 SQLAlchemy 2.0 async engine + session dependency. Alembic sozlanadi.
 `Base` klassida umumiy maydonlar: `id` (UUID), `created_at`, `updated_at`,
@@ -58,6 +73,7 @@ SQLAlchemy 2.0 async engine + session dependency. Alembic sozlanadi.
 ### [~] T-003 · Foydalanuvchi va rol modellari
 **TZ:** AUT-04, AUT-07
 **Kerak:** T-002
+**Frontend:** ✅ tayyor — `lib/roles.ts` — 6 rol (oʻquvchi, ustoz, ota-ona, rahbariyat, administrator, super administrator). `lib/access.ts` — 41 boʻlim reyestri, rol standarti + foydalanuvchi istisnosi. `/admin/sozlamalar` da rol biriktirish va huquq matritsasi.
 
 `users` (telefon, parol hash, F.I.Sh., holat), `roles`, `user_roles`.
 Bir foydalanuvchi bir nechta rolga ega bo'la oladi. Parol `argon2` bilan
@@ -75,6 +91,7 @@ Rollar: `student`, `parent`, `teacher`, `homeroom_teacher`, `admin`, `director`,
 ### [~] T-004 · Login, JWT, sessiya
 **TZ:** AUT-01, AUT-05, AUT-06, AUT-08
 **Kerak:** T-003
+**Frontend:** 🟡 qisman — `/login` — rol tanlash, «eslab qolish» (localStorage yoki sessionStorage). `lib/auth.ts` sessiyani saqlaydi. JWT, refresh va server sessiyasi yoʻq.
 
 Telefon + parol bilan kirish. Access token 15 daqiqa (JSON javobda),
 refresh token 30 kun (`httpOnly`, `Secure`, `SameSite=Lax` cookie).
@@ -109,6 +126,7 @@ jadvali). Har kirish `login_log` ga yoziladi: sana, IP, user-agent.
 ### [~] T-005 · Rolga asoslangan kirish nazorati
 **TZ:** NFR-08, 6-domen qoidasi
 **Kerak:** T-004
+**Frontend:** 🟡 qisman — `AuthGuard` beshta kabinetda ham: sessiya yoʻq → `/login`, rol boshqa kabinetniki → oʻz kabinetiga. Boʻlim koʻrinuvchanligi `lib/access.ts` orqali. Bu koʻrinishni boshqarish — server tekshiruvi yoʻq (7-qoida).
 
 `require_roles("teacher", "admin")` ko'rinishidagi dependency.
 Alohida: `get_accessible_student_ids(user)` — vasiy uchun faqat o'z farzandlari,
@@ -125,6 +143,7 @@ bo'yicha so'rovlar shu funksiyadan o'tadi.**
 ### [ ] T-006 · Parolni tiklash
 **TZ:** AUT-02
 **Kerak:** T-004, T-017
+**Frontend:** ⬜ yoʻq — Parolni tiklash ekrani yoʻq.
 
 Telefon raqami bo'yicha bir martalik kod (6 raqam, 10 daqiqa) Telegram orqali
 yuboriladi. Bot ulanmagan bo'lsa — administrator qo'lda tiklaydi.
@@ -141,6 +160,7 @@ yuboriladi. Bot ulanmagan bo'lsa — administrator qo'lda tiklaydi.
 ### [ ] T-007 · O'quv yili, choraklar, qo'ng'iroqlar jadvali
 **TZ:** ADM-01, ADM-07
 **Kerak:** T-005
+**Frontend:** ✅ tayyor — `/admin/baza` → «Oʻquv yili»: chorak sanalarini tahrirlash (`from < to` validatsiyasi, haftalar avtomatik qayta hisoblanadi), dars kunlari va dars vaqtlari roʻyxati. Bir nechta oʻquv yili va bayramlar yoʻq.
 
 `academic_years` (boshlanish, tugash, joriy), `terms` (chorak, sanalar),
 `holidays`, `bell_schedule` (para raqami, boshlanish, tugash vaqti).
@@ -156,6 +176,7 @@ Admin CRUD + frontend sahifasi.
 ### [ ] T-008 · Sinflar, fanlar, xodimlar
 **TZ:** ADM-02, ADM-03, ADM-04
 **Kerak:** T-007
+**Frontend:** ✅ tayyor — `/admin/baza`: Sinflar (ochish, sinf rahbari va sigʻimni oʻzgartirish, arxivlash — oʻquvchisi bor sinf arxivlanmaydi), Fanlar (qoʻshish, oʻquv rejasidan chiqarish), Xonalar (qoʻshish, foydalanishdan chiqarish). Xodimlar — `/rahbar/ustozlar` va `/admin/sozlamalar`.
 
 `classes` (nomi, o'quv yili, sinf rahbari), `subjects`,
 `class_subjects` (sinf + fan + haftalik soat), `teacher_subjects`.
@@ -171,6 +192,7 @@ Xodim yaratilganda `users` yozuvi va tegishli rol beriladi.
 ### [ ] T-009 · O'quvchilar va vasiylar
 **TZ:** ADM-05, ADM-06, ADM-11
 **Kerak:** T-008
+**Frontend:** ✅ tayyor — `/admin/oquvchilar` — roʻyxat, profil paneli, sinfga koʻchirish, arxivlash (sabab roʻyxatdan + sana), arxivdan qaytarish. `/admin/qabul` — vasiy maʼlumotlari bilan 4 bosqichli qabul. `/admin/shartnomalar` — kelgan-ketgan tarixi.
 
 `students` (F.I.Sh., tug'ilgan sana, sinf, holati), `guardians` — o'quvchi va
 `users` orasidagi bog'lanish (`relation`: ota / ona / vasiy, `is_primary`).
@@ -188,6 +210,7 @@ Amallar: boshqa sinfga ko'chirish, arxivga o'tkazish (o'chirish emas).
 ### [ ] T-010 · Excel'dan o'quvchilarni import
 **TZ:** ADM-05
 **Kerak:** T-009
+**Frontend:** ⬜ yoʻq — Excel import yoʻq. CSV EKSPORT bor (audit, soʻrovnoma natijalari, shartnomalar).
 
 Shablon fayl (`docs/import-template.xlsx`) generatsiyasi + yuklash.
 Import ikki qadamda: **avval tekshiruv** (xatoliklar jadvali qaytadi), keyin
@@ -204,6 +227,7 @@ tasdiqlash va yozish. Qisman import qilinmaydi — hammasi yoki hech nima.
 ### [~] T-011 · Dars jadvali
 **TZ:** ADM-08, ADM-09
 **Kerak:** T-008
+**Frontend:** ✅ tayyor — `/rahbar/jadval` — oy/hafta/kun koʻrinishlari, sinf va ustoz kesimida. `/teacher/jadval`, `/student/schedule`, `/rahbar/ustozlar/[id]` → «Dars jadvali». Toʻqnashuv nazorati backendda qoladi.
 
 `schedule_entries` (sinf, fan, ustoz, hafta kuni, para, xona).
 **To'qnashuv nazorati:** bitta ustoz yoki xona bir vaqtda ikki joyda band bo'la
@@ -221,6 +245,7 @@ Frontend: haftalik grid ko'rinish, sinf yoki ustoz bo'yicha filtr.
 ### [~] T-012 · Darslarni generatsiya qilish
 **TZ:** ADM-08 (hosila)
 **Kerak:** T-011
+**Frontend:** 🟡 qisman — `lib/teacher/schedule.ts` mock darslar generatsiyasi — sana boʻyicha dars roʻyxati chiqadi. Idempotentlik va taʼtil kunlari backend ishi.
 
 `lessons` — jadval asosida konkret sanaga yaratiladigan yozuv (sinf, fan, ustoz,
 sana, para). Davomat va baho **darsga** bog'lanadi, jadvalga emas.
@@ -238,6 +263,7 @@ Chorak boshlanganda avtomatik generatsiya, ta'til kunlari o'tkazib yuboriladi.
 ### [~] T-013 · Davomat modeli va API
 **TZ:** DAV-01, DAV-03, DAV-06, DAV-07
 **Kerak:** T-012
+**Frontend:** 🟡 qisman — `/teacher/davomat/[lessonId]` — 4 holat (keldi / kelmadi / sababli / kechikdi). 24 soat qulfi va audit backendda. Davomat foizi `lib/director/school-data.ts` da hisoblanadi (oʻquvchi / sinf / davr kesimida).
 
 `attendance_records` (dars, o'quvchi, holat, izoh, kim belgiladi, qachon).
 Holatlar: `present`, `absent`, `excused`, `late`.
@@ -258,6 +284,7 @@ Qoidalar:
 ### [ ] T-014 · Ustoz davomat ekrani
 **TZ:** DAV-01
 **Kerak:** T-013
+**Frontend:** ✅ tayyor — `/teacher` — bugungi darslar va «Davomat belgilash». `/teacher/davomat/[lessonId]` — oʻquvchilar roʻyxati, sukut boʻyicha hammasi «keldi», bir bosishda saqlanadi. Mobil 360px da ishlaydi.
 
 Ustoz bosh sahifasi: bugungi darslari ro'yxati, har birida "Davomat belgilash".
 Davomat ekrani — o'quvchilar ro'yxati, har birida 4 ta holat tugmasi.
@@ -274,6 +301,7 @@ Sukut bo'yicha hamma "keldi". Bir bosishda saqlanadi.
 ### [ ] T-015 · Sinf rahbari kunlik davomat ekrani
 **TZ:** DAV-02
 **Kerak:** T-013
+**Frontend:** 🟡 qisman — `/rahbar/sinflar` → sinf tanlanganda oʻquvchilar kesimida kunma-kun davomat kalendari (bugungi / haftalik / oylik). Sinf rahbari uchun «qatorlar — oʻquvchi, ustunlar — para» koʻrinishidagi TEZ TOʻLDIRISH ekrani yoʻq.
 
 Bitta ekranda butun sinfning kunlik davomati: qatorlar — o'quvchilar,
 ustunlar — paralar. Tez to'ldirish uchun.
@@ -290,6 +318,7 @@ ustunlar — paralar. Tez to'ldirish uchun.
 ### [ ] T-016 · Ota-ona kabineti — bosh sahifa va davomat
 **TZ:** OTA-01, OTA-02, OTA-03, OTA-08
 **Kerak:** T-013, T-005
+**Frontend:** ✅ tayyor — `/ota-ona` — bugungi davomat va soʻnggi eʼlonlar, farzand almashtirgich. `/ota-ona/davomat` — oylik kalendar, sababli/sababsiz ranglar, oylik foiz. 360px dan ishlaydi.
 
 Bosh sahifa: bugungi davomat, so'nggi e'lonlar. Bir nechta farzand bo'lsa —
 yuqorida farzand almashtirgich.
@@ -306,6 +335,7 @@ pastda oylik foiz.
 ### [ ] T-017 · Telegram bot: ulanish
 **TZ:** BOT-01
 **Kerak:** T-004
+**Frontend:** ⬜ yoʻq — `bot/` papkasi yaratilmagan.
 
 aiogram 3. `/start` → telefon raqamini so'raydi (contact tugmasi) →
 bazadagi vasiy bilan solishtiradi → tasdiq kodi → `telegram_id` saqlanadi.
@@ -321,6 +351,7 @@ Raqam topilmasa aniq xabar: maktabga murojaat qilish kerakligi.
 ### [ ] T-018 · Xabarnoma yadrosi (outbox + worker)
 **TZ:** BOT-02, BOT-06, BOT-07
 **Kerak:** T-017
+**Frontend:** 🟡 qisman — Frontendda eslatma yuborish tugmasi bor (`/admin/tolovlar` → «Eslatma», bot yoki SMS tanlanadi) va yozuv audit jurnaliga tushadi. Outbox jadvali va worker — backend ishi.
 
 `notification_outbox` (turi, qabul qiluvchi, kanal, matn, holati, urinishlar soni,
 xato matni). Kod xabarni **to'g'ridan-to'g'ri yubormaydi** — outbox'ga yozadi.
@@ -338,6 +369,7 @@ Alohida worker sikli yuboradi, xatoda 3 marta qayta uriniladi (backoff bilan).
 ### [ ] T-019 · Davomat xabarnomalari
 **TZ:** DAV-05, Ilova B (1-bosqich qatorlari)
 **Kerak:** T-018, T-013
+**Frontend:** ⬜ yoʻq — Xabarnoma shablonlari va yuborish yoʻq.
 
 - "Farzand darsga kelmadi" — davomat belgilangach 30 daqiqada (vaqt sozlanadi)
 - "Kunlik davomat xulosasi" — darslar tugagach
@@ -355,6 +387,7 @@ Matnlar shablon jadvalida, o'rin egallovchi maydonlar bilan (`{student_name}` va
 ### [ ] T-020 · E'lonlar va ommaviy yuborish
 **TZ:** ADM-12, BOT-04
 **Kerak:** T-018
+**Frontend:** ✅ tayyor — `/teacher/elon` — auditoriya tanlash (butun maktab / sinf) va yuborishdan oldin qabul qiluvchilar soni. Eʼlon `/student/announcements` va `/ota-ona/elonlar` da koʻrinadi.
 
 `announcements` (sarlavha, matn, fayl, auditoriya: butun maktab / sinf / rol).
 Admin e'lon chop etadi → tegishli foydalanuvchilarga outbox orqali yuboriladi.
@@ -370,6 +403,7 @@ Admin e'lon chop etadi → tegishli foydalanuvchilarga outbox orqali yuboriladi.
 ### [ ] T-021 · Audit jurnali
 **TZ:** NFR-10, DAV-07
 **Kerak:** T-013
+**Frontend:** ✅ tayyor — `/admin/audit` — 16 turdagi amal, filtr (amal turi va matn boʻyicha), CSV eksport. Tahrirlash va oʻchirish tugmasi ATAYLAB yoʻq. Admin panelidagi har bir amal yozuv qoldiradi.
 
 `audit_log` (obyekt turi, obyekt id, amal, eski qiymat JSON, yangi qiymat JSON,
 foydalanuvchi, vaqt, IP). Yozuvlar o'zgartirilmaydi.
@@ -384,6 +418,7 @@ Admin uchun ko'rish sahifasi: filtr — obyekt turi, foydalanuvchi, sana.
 ### [ ] T-022 · Zaxira nusxa va deploy
 **TZ:** NFR-07, NFR-09, NFR-12
 **Kerak:** T-001
+**Frontend:** ⬜ yoʻq — Deploy, HTTPS, zaxira nusxa — hech biri yoʻq.
 
 VPS: Nginx + HTTPS (Let's Encrypt), systemd birliklari (api, worker, bot).
 Har kunlik `pg_dump` → siqish → R2 ga yuklash, 30 kun saqlash.
@@ -399,6 +434,7 @@ Tiklash skripti va uni sinovdan o'tkazish yo'riqnomasi.
 ### [ ] T-023 · 1-bosqich qabuliga tayyorlash
 **TZ:** 9-bo'lim
 **Kerak:** T-001…T-022
+**Frontend:** ⬜ yoʻq — Playwright testlari va yoʻriqnomalar yoʻq.
 
 Bajarilgan talab kodlari ro'yxati (TZ bo'yicha), qisqa foydalanuvchi
 yo'riqnomasi (ustoz uchun 1 sahifa, ota-ona uchun 1 sahifa), demo ma'lumotlari
@@ -416,43 +452,76 @@ bilan sinov muhiti.
 Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
 
 - [ ] T-024 · Metodik baza ierarxiyasi va dars kartochkasi — MET-01, MET-02
+  - Frontend: ✅ tayyor — `/teacher/jadval` → fan boʻyicha baza brauzeri, `lib/teacher/plan-data.ts`
 - [ ] T-025 · R2 fayl yuklash va presigned URL — MET-03, NFR-11
+  - Frontend: ⬜ yoʻq
 - [ ] T-026 · Metodik bazada qidiruv va filtr — MET-05
+  - Frontend: 🟡 qisman — sinf boʻyicha filtr bor, toʻliq qidiruv yoʻq
 - [ ] T-027 · Reja tasdiqlash oqimi va versiyalar — MET-06, MET-07
+  - Frontend: ⬜ yoʻq
 - [ ] T-028 · Ustoz kabineti: yuklama va sinflar — MET-09
+  - Frontend: ✅ tayyor — `/rahbar/ustozlar/[id]` → «Sinflari» va «Statistika»
 - [ ] T-029 · Baholar jurnali: model va API — JUR-01, JUR-02, JUR-03
+  - Frontend: ⬜ yoʻq — backend ishi
 - [ ] T-030 · Jurnal ekrani (sinf × fan × sana) — JUR-01
+  - Frontend: ✅ tayyor — `/teacher/jurnal`
 - [ ] T-031 · Chorak bahosini hisoblash va qo'lda tuzatish — JUR-04
+  - Frontend: 🟡 qisman — `GradeBook.tsx` da chorak ustuni bor, qoʻlda tuzatish yoʻq
 - [~] T-032 · Uy vazifasi: berish va topshirish — UYV-01, UYV-02
+  - Frontend: ✅ tayyor — `/teacher/vazifa`, `/student/homework`
 - [~] T-033 · Uy vazifasini tekshirish va qaytarish — UYV-03, UYV-06
+  - Frontend: ✅ tayyor — `/teacher/vazifa/[id]`
 - [ ] T-034 · O'quvchi kabineti — jadval, vazifalar, natijalar
+  - Frontend: ✅ tayyor — `/student/*` — 12 sahifa
 - [ ] T-035 · Ota-ona kabineti: baholar va uy vazifasi — OTA-04, OTA-05
+  - Frontend: ✅ tayyor — `/ota-ona/baholar`
 - [ ] T-036 · Murojaatlar moduli — MUR-01…MUR-04
+  - Frontend: ✅ tayyor — `/ota-ona/murojaat`, `/teacher/murojaat`, `/rahbar/murojaatlar`, `/admin/murojaatlar` — admin oʻzi ham yozishma boshlay oladi
 - [ ] T-037 · Sababli qoldirish arizasi — DAV-04
+  - Frontend: ⬜ yoʻq
 - [ ] T-038 · 2-bosqich xabarnomalari — Ilova B (2-bosqich qatorlari)
+  - Frontend: ⬜ yoʻq
 - [ ] T-039 · Jadval istisnolari (dars almashtirish) — ADM-10
+  - Frontend: ⬜ yoʻq
 - [ ] T-040 · 2-bosqich qabuliga tayyorlash
+  - Frontend: ⬜ yoʻq
 
 ---
 
 # 3-BOSQICH — Testlar, to'lov, analitika (11–14 hafta)
 
 - [ ] T-041 · Savollar banki va savol turlari — TST-01, TST-02
+  - Frontend: 🟡 qisman — `/teacher/test` da savol qoʻshish bor, savollar banki yoʻq
 - [ ] T-042 · Test yaratish va parametrlar — TST-03
+  - Frontend: ✅ tayyor — `/teacher/test`
 - [ ] T-043 · Test ishlash va avtomatik tekshiruv — TST-04
+  - Frontend: ✅ tayyor — `/student/tests/[id]`
 - [ ] T-044 · Test natijalari tahlili — TST-05
+  - Frontend: 🟡 qisman — natija koʻrsatiladi, tahlil kesimlari yoʻq
 - [ ] T-045 · Savollarni Excel'dan import — TST-06
+  - Frontend: ⬜ yoʻq
 - [ ] T-046 · To'lov: shartnoma va to'lov jadvali — TOL-01, TOL-02
+  - Frontend: ✅ tayyor — `/admin/shartnomalar` — kelgan-ketgan bazasi, sabab va sana bilan
 - [ ] T-047 · To'lov kiritish va kvitansiya — TOL-03, TOL-04, TOL-07
+  - Frontend: ✅ tayyor — `/admin/tolovlar` — toʻlov kiritish, chek raqami, STORNO (tahrirlash yoʻq)
 - [ ] T-048 · Qarzdorlik hisoboti va eslatmalar — TOL-05, TOL-06
+  - Frontend: ✅ tayyor — `/admin/tolovlar` — qarzdorlar, muddat choʻzish, chegirma, hisobdan chiqarish, eslatma
 - [ ] T-049 · Ota-ona kabinetida to'lov — OTA-06
+  - Frontend: ✅ tayyor — `/ota-ona/tolov`
 - [ ] T-050 · Direktor paneli: KPI va grafiklar — DIR-01…DIR-06
+  - Frontend: ✅ tayyor — `/rahbar` va `/rahbar/hisobotlar` — 6 ta grafik
 - [ ] T-051 · Ustozlar faoliyati hisoboti — DIR-04
+  - Frontend: ✅ tayyor — `/rahbar/ustozlar/[id]` → «KPI» — 4 koʻrsatkich, imtihon dinamikasi, sinflar kesimi
 - [ ] T-052 · Xavf ostidagi o'quvchilar — DIR-07
+  - Frontend: ✅ tayyor — `isAtRisk()` — `/rahbar/sinflar` va davomat kesimida ajratiladi
 - [ ] T-053 · Hisobotlarni eksport (Excel/PDF) — DIR-08
+  - Frontend: 🟡 qisman — CSV eksport va brauzer orqali PDF bor, Excel yoʻq
 - [ ] T-054 · Ikki bosqichli tasdiqlash — AUT-09
+  - Frontend: ⬜ yoʻq
 - [ ] T-055 · Foydalanuvchi va administrator qo'llanmalari — NFR-16
+  - Frontend: ⬜ yoʻq
 - [ ] T-056 · Yakuniy qabul va topshirish
+  - Frontend: ⬜ yoʻq
 
 ---
 
