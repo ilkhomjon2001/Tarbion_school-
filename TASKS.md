@@ -138,7 +138,7 @@ jadvali). Har kirish `login_log` ga yoziladi: sana, IP, user-agent.
 
 ---
 
-### [~] T-005 · Rolga asoslangan kirish nazorati
+### [~] T-005 · Rolga asoslangan kirish nazorati  ← ISHDA (Ikrom, 31-avgust)
 **TZ:** NFR-08, 6-domen qoidasi
 **Kerak:** T-004
 **Frontend:** 🟡 qisman — `AuthGuard` beshta kabinetda ham: sessiya yoʻq → `/login`, rol boshqa kabinetniki → oʻz kabinetiga. Boʻlim koʻrinuvchanligi `lib/access.ts` orqali. Bu koʻrinishni boshqarish — server tekshiruvi yoʻq (7-qoida).
