@@ -90,6 +90,39 @@ corepack pnpm dev
 
 <http://localhost:3000>
 
+### 4. Demo maʼlumot
+
+Boʻsh baza bilan hech narsani koʻrib boʻlmaydi — rahbariyat kabineti,
+davomat va jurnal maʼlumot talab qiladi. Seed ikki qadamda:
+
+```bash
+cd frontend && corepack pnpm export:seed   # backend/seed-data.json yozadi
+cd backend  && uv run python -m app.seed   # bazaga yuklaydi
+```
+
+Yuklanadi: 16 sinf, 20 xodim, 362 oʻquvchi va vasiy, 194 dars sloti,
+776 dars, ~17 600 davomat yozuvi, ~2 800 baho (24-avgust — 20-sentabr).
+
+Manba — frontenddagi mock maʼlumot (`lib/school/staff.ts`,
+`lib/director/school-data.ts`). Nega shunday: u yerda ustozlar, sinflar,
+dars yuklamasi va oʻquvchilar allaqachon oʻzaro mos. Backendda qayta
+yozilsa ikkinchi haqiqat manbasi paydo boʻlardi va raqamlar farq qilardi.
+Davomat foizi ham oʻsha yerdan keladi — bazadan hisoblangan umumiy
+davomat (87.2%) mock bilan bir xil chiqadi.
+
+`seed-data.json` git'ga tushmaydi: u generatsiya natijasi va
+deterministik — kim ishga tushirsa ham bir xil fayl chiqadi.
+
+Qayta yuklash (avval tozalaydi):
+
+```bash
+cd backend && uv run python -m app.seed --reset
+```
+
+`--reset` domen jadvallarini TRUNCATE qiladi va `APP_ENV=production` da
+ishlamaydi. Demo hisoblarning paroli — `Tarbion2026!`, hammasida
+«parolni almashtirish» bayrogʻi yoqilgan.
+
 ---
 
 ## Testlar
