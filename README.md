@@ -79,6 +79,28 @@ curl http://localhost:8000/health/ready   # {"status":"ok",...}     — baza ula
 Interaktiv hujjat: <http://localhost:8000/docs>
 (ishlab chiqarishda yopiladi).
 
+### Birinchi super administrator
+
+Tizimda oʻz-oʻzidan roʻyxatdan oʻtish yoʻq — hisobni faqat huquqi bor
+administrator ochadi. Birinchi hisob shu buyruq bilan yaratiladi:
+
+```bash
+cd backend
+uv run python -m app.create_superadmin --last Familiya --first Ism
+```
+
+Login `familiya.ism` shaklida yasaladi, parol esa tasodifiy generatsiya
+qilinadi va **bir marta** ekranga chiqadi — bazada faqat xeshi qoladi.
+
+Sinov uchun parolni oʻzingiz berishingiz mumkin:
+
+```bash
+uv run python -m app.create_superadmin --last Familiya --first Ism     --password 'Tarbion2026!'
+```
+
+Hisob mavjud boʻlsa qayta yaratilmaydi; parolni yangilash uchun
+`--reset-password` qoʻshing.
+
 ### 3. Frontend
 
 ```bash
