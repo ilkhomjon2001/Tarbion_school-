@@ -3,10 +3,12 @@
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { ChevronRightIcon } from "@/components/ui/icons";
+import { GradeAccordionItem } from "@/components/director/GradeAccordion";
 import {
   allClassAttendanceStats,
   attendanceOf,
   ATTENDANCE_PERIOD_LABELS,
+  gradeAttendanceStats,
   isAtRisk,
   studentsOfClass,
   type AttendancePeriod,
@@ -16,12 +18,16 @@ import {
 const PERIODS: AttendancePeriod[] = ["week", "month"];
 
 /**
- * Davomat — sinflar kesimida (eng pastdan boshlab), sinf tanlangach
- * oʻquvchilar kesimida. Haftalik/oylik almashtirgich bilan.
+ * Davomat — uch bosqichli kesim:
+ *   1) sinf darajasi  — "5-sinflar", "6-sinflar" …
+ *   2) parallel sinf  — 5-A, 5-B (eng past koʻrsatkich tepada)
+ *   3) oʻquvchilar    — davomat foizi
+ * Haftalik/oylik almashtirgich va parallel filtri bilan.
  */
 export function AttendanceByClass() {
   const [period, setPeriod] = useState<AttendancePeriod>("month");
   const [parallel, setParallel] = useState<string>("all");
+  const [openGrade, setOpenGrade] = useState<number | null>(null);
   const [openClass, setOpenClass] = useState<string | null>(null);
 
   const stats = useMemo(() => allClassAttendanceStats(period), [period]);
@@ -29,30 +35,45 @@ export function AttendanceByClass() {
     () => Array.from(new Set(stats.map((s) => s.parallel))).sort(),
     [stats],
   );
-  const shown = useMemo(
+  const shownClasses = useMemo(
     () => (parallel === "all" ? stats : stats.filter((s) => s.parallel === parallel)),
     [stats, parallel],
   );
+  const grades = useMemo(() => gradeAttendanceStats(shownClasses), [shownClasses]);
 
+  const totalStudents = shownClasses.reduce((sum, s) => sum + s.studentCount, 0);
   const schoolAverage =
-    shown.length === 0
+    totalStudents === 0
       ? 0
-      : Math.round(shown.reduce((sum, s) => sum + s.averagePercent, 0) / shown.length);
+      : Math.round(
+          shownClasses.reduce((sum, s) => sum + s.averagePercent * s.studentCount, 0) /
+            totalStudents,
+        );
+
+  function toggleParallel(next: string) {
+    setParallel(next);
+    setOpenGrade(null);
+    setOpenClass(null);
+  }
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
         <div>
           <h2 className="text-base font-semibold text-foreground">
-            Sinflar kesimida davomat
+            Sinf darajalari kesimida davomat
           </h2>
           <p className="text-xs text-foreground-muted">
-            Eng past koʻrsatkich tepada · oʻrtacha{" "}
+            Darajani oching — parallel sinflar, sinfni oching — oʻquvchilar · oʻrtacha{" "}
             <span className="num font-medium text-foreground">{schoolAverage}%</span>
           </p>
         </div>
 
-        <div role="group" aria-label="Davr" className="flex gap-1 rounded-lg border border-border p-1">
+        <div
+          role="group"
+          aria-label="Davr"
+          className="flex gap-1 rounded-lg border border-border p-1"
+        >
           {PERIODS.map((p) => (
             <button
               key={p}
@@ -75,7 +96,7 @@ export function AttendanceByClass() {
         <span className="text-sm text-foreground-muted">Parallel:</span>
         <button
           type="button"
-          onClick={() => setParallel("all")}
+          onClick={() => toggleParallel("all")}
           aria-pressed={parallel === "all"}
           className={chipClass(parallel === "all")}
         >
@@ -85,7 +106,7 @@ export function AttendanceByClass() {
           <button
             key={p}
             type="button"
-            onClick={() => setParallel(p)}
+            onClick={() => toggleParallel(p)}
             aria-pressed={parallel === p}
             className={chipClass(parallel === p)}
           >
@@ -94,38 +115,67 @@ export function AttendanceByClass() {
         ))}
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-border bg-surface-muted/60 text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
-              <th className="px-4 py-3">Sinf</th>
-              <th className="px-4 py-3">Sinf rahbari</th>
-              <th className="px-4 py-3">Oʻquvchi</th>
-              <th className="w-[200px] px-4 py-3">Davomat</th>
-              <th className="px-4 py-3">Xavf ostida</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {shown.map((stat) => (
-              <ClassRow
-                key={stat.className}
-                stat={stat}
-                period={period}
-                isOpen={openClass === stat.className}
-                onToggle={() =>
-                  setOpenClass(openClass === stat.className ? null : stat.className)
-                }
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {shown.length === 0 && (
+      {grades.length === 0 ? (
         <p className="px-4 py-8 text-center text-sm text-foreground-muted">
           Bu parallelda sinf topilmadi.
         </p>
+      ) : (
+        <ul>
+          {grades.map((grade) => (
+            <GradeAccordionItem
+              key={grade.grade}
+              title={`${grade.grade}-sinflar`}
+              meta={`${grade.classCount} ta sinf · ${grade.studentCount} oʻquvchi`}
+              percent={grade.averagePercent}
+              barClass={barColor(grade.averagePercent)}
+              right={
+                <>
+                  <span className="capitalize">{grade.stage}</span>
+                  {grade.atRiskCount > 0 ? (
+                    <Badge tone="danger">{grade.atRiskCount} ta xavf ostida</Badge>
+                  ) : (
+                    <span>Xavf ostida yoʻq</span>
+                  )}
+                </>
+              }
+              isOpen={openGrade === grade.grade}
+              onToggle={() => {
+                setOpenGrade(openGrade === grade.grade ? null : grade.grade);
+                setOpenClass(null);
+              }}
+            >
+              <div className="overflow-hidden rounded-lg border border-border bg-surface">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[620px] border-collapse text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-surface-muted/60 text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
+                        <th className="px-3 py-2">Sinf</th>
+                        <th className="px-3 py-2">Sinf rahbari</th>
+                        <th className="px-3 py-2">Oʻquvchi</th>
+                        <th className="w-[180px] px-3 py-2">Davomat</th>
+                        <th className="px-3 py-2">Xavf ostida</th>
+                        <th className="px-3 py-2" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {grade.classes.map((stat) => (
+                        <ClassRow
+                          key={stat.className}
+                          stat={stat}
+                          period={period}
+                          isOpen={openClass === stat.className}
+                          onToggle={() =>
+                            setOpenClass(openClass === stat.className ? null : stat.className)
+                          }
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </GradeAccordionItem>
+          ))}
+        </ul>
       )}
     </div>
   );
@@ -163,9 +213,11 @@ function ClassRow({
   return (
     <>
       <tr
-        className={`border-b border-border last:border-0 ${isOpen ? "bg-brand-tint/30" : "hover:bg-surface-muted/50"}`}
+        className={`border-b border-border last:border-0 ${
+          isOpen ? "bg-brand-tint/30" : "hover:bg-surface-muted/50"
+        }`}
       >
-        <td className="px-4 py-3">
+        <td className="px-3 py-2.5">
           <button
             type="button"
             onClick={onToggle}
@@ -175,9 +227,9 @@ function ClassRow({
             {stat.className}
           </button>
         </td>
-        <td className="px-4 py-3 text-foreground-muted">{stat.homeroomTeacherName ?? "—"}</td>
-        <td className="num px-4 py-3 text-foreground-muted">{stat.studentCount}</td>
-        <td className="px-4 py-3">
+        <td className="px-3 py-2.5 text-foreground-muted">{stat.homeroomTeacherName ?? "—"}</td>
+        <td className="num px-3 py-2.5 text-foreground-muted">{stat.studentCount}</td>
+        <td className="px-3 py-2.5">
           <div className="flex items-center gap-2">
             <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-muted">
               <div
@@ -190,14 +242,14 @@ function ClassRow({
             </span>
           </div>
         </td>
-        <td className="px-4 py-3">
+        <td className="px-3 py-2.5">
           {stat.atRiskCount > 0 ? (
             <Badge tone="danger">{stat.atRiskCount} ta</Badge>
           ) : (
             <span className="text-xs text-foreground-muted">—</span>
           )}
         </td>
-        <td className="px-4 py-3 text-right">
+        <td className="px-3 py-2.5 text-right">
           <button
             type="button"
             onClick={onToggle}
@@ -212,8 +264,8 @@ function ClassRow({
       </tr>
 
       {isOpen && (
-        <tr className="border-b border-border bg-surface-muted/30">
-          <td colSpan={6} className="px-4 py-3">
+        <tr className="border-b border-border bg-surface-muted/40">
+          <td colSpan={6} className="px-3 py-3">
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-foreground-muted">
               {stat.className} — oʻquvchilar kesimida (
               {ATTENDANCE_PERIOD_LABELS[period].toLowerCase()})

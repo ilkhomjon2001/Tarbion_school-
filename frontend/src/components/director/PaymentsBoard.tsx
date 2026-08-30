@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/ui/icons";
+import { GradeAccordionItem } from "@/components/director/GradeAccordion";
 import { formatSom } from "@/lib/format";
 import {
+  gradePaymentStats,
   PAYMENT_STATUS_LABELS,
   studentsOfClass,
   type ClassPaymentStat,
@@ -20,9 +22,12 @@ const STATUS_TONE: Record<PaymentStatus, "success" | "warning" | "danger"> = {
 };
 
 /**
- * Toʻlovlar — avval SINFLAR kesimi (foiz + summa), sinf tanlangach
- * oʻquvchilar kesimi. Parallel harfi boʻyicha filtr (A, B, V, G) —
- * "barcha 8-sinflar qanday" degan savolga tez javob berish uchun.
+ * Toʻlovlar — uch bosqichli kesim:
+ *   1) sinf darajasi  — "5-sinflar", "6-sinflar" …
+ *   2) parallel sinf  — 5-A, 5-B
+ *   3) oʻquvchilar    — shartnoma, toʻlangan, qarz
+ * Parallel harfi boʻyicha filtr ("barcha A sinflar qanday") kesimlarni
+ * ham qayta hisoblaydi.
  */
 export function PaymentsBoard({
   summary,
@@ -32,6 +37,7 @@ export function PaymentsBoard({
   classStats: ClassPaymentStat[];
 }) {
   const [parallel, setParallel] = useState<string>("all");
+  const [openGrade, setOpenGrade] = useState<number | null>(null);
   const [openClass, setOpenClass] = useState<string | null>(null);
 
   const parallels = useMemo(
@@ -39,15 +45,17 @@ export function PaymentsBoard({
     [classStats],
   );
 
-  const shown = useMemo(
+  const shownClasses = useMemo(
     () => (parallel === "all" ? classStats : classStats.filter((c) => c.parallel === parallel)),
     [classStats, parallel],
   );
 
-  // Filtrlangan kesim boʻyicha jamlanma — pastdagi jadval sarlavhasida.
+  const grades = useMemo(() => gradePaymentStats(shownClasses), [shownClasses]);
+
+  // Filtrlangan kesim boʻyicha jamlanma — jadval sarlavhasida.
   const filteredTotals = useMemo(
     () =>
-      shown.reduce(
+      shownClasses.reduce(
         (acc, c) => ({
           expected: acc.expected + c.expected,
           collected: acc.collected + c.collected,
@@ -55,12 +63,18 @@ export function PaymentsBoard({
         }),
         { expected: 0, collected: 0, debt: 0 },
       ),
-    [shown],
+    [shownClasses],
   );
   const filteredPercent =
     filteredTotals.expected === 0
       ? 0
       : Math.round((filteredTotals.collected / filteredTotals.expected) * 100);
+
+  function toggleParallel(next: string) {
+    setParallel(next);
+    setOpenGrade(null);
+    setOpenClass(null);
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -79,9 +93,7 @@ export function PaymentsBoard({
 
         <Card>
           <p className="text-sm text-foreground-muted">Kechikkan toʻlovlar</p>
-          <p className="num mt-1 text-xl font-bold text-danger">
-            {formatSom(summary.debt)}
-          </p>
+          <p className="num mt-1 text-xl font-bold text-danger">{formatSom(summary.debt)}</p>
           <p className="mt-1 text-xs text-foreground-muted">
             <span className="num">{summary.overdueCount}</span> ta toʻlanmagan,{" "}
             <span className="num">{summary.partialCount}</span> ta qisman ·{" "}
@@ -96,9 +108,7 @@ export function PaymentsBoard({
           </p>
           <p className="mt-1 text-xs text-foreground-muted">
             Toʻliq toʻlagan ·{" "}
-            <span className="num">
-              {formatSom(summary.collected - (summary.collected % 1))}
-            </span>
+            <span className="num">{formatSom(summary.collected)}</span>
           </p>
         </Card>
       </div>
@@ -108,7 +118,7 @@ export function PaymentsBoard({
         <span className="text-sm text-foreground-muted">Parallel:</span>
         <button
           type="button"
-          onClick={() => setParallel("all")}
+          onClick={() => toggleParallel("all")}
           aria-pressed={parallel === "all"}
           className={chipClass(parallel === "all")}
         >
@@ -118,7 +128,7 @@ export function PaymentsBoard({
           <button
             key={p}
             type="button"
-            onClick={() => setParallel(p)}
+            onClick={() => toggleParallel(p)}
             aria-pressed={parallel === p}
             className={chipClass(parallel === p)}
           >
@@ -127,10 +137,12 @@ export function PaymentsBoard({
         ))}
       </div>
 
-      {/* Sinflar kesimi */}
+      {/* Sinf darajalari kesimi */}
       <div className="overflow-hidden rounded-xl border border-border bg-surface">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
-          <h2 className="text-base font-semibold text-foreground">Sinflar kesimida toʻlov</h2>
+          <h2 className="text-base font-semibold text-foreground">
+            Sinf darajalari kesimida toʻlov
+          </h2>
           <p className="text-xs text-foreground-muted">
             Yigʻilgan <span className="num font-medium text-foreground">{filteredPercent}%</span> ·{" "}
             <span className="num">{formatSom(filteredTotals.collected)}</span> / qarz{" "}
@@ -138,39 +150,75 @@ export function PaymentsBoard({
           </p>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-border bg-surface-muted/60 text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
-                <th className="px-4 py-3">Sinf</th>
-                <th className="px-4 py-3">Sinf rahbari</th>
-                <th className="px-4 py-3">Oʻquvchi</th>
-                <th className="px-4 py-3">Yigʻilgan</th>
-                <th className="px-4 py-3 w-[180px]">Foiz</th>
-                <th className="px-4 py-3">Qarzdorlik</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {shown.map((stat) => {
-                const isOpen = openClass === stat.className;
-                return (
-                  <FragmentRow
-                    key={stat.className}
-                    stat={stat}
-                    isOpen={isOpen}
-                    onToggle={() => setOpenClass(isOpen ? null : stat.className)}
-                  />
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {shown.length === 0 && (
+        {grades.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-foreground-muted">
             Bu parallelda sinf topilmadi.
           </p>
+        ) : (
+          <ul>
+            {grades.map((grade) => (
+              <GradeAccordionItem
+                key={grade.grade}
+                title={`${grade.grade}-sinflar`}
+                meta={`${grade.classCount} ta sinf · ${grade.studentCount} oʻquvchi`}
+                percent={grade.collectedPercent}
+                barClass={percentBar(grade.collectedPercent)}
+                right={
+                  <>
+                    <span>
+                      Yigʻilgan{" "}
+                      <span className="num font-medium text-foreground">
+                        {formatSom(grade.collected)}
+                      </span>
+                    </span>
+                    <span>
+                      Qarz{" "}
+                      <span className="num font-medium text-danger">
+                        {grade.debt > 0 ? formatSom(grade.debt) : "—"}
+                      </span>
+                    </span>
+                  </>
+                }
+                isOpen={openGrade === grade.grade}
+                onToggle={() => {
+                  setOpenGrade(openGrade === grade.grade ? null : grade.grade);
+                  setOpenClass(null);
+                }}
+              >
+                <div className="overflow-hidden rounded-lg border border-border bg-surface">
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[680px] border-collapse text-sm">
+                      <thead>
+                        <tr className="border-b border-border bg-surface-muted/60 text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
+                          <th className="px-3 py-2">Sinf</th>
+                          <th className="px-3 py-2">Sinf rahbari</th>
+                          <th className="px-3 py-2">Oʻquvchi</th>
+                          <th className="px-3 py-2">Yigʻilgan</th>
+                          <th className="w-[160px] px-3 py-2">Foiz</th>
+                          <th className="px-3 py-2">Qarzdorlik</th>
+                          <th className="px-3 py-2" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {grade.classes.map((stat) => (
+                          <ClassRow
+                            key={stat.className}
+                            stat={stat}
+                            isOpen={openClass === stat.className}
+                            onToggle={() =>
+                              setOpenClass(
+                                openClass === stat.className ? null : stat.className,
+                              )
+                            }
+                          />
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </GradeAccordionItem>
+            ))}
+          </ul>
         )}
       </div>
     </div>
@@ -185,7 +233,11 @@ function chipClass(active: boolean): string {
   }`;
 }
 
-function FragmentRow({
+function percentBar(percent: number): string {
+  return percent >= 90 ? "bg-success" : percent >= 75 ? "bg-warning" : "bg-danger";
+}
+
+function ClassRow({
   stat,
   isOpen,
   onToggle,
@@ -199,9 +251,11 @@ function FragmentRow({
   return (
     <>
       <tr
-        className={`border-b border-border last:border-0 ${isOpen ? "bg-brand-tint/30" : "hover:bg-surface-muted/50"}`}
+        className={`border-b border-border last:border-0 ${
+          isOpen ? "bg-brand-tint/30" : "hover:bg-surface-muted/50"
+        }`}
       >
-        <td className="px-4 py-3">
+        <td className="px-3 py-2.5">
           <button
             type="button"
             onClick={onToggle}
@@ -211,20 +265,14 @@ function FragmentRow({
             {stat.className}
           </button>
         </td>
-        <td className="px-4 py-3 text-foreground-muted">{stat.homeroomTeacherName ?? "—"}</td>
-        <td className="num px-4 py-3 text-foreground-muted">{stat.studentCount}</td>
-        <td className="num px-4 py-3 text-foreground">{formatSom(stat.collected)}</td>
-        <td className="px-4 py-3">
+        <td className="px-3 py-2.5 text-foreground-muted">{stat.homeroomTeacherName ?? "—"}</td>
+        <td className="num px-3 py-2.5 text-foreground-muted">{stat.studentCount}</td>
+        <td className="num px-3 py-2.5 text-foreground">{formatSom(stat.collected)}</td>
+        <td className="px-3 py-2.5">
           <div className="flex items-center gap-2">
             <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-muted">
               <div
-                className={`h-full rounded-full ${
-                  stat.collectedPercent >= 90
-                    ? "bg-success"
-                    : stat.collectedPercent >= 75
-                      ? "bg-warning"
-                      : "bg-danger"
-                }`}
+                className={`h-full rounded-full ${percentBar(stat.collectedPercent)}`}
                 style={{ width: `${stat.collectedPercent}%` }}
               />
             </div>
@@ -233,10 +281,10 @@ function FragmentRow({
             </span>
           </div>
         </td>
-        <td className="num px-4 py-3 text-danger">
+        <td className="num px-3 py-2.5 text-danger">
           {stat.debt > 0 ? formatSom(stat.debt) : "—"}
         </td>
-        <td className="px-4 py-3 text-right">
+        <td className="px-3 py-2.5 text-right">
           <button
             type="button"
             onClick={onToggle}
@@ -251,13 +299,13 @@ function FragmentRow({
       </tr>
 
       {isOpen && (
-        <tr className="border-b border-border bg-surface-muted/30">
-          <td colSpan={7} className="px-4 py-3">
+        <tr className="border-b border-border bg-surface-muted/40">
+          <td colSpan={7} className="px-3 py-3">
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-foreground-muted">
               {stat.className} — oʻquvchilar kesimida
             </p>
-            <div className="overflow-hidden rounded-lg border border-border bg-surface">
-              <table className="w-full border-collapse text-sm">
+            <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+              <table className="w-full min-w-[560px] border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
                     <th className="px-3 py-2">Oʻquvchi</th>

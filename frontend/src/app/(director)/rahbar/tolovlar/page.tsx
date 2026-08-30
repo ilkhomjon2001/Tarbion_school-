@@ -9,7 +9,7 @@ export default function PaymentsPage() {
       <div>
         <h1 className="text-h2 font-bold text-foreground">Toʻlovlar holati</h1>
         <p className="text-sm text-foreground-muted">
-          Sinflar kesimida yigʻilish foizi va summasi — sinfni bosib oʻquvchilarni koʻring
+          5-sinflar → 5-A → oʻquvchilar: har bosqichda yigʻilish foizi va summasi
         </p>
       </div>
       <Suspense fallback={<PaymentsSkeleton />}>

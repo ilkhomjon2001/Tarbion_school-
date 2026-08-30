@@ -227,6 +227,64 @@ export function allClassPaymentStats(): ClassPaymentStat[] {
   );
 }
 
+/**
+ * Sinf DARAJASI kesimi: "5-sinflar", "6-sinflar" … Rahbariyat avval shu
+ * darajani koʻradi, keyin ichidan parallel sinflarni (5-A, 5-B) ochadi.
+ * Argument sifatida filtrlangan roʻyxat berilsa, jamlanma ham shu kesim
+ * boʻyicha qayta hisoblanadi.
+ */
+export interface GradePaymentStat {
+  grade: number;
+  stage: ClassStage;
+  classCount: number;
+  studentCount: number;
+  expected: number;
+  collected: number;
+  debt: number;
+  collectedPercent: number;
+  paidCount: number;
+  partialCount: number;
+  overdueCount: number;
+  classes: ClassPaymentStat[];
+}
+
+export function gradePaymentStats(
+  classStats: ClassPaymentStat[] = allClassPaymentStats(),
+): GradePaymentStat[] {
+  const byGrade = new Map<number, ClassPaymentStat[]>();
+  for (const stat of classStats) {
+    const list = byGrade.get(stat.grade);
+    if (list) list.push(stat);
+    else byGrade.set(stat.grade, [stat]);
+  }
+
+  return Array.from(byGrade.entries())
+    .map(([grade, list]) => {
+      const classes = [...list].sort((a, b) => a.parallel.localeCompare(b.parallel));
+      const expected = sum(classes, (c) => c.expected);
+      const collected = sum(classes, (c) => c.collected);
+      return {
+        grade,
+        stage: STAGE_BY_GRADE(grade),
+        classCount: classes.length,
+        studentCount: sum(classes, (c) => c.studentCount),
+        expected,
+        collected,
+        debt: expected - collected,
+        collectedPercent: expected === 0 ? 0 : Math.round((collected / expected) * 100),
+        paidCount: sum(classes, (c) => c.paidCount),
+        partialCount: sum(classes, (c) => c.partialCount),
+        overdueCount: sum(classes, (c) => c.overdueCount),
+        classes,
+      };
+    })
+    .sort((a, b) => a.grade - b.grade);
+}
+
+function sum<T>(items: T[], pick: (item: T) => number): number {
+  return items.reduce((acc, item) => acc + pick(item), 0);
+}
+
 export interface FinanceSummary {
   expected: number;
   collected: number;
@@ -309,6 +367,51 @@ export function allClassAttendanceStats(period: AttendancePeriod): ClassAttendan
   return CLASSES.map((c) => classAttendanceStat(c.name, period)).sort(
     (a, b) => a.averagePercent - b.averagePercent,
   );
+}
+
+/** Davomat — sinf darajasi kesimida ("5-sinflar"), ichida parallel sinflar. */
+export interface GradeAttendanceStat {
+  grade: number;
+  stage: ClassStage;
+  classCount: number;
+  studentCount: number;
+  averagePercent: number;
+  atRiskCount: number;
+  classes: ClassAttendanceStat[];
+}
+
+export function gradeAttendanceStats(
+  classStats: ClassAttendanceStat[],
+): GradeAttendanceStat[] {
+  const byGrade = new Map<number, ClassAttendanceStat[]>();
+  for (const stat of classStats) {
+    const list = byGrade.get(stat.grade);
+    if (list) list.push(stat);
+    else byGrade.set(stat.grade, [stat]);
+  }
+
+  return Array.from(byGrade.entries())
+    .map(([grade, list]) => {
+      // Sinflar ichida eng past koʻrsatkich tepada — muammoni tez topish uchun.
+      const classes = [...list].sort(
+        (a, b) => a.averagePercent - b.averagePercent || a.parallel.localeCompare(b.parallel),
+      );
+      const studentCount = sum(classes, (c) => c.studentCount);
+      return {
+        grade,
+        stage: STAGE_BY_GRADE(grade),
+        classCount: classes.length,
+        studentCount,
+        // Oʻrtacha oʻquvchilar soniga qarab tortiladi, sinflar soniga emas.
+        averagePercent:
+          studentCount === 0
+            ? 0
+            : Math.round(sum(classes, (c) => c.averagePercent * c.studentCount) / studentCount),
+        atRiskCount: sum(classes, (c) => c.atRiskCount),
+        classes,
+      };
+    })
+    .sort((a, b) => a.grade - b.grade);
 }
 
 export function attendanceOf(student: StudentRecord, period: AttendancePeriod): number {
