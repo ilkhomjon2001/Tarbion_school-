@@ -1,7 +1,5 @@
-import { Suspense } from "react";
-import { Card } from "@/components/ui/Card";
-import { ParentRequestCard } from "@/components/director/ParentRequestCard";
-import { getParentRequests } from "@/lib/director/fetchers";
+import { AppealsBoard } from "@/components/director/AppealsBoard";
+import { APPEALS } from "@/lib/school/appeals";
 
 export default function ParentRequestsPage() {
   return (
@@ -9,23 +7,10 @@ export default function ParentRequestsPage() {
       <div>
         <h1 className="text-h2 font-bold text-foreground">Murojaatlar</h1>
         <p className="text-sm text-foreground-muted">
-          Ota-onalardan kelgan xabarlar — javob yozing yoki murojaatni yoping
+          Maktabga kelgan barcha murojaatlar — rahbariyatga va ustozlarga alohida
         </p>
       </div>
-      <Suspense fallback={<Card className="h-64 animate-pulse" />}>
-        <RequestsSection />
-      </Suspense>
-    </div>
-  );
-}
-
-async function RequestsSection() {
-  const requests = await getParentRequests();
-  return (
-    <div className="flex flex-col gap-3">
-      {requests.map((r) => (
-        <ParentRequestCard key={r.id} request={r} />
-      ))}
+      <AppealsBoard appeals={APPEALS} />
     </div>
   );
 }

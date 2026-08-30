@@ -11,7 +11,7 @@ import { AnnouncementItem } from "@/components/features/student/AnnouncementItem
 import { LessonTimeline } from "@/components/features/student/LessonTimeline";
 import { AttendanceCalendar } from "@/components/features/student/AttendanceCalendar";
 import { RankingList } from "@/components/features/student/RankingList";
-import { GRADE_TYPE_LABELS, MEAL_TYPE_LABELS } from "@/lib/labels";
+import { GRADE_TYPE_LABELS } from "@/lib/labels";
 import { formatDate, formatWeekday } from "@/lib/format";
 import {
   getAttendanceSummary,
@@ -20,7 +20,6 @@ import {
   getLatestAnnouncements,
   getRecentGrades,
   getTodayLessons,
-  getTodayMenu,
 } from "@/lib/mock/fetchers";
 
 const TODAY_ISO = "2026-08-29";
@@ -43,13 +42,6 @@ export default function StudentHomePage() {
             <SectionTitle title="Bugungi dars jadvali" href="/student/schedule" />
             <Suspense fallback={<ListSkeleton count={3} />}>
               <TodayLessons />
-            </Suspense>
-          </section>
-
-          <section>
-            <SectionTitle title="Bugungi taomlar" href="/student/oshxona" />
-            <Suspense fallback={<ListSkeleton count={3} />}>
-              <TodayMenu />
             </Suspense>
           </section>
 
@@ -163,30 +155,6 @@ async function TodayLessons() {
     <Card>
       <LessonTimeline lessons={lessons} />
     </Card>
-  );
-}
-
-async function TodayMenu() {
-  const menu = await getTodayMenu();
-  if (!menu || menu.meals.length === 0) {
-    return <EmptyState title="Bugun uchun menyu kiritilmagan" />;
-  }
-  return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-      {menu.meals.map((meal) => (
-        <Card key={meal.id}>
-          <p className="text-xs font-semibold uppercase tracking-wide text-foreground-muted">
-            {MEAL_TYPE_LABELS[meal.mealType]}
-          </p>
-          <p className="mt-1 truncate text-sm font-medium text-foreground">
-            {meal.dishes[0]}
-          </p>
-          {meal.dishes.length > 1 ? (
-            <p className="text-xs text-foreground-muted">+{meal.dishes.length - 1} ta taom</p>
-          ) : null}
-        </Card>
-      ))}
-    </div>
   );
 }
 

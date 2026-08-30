@@ -1,235 +1,239 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { ParentShell } from "@/components/parent/ParentShell";
-import {
-  APPEAL_STATUS_LABELS,
-  APPEAL_TOPICS,
-  APPEALS,
-  TODAY,
-  type AppealItem,
-} from "@/lib/parent/data";
+import { AppealThread } from "@/components/shared/AppealThread";
 import { useChild } from "@/lib/parent/useChild";
+import {
+  APPEAL_TARGET_LABELS,
+  APPEALS,
+  CURRENT_PARENT,
+  type Appeal,
+  type AppealTarget,
+} from "@/lib/school/appeals";
+import { DIRECTOR, homeroomTeacherOf, subjectTeachersOf } from "@/lib/school/staff";
 
 /**
- * Murojaatlar (OTA-07, MUR-01…MUR-04).
+ * Murojaatlar (OTA-07, MUR-01…MUR-06).
  *
- * Vasiy murojaat yuboradi, mavzuga qarab masʼulga yoʻnaltiriladi va
- * holati kuzatiladi. Javob berish muddati koʻrsatiladi (MUR-04) —
- * muddati oʻtgani ajratib beriladi, chunki javobsiz qolgan murojaat
- * ota-onaning eng koʻp shikoyat qiladigan narsasi.
+ * Loyiha egasining soʻroviga koʻra ota-ona MAVZUNI emas, KIMGA yozishini
+ * tanlaydi: rahbariyat / sinf rahbari / fan oʻqituvchisi. Fan oʻqituvchisi
+ * tanlansa — qaysi fan ekani ham soʻraladi.
+ *
+ * Har bir murojaat ochiq yozishma (chat) shaklida davom etadi —
+ * `AppealThread` komponenti ustoz va rahbariyat kabinetida ham ishlatiladi.
  */
-
-const STATUS_TONE: Record<AppealItem["status"], string> = {
-  new: "bg-surface-muted text-foreground-muted",
-  in_review: "bg-warning-tint text-warning",
-  answered: "bg-success-tint text-success",
-  closed: "bg-surface-muted text-foreground-muted",
-};
-
 export default function ParentAppealsPage() {
   const [child, setChild] = useChild();
-  const [items, setItems] = useState<AppealItem[]>(APPEALS);
+  const [appeals, setAppeals] = useState<Appeal[]>(APPEALS);
   const [showForm, setShowForm] = useState(false);
 
-  function submit(a: AppealItem) {
-    setItems((prev) => [a, ...prev]);
+  const myAppeals = useMemo(
+    () =>
+      appeals.filter((a) => a.parentName === CURRENT_PARENT && a.className === child.className),
+    [appeals, child.className],
+  );
+
+  function addAppeal(appeal: Appeal) {
+    setAppeals((prev) => [appeal, ...prev]);
     setShowForm(false);
   }
 
-  const waiting = items.filter((a) => a.status === "new" || a.status === "in_review").length;
-
   return (
     <ParentShell title="Murojaat" child={child} onChildChange={setChild}>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-foreground-muted">
-          {waiting > 0 ? `${waiting} ta murojaat javob kutmoqda` : "Javob kutayotgan murojaat yoʻq"}
+          Kimga murojaat qilmoqchi ekaningizni tanlang — yozishma ochiq qoladi.
         </p>
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-brand px-4 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          className="h-10 rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
         >
-          <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          Yangi murojaat
+          {showForm ? "Yopish" : "Yangi murojaat"}
         </button>
       </div>
 
-      {showForm && <AppealForm onSubmit={submit} onCancel={() => setShowForm(false)} />}
+      {showForm && (
+        <NewAppealForm
+          className={child.className}
+          studentFullName={child.fullName}
+          onSubmit={addAppeal}
+        />
+      )}
 
-      {items.length === 0 ? (
-        <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center">
-          <p className="font-medium">Hali murojaat yubormagansiz</p>
-          <p className="mx-auto mt-1 max-w-sm text-sm text-foreground-muted">
-            Davomat, baho yoki toʻlov boʻyicha savolingiz boʻlsa — shu yerdan
-            yozing, javob kabinetda va Telegramda keladi.
+      {myAppeals.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border bg-surface-muted px-4 py-10 text-center">
+          <p className="text-sm font-medium text-foreground">Murojaatlar yoʻq</p>
+          <p className="mt-1 text-sm text-foreground-muted">
+            Savolingiz boʻlsa, «Yangi murojaat» tugmasini bosing.
           </p>
         </div>
       ) : (
-        <ul className="space-y-3">
-          {items.map((a) => {
-            const overdue =
-              (a.status === "new" || a.status === "in_review") && a.dueAt < TODAY;
-            return (
-              <li
-                key={a.id}
-                className={`rounded-xl border bg-surface p-4 ${
-                  overdue ? "border-danger/40" : "border-border"
-                }`}
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-brand-tint px-2.5 py-0.5 text-xs font-medium text-brand-dark">
-                        {a.topic}
-                      </span>
-                      <span
-                        className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_TONE[a.status]}`}
-                      >
-                        {APPEAL_STATUS_LABELS[a.status]}
-                      </span>
-                      {overdue && (
-                        <span className="rounded-full bg-danger-tint px-2.5 py-0.5 text-xs font-medium text-danger">
-                          Muddati oʻtgan
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-2 text-sm">{a.body}</p>
-                  </div>
-                  <span className="shrink-0 text-xs text-foreground-muted">{a.createdAt}</span>
-                </div>
-
-                <p className="mt-2.5 text-xs text-foreground-muted">
-                  Masʼul: {a.assignee} · Javob muddati: {a.dueAt}
-                </p>
-
-                {a.answer && (
-                  <div className="mt-3 rounded-lg border-l-[3px] border-success bg-success-tint/50 px-3 py-2.5">
-                    <p className="text-xs font-medium text-success">
-                      Javob · {a.answeredAt}
-                    </p>
-                    <p className="mt-1 text-sm">{a.answer}</p>
-                  </div>
-                )}
-              </li>
-            );
-          })}
+        <ul className="flex flex-col gap-3">
+          {myAppeals.map((appeal) => (
+            <li key={appeal.id}>
+              <AppealThread appeal={appeal} viewer="parent" />
+            </li>
+          ))}
         </ul>
       )}
     </ParentShell>
   );
 }
 
-/** MUR-01: mavzu turi, matn, ixtiyoriy fayl. */
-function AppealForm({
-  onSubmit,
-  onCancel,
-}: {
-  onSubmit: (a: AppealItem) => void;
-  onCancel: () => void;
-}) {
-  const [topic, setTopic] = useState(APPEAL_TOPICS[0]);
-  const [body, setBody] = useState("");
+const TARGETS: AppealTarget[] = ["rahbariyat", "sinf_rahbari", "fan_oqituvchisi"];
 
-  /** MUR-02: mavzuga qarab masʼul aniqlanadi. */
+function NewAppealForm({
+  className,
+  studentFullName,
+  onSubmit,
+}: {
+  className: string;
+  studentFullName: string;
+  onSubmit: (appeal: Appeal) => void;
+}) {
+  const [target, setTarget] = useState<AppealTarget>("sinf_rahbari");
+  const [subject, setSubject] = useState("");
+  const [title, setTitle] = useState("");
+  const [text, setText] = useState("");
+
+  const subjectTeachers = subjectTeachersOf(className);
+  const homeroom = homeroomTeacherOf(className);
+
+  // Kimga ketishi — tanlovga qarab aniqlanadi.
   const assignee =
-    topic === "Toʻlov boʻyicha"
-      ? "Maktab administratsiyasi"
-      : topic === "Dars jadvali"
-        ? "Maktab administratsiyasi"
-        : "Aliyev S. — sinf rahbari";
+    target === "rahbariyat"
+      ? DIRECTOR
+      : target === "sinf_rahbari"
+        ? homeroom
+        : (subjectTeachers.find((s) => s.subject === subject)?.teacher ?? null);
+
+  const needsSubject = target === "fan_oqituvchisi";
+  const canSubmit = Boolean(title.trim() && text.trim() && assignee && (!needsSubject || subject));
+
+  function submit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!canSubmit || !assignee) return;
+    onSubmit({
+      id: `ap-new-${Date.now()}`,
+      target,
+      assigneeId: assignee.id,
+      subject: needsSubject ? subject : undefined,
+      className,
+      studentFullName,
+      parentName: CURRENT_PARENT,
+      title: title.trim(),
+      status: "new",
+      createdAt: "Hozir",
+      dueAt: "3 ish kuni ichida",
+      messages: [
+        {
+          id: `ap-new-${Date.now()}-m1`,
+          author: "parent",
+          text: text.trim(),
+          createdAt: "Hozir",
+        },
+      ],
+    });
+  }
 
   return (
     <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (body.trim().length < 10) return;
-        onSubmit({
-          id: `m-${Date.now()}`,
-          topic,
-          body: body.trim(),
-          createdAt: new Date().toLocaleString("uz-UZ", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          status: "new",
-          assignee,
-          dueAt: "2026-09-02",
-        });
-      }}
-      className="mb-4 rounded-xl border border-border bg-surface p-4"
+      onSubmit={submit}
+      className="mb-4 flex flex-col gap-3 rounded-xl border border-border bg-surface p-4"
     >
-      <h2 className="text-sm font-semibold">Yangi murojaat</h2>
+      <fieldset>
+        <legend className="mb-2 text-sm font-medium text-foreground">Kimga murojaat qilasiz?</legend>
+        <div className="flex flex-wrap gap-2">
+          {TARGETS.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => {
+                setTarget(t);
+                setSubject("");
+              }}
+              aria-pressed={target === t}
+              className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+                target === t
+                  ? "bg-brand text-brand-foreground"
+                  : "border border-border text-foreground-muted hover:bg-surface-muted"
+              }`}
+            >
+              {APPEAL_TARGET_LABELS[t]}
+            </button>
+          ))}
+        </div>
+      </fieldset>
 
-      <div className="mt-3">
-        <label htmlFor="ap-topic" className="mb-1.5 block text-sm font-medium">
+      {needsSubject && (
+        <div>
+          <label htmlFor="appeal-subject" className="mb-1 block text-sm font-medium text-foreground">
+            Qaysi fan?
+          </label>
+          <select
+            id="appeal-subject"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+          >
+            <option value="">Fanni tanlang…</option>
+            {subjectTeachers.map((s) => (
+              <option key={s.subject} value={s.subject}>
+                {s.subject} — {s.teacher.fullName}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {assignee && (
+        <p className="rounded-lg bg-brand-tint px-3 py-2 text-xs text-brand-dark">
+          Murojaat <span className="font-medium">{assignee.fullName}</span>ga yuboriladi.
+        </p>
+      )}
+      {!assignee && !needsSubject && (
+        <p className="rounded-lg bg-warning-tint px-3 py-2 text-xs text-warning">
+          Bu sinf uchun masʼul xodim biriktirilmagan — rahbariyatga yozing.
+        </p>
+      )}
+
+      <div>
+        <label htmlFor="appeal-title" className="mb-1 block text-sm font-medium text-foreground">
           Mavzu
         </label>
-        <select
-          id="ap-topic"
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-          className="h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
-        >
-          {APPEAL_TOPICS.map((t) => (
-            <option key={t}>{t}</option>
-          ))}
-        </select>
-        {/* MUR-02: kimga borishi oldindan koʻrinadi */}
-        <p className="mt-1.5 text-xs text-foreground-muted">
-          Bu murojaat <span className="font-medium text-foreground">{assignee}</span> ga
-          yoʻnaltiriladi.
-        </p>
+        <input
+          id="appeal-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Qisqacha sarlavha"
+          className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none placeholder:text-foreground-muted/60 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
+        />
       </div>
 
-      <div className="mt-3">
-        <label htmlFor="ap-body" className="mb-1.5 block text-sm font-medium">
-          Murojaat matni
+      <div>
+        <label htmlFor="appeal-text" className="mb-1 block text-sm font-medium text-foreground">
+          Xabar
         </label>
         <textarea
-          id="ap-body"
-          rows={4}
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder="Savolingizni yoki taklifingizni yozing…"
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none placeholder:text-foreground-muted/60 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
+          id="appeal-text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={3}
+          placeholder="Savolingiz yoki taklifingizni yozing"
+          className="w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none placeholder:text-foreground-muted/60 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
         />
       </div>
 
-      <div className="mt-3">
-        <label htmlFor="ap-file" className="mb-1.5 block text-sm font-medium">
-          Fayl (ixtiyoriy)
-        </label>
-        <input
-          id="ap-file"
-          type="file"
-          accept="image/*,.pdf"
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-surface-muted file:px-3 file:py-1.5 file:text-sm file:text-foreground focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
-        />
-      </div>
-
-      <div className="mt-4 flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="inline-flex h-11 items-center rounded-lg border border-border px-4 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-        >
-          Bekor qilish
-        </button>
-        <button
-          type="submit"
-          disabled={body.trim().length < 10}
-          className="inline-flex h-11 items-center rounded-lg bg-brand px-4 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Yuborish
-        </button>
-      </div>
+      <button
+        type="submit"
+        disabled={!canSubmit}
+        className="h-10 rounded-lg bg-brand text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Murojaatni yuborish
+      </button>
     </form>
   );
 }

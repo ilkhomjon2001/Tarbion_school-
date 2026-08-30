@@ -35,9 +35,11 @@ const NAV = [
   { href: "/ota-ona/murojaat", label: "Murojaat", icon: ChatIcon },
 ] as const;
 
-/** Katta ekranda joy yetarli — eʼlonlar ham roʻyxatda. */
+/** Katta ekranda joy yetarli — qolgan boʻlimlar ham roʻyxatda. */
 const SIDEBAR_NAV = [
   ...NAV,
+  { href: "/ota-ona/tarbiya", label: "Tarbiya va psixologiya", icon: HeartIcon },
+  { href: "/ota-ona/oshxona", label: "Oshxona menyusi", icon: MealIcon },
   { href: "/ota-ona/elonlar", label: "Eʼlonlar", icon: BellIcon },
 ] as const;
 
@@ -264,6 +266,23 @@ function BellIcon() {
     <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
       <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+    </svg>
+  );
+}
+
+function HeartIcon() {
+  return (
+    <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 20s-7-4.4-7-9.4A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.6c0 5-7 9.4-7 9.4Z" />
+    </svg>
+  );
+}
+
+function MealIcon() {
+  return (
+    <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 3v7a2 2 0 0 1-2 2v0a2 2 0 0 1-2-2V3M5 3v18" />
+      <path d="M17 3c-1.7 0-3 2-3 5.5S15.3 13 17 13v8" />
     </svg>
   );
 }

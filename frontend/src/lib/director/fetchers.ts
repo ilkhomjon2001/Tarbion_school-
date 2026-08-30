@@ -1,11 +1,9 @@
 import "server-only";
 
 import {
+  buildOverview,
   classesTaughtBy,
   initialScheduleGrid,
-  overview,
-  parentRequests,
-  payments,
   reports,
   schoolClasses,
   SUBJECT_LIST,
@@ -14,11 +12,21 @@ import {
   teacherWeeklySchedule,
   type TeacherWeeklyLesson,
 } from "@/lib/director/data";
+import {
+  allClassAttendanceStats,
+  allClassPaymentStats,
+  financeSummary,
+  studentsOfClass,
+  type AttendancePeriod,
+  type ClassAttendanceStat,
+  type ClassPaymentStat,
+  type FinanceSummary,
+  type StudentRecord,
+} from "@/lib/director/school-data";
 import type {
   DirectorOverview,
   DirectorReports,
-  ParentRequest,
-  PaymentRecord,
+  OverviewPeriod,
   SchoolClass,
   ScheduleGrid,
   Teacher,
@@ -30,8 +38,10 @@ function delay<T>(value: T, ms = 400): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
 }
 
-export async function getDirectorOverview(): Promise<DirectorOverview> {
-  return delay(overview);
+export async function getDirectorOverview(
+  period: OverviewPeriod = "month",
+): Promise<DirectorOverview> {
+  return delay(buildOverview(period));
 }
 
 export async function getTeachers(): Promise<Teacher[]> {
@@ -54,14 +64,6 @@ export async function getSchoolClass(id: string): Promise<SchoolClass | null> {
   return delay(schoolClasses.find((c) => c.id === id) ?? null);
 }
 
-export async function getPayments(): Promise<PaymentRecord[]> {
-  return delay(payments);
-}
-
-export async function getParentRequests(): Promise<ParentRequest[]> {
-  return delay(parentRequests);
-}
-
 export async function getDirectorReports(): Promise<DirectorReports> {
   return delay(reports);
 }
@@ -82,4 +84,25 @@ export async function getTeacherWeeklySchedule(
 
 export async function getClassesTaughtBy(teacherId: string): Promise<SchoolClass[]> {
   return delay(classesTaughtBy(teacherId));
+}
+
+// ─────────────────────── Toʻlov va davomat kesimlari ───────────────────────
+
+export async function getFinanceSummary(months = 1): Promise<FinanceSummary> {
+  return delay(financeSummary(months));
+}
+
+export async function getClassPaymentStats(): Promise<ClassPaymentStat[]> {
+  return delay(allClassPaymentStats());
+}
+
+export async function getClassAttendanceStats(
+  period: AttendancePeriod,
+): Promise<ClassAttendanceStat[]> {
+  return delay(allClassAttendanceStats(period));
+}
+
+/** Sinf ichidagi oʻquvchilar — toʻlov va davomat tafsiloti uchun. */
+export async function getClassStudents(className: string): Promise<StudentRecord[]> {
+  return delay(studentsOfClass(className));
 }

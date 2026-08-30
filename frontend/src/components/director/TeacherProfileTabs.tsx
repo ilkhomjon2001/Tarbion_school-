@@ -4,29 +4,34 @@ import Link from "next/link";
 import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { TeacherKpiPanel } from "@/components/director/TeacherKpiPanel";
 import { subjectColor } from "@/lib/subject-colors";
 import { PERIOD_TIMES, PERIODS, WEEKDAYS } from "@/lib/director/types";
+import type { TeacherKpi } from "@/lib/director/teacher-kpi";
 import type { TeacherWeeklyLesson } from "@/lib/director/data";
 import type { SchoolClass, TeacherStats, Weekday } from "@/lib/director/types";
 
-type Tab = "jadval" | "sinflar" | "statistika";
+type Tab = "kpi" | "jadval" | "sinflar" | "statistika";
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "jadval", label: "Dars jadvali" },
-  { id: "sinflar", label: "Sinflari" },
+  { id: "kpi", label: "KPI" },
   { id: "statistika", label: "Statistika" },
+  { id: "sinflar", label: "Sinflari" },
+  { id: "jadval", label: "Dars jadvali" },
 ];
 
 export function TeacherProfileTabs({
   weeklySchedule,
   classes,
   stats,
+  kpi,
 }: {
   weeklySchedule: Record<Weekday, Record<number, TeacherWeeklyLesson | null>>;
   classes: SchoolClass[];
   stats: TeacherStats;
+  kpi: TeacherKpi;
 }) {
-  const [tab, setTab] = useState<Tab>("statistika");
+  const [tab, setTab] = useState<Tab>("kpi");
 
   return (
     <div>
@@ -48,6 +53,7 @@ export function TeacherProfileTabs({
         ))}
       </div>
 
+      {tab === "kpi" && <TeacherKpiPanel kpi={kpi} />}
       {tab === "statistika" && <StatsTab stats={stats} />}
       {tab === "sinflar" && <ClassesTab classes={classes} />}
       {tab === "jadval" && <ScheduleTab weeklySchedule={weeklySchedule} />}

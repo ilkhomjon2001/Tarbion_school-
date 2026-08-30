@@ -10,12 +10,10 @@ import {
   subjectGrades,
   testList,
   todayLessons,
-  weeklyMenu,
 } from "@/lib/mock/data";
 import type {
   Announcement,
   AttendanceSummary,
-  DailyMenu,
   GradeEntry,
   Homework,
   LessonSummary,
@@ -27,7 +25,6 @@ import type {
   TestItem,
 } from "@/lib/types";
 
-const TODAY_ISO = "2026-08-29";
 
 /**
  * Backend hali yoʻqligi sababli tarmoq kechikishini simulyatsiya qiladi —
@@ -103,15 +100,6 @@ export async function getGradeById(id: string): Promise<GradeEntry | null> {
 
 export async function getAnnouncementById(id: string): Promise<Announcement | null> {
   const found = announcements.find((item) => item.id === id) ?? null;
-  return delay(found);
-}
-
-export async function getWeeklyMenu(): Promise<DailyMenu[]> {
-  return delay(weeklyMenu);
-}
-
-export async function getTodayMenu(): Promise<DailyMenu | null> {
-  const found = weeklyMenu.find((day) => day.date === TODAY_ISO) ?? null;
   return delay(found);
 }
 

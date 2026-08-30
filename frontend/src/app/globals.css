@@ -52,6 +52,43 @@
   --text-caption: 0.8125rem;
   --text-caption--line-height: 1.4;
   --text-caption--letter-spacing: 0.02em;
+
+  /* Harakat. Bitta egri chiziq butun interfeysda — animatsiyalar bir
+     xil "his" bersin. Davomiylik qisqa: bu ish quroli, koʻrgazma emas. */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 140ms;
+  --duration-base: 220ms;
+
+  /* Soyalar. Rang neytral kulrang emas, matn rangidan olinadi —
+     shunda soya fon bilan bir oilada koʻrinadi. */
+  --shadow-raise: 0 6px 20px -8px rgb(23 26 23 / 0.18);
+  --shadow-pop: 0 12px 28px -10px rgb(23 26 23 / 0.22);
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes expand {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
 }
 
 @theme inline {
@@ -96,12 +133,110 @@
   --text-caption: var(--text-caption);
   --text-caption--line-height: var(--text-caption--line-height);
   --text-caption--letter-spacing: var(--text-caption--letter-spacing);
+
+  --ease-out-soft: var(--ease-out-soft);
+
+  --shadow-raise: var(--shadow-raise);
+  --shadow-pop: var(--shadow-pop);
+
+  /* Maʼlumot yuklangach paydo boʻlish, akkordeon ochilishi, skeleton porlashi. */
+  --animate-enter: enter var(--duration-base) var(--ease-out-soft) both;
+  --animate-expand: expand var(--duration-fast) var(--ease-out-soft) both;
+  --animate-shimmer: shimmer 1.6s infinite;
 }
 
 /* Raqamlar ustma-ust tushishi uchun — jadval, baho, foiz, summa.
    Jadvallarda avtomatik (base qatlamida), qolgan joyda shu utilita. */
 @utility num {
   font-variant-numeric: tabular-nums;
+}
+
+/* Fokus halqasi. Har komponentda toʻrtta utilita yozish oʻrniga bitta
+   nom — halqa butun loyihada bir xil boʻladi. */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+}
+
+/* Ichkariga chizilgan halqa — jadval qatori va akkordeon kabi
+   kesilib qoladigan joylar uchun. */
+@utility focus-ring-inset {
+  &:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: -2px;
+  }
+}
+
+/* Skeleton porlashi — "pulse" dan koʻra tirikroq va yuklanish yoʻnalishini
+   koʻrsatadi. Fon rangi ustidan oq yaltiroq oʻtadi. */
+@utility skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-surface-muted);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(255 255 255 / 0.65),
+      transparent
+    );
+    animation: var(--animate-shimmer);
+  }
+}
+
+/* Bosiladigan kartochka — koʻtariladi va chegarasi brend rangiga oʻtadi. */
+@utility card-interactive {
+  transition:
+    box-shadow var(--duration-base) var(--ease-out-soft),
+    transform var(--duration-base) var(--ease-out-soft),
+    border-color var(--duration-base) var(--ease-out-soft);
+
+  &:hover {
+    box-shadow: var(--shadow-raise);
+    transform: translateY(-2px);
+    border-color: color-mix(in oklab, var(--color-brand) 35%, var(--color-border));
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+}
+
+/* Progress bar toʻlishi — 0 dan oʻsib chiqadi, koʻz qiymatga tushadi. */
+@utility bar-fill {
+  transform-origin: left center;
+  animation: bar-grow 0.55s var(--ease-out-soft) both;
+}
+
+/* Gorizontal aylantiriladigan jadval. Scrollbar koʻrinib tursin —
+   aks holda telefonda jadval davom etishi bilinmaydi. */
+@utility scroll-x {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+  overscroll-behavior-x: contain;
+
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 9999px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--color-foreground-muted);
+  }
 }
 
 @layer base {
@@ -135,5 +270,64 @@
   /* Har qanday jadvaldagi raqam ustunlari tekis tursin. */
   table {
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Sarlavhaga havola boʻyicha oʻtilganda tepasida joy qolsin. */
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
+
+  ::selection {
+    background: var(--color-brand-tint);
+    color: var(--color-brand-dark);
+  }
+
+  /* Telefonda bosilganda koʻk yaltiroq chiqmasin — oʻz holatlarimiz bor. */
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Chop etish. Rasmiy hujjat (maʼlumotnoma) chiqarilganda sahifadagi
+   qolgan hamma narsa yashiriladi — brauzerning "PDF sifatida saqlash"
+   imkoniyati bilan haqiqiy PDF chiqadi, qoʻshimcha kutubxonasiz. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .print-doc,
+  .print-doc * {
+    visibility: visible;
+  }
+
+  .print-doc {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    box-shadow: none;
+    border: 0;
+    padding: 0;
+  }
+}
+
+/* Harakat sezuvchan foydalanuvchilar uchun — vestibulyar buzilishlarda
+   siljish va porlash bosh aylanishiga sabab boʻladi. Interfeys ishlaydi,
+   faqat animatsiyasiz. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  html {
+    scroll-behavior: auto;
   }
 }

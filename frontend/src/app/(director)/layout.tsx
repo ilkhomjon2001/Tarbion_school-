@@ -1,3 +1,4 @@
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { DirectorMobileTopBar } from "@/components/director/DirectorMobileTopBar";
 import { DirectorSidebar } from "@/components/director/DirectorSidebar";
 import { DirectorTopbar } from "@/components/director/DirectorTopbar";
@@ -13,13 +14,15 @@ export default async function DirectorLayout({
   const searchIndex = buildDirectorSearchIndex({ teachers, classes });
 
   return (
-    <div className="min-h-full bg-background">
-      <DirectorSidebar />
-      <div className="flex min-h-full flex-col md:pl-64">
-        <DirectorMobileTopBar searchIndex={searchIndex} />
-        <DirectorTopbar searchIndex={searchIndex} />
-        <div className="mx-auto w-full max-w-6xl flex-1 pb-8">{children}</div>
+    <AuthGuard role="director">
+      <div className="min-h-full bg-background">
+        <DirectorSidebar />
+        <div className="flex min-h-full flex-col md:pl-64">
+          <DirectorMobileTopBar searchIndex={searchIndex} />
+          <DirectorTopbar searchIndex={searchIndex} />
+          <div className="mx-auto w-full max-w-6xl flex-1 pb-8">{children}</div>
+        </div>
       </div>
-    </div>
+    </AuthGuard>
   );
 }

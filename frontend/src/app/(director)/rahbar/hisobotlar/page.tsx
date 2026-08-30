@@ -1,7 +1,9 @@
 import { Suspense } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { AreaLineChart, SimpleBarChart } from "@/components/director/charts";
+import { AttendanceByClass } from "@/components/director/AttendanceByClass";
 import { ExportReportButton } from "@/components/director/ExportReportButton";
 import { getDirectorReports } from "@/lib/director/fetchers";
 import type { AtRiskReason } from "@/lib/director/types";
@@ -25,6 +27,8 @@ export default function ReportsPage() {
           <ExportSection />
         </Suspense>
       </div>
+      <AttendanceByClass />
+
       <Suspense fallback={<ReportsSkeleton />}>
         <ReportsSection />
       </Suspense>
@@ -36,7 +40,7 @@ function ReportsSkeleton() {
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
       {Array.from({ length: 4 }).map((_, i) => (
-        <Card key={i} className="h-64 animate-pulse" />
+        <ChartSkeleton key={i} />
       ))}
     </div>
   );
@@ -50,52 +54,74 @@ async function ExportSection() {
 async function ReportsSection() {
   const data = await getDirectorReports();
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+    <div className="animate-enter grid grid-cols-1 gap-5 lg:grid-cols-2">
       <Card>
-        <h2 className="mb-3 text-base font-semibold text-foreground">
+        <h2 className="mb-1 text-base font-semibold text-foreground">
           Davomat trendi (oxirgi 30 kun)
         </h2>
+        <p className="mb-3 text-xs text-foreground-muted">
+          Darsga kelgan oʻquvchilar ulushi — maktab boʻyicha, har 5 kunda bir marta
+        </p>
         <AreaLineChart
           points={data.attendanceTrend.map((p) => ({ label: p.dateLabel, value: p.percent }))}
+          ariaLabel="Davomat trendi"
+          hint="Har bir nuqta — shu kundagi maktab boʻyicha oʻrtacha davomat."
         />
       </Card>
 
       <Card>
-        <h2 className="mb-3 text-base font-semibold text-foreground">
+        <h2 className="mb-1 text-base font-semibold text-foreground">
           Toʻlov yigʻilishi dinamikasi
         </h2>
+        <p className="mb-3 text-xs text-foreground-muted">
+          Oy yakunida yigʻilgan summaning rejadagi summaga nisbati
+        </p>
         <AreaLineChart
           points={data.paymentTrend.map((p) => ({ label: p.monthLabel, value: p.collectedPercent }))}
           colorVar="var(--color-info)"
+          ariaLabel="Toʻlov yigʻilishi dinamikasi"
+          hint="100% — barcha shartnomalar toʻliq toʻlangan. Qolgan qismi qarzdorlik."
         />
       </Card>
 
       <Card>
-        <h2 className="mb-3 text-base font-semibold text-foreground">Baholar taqsimoti</h2>
+        <h2 className="mb-1 text-base font-semibold text-foreground">Baholar taqsimoti</h2>
+        <p className="mb-3 text-xs text-foreground-muted">
+          Joriy chorakda qoʻyilgan baholar soni
+        </p>
         <SimpleBarChart
           bars={data.gradeDistribution.map((b) => ({ label: `"${b.label}" baho`, value: b.count }))}
+          hint="Oʻngdagi son — shu baho necha marta qoʻyilgani."
         />
       </Card>
 
       <Card>
-        <h2 className="mb-3 text-base font-semibold text-foreground">
+        <h2 className="mb-1 text-base font-semibold text-foreground">
           Fanlar boʻyicha oʻrtacha baho
         </h2>
+        <p className="mb-3 text-xs text-foreground-muted">
+          5 ballik tizimda, barcha sinflar boʻyicha
+        </p>
         <SimpleBarChart
           bars={data.subjectAverages.map((s) => ({ label: s.subject, value: s.average }))}
           toneVar="var(--color-info)"
           valueFormatter={(v) => v.toFixed(1)}
+          hint="Ustun uzunligi eng yuqori koʻrsatkichga nisbatan olingan."
         />
       </Card>
 
       <Card>
-        <h2 className="mb-3 text-base font-semibold text-foreground">
+        <h2 className="mb-1 text-base font-semibold text-foreground">
           Sinflar boʻyicha oʻzlashtirish reytingi
         </h2>
+        <p className="mb-3 text-xs text-foreground-muted">
+          Eng yuqori oʻrtacha bahodan pastga qarab
+        </p>
         <SimpleBarChart
           bars={data.classRanking.map((c) => ({ label: c.className, value: c.averageGrade }))}
           toneVar="var(--color-success)"
           valueFormatter={(v) => v.toFixed(1)}
+          hint="Oʻrtacha baho davomat koʻrsatkichi asosida taxminlangan (demo maʼlumot)."
         />
       </Card>
 

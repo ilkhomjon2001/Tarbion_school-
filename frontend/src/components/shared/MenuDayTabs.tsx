@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { MealCard } from "@/components/features/student/MealCard";
+import { MealCard } from "@/components/shared/MealCard";
 import { formatDate, formatWeekday } from "@/lib/format";
 import type { DailyMenu } from "@/lib/types";
 

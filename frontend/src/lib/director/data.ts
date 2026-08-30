@@ -3,12 +3,12 @@
  * `fetchers.ts` orqali real API chaqiruvlariga almashtiriladi.
  */
 import type {
+  AttendanceTrendPoint,
   ClassStudent,
   DirectorOverview,
   DirectorReports,
   LessonCell,
-  ParentRequest,
-  PaymentRecord,
+  OverviewPeriod,
   SchoolClass,
   ScheduleGrid,
   Teacher,
@@ -16,6 +16,23 @@ import type {
   Weekday,
 } from "@/lib/director/types";
 import { WEEKDAYS } from "@/lib/director/types";
+import { APPEALS, isOpen } from "@/lib/school/appeals";
+import {
+  allTeachers,
+  homeroomClassOf,
+  HOMEROOM,
+  staffById,
+  weeklyLoadOf,
+} from "@/lib/school/staff";
+import {
+  ALL_STUDENTS,
+  CLASSES,
+  classAttendanceStat,
+  contractSummary,
+  financeSummary,
+  schoolAttendance,
+  studentsOfClass,
+} from "@/lib/director/school-data";
 
 export const DEMO_DIRECTOR = {
   fullName: "Nortojiyeva Malika Aʼzamovna",
@@ -38,192 +55,43 @@ export const SUBJECT_LIST = [
   "Jismoniy tarbiya",
 ] as const;
 
-type RawTeacher = Omit<Teacher, "homeroomClassName">;
-
-const RAW_TEACHERS: RawTeacher[] = [
-  {
-    id: "t-1",
-    fullName: "Anvarov Jamshid Odilovich",
-    shortName: "J. Anvarov",
-    subjects: ["Matematika", "Algebra"],
-    weeklyLoadHours: 24,
-    status: "active",
-    phone: "+998 90 111 22 33",
-    email: "jamshid@tarbion.uz",
-    avatarInitials: "JA",
-  },
-  {
-    id: "t-2",
-    fullName: "Karimova Nargiza Yusupovna",
-    shortName: "N. Karimova",
-    subjects: ["Ona tili", "Adabiyot"],
-    weeklyLoadHours: 18,
-    status: "active",
-    phone: "+998 91 222 33 44",
-    email: "nargiza@tarbion.uz",
-    avatarInitials: "NK",
-  },
-  {
-    id: "t-3",
-    fullName: "Toshmatov Botir Rahimovich",
-    shortName: "B. Toshmatov",
-    subjects: ["Fizika"],
-    weeklyLoadHours: 20,
-    status: "archived",
-    phone: "+998 93 333 44 55",
-    email: "botir@tarbion.uz",
-    avatarInitials: "BT",
-  },
-  {
-    id: "t-4",
-    fullName: "Aliyeva Nigora Sobirovna",
-    shortName: "N. Aliyeva",
-    subjects: ["Ingliz tili"],
-    weeklyLoadHours: 22,
-    status: "active",
-    phone: "+998 94 444 55 66",
-    email: "nigora@tarbion.uz",
-    avatarInitials: "NA",
-  },
-  {
-    id: "t-5",
-    fullName: "Rahimov Dilshod Ergashevich",
-    shortName: "D. Rahimov",
-    subjects: ["Tarix"],
-    weeklyLoadHours: 19,
-    status: "active",
-    phone: "+998 97 555 66 77",
-    email: "dilshod@tarbion.uz",
-    avatarInitials: "DR",
-  },
-  {
-    id: "t-6",
-    fullName: "Karimova Aziza Baxtiyorovna",
-    shortName: "A. Karimova",
-    subjects: ["Matematika", "Informatika"],
-    weeklyLoadHours: 21,
-    status: "active",
-    phone: "+998 90 666 77 88",
-    email: "aziza@tarbion.uz",
-    avatarInitials: "AK",
-  },
-  {
-    id: "t-7",
-    fullName: "Sobirov Jasur Nabiyevich",
-    shortName: "J. Sobirov",
-    subjects: ["Jismoniy tarbiya"],
-    weeklyLoadHours: 26,
-    status: "active",
-    phone: "+998 99 777 88 99",
-    email: "jasur@tarbion.uz",
-    avatarInitials: "JS",
-  },
-  {
-    id: "t-8",
-    fullName: "Yusupova Malika Farxodovna",
-    shortName: "M. Yusupova",
-    subjects: ["Kimyo", "Biologiya"],
-    weeklyLoadHours: 17,
-    status: "active",
-    phone: "+998 88 888 99 00",
-    email: "malika@tarbion.uz",
-    avatarInitials: "MY",
-  },
-];
-
-const CLASS_ROSTER_NAMES: Record<string, string[]> = {
-  "5-A": ["Alisher Usmonov", "Malika Nortojiyeva", "Sardor Rahimov", "Zilola Karimova"],
-  "6-G": ["Diyorbek Toshpulatov", "Nodira Ergasheva", "Aziz Sultonov"],
-  "9-B": ["Alisher Usmonov", "Madina Nazarova", "Sherzod Rustamov"],
-  "10-A": ["Kamola Yoqubova", "Otabek Zokirov", "Feruza Islomova"],
-  "11-B": ["Jaloliddin Mirzayev", "Sevinch Qodirova"],
-  "11-V": ["Ravshan Abdullayev", "Gulbahor Nematova", "Sanjar Yusupov"],
-};
-
-function buildRoster(className: string, absentIndex?: number): ClassStudent[] {
-  const names = CLASS_ROSTER_NAMES[className] ?? [];
-  return names.map((fullName, i) => ({
-    id: `${className}-s${i + 1}`,
-    fullName,
-    status: i === absentIndex ? "absent_today" : "active",
-  }));
-}
-
-type RawClass = Omit<SchoolClass, "homeroomTeacherName">;
-
-const RAW_CLASSES: RawClass[] = [
-  {
-    id: "c-5a",
-    name: "5-A",
-    stage: "boshlangʻich",
-    homeroomTeacherId: "t-6",
-    studentCount: 24,
-    averageAttendance: 96,
-    students: buildRoster("5-A"),
-  },
-  {
-    id: "c-6g",
-    name: "6-G",
-    stage: "boshlangʻich",
-    homeroomTeacherId: "t-4",
-    studentCount: 26,
-    averageAttendance: 94,
-    students: buildRoster("6-G"),
-  },
-  {
-    id: "c-9b",
-    name: "9-B",
-    stage: "oʻrta",
-    homeroomTeacherId: "t-5",
-    studentCount: 28,
-    averageAttendance: 92,
-    students: buildRoster("9-B", 2),
-  },
-  {
-    id: "c-10a",
-    name: "10-A",
-    stage: "yuqori",
-    homeroomTeacherId: "t-1",
-    studentCount: 21,
-    averageAttendance: 98,
-    students: buildRoster("10-A"),
-  },
-  {
-    id: "c-11b",
-    name: "11-B",
-    stage: "yuqori",
-    homeroomTeacherId: "t-3",
-    studentCount: 19,
-    averageAttendance: 82,
-    students: buildRoster("11-B"),
-  },
-  {
-    id: "c-11v",
-    name: "11-V",
-    stage: "yuqori",
-    homeroomTeacherId: "t-7",
-    studentCount: 20,
-    averageAttendance: 88,
-    students: buildRoster("11-V", 1),
-  },
-];
-
 /**
- * `homeroomTeacherId` — yagona manba. Ikkala tomonning koʻrsatish uchun
- * qulay maydonlari (`homeroomTeacherName`, `homeroomClassName`) shundan
- * hisoblanadi, shuning uchun ular hech qachon bir-biridan uzilib qolmaydi.
+ * Ustozlar va sinflar QAYTA yozilmaydi — `lib/school/staff.ts` va
+ * `school-data.ts` dan hosil qilinadi. Shu sabab rahbariyat koʻrgan
+ * roʻyxat oʻquvchi/ota-ona koʻrgani bilan har doim bir xil boʻladi.
  */
-export const schoolClasses: SchoolClass[] = RAW_CLASSES.map((cls) => ({
-  ...cls,
-  homeroomTeacherName:
-    RAW_TEACHERS.find((t) => t.id === cls.homeroomTeacherId)?.shortName ?? null,
+export const teachers: Teacher[] = allTeachers().map((staff) => ({
+  id: staff.id,
+  fullName: staff.fullName,
+  shortName: staff.shortName,
+  subjects: staff.subjects,
+  homeroomClassName: homeroomClassOf(staff.id),
+  weeklyLoadHours: weeklyLoadOf(staff.id),
+  status: staff.status,
+  phone: staff.phone,
+  email: staff.email,
+  avatarInitials: staff.initials,
 }));
 
-export const teachers: Teacher[] = RAW_TEACHERS.map((teacher) => ({
-  ...teacher,
-  homeroomClassName:
-    RAW_CLASSES.find((c) => c.homeroomTeacherId === teacher.id)?.name ?? null,
-}));
+export const schoolClasses: SchoolClass[] = CLASSES.map((cls) => {
+  const students = studentsOfClass(cls.name);
+  const homeroomId = HOMEROOM[cls.name] ?? null;
+  return {
+    id: cls.id,
+    name: cls.name,
+    stage: cls.stage,
+    homeroomTeacherId: homeroomId,
+    homeroomTeacherName: homeroomId ? (staffById(homeroomId)?.shortName ?? null) : null,
+    studentCount: students.length,
+    averageAttendance: classAttendanceStat(cls.name, "month").averagePercent,
+    students: students.map<ClassStudent>((s) => ({
+      id: s.id,
+      fullName: s.fullName,
+      // Davomati past oʻquvchi bugun kelmagan deb koʻrsatiladi (demo).
+      status: s.attendanceWeek < 80 ? "absent_today" : "active",
+    })),
+  };
+});
 
 const TEACHER_STATS: Record<string, TeacherStats> = {
   "t-1": {
@@ -279,145 +147,125 @@ const TEACHER_STATS: Record<string, TeacherStats> = {
   },
 };
 
-export function teacherStatsFor(teacherId: string): TeacherStats {
-  return (
-    TEACHER_STATS[teacherId] ?? {
-      averageGradeGiven: 0,
-      attendanceMarkingRate: 0,
-      lessonsConducted: 0,
-      todayLessons: [],
-    }
-  );
+/** Roʻyxatda yoʻq ustoz uchun barqaror (har safar bir xil) statistika. */
+function fallbackStats(teacherId: string): TeacherStats {
+  let seed = 0;
+  for (let i = 0; i < teacherId.length; i += 1) seed = (seed * 31 + teacherId.charCodeAt(i)) >>> 0;
+  return {
+    averageGradeGiven: Math.round((4 + (seed % 10) / 10) * 10) / 10,
+    attendanceMarkingRate: 85 + (seed % 15),
+    lessonsConducted: 60 + (seed % 80),
+    todayLessons: [],
+  };
 }
 
-export const payments: PaymentRecord[] = [
-  { id: "p-1", studentFullName: "Alisher Usmonov", className: "9-B", amount: 3_500_000, dueDate: "2026-09-05", status: "paid" },
-  { id: "p-2", studentFullName: "Madina Nazarova", className: "9-B", amount: 3_500_000, dueDate: "2026-08-25", status: "overdue" },
-  { id: "p-3", studentFullName: "Kamola Yoqubova", className: "10-A", amount: 4_000_000, dueDate: "2026-09-05", status: "paid" },
-  { id: "p-4", studentFullName: "Jaloliddin Mirzayev", className: "11-B", amount: 4_000_000, dueDate: "2026-08-20", status: "overdue" },
-  { id: "p-5", studentFullName: "Diyorbek Toshpulatov", className: "6-G", amount: 3_000_000, dueDate: "2026-09-05", status: "partial" },
-  { id: "p-6", studentFullName: "Ravshan Abdullayev", className: "11-V", amount: 4_000_000, dueDate: "2026-09-05", status: "paid" },
-];
+export function teacherStatsFor(teacherId: string): TeacherStats {
+  return TEACHER_STATS[teacherId] ?? fallbackStats(teacherId);
+}
 
-export const parentRequests: ParentRequest[] = [
-  {
-    id: "r-1",
-    parentName: "Nortojiyev Sherzod",
-    studentFullName: "Malika Nortojiyeva",
-    className: "5-A",
-    subject: "Ovqatlanish narxi haqida",
-    message: "Oshxona narxlari qachondan oshadi, oldindan xabar berilsinmi?",
-    createdAt: "2026-08-29 08:10",
-    status: "new",
-    replies: [],
-  },
-  {
-    id: "r-2",
-    parentName: "Nazarova Gulbahor",
-    studentFullName: "Madina Nazarova",
-    className: "9-B",
-    subject: "Toʻlov kechikishi",
-    message: "Sentabr toʻlovini 5 kunga kechiktirish mumkinmi?",
-    createdAt: "2026-08-28 17:45",
-    status: "in_progress",
-    replies: [
-      {
-        id: "r-2-1",
-        author: "maktab",
-        text: "Assalomu alaykum! Bu masalani buxgalteriya bilan aniqlashtirib, bugun kuningizda javob beramiz.",
-        createdAt: "2026-08-28 18:05",
-      },
-    ],
-  },
-  {
-    id: "r-3",
-    parentName: "Mirzayev Aziz",
-    studentFullName: "Jaloliddin Mirzayev",
-    className: "11-B",
-    subject: "Dars jadvali",
-    message: "Farzandimning payshanba kungi jadvali juda zich, koʻrib chiqsangiz.",
-    createdAt: "2026-08-26 11:20",
-    status: "closed",
-    replies: [
-      {
-        id: "r-3-1",
-        author: "maktab",
-        text: "Payshanba kungi jadval qayta koʻrib chiqildi, endi bir para kamaytirildi.",
-        createdAt: "2026-08-26 15:30",
-      },
-      {
-        id: "r-3-2",
-        author: "ota-ona",
-        text: "Rahmat, yordamingiz uchun!",
-        createdAt: "2026-08-26 16:00",
-      },
-    ],
-  },
-];
 
 /**
- * DIR-01/02: ochiq murojaatlar soni — `parentRequests`dan hisoblanadi,
- * boshqa raqam bilan qo'lda takrorlanmaydi (yagona manba).
+ * DIR-01/02: ochiq murojaatlar soni — barcha rollar uchun umumiy
+ * `lib/school/appeals` dan hisoblanadi, qoʻlda takrorlanmaydi.
  */
-const OPEN_REQUESTS_COUNT = parentRequests.filter((r) => r.status !== "closed").length;
+const OPEN_REQUESTS_COUNT = APPEALS.filter(isOpen).length;
 
-export const overview: DirectorOverview = {
-  totalStudents: 1420,
-  studentGrowthPercent: 2.4,
-  totalTeachers: teachers.filter((t) => t.status === "active").length,
-  todayAttendancePercent: 94,
-  averageGrade: 4.3,
-  openRequestsCount: OPEN_REQUESTS_COUNT,
-  monthlyRevenue: 245_000_000,
-  revenueVsPlanPercent: 5,
-  attendanceTrend: [
-    { dateLabel: "01 Sen", percent: 90 },
-    { dateLabel: "05 Sen", percent: 92 },
-    { dateLabel: "10 Sen", percent: 89 },
-    { dateLabel: "15 Sen", percent: 91 },
-    { dateLabel: "20 Sen", percent: 93 },
-    { dateLabel: "25 Sen", percent: 96 },
-    { dateLabel: "30 Sen", percent: 94 },
-  ],
-  alerts: [
-    {
-      id: "al-1",
-      level: "danger",
-      title: "Past davomat (11-B sinf)",
-      description: "Ushbu hafta davomat koʻrsatkichi 82% ga tushib ketdi.",
-    },
-    {
-      id: "al-2",
-      level: "info",
-      title: "Toʻlov kechikishlari",
-      description: "12 nafar oʻquvchining sentabr oyi toʻlovi kechikmoqda.",
-    },
-  ],
-  announcements: [
-    {
-      id: "an-1",
-      title: "Ota-onalar majlisi",
-      body: "Ertaga soat 15:00 da barcha sinf rahbarlari uchun umumiy majlis boʻlib oʻtadi.",
-      createdAtLabel: "Bugun, 09:30",
-    },
-    {
-      id: "an-2",
-      title: "Yangi oʻquv dasturi",
-      body: "Oktabr oyidan boshlab informatika fanidan yangilangan dastur joriy etiladi.",
-      createdAtLabel: "Kecha, 14:15",
-    },
-  ],
-};
+const MONTH_TREND: AttendanceTrendPoint[] = [
+  { dateLabel: "01 Sen", percent: 90 },
+  { dateLabel: "05 Sen", percent: 92 },
+  { dateLabel: "10 Sen", percent: 89 },
+  { dateLabel: "15 Sen", percent: 91 },
+  { dateLabel: "20 Sen", percent: 93 },
+  { dateLabel: "25 Sen", percent: 96 },
+  { dateLabel: "30 Sen", percent: 94 },
+];
 
-/** DIR-04: sinflar boʻyicha oʻzlashtirish reytingi (yuqoridan pastga). */
-const CLASS_AVERAGE_GRADE: Record<string, number> = {
-  "5-A": 4.6,
-  "10-A": 4.5,
-  "6-G": 4.4,
-  "9-B": 4.1,
-  "11-V": 4.0,
-  "11-B": 3.8,
-};
+const YEAR_TREND: AttendanceTrendPoint[] = [
+  { dateLabel: "Sen", percent: 94 },
+  { dateLabel: "Okt", percent: 92 },
+  { dateLabel: "Noy", percent: 90 },
+  { dateLabel: "Dek", percent: 87 },
+  { dateLabel: "Yan", percent: 85 },
+  { dateLabel: "Fev", percent: 88 },
+  { dateLabel: "Mar", percent: 91 },
+  { dateLabel: "Apr", percent: 93 },
+  { dateLabel: "May", percent: 92 },
+];
+
+/** Oʻquv yili sentabrdan maygacha — 9 oy. */
+const MONTHS_IN_YEAR = 9;
+
+/**
+ * Bosh sahifa koʻrsatkichlari. `period` — "month" (joriy oy) yoki
+ * "year" (oʻquv yili boshidan). Moliyaviy raqamlar va shartnoma
+ * harakati shu davr boʻyicha qayta hisoblanadi.
+ */
+export function buildOverview(period: OverviewPeriod): DirectorOverview {
+  const months = period === "year" ? MONTHS_IN_YEAR : 1;
+  const finance = financeSummary(months);
+  const contracts = contractSummary(months);
+
+  return {
+    period,
+    totalStudents: ALL_STUDENTS.length,
+    studentGrowthPercent:
+      contracts.startCount === 0
+        ? 0
+        : Math.round((contracts.net / contracts.startCount) * 1000) / 10,
+    totalTeachers: teachers.filter((t) => t.status === "active").length,
+    todayAttendancePercent: schoolAttendance("week"),
+    averageGrade: 4.3,
+    openRequestsCount: OPEN_REQUESTS_COUNT,
+    revenue: finance.collected,
+    expectedRevenue: finance.expected,
+    debtAmount: finance.debt,
+    debtPercent: finance.debtPercent,
+    contracts,
+    attendanceTrend: period === "year" ? YEAR_TREND : MONTH_TREND,
+    alerts: [
+      {
+        id: "al-1",
+        level: "danger",
+        title: `Past davomat (${WORST_ATTENDANCE_CLASS.className} sinf)`,
+        description: `Oʻrtacha davomat ${WORST_ATTENDANCE_CLASS.averagePercent}% — maktab boʻyicha eng past koʻrsatkich.`,
+      },
+      {
+        id: "al-2",
+        level: "info",
+        title: "Toʻlov kechikishlari",
+        description: `${finance.overdueCount} nafar oʻquvchining toʻlovi kechikmoqda, qarzdorlik ${finance.debtPercent}%.`,
+      },
+    ],
+    announcements: [
+      {
+        id: "an-1",
+        title: "Ota-onalar majlisi",
+        body: "Ertaga soat 15:00 da barcha sinf rahbarlari uchun umumiy majlis boʻlib oʻtadi.",
+        createdAtLabel: "Bugun, 09:30",
+      },
+      {
+        id: "an-2",
+        title: "Yangi oʻquv dasturi",
+        body: "Oktabr oyidan boshlab informatika fanidan yangilangan dastur joriy etiladi.",
+        createdAtLabel: "Kecha, 14:15",
+      },
+    ],
+  };
+}
+
+/** Eng past davomatli sinf — ogohlantirish matni uchun. */
+const WORST_ATTENDANCE_CLASS = CLASSES.map((c) => classAttendanceStat(c.name, "month")).sort(
+  (a, b) => a.averagePercent - b.averagePercent,
+)[0];
+
+/**
+ * DIR-04: sinflar boʻyicha oʻzlashtirish reytingi. Baho maʼlumoti hali
+ * yoʻq, shuning uchun davomatga bogʻlangan barqaror taxminiy baho —
+ * backend ulanganda `grades` jadvalidan olinadi.
+ */
+function estimatedGrade(attendancePercent: number): number {
+  return Math.round((3.2 + (attendancePercent - 76) * 0.06) * 10) / 10;
+}
 
 export const reports: DirectorReports = {
   gradeDistribution: [
@@ -426,7 +274,7 @@ export const reports: DirectorReports = {
     { label: "4", count: 520 },
     { label: "5", count: 480 },
   ],
-  attendanceTrend: overview.attendanceTrend,
+  attendanceTrend: MONTH_TREND,
   subjectAverages: [
     { subject: "Matematika", average: 4.2 },
     { subject: "Ona tili", average: 4.5 },
@@ -434,9 +282,10 @@ export const reports: DirectorReports = {
     { subject: "Ingliz tili", average: 4.4 },
     { subject: "Tarix", average: 4.3 },
   ],
-  classRanking: schoolClasses
-    .map((cls) => ({ className: cls.name, averageGrade: CLASS_AVERAGE_GRADE[cls.name] ?? 0 }))
-    .sort((a, b) => b.averageGrade - a.averageGrade),
+  classRanking: CLASSES.map((cls) => ({
+    className: cls.name,
+    averageGrade: estimatedGrade(classAttendanceStat(cls.name, "month").averagePercent),
+  })).sort((a, b) => b.averageGrade - a.averageGrade),
   paymentTrend: [
     { monthLabel: "Aprel", collectedPercent: 91 },
     { monthLabel: "May", collectedPercent: 88 },
@@ -444,29 +293,17 @@ export const reports: DirectorReports = {
     { monthLabel: "Avgust", collectedPercent: 90 },
     { monthLabel: "Sentabr", collectedPercent: 95 },
   ],
-  atRiskStudents: [
-    {
-      id: "risk-1",
-      fullName: "Jaloliddin Mirzayev",
-      className: "11-B",
-      reason: "attendance",
-      detail: "Davomat: 78% (chegara: 85%)",
-    },
-    {
-      id: "risk-2",
-      fullName: "Sherzod Rustamov",
-      className: "9-B",
-      reason: "attendance",
-      detail: "Oxirgi haftada 2 marta sababsiz qoldirdi",
-    },
-    {
-      id: "risk-3",
-      fullName: "Kamola Yoqubova",
-      className: "10-A",
-      reason: "grades",
-      detail: "Oʻrtacha baho 4.6 dan 3.2 ga tushdi",
-    },
-  ],
+  // Davomati eng past 6 nafar — roʻyxat maʼlumotdan hosil qilinadi.
+  atRiskStudents: [...ALL_STUDENTS]
+    .sort((a, b) => a.attendanceMonth - b.attendanceMonth)
+    .slice(0, 6)
+    .map((s) => ({
+      id: `risk-${s.id}`,
+      fullName: s.fullName,
+      className: s.className,
+      reason: "attendance" as const,
+      detail: `Oylik davomat: ${s.attendanceMonth}% (chegara: 85%)`,
+    })),
 };
 
 // ─────────────────────── Boshlangʻich dars jadvali ───────────────────────
