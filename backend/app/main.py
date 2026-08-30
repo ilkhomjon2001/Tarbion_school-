@@ -11,6 +11,8 @@ from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
+from app.api.v1 import auth as auth_router
+from app.api.v1 import director as director_router
 from app.core.config import settings
 from app.core.db import SessionDep, engine
 from app.core.exceptions import AppError, app_error_handler, unhandled_error_handler
@@ -52,6 +54,11 @@ app.add_middleware(
 
 app.add_exception_handler(AppError, app_error_handler)
 app.add_exception_handler(Exception, unhandled_error_handler)
+
+# Router'lar. Prefiks bitta joyda — versiya oshganda shu yer oʻzgaradi.
+API_V1 = "/api/v1"
+app.include_router(auth_router.router, prefix=API_V1)
+app.include_router(director_router.router, prefix=API_V1)
 
 
 @app.get("/health", response_model=HealthOut, tags=["service"])
