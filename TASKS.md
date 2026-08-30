@@ -196,7 +196,7 @@ Admin CRUD + frontend sahifasi.
 
 ---
 
-### [ ] T-008 · Sinflar, fanlar, xodimlar
+### [~] T-008 · Sinflar, fanlar, xodimlar  ← ISHDA (Ikrom, 31-avgust)
 **TZ:** ADM-02, ADM-03, ADM-04
 **Kerak:** T-007
 **Frontend:** ✅ tayyor — `/admin/baza`: Sinflar (ochish, sinf rahbari va sigʻimni oʻzgartirish, arxivlash — oʻquvchisi bor sinf arxivlanmaydi), Fanlar (qoʻshish, oʻquv rejasidan chiqarish), Xonalar (qoʻshish, foydalanishdan chiqarish). Xodimlar — `/rahbar/ustozlar` va `/admin/sozlamalar`.
@@ -212,7 +212,7 @@ Xodim yaratilganda `users` yozuvi va tegishli rol beriladi.
 
 ---
 
-### [ ] T-009 · O'quvchilar va vasiylar
+### [~] T-009 · O'quvchilar va vasiylar  ← ISHDA (Ikrom, 31-avgust)
 **TZ:** ADM-05, ADM-06, ADM-11
 **Kerak:** T-008
 **Frontend:** ✅ tayyor — `/admin/oquvchilar` — roʻyxat, profil paneli, sinfga koʻchirish, arxivlash (sabab roʻyxatdan + sana), arxivdan qaytarish. `/admin/qabul` — vasiy maʼlumotlari bilan 4 bosqichli qabul. `/admin/shartnomalar` — kelgan-ketgan tarixi.
