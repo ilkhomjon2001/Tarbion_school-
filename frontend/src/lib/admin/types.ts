@@ -557,7 +557,8 @@ export type AuditAction =
   | "access"
   | "settings"
   | "lead"
-  | "call";
+  | "call"
+  | "hr";
 
 export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   payment: "Toʻlov kiritildi",
@@ -578,6 +579,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   settings: "Sozlamalar",
   lead: "Lid",
   call: "Qoʻngʻiroq",
+  hr: "Kadrlar",
 };
 
 export interface AuditEntry {

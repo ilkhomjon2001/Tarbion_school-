@@ -5,6 +5,7 @@ import { downloadCsv } from "@/lib/csv";
 import { KPI_DEFINITIONS, kpiTone, teacherKpi } from "@/lib/director/teacher-kpi";
 import { allTeachers, homeroomClassOf } from "@/lib/school/staff";
 import { teacherExamSummary } from "@/lib/school/exams";
+import { teacherQuality } from "@/lib/school/quality";
 
 const TONE_TEXT = {
   success: "text-success",
@@ -18,7 +19,7 @@ const TONE_BAR = {
   danger: "bg-danger",
 } as const;
 
-type SortKey = "overall" | "exams" | "rules" | "parents" | "journal" | "name";
+type SortKey = "overall" | "exams" | "rules" | "parents" | "journal" | "quality" | "name";
 
 const SORT_LABELS: Record<SortKey, string> = {
   overall: "Umumiy KPI",
@@ -26,6 +27,7 @@ const SORT_LABELS: Record<SortKey, string> = {
   rules: "Ichki qoidalar",
   parents: "Ota-ona hamkorligi",
   journal: "Jurnal intizomi",
+  quality: "Dars kuzatuvi",
   name: "Ism boʻyicha",
 };
 
@@ -41,6 +43,7 @@ export function AcademicTeachersBoard() {
     const list = allTeachers().map((teacher) => {
       const kpi = teacherKpi(teacher.id);
       const exams = teacherExamSummary(teacher.id);
+      const quality = teacherQuality(teacher.id);
       // Oʻlchanmagan koʻrsatkich `null` — 0 emas, aks holda saralashda
       // yuklamasi yoʻq ustoz eng pastga tushib qolardi.
       const byKey = new Map(
@@ -50,12 +53,15 @@ export function AcademicTeachersBoard() {
         teacher,
         kpi,
         exams,
+        quality,
         scores: {
           overall: kpi.overall,
           exams: byKey.get("exams") ?? null,
           rules: byKey.get("rules") ?? null,
           parents: byKey.get("parents") ?? null,
           journal: byKey.get("journal") ?? null,
+          // Kuzatuvi boʻlmagan ustoz roʻyxat oxirida — 0 ball emas.
+          quality: quality.average,
         },
       };
     });
@@ -101,6 +107,8 @@ export function AcademicTeachersBoard() {
                 "Ichki qoidalar",
                 "Ota-ona",
                 "Jurnal",
+                "Dars kuzatuvi",
+                "Kuzatuv soni",
                 "Imtihon soni",
                 "Natija soni",
               ],
@@ -113,6 +121,8 @@ export function AcademicTeachersBoard() {
                 r.scores.rules === null ? "—" : String(r.scores.rules),
                 r.scores.parents === null ? "—" : String(r.scores.parents),
                 r.scores.journal === null ? "—" : String(r.scores.journal),
+                r.quality.average === null ? "—" : String(r.quality.average),
+                String(r.quality.conducted),
                 String(r.exams.examCount),
                 String(r.exams.studentCount),
               ]),
@@ -144,7 +154,7 @@ export function AcademicTeachersBoard() {
 
       <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
         <div className="scroll-x">
-          <table className="w-full min-w-[880px] border-collapse text-sm">
+          <table className="w-full min-w-[980px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-border bg-surface-muted/60 text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
                 <th className="px-3 py-3">Ustoz</th>
@@ -155,11 +165,14 @@ export function AcademicTeachersBoard() {
                     {d.proposed && <span className="ml-1 text-warning">*</span>}
                   </th>
                 ))}
+                <th className="px-3 py-3" title="Dars kuzatuvining oʻrtacha bali">
+                  Kuzatuv
+                </th>
                 <th className="px-3 py-3">Imtihon</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ teacher, kpi, exams, scores }) => (
+              {rows.map(({ teacher, kpi, exams, quality, scores }) => (
                 <tr
                   key={teacher.id}
                   className="border-b border-border transition-colors last:border-0 hover:bg-surface-muted/50"
@@ -203,6 +216,26 @@ export function AcademicTeachersBoard() {
                       </td>
                     );
                   })}
+                  <td className="px-3 py-2.5">
+                    {quality.average === null ? (
+                      <span
+                        className="text-xs text-foreground-muted"
+                        title="Dars kuzatuvi oʻtkazilmagan"
+                      >
+                        —
+                      </span>
+                    ) : (
+                      <span className="text-xs">
+                        <span className={`num ${TONE_TEXT[kpiTone(quality.average)]}`}>
+                          {quality.average}
+                        </span>
+                        <span className="text-foreground-muted">
+                          {" "}
+                          · {quality.conducted} ta
+                        </span>
+                      </span>
+                    )}
+                  </td>
                   <td className="px-3 py-2.5 text-xs text-foreground-muted">
                     <span className="num">{exams.examCount}</span> ta ·{" "}
                     <span className="num">{exams.studentCount}</span> natija

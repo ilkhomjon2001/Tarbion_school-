@@ -9,6 +9,7 @@ import {
   PhoneIcon,
   SettingsIcon,
   ShieldIcon,
+  UserIcon,
   UsersIcon,
   WalletIcon,
 } from "@/components/ui/icons";
@@ -29,6 +30,7 @@ export const ADMIN_NAV = [
   { href: "/admin/shartnomalar", label: "Shartnomalar", icon: ShieldIcon },
   { href: "/admin/qongiroqlar", label: "Qoʻngʻiroqlar", icon: PhoneIcon },
   { href: "/admin/tolovlar", label: "Toʻlovlar", icon: WalletIcon },
+  { href: "/admin/kadrlar", label: "Kadrlar", icon: UserIcon },
   { href: "/admin/malumotnomalar", label: "Maʼlumotnomalar", icon: ClipboardIcon },
   { href: "/admin/murojaatlar", label: "Murojaatlar", icon: MessageSquareIcon },
   { href: "/admin/sorovnomalar", label: "Soʻrovnomalar", icon: BarChartIcon },

@@ -84,6 +84,7 @@ export const SECTIONS: Section[] = [
   { id: "/oquv-bolim/imtihonlar", label: "Imtihonlar", cabinet: "academic" },
   { id: "/oquv-bolim/natijalar", label: "Natijalar", cabinet: "academic" },
   { id: "/oquv-bolim/rejalar", label: "Dars rejalari", cabinet: "academic" },
+  { id: "/oquv-bolim/sifat", label: "Sifat nazorati", cabinet: "academic" },
   { id: "/oquv-bolim/ustozlar", label: "Ustozlar faoliyati", cabinet: "academic" },
 
   // ── Administrator ──
@@ -94,6 +95,7 @@ export const SECTIONS: Section[] = [
   { id: "/admin/shartnomalar", label: "Shartnomalar", cabinet: "admin" },
   { id: "/admin/qongiroqlar", label: "Qoʻngʻiroqlar", cabinet: "admin" },
   { id: "/admin/tolovlar", label: "Toʻlovlar", cabinet: "admin" },
+  { id: "/admin/kadrlar", label: "Kadrlar", cabinet: "admin" },
   { id: "/admin/malumotnomalar", label: "Maʼlumotnomalar", cabinet: "admin" },
   { id: "/admin/murojaatlar", label: "Murojaatlar", cabinet: "admin" },
   { id: "/admin/sorovnomalar", label: "Soʻrovnomalar", cabinet: "admin" },
