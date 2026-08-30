@@ -31,11 +31,13 @@ from app.models import (
     AttendanceStatus,
     AuditAction,
     Lesson,
+    Permission,
     SchoolClass,
     Student,
 )
 from app.services import audit_service
 from app.services.access import CurrentUser, accessible_student_ids, load_lesson_for_teacher
+from app.services.permissions import has_permission
 
 _VALID = {s.value for s in AttendanceStatus}
 #: Davomat foizida "kelgan" deb hisoblanadigan holatlar. Kechikkan
@@ -71,17 +73,24 @@ def can_teacher_edit(lesson: Lesson) -> bool:
 async def _assert_can_edit(session: AsyncSession, user: CurrentUser, lesson: Lesson) -> None:
     """Kim tahrirlay oladi.
 
-    Administrator har doim (DAV-03 ning ikkinchi yarmi). Ustoz — faqat
-    oyna ichida. Sinf rahbari ham ustoz sifatida, oʻz sinfining darsiga.
+    Ustoz — faqat 24 soatlik oyna ichida. Oynadan keyin faqat
+    `attendance.edit_closed` HUQUQI bor odam (T-005). Administrator
+    roli yolgʻiz yetarli emas: super administrator ikkita adminning
+    birigina bu huquqni berishi mumkin.
+
+    Superadminda bu huquq avtomatik bor (`has_permission` ga qara).
     """
-    if user.is_staff_wide:
+    if can_teacher_edit(lesson):
         return
-    if not can_teacher_edit(lesson):
-        raise EditWindowClosedError(
-            "Bu darsni tahrirlash muddati tugagan "
-            f"({settings.attendance_edit_window_hours} soat). "
-            "Oʻzgartirish uchun administratorga murojaat qiling."
-        )
+
+    if await has_permission(session, user, Permission.ATTENDANCE_EDIT_CLOSED):
+        return
+
+    raise EditWindowClosedError(
+        "Bu darsni tahrirlash muddati tugagan "
+        f"({settings.attendance_edit_window_hours} soat). "
+        "Oʻzgartirish uchun administratorga murojaat qiling."
+    )
 
 
 async def _roster(session: AsyncSession, class_id: uuid.UUID) -> list[Student]:

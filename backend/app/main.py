@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 from sqlalchemy import text
 
+from app.api.v1 import access as access_router
 from app.api.v1 import appeals as appeals_router
 from app.api.v1 import attendance as attendance_router
 from app.api.v1 import auth as auth_router
@@ -75,6 +76,7 @@ app.add_exception_handler(Exception, unhandled_error_handler)
 # Router'lar. Prefiks bitta joyda — versiya oshganda shu yer oʻzgaradi.
 API_V1 = "/api/v1"
 app.include_router(auth_router.router, prefix=API_V1)
+app.include_router(access_router.router, prefix=API_V1)
 app.include_router(director_router.router, prefix=API_V1)
 app.include_router(appeals_router.router, prefix=API_V1)
 app.include_router(attendance_router.router, prefix=API_V1)

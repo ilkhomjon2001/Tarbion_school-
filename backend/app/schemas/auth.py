@@ -19,6 +19,14 @@ class UserOut(BaseModel):
     short_name: str
     roles: list[str]
     must_change_password: bool
+    #: Qaysi kabinet ochiladi (T-005).
+    cabinet: str = "student"
+    #: Menyuda koʻrinadigan boʻlimlar. Frontend shu roʻyxatdan chizadi —
+    #: oʻzi hisoblamaydi, aks holda server bilan farq qilib qolardi.
+    sections: list[str] = []
+    #: Qaysi amallarni bajara oladi. Tugmalarni yashirish uchun; haqiqiy
+    #: tekshiruv baribir serverda (CLAUDE.md 7-qoida).
+    permissions: list[str] = []
 
 
 class TokenOut(BaseModel):

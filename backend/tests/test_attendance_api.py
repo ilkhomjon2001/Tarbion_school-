@@ -28,6 +28,7 @@ from app.models import (
     AuditLog,
     Guardian,
     Lesson,
+    Permission,
     Role,
     RoleName,
     SchoolClass,
@@ -35,6 +36,8 @@ from app.models import (
     Subject,
     User,
 )
+from app.services import permissions
+from app.services.access import CurrentUser
 
 PASSWORD = "Sinov12345!"  # noqa: S106
 DAY = date(2026, 9, 15)
@@ -300,7 +303,33 @@ async def test_25_soatdan_keyin_ustoz_ozgartira_olmaydi(client: AsyncClient, wor
     assert "muddat" in resp.json()["message"].lower()
 
 
-async def test_admin_25_soatdan_keyin_ham_ozgartiradi(client: AsyncClient, world: dict) -> None:
+async def test_huquqsiz_admin_ham_ozgartira_olmaydi(client: AsyncClient, world: dict) -> None:
+    """T-005: administrator ROLI yolgʻiz yetarli emas.
+
+    Super administrator ikkita adminning bittasigagina
+    `attendance.edit_closed` huquqini berishi mumkin.
+    """
+    token = await _token(client, "dav.admin")
+    resp = await client.post(
+        f"/api/v1/attendance/lessons/{world['eski'].id}",
+        headers=_auth(token),
+        json={"rows": _rows((world["ali"], "excused"))},
+    )
+    assert resp.status_code == 403
+
+
+async def test_huquqli_admin_25_soatdan_keyin_ozgartiradi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """`attendance.edit_closed` berilgan admin muddatdan keyin ham tuzatadi."""
+    await permissions.grant(
+        session,
+        target_user_id=world["admin"].id,
+        permission=Permission.ATTENDANCE_EDIT_CLOSED,
+        granted_by=CurrentUser.from_model(world["admin"]),
+    )
+    await session.flush()
+
     token = await _token(client, "dav.admin")
     resp = await client.post(
         f"/api/v1/attendance/lessons/{world['eski'].id}",
@@ -309,6 +338,23 @@ async def test_admin_25_soatdan_keyin_ham_ozgartiradi(client: AsyncClient, world
     )
     assert resp.status_code == 200, resp.text
     assert resp.json()["created"] == 1
+
+
+async def test_superadmin_huquqsiz_ham_ozgartiradi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Superadminga alohida huquq berilmaydi — u hammasiga ega."""
+    roles = await _roles(session)
+    sa = await _user(session, roles, [RoleName.SUPERADMIN.value], "dav.superadmin", "Boshqaruv")
+    await session.flush()
+
+    token = await _token(client, sa.login)
+    resp = await client.post(
+        f"/api/v1/attendance/lessons/{world['eski'].id}",
+        headers=_auth(token),
+        json={"rows": _rows((world["ali"], "excused"))},
+    )
+    assert resp.status_code == 200, resp.text
 
 
 async def test_eski_darsda_editable_false_qaytadi(client: AsyncClient, world: dict) -> None:

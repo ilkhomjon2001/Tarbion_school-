@@ -13,7 +13,7 @@ from sqlalchemy import (
     Index,
     String,
 )
-from sqlalchemy.dialects.postgresql import INET
+from sqlalchemy.dialects.postgresql import INET, JSONB
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -74,6 +74,14 @@ class User(Entity):
         default=False, server_default="false", nullable=False
     )
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    # Super administrator belgilagan boʻlimlar roʻyxati (T-005).
+    #
+    # `None` — rol standarti ishlaydi. Roʻyxat berilgan boʻlsa u ustun
+    # turadi. JSONB ustun ataylab: alohida jadval boʻlsa "boʻsh roʻyxat"
+    # va "istisno yoʻq" holatlari farqlanmasdi, va har sahifa yuklashda
+    # qoʻshimcha JOIN kerak boʻlardi. Oʻzgarish tarixi `audit_log` da.
+    section_overrides: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
 
     roles: Mapped[list[Role]] = relationship(
         secondary="user_roles", lazy="selectin", order_by=Role.name
@@ -180,10 +188,33 @@ class Permission(enum.StrEnum):
     (`has_permission` ga qara).
     """
 
+    # ── Foydalanuvchilar ──
     USERS_CREATE = "users.create"
     USERS_MANAGE = "users.manage"
     USERS_RESET_PASSWORD = "users.reset_password"  # noqa: S105 — huquq nomi, parol emas
     PERMISSIONS_GRANT = "permissions.grant"
+
+    # ── Oʻquv jarayoni ──
+    #: DAV-03 oynasi yopilgandan keyin ham davomatni tuzatish.
+    ATTENDANCE_EDIT_CLOSED = "attendance.edit_closed"
+    #: Dars jadvalini tuzish va oʻzgartirish (ADM-09).
+    SCHEDULE_MANAGE = "schedule.manage"
+    #: Oʻquvchi qabul qilish, sinfga koʻchirish, arxivlash.
+    STUDENTS_MANAGE = "students.manage"
+
+    # ── Moliya ──
+    #: Toʻlov kiritish va storno (TOL-07).
+    PAYMENTS_MANAGE = "payments.manage"
+
+    # ── Maʼlumot chiqarish ──
+    #: Roʻyxatlarni Excel/PDF ga yuklab olish. X-13: har eksport auditga.
+    REPORTS_EXPORT = "reports.export"
+    #: Butun maktab kesimidagi hisobotlar (rahbariyat koʻrinishi).
+    REPORTS_VIEW_ALL = "reports.view_all"
+
+    # ── Aloqa ──
+    #: Ommaviy eʼlon yuborish.
+    ANNOUNCEMENTS_PUBLISH = "announcements.publish"
 
 
 class UserPermission(Entity):

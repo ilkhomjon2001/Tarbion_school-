@@ -212,9 +212,7 @@ async def test_reply_from_teacher_marks_answered(client: AsyncClient, world: dic
     assert len(detail.json()["messages"]) == 2
 
 
-async def test_parent_reply_after_answer_reopens_review(
-    client: AsyncClient, world: dict
-) -> None:
+async def test_parent_reply_after_answer_reopens_review(client: AsyncClient, world: dict) -> None:
     """Ota-ona qayta yozdi → «javob berildi» emas, yana koʻrib chiqilmoqda.
 
     Aks holda ustozning javob berish koʻrsatkichi yolgʻon yaxshi chiqardi:
@@ -252,10 +250,16 @@ async def test_appeal_change_is_written_to_audit_log(
     )
 
     rows = (
-        await session.execute(
-            select(AuditLog).where(AuditLog.object_type == "appeal").order_by(AuditLog.created_at)
+        (
+            await session.execute(
+                select(AuditLog)
+                .where(AuditLog.object_type == "appeal")
+                .order_by(AuditLog.created_at)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     actions = [r.action for r in rows]
     assert "create" in actions
     closed = [r for r in rows if r.new_value and r.new_value.get("status") == "closed"]
@@ -314,9 +318,7 @@ async def test_parent_cannot_write_about_another_family_child(
     assert resp.status_code == 403
 
 
-async def test_parent_cannot_route_to_arbitrary_staff(
-    client: AsyncClient, world: dict
-) -> None:
+async def test_parent_cannot_route_to_arbitrary_staff(client: AsyncClient, world: dict) -> None:
     """«Fan oʻqituvchisi» niqobida direktorga yozib boʻlmaydi.
 
     `assignee_id` soʻrovdan keladi, lekin ishonchli deb qabul qilinmaydi:
@@ -594,9 +596,7 @@ async def test_note_can_rate_a_teacher(client: AsyncClient, world: dict) -> None
     )
     assert resp.status_code == 201
 
-    rows = (
-        await client.get(f"/api/v1/appeals/{appeal['id']}/notes", headers=_auth(admin))
-    ).json()
+    rows = (await client.get(f"/api/v1/appeals/{appeal['id']}/notes", headers=_auth(admin))).json()
     assert rows[0]["teacher_rating"] == 4
     assert rows[0]["about_teacher_name"] == "Ustozov Sinov"
 

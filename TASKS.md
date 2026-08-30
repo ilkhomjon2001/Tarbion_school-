@@ -138,7 +138,7 @@ jadvali). Har kirish `login_log` ga yoziladi: sana, IP, user-agent.
 
 ---
 
-### [~] T-005 · Rolga asoslangan kirish nazorati  ← ISHDA (Ikrom, 31-avgust)
+### [x] T-005 · Rolga asoslangan kirish nazorati
 **TZ:** NFR-08, 6-domen qoidasi
 **Kerak:** T-004
 **Frontend:** 🟡 qisman — `AuthGuard` beshta kabinetda ham: sessiya yoʻq → `/login`, rol boshqa kabinetniki → oʻz kabinetiga. Boʻlim koʻrinuvchanligi `lib/access.ts` orqali. Bu koʻrinishni boshqarish — server tekshiruvi yoʻq (7-qoida).
@@ -149,9 +149,17 @@ ustoz uchun o'z sinflari, direktor va admin uchun hammasi. **Barcha o'quvchi
 bo'yicha so'rovlar shu funksiyadan o'tadi.**
 
 **Tayyor:**
-- [ ] Har bir himoyalangan endpoint'da rol tekshiruvi bor
-- [ ] Test: A ota-ona B o'quvchining ma'lumotini so'raydi → `403`
-- [ ] Test: ustoz o'zi dars bermaydigan sinf davomatini o'zgartira olmaydi
+- [x] Har bir himoyalangan endpoint'da rol tekshiruvi bor
+- [x] Test: A ota-ona B o'quvchining ma'lumotini so'raydi → `403`
+- [x] Test: ustoz o'zi dars bermaydigan sinf davomatini o'zgartira olmaydi
+- [x] HUQUQLAR MARKAZI (loyiha egasi so'rovi, 31-avgust): super administrator
+      kim qaysi bo'limni ko'rishini va qaysi amalni bajarishini belgilaydi.
+      `/api/v1/access` — bo'limlar reyestri, huquqlar reyestri,
+      foydalanuvchilar, bo'lim istisnolari, huquq berish.
+- [x] `/auth/me` bo'lim va huquqlarni qaytaradi — frontend menyuni
+      o'zi hisoblamaydi, serverdan oladi
+- [x] Rol yolg'iz yetarli emas: DAV-03 muddatidan keyin tahrirlash uchun
+      `attendance.edit_closed` HUQUQI kerak, admin roli emas
 
 ---
 
