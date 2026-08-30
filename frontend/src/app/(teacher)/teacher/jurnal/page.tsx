@@ -74,9 +74,34 @@ function JournalContent() {
     const c = search.get("sinf");
     const cls = c && classes.includes(c) ? c : classes[0];
     const f = search.get("fan");
-    const allowed = isHomeroomOf(cls) ? allSubjectsIn(cls) : mySubjectsIn(cls);
+    // Sukut boʻyicha fan ustozi — ruxsat etilgan fanlar faqat oʻziniki.
+    const asHome = search.get("rol") === "sinf" || mySubjectsIn(cls).length === 0;
+    const allowed = isHomeroomOf(cls) && asHome ? allSubjectsIn(cls) : mySubjectsIn(cls);
     return f && allowed.includes(f) ? f : defaultSubject(cls);
   });
+  /**
+   * Ustoz jurnalga ikki xil ROLDA kiradi:
+   *
+   *   fan ustozi    (sukut) — oʻzi oʻqitadigan fandan baho QOʻYADI
+   *   sinf rahbari  (ixtiyoriy) — sinfning BARCHA fanlarini KOʻRADI
+   *
+   * Sukut boʻyicha fan ustozi, chunki kundalik ish shu: darsdan keyin
+   * davomat, keyin oʻsha fandan baho. Sinf rahbarining umumiy koʻrinishi
+   * kamroq kerak boʻladi — unga alohida tugma bilan oʻtiladi.
+   */
+  const [asHomeroom, setAsHomeroom] = useState(() => search.get("rol") === "sinf");
+
+  /**
+   * Davomatdan kelinganda jurnal AYNAN oʻsha sinfga qulflanadi.
+   * Ustoz endigina 11-A da dars oʻtdi — unga qolgan toʻrtta sinf
+   * tugmasi kerak emas, u shu sinfga baho qoʻyish uchun keldi.
+   * Qolgan sinflarga oʻtish uchun "Barcha sinflar" havolasi bor.
+   */
+  const [lockedClass] = useState<string | null>(() => {
+    const c = search.get("sinf");
+    return c && classes.includes(c) ? c : null;
+  });
+
   const [stats, setStats] = useState<StudentStats[] | null>(null);
   const [lessons, setLessons] = useState<ConductedLesson[] | null>(null);
   const [openStudent, setOpenStudent] = useState<StudentStats | null>(null);
@@ -95,6 +120,18 @@ function JournalContent() {
       setSubject(defaultSubject(selected));
     }
   }, [selected]);
+
+  /**
+   * Rol almashganda tanlangan fan koʻrinmay qolishi mumkin — masalan sinf
+   * rahbari Fizikani tanlab, keyin fan ustozi koʻrinishiga oʻtsa. U holda
+   * ruxsat etilgan birinchi fanga qaytamiz.
+   */
+  useEffect(() => {
+    const allowed = isHomeroomOf(selected) && (asHomeroom || mySubjectsIn(selected).length === 0)
+      ? allSubjectsIn(selected)
+      : mySubjectsIn(selected);
+    if (allowed.length > 0 && !allowed.includes(subject)) setSubject(allowed[0]);
+  }, [asHomeroom, selected, subject]);
 
   const roster = useMemo(() => buildInitialRows(selected), [selected]);
   const term = termForDate(TODAY);
@@ -129,7 +166,17 @@ function JournalContent() {
     };
   }, [rows, lessons]);
 
-  const homeroom = isHomeroomOf(selected);
+  /** Shu sinfda oʻzi dars beradimi. */
+  const teachesHere = mySubjectsIn(selected).length > 0;
+
+  /**
+   * Sinf rahbari koʻrinishi: oʻzi tanlaganda, yoki bu sinfda umuman dars
+   * bermasa (u holda faqat rahbar sifatida kira oladi).
+   */
+  const homeroom = isHomeroomOf(selected) && (asHomeroom || !teachesHere);
+
+  /** Rolni almashtirish faqat oʻz sinfida va oʻzi dars beradigan boʻlsa. */
+  const canSwitchRole = isHomeroomOf(selected) && teachesHere;
 
   /**
    * Koʻrinadigan fanlar:
@@ -141,10 +188,37 @@ function JournalContent() {
 
   return (
     <TeacherShell
-      title="Sinf jurnali"
-      subtitle={`${selected} · ${homeroom ? "sinf rahbari" : "fan ustozi"} · ${ACADEMIC_YEAR}${term ? ` · ${term.name}` : ""}`}
+      title={homeroom ? "Sinf jurnali" : "Fan jurnali"}
+      subtitle={
+        homeroom
+          ? `${selected} · sinf rahbari · barcha fanlar · ${ACADEMIC_YEAR}${term ? ` · ${term.name}` : ""}`
+          : `${selected} · ${subject} · fan ustozi · ${ACADEMIC_YEAR}${term ? ` · ${term.name}` : ""}`
+      }
+      actions={
+        canSwitchRole ? (
+          <button
+            type="button"
+            onClick={() => setAsHomeroom((v) => !v)}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          >
+            {homeroom ? "Fan ustozi koʻrinishi" : "Sinf rahbari koʻrinishi"}
+          </button>
+        ) : null
+      }
     >
-      {classes.length > 1 && (
+      {lockedClass ? (
+        /* Davomatdan kelindi — sinf qulflangan, tugmalar oʻrniga qaytish havolasi. */
+        <Link
+          href="/teacher/jurnal"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm text-foreground-muted transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+        >
+          <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M11 18l-6-6 6-6" />
+          </svg>
+          Barcha sinflar
+        </Link>
+      ) : (
+        classes.length > 1 && (
         <div role="tablist" aria-label="Sinf" className="mb-4 flex flex-wrap gap-2">
           {classes.map((c) => (
             <button
@@ -164,6 +238,7 @@ function JournalContent() {
             </button>
           ))}
         </div>
+        )
       )}
 
       {/* Xulosa */}
@@ -228,7 +303,10 @@ function JournalContent() {
                       : "border-border bg-surface text-foreground-muted hover:bg-surface-muted"
                   }`}
                 >
-                  {mine && (
+                  {/* Nuqta faqat sinf rahbari koʻrinishida maʼnoli — u yerda
+                      oʻz fani boshqalardan ajratiladi. Fan ustozi koʻrinishida
+                      hamma fan oʻziniki, nuqta ortiqcha. */}
+                  {homeroom && mine && (
                     <span
                       aria-hidden
                       className="h-1.5 w-1.5 rounded-full bg-brand"

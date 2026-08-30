@@ -36,7 +36,7 @@ const NAV_GROUPS = [
   {
     title: "Sinf va fan",
     items: [
-      { href: "/teacher/jurnal", label: "Sinf jurnali", icon: JournalIcon },
+      { href: "/teacher/jurnal", label: "Jurnal", icon: JournalIcon },
       { href: "/teacher/test", label: "Testlar", icon: TestIcon },
       { href: "/teacher/elon", label: "Eʼlonlar", icon: MegaphoneIcon },
     ],
