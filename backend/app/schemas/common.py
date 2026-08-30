@@ -12,3 +12,14 @@ from pydantic import BaseModel
 
 class HealthOut(BaseModel):
     status: Literal["ok"]
+
+
+class ReadinessOut(BaseModel):
+    """Ilova soʻrov qabul qilishga tayyormi.
+
+    `database` — bazaga soʻrov yuborib tekshiriladi. Ulanish puli boʻsh
+    boʻlsa ham javob beradi: pool_pre_ping yangi ulanish ochadi.
+    """
+
+    status: Literal["ok", "degraded"]
+    database: bool

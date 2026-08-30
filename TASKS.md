@@ -34,7 +34,7 @@ farzandi kelmasa Telegram'ga xabar keladi.
 
 ## Infratuzilma
 
-### [~] T-001 · Repo va muhit
+### [x] T-001 · Repo va muhit
 **TZ:** —
 **Kerak:** —
 **Frontend:** 🟡 qisman — `frontend/` toʻliq ishlaydi: Next 15 + TS + Tailwind v4, 53 sahifa quriladi. `backend/app/` da core+models+services bor, `main.py` va `/health` yoʻq. `bot/`, `docker-compose.yml`, `.env.example`, `README.md` yoʻq.
@@ -54,7 +54,7 @@ Backend — FastAPI + uv, `app/main.py` da `/health` endpoint. Frontend — Next
 
 ---
 
-### [~] T-002 · Baza ulanishi va migratsiya tizimi
+### [x] T-002 · Baza ulanishi va migratsiya tizimi
 **TZ:** —
 **Kerak:** T-001
 **Frontend:** ⬜ yoʻq — Backend ishi — frontendga aloqasi yoʻq. `models/base.py` bor, alembic sozlanmagan.
@@ -64,9 +64,11 @@ SQLAlchemy 2.0 async engine + session dependency. Alembic sozlanadi.
 `is_archived`. Barcha modellar shundan meros oladi (CLAUDE.md 1-qoida).
 
 **Tayyor:**
-- [ ] `alembic upgrade head` xatosiz ishlaydi
-- [ ] `alembic revision --autogenerate` model o'zgarishini ko'radi
-- [ ] Test uchun alohida baza va `pytest` fixture'lari tayyor
+- [x] `alembic upgrade head` xatosiz ishlaydi (`downgrade base` → `upgrade head` ham)
+- [x] `alembic revision --autogenerate` model o'zgarishini ko'radi;
+      o'zgarish bo'lmasa diff BO'SH chiqadi (sinovdan o'tkazilgan)
+- [x] Test uchun alohida baza (`tarbion_test`) va `pytest` fixture'lari tayyor —
+      sxema migratsiya bilan quriladi, har test tranzaksiyada, oxirida rollback
 
 ---
 

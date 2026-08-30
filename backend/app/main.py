@@ -7,13 +7,14 @@ router'larni ulash. Biznes mantiq `services/` da, endpointlar `api/v1/` da.
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from app.core.config import settings
-from app.core.db import engine
+from app.core.db import SessionDep, engine
 from app.core.exceptions import AppError, app_error_handler, unhandled_error_handler
-from app.schemas.common import HealthOut
+from app.schemas.common import HealthOut, ReadinessOut
 
 
 @asynccontextmanager
@@ -58,7 +59,22 @@ async def health() -> HealthOut:
     """Ilova tirikmi (liveness).
 
     Ataylab bazaga tegmaydi: baza yiqilganda ham ilovaning oʻzi tirik va
-    systemd uni qayta ishga tushirishi shart emas. Bazani tekshiradigan
-    readiness endpointi T-002 da qoʻshiladi.
+    systemd uni qayta ishga tushirishi shart emas. Bazaga tegadigan
+    tekshiruv — `/health/ready`.
     """
     return HealthOut(status="ok")
+
+
+@app.get("/health/ready", response_model=ReadinessOut, tags=["service"])
+async def readiness(response: Response, session: SessionDep) -> ReadinessOut:
+    """Soʻrov qabul qilishga tayyormi (readiness).
+
+    Bazaga haqiqiy soʻrov yuboradi. Baza yiqilgan boʻlsa `503` qaytaradi —
+    Caddy/systemd shunda trafikni yubormaydi va sabab logda koʻrinadi.
+    """
+    try:
+        await session.execute(text("select 1"))
+    except Exception:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        return ReadinessOut(status="degraded", database=False)
+    return ReadinessOut(status="ok", database=True)

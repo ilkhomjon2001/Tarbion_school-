@@ -12,7 +12,6 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
-    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import INET
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
@@ -85,7 +84,10 @@ class UserRole(Base):
     """AUT-04: bir foydalanuvchi bir nechta rolga ega boʻlishi mumkin."""
 
     __tablename__ = "user_roles"
-    __table_args__ = (UniqueConstraint("user_id", "role_id"),)
+    # UniqueConstraint ataylab yoʻq: birlamchi kalitning oʻzi (user_id, role_id)
+    # takrorlanishni taqiqlaydi. Qoʻshimcha UNIQUE bir xil ustunlar boʻyicha
+    # yozilganda Postgres uni yaratmaydi, Alembic esa har autogenerate da
+    # "yetishmayapti" deb qayta-qayta migratsiya yozib beradi.
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         PgUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True

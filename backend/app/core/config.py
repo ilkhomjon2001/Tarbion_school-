@@ -19,6 +19,9 @@ class Settings(BaseSettings):
 
     # --- Baza ---
     database_url: PostgresDsn
+    # Testlar ALOHIDA bazada ishlaydi. Berilmasa testlar ishga tushmaydi —
+    # bu ataylab: sukut bo'yicha ishchi bazaga tushib qolish xavfli.
+    test_database_url: PostgresDsn | None = None
     # NFR-02: 500 ta bir vaqtdagi faol foydalanuvchi. Bitta uvicorn worker uchun
     # pool 20 + overflow 10 yetarli; worker soni gorizontal kengaytiriladi.
     db_pool_size: int = 20

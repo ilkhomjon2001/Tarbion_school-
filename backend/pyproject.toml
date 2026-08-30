@@ -2,7 +2,7 @@
 name = "tarbion-backend"
 version = "0.1.0"
 description = "Tarbion maktab boshqaruv platformasi — backend"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.32",
@@ -27,10 +27,19 @@ dev = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# `app` paketi backend/ ildizidan import qilinadi
+pythonpath = ["."]
+# Sessiya ko'lamidagi async fixture'lar (engine) uchun kerak — aks holda
+# har test yangi hodisa siklida ishlaydi va ulanish qayta ishlatilmaydi.
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+# Migratsiya fayllari Alembic tomonidan yasaladi — ularni qo'lda formatlash
+# keyingi autogenerate'da baribir yo'qoladi. `env.py` tekshiriladi.
+extend-exclude = ["alembic/versions"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "ASYNC", "S"]

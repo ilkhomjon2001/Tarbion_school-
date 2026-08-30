@@ -59,7 +59,7 @@ Parol boshqacha boʻlsa `backend/.env` dagi `DATABASE_URL` va
 cd backend
 cp .env.example .env           # bir marta
 uv sync
-uv run alembic upgrade head    # T-002 dan keyin
+uv run alembic upgrade head
 uv run uvicorn app.main:app --reload
 ```
 
@@ -72,7 +72,8 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 Tekshirish:
 
 ```bash
-curl http://localhost:8000/health     # {"status":"ok"}
+curl http://localhost:8000/health         # {"status":"ok"}          — ilova tirikmi
+curl http://localhost:8000/health/ready   # {"status":"ok",...}     — baza ulanganmi
 ```
 
 Interaktiv hujjat: <http://localhost:8000/docs>
