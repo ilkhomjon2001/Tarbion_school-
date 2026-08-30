@@ -275,7 +275,7 @@ Chorak boshlanganda avtomatik generatsiya, ta'til kunlari o'tkazib yuboriladi.
 
 ## Davomat
 
-### [~] T-013 · Davomat modeli va API  ← ISHDA (Ikrom, 31-avgust)
+### [x] T-013 · Davomat modeli va API
 **TZ:** DAV-01, DAV-03, DAV-06, DAV-07
 **Kerak:** T-012
 **Frontend:** 🟡 qisman — `/teacher/davomat/[lessonId]` — 4 holat (keldi / kelmadi / sababli / kechikdi). 24 soat qulfi va audit backendda. Davomat foizi `lib/director/school-data.ts` da hisoblanadi (oʻquvchi / sinf / davr kesimida).
@@ -289,10 +289,15 @@ Qoidalar:
 - har o'zgarish `audit_log` ga tushadi
 
 **Tayyor:**
-- [ ] `POST /lessons/{id}/attendance` — butun sinf bir so'rovda
-- [ ] Test: 25 soatdan keyin ustoz o'zgartira olmaydi, admin oladi
-- [ ] Test: har o'zgarish audit'ga eski va yangi qiymat bilan yoziladi
-- [ ] Davomat foizi endpoint'i: o'quvchi / sinf / fan / ustoz kesimida
+- [x] `POST /attendance/lessons/{id}` — butun sinf bir so'rovda, bitta tranzaksiyada
+- [x] Test: 25 soatdan keyin ustoz o'zgartira olmaydi (403), admin oladi
+- [x] Test: har o'zgarish audit'ga eski va yangi qiymat bilan yoziladi
+- [x] Davomat foizi endpoint'i: `GET /attendance/stats` —
+      o'quvchi / sinf / fan / ustoz / sana kesimida, kesimlar birga ishlaydi
+- [x] `GET /attendance/lessons/{id}` — sinf ro'yxati davomat belgilanmagan bo'lsa ham
+- [x] `GET /attendance/my-lessons` — ustozning shu kundagi darslari
+- [x] `GET /attendance/classes/{id}/students` — sinf jurnali kesimi
+- [x] Salbiy testlar: begona ustoz 403, begona ota-ona 403, tokensiz 401
 
 ---
 
