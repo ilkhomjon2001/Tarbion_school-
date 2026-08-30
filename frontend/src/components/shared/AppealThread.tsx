@@ -24,8 +24,12 @@ const STATUS_TONE: Record<AppealStatus, "info" | "warning" | "success" | "neutra
  * Bitta murojaat = ochiq yozishma (chat). Uchala kabinet ham shu
  * komponentni ishlatadi, faqat `viewer` bilan kim yozayotgani belgilanadi.
  *
- * DEMO: xabar faqat sahifa holatida saqlanadi — backend (`appeal_messages`)
- * ulanganda `onSend` real API chaqiruviga almashtiriladi.
+ * Ikki rejim ishlaydi:
+ *   – boshqarilmagan (default): xabar komponentning oʻz holatida qoladi.
+ *     Ota-ona va ustoz kabinetlari shundan foydalanadi;
+ *   – boshqariladigan: `onSend`/`onClose` berilsa, yozishma tashqi do'konda
+ *     saqlanadi (admin kabineti). Backend ulanganda ikkalasi ham bitta
+ *     API chaqiruviga tushadi.
  */
 export function AppealThread({
   appeal: initialAppeal,
@@ -33,6 +37,8 @@ export function AppealThread({
   viewerStaffId,
   showCounterparty = true,
   defaultOpen = false,
+  onSend,
+  onClose,
 }: {
   appeal: Appeal;
   viewer: MessageAuthor;
@@ -41,8 +47,13 @@ export function AppealThread({
   /** Ota-ona uchun "kimga", xodim uchun "kimdan" koʻrsatiladi. */
   showCounterparty?: boolean;
   defaultOpen?: boolean;
+  /** Berilsa — yozishma tashqaridan boshqariladi. */
+  onSend?: (text: string) => void;
+  onClose?: () => void;
 }) {
-  const [appeal, setAppeal] = useState(initialAppeal);
+  const controlled = Boolean(onSend);
+  const [localAppeal, setLocalAppeal] = useState(initialAppeal);
+  const appeal = controlled ? initialAppeal : localAppeal;
   const [open, setOpen] = useState(defaultOpen);
   const [draft, setDraft] = useState("");
   const [confirmClose, setConfirmClose] = useState(false);
@@ -64,7 +75,12 @@ export function AppealThread({
   function send() {
     const text = draft.trim();
     if (!text) return;
-    setAppeal((prev) => withNewMessage(prev, { author: viewer, staffId: viewerStaffId, text }));
+    if (onSend) onSend(text);
+    else {
+      setLocalAppeal((prev) =>
+        withNewMessage(prev, { author: viewer, staffId: viewerStaffId, text }),
+      );
+    }
     setDraft("");
     inputRef.current?.focus();
   }
@@ -174,7 +190,8 @@ export function AppealThread({
                     onAsk={() => setConfirmClose(true)}
                     onCancel={() => setConfirmClose(false)}
                     onConfirm={() => {
-                      setAppeal((prev) => ({ ...prev, status: "closed" }));
+                      if (onClose) onClose();
+                      else setLocalAppeal((prev) => ({ ...prev, status: "closed" }));
                       setConfirmClose(false);
                     }}
                   />

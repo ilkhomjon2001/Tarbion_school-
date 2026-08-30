@@ -9,13 +9,23 @@
 
 import {
   ALL_STUDENTS,
+  CLASSES,
   classByName,
   type StudentRecord,
 } from "@/lib/director/school-data";
-import { allTeachers, HOMEROOM } from "@/lib/school/staff";
+import { APPEALS, type Appeal } from "@/lib/school/appeals";
+import {
+  ADMINISTRATOR,
+  allTeachers,
+  HOMEROOM,
+  subjectTeachersOf,
+} from "@/lib/school/staff";
 import {
   DEFAULT_SURVEY_QUESTIONS,
+  type AdminClass,
+  type AdminProfile,
   type AdminStudent,
+  type AdminSubject,
   type Application,
   type AuditEntry,
   type ConversationNote,
@@ -44,8 +54,25 @@ const GUARDIAN_FIRST = [
 
 const GUARDIAN_RELATION = ["Ota", "Ona", "Vasiy"];
 
-export const ADMIN_NAME = "Alisher Usmonov";
+/**
+ * Administrator — `lib/school/staff.ts` dagi xodim. Alohida ism
+ * toʻqilmaydi: audit jurnalidagi "kim" ustuni va xodimlar roʻyxati bitta
+ * odamni koʻrsatishi kerak.
+ */
+export const ADMIN_NAME = ADMINISTRATOR.fullName;
 export const ACADEMIC_YEAR = "2026–2027";
+
+export function buildProfile(): AdminProfile {
+  return {
+    staffId: ADMINISTRATOR.id,
+    fullName: ADMINISTRATOR.fullName,
+    position: "Maktab administratori",
+    phone: ADMINISTRATOR.phone,
+    email: ADMINISTRATOR.email,
+    workHours: "Dushanba–Shanba, 08:00–17:00",
+    office: "102-xona, 1-qavat",
+  };
+}
 
 function guardianOf(student: StudentRecord) {
   const seed = hash(`g-${student.id}`);
@@ -277,6 +304,62 @@ export function buildSurveys(): SurveyDefinition[] {
 }
 
 // ─────────────────────── Maʼlumot bazasi ───────────────────────
+
+/**
+ * Sinflar. Boshlangʻich roʻyxat dars yuklamasidan chiqadi — admin qoʻshgan
+ * yangi sinf esa faqat admin do'konida yashaydi (backend ulanmagunicha
+ * boshqa kabinetlar eski roʻyxatni koʻradi).
+ */
+export function buildClasses(): AdminClass[] {
+  return CLASSES.map((cls) => ({
+    id: cls.id,
+    name: cls.name,
+    grade: cls.grade,
+    parallel: cls.parallel,
+    stage: cls.stage,
+    homeroomTeacherId: HOMEROOM[cls.name] ?? "",
+    // Sigʻim mavjud oʻquvchi sonidan biroz katta — qabulda boʻsh joy koʻrinadi.
+    capacity: 30,
+    status: "active" as const,
+  }));
+}
+
+export function buildSubjects(): AdminSubject[] {
+  const map = new Map<string, { teachers: Set<string>; classes: number; hours: number }>();
+  for (const cls of CLASSES) {
+    for (const row of subjectTeachersOf(cls.name)) {
+      const entry = map.get(row.subject) ?? { teachers: new Set<string>(), classes: 0, hours: 0 };
+      entry.teachers.add(row.teacher.id);
+      entry.classes += 1;
+      entry.hours += row.hoursPerWeek;
+      map.set(row.subject, entry);
+    }
+  }
+  return [...map.entries()]
+    .sort((a, b) => b[1].hours - a[1].hours)
+    .map(([name, info], i) => ({
+      id: `subj-${i + 1}`,
+      name,
+      classCount: info.classes,
+      hoursPerWeek: info.hours,
+      teacherIds: [...info.teachers],
+      status: "active" as const,
+    }));
+}
+
+// ─────────────────────────── Murojaatlar ───────────────────────────
+
+/**
+ * Yozishmalar `lib/school/appeals.ts` dan koʻchiriladi: admin ularga javob
+ * yozadi va yangisini boshlaydi, shu sabab holat do'konda boʻlishi kerak.
+ * Nusxa chuqur olinadi — umumiy massiv oʻzgarmasin.
+ */
+export function buildAppeals(): Appeal[] {
+  return APPEALS.map((appeal) => ({
+    ...appeal,
+    messages: appeal.messages.map((m) => ({ ...m })),
+  }));
+}
 
 export function buildRooms(): Room[] {
   const rows = [

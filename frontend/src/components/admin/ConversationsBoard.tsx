@@ -1,21 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { AppealThread } from "@/components/shared/AppealThread";
+import { PlusIcon, SearchIcon, XIcon } from "@/components/ui/icons";
 import { useAdmin, useAdminDispatch } from "@/lib/admin/store";
 import {
   CONVERSATION_KIND_LABELS,
+  type AdminStudent,
   type ConversationKind,
 } from "@/lib/admin/types";
 import {
   APPEAL_STATUS_LABELS,
-  APPEALS,
   isOpen,
   type Appeal,
   type AppealStatus,
 } from "@/lib/school/appeals";
-import { allTeachers, DIRECTOR, staffById } from "@/lib/school/staff";
+import { ADMINISTRATOR, allTeachers, staffById } from "@/lib/school/staff";
 
 const STATUS_TONE: Record<AppealStatus, "info" | "warning" | "success" | "neutral"> = {
   new: "info",
@@ -40,25 +41,52 @@ const FILTER_LABELS: Record<Filter, string> = {
  * do'konida saqlanadi va faqat rahbariyatga koʻrinadi.
  */
 export function ConversationsBoard() {
+  const { appeals } = useAdmin();
+  const dispatch = useAdminDispatch();
   const [filter, setFilter] = useState<Filter>("all");
-  const [activeId, setActiveId] = useState(APPEALS[0]?.id ?? "");
+  const [activeId, setActiveId] = useState(appeals[0]?.id ?? "");
+  const [composing, setComposing] = useState(false);
 
-  const shown = APPEALS.filter((a) => {
+  const shown = appeals.filter((a) => {
     if (filter === "open") return isOpen(a);
     if (filter === "closed") return !isOpen(a);
     return true;
   });
 
-  const active = APPEALS.find((a) => a.id === activeId) ?? shown[0] ?? null;
+  const active = appeals.find((a) => a.id === activeId) ?? shown[0] ?? null;
 
   return (
     <div className="flex flex-col gap-4 p-4 md:p-6">
-      <div>
-        <h1 className="text-h2 font-bold text-foreground">Murojaatlar va suhbatlar</h1>
-        <p className="text-sm text-foreground-muted">
-          Ota-onalar bilan yozishma — javob berish va suhbat qaydnomasini yuritish
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-h2 font-bold text-foreground">Murojaatlar va suhbatlar</h1>
+          <p className="text-sm text-foreground-muted">
+            Ota-onalar bilan yozishma — javob berish, oʻzimiz yozish va suhbat
+            qaydnomasini yuritish
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setComposing(true)}
+          className="focus-ring inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg bg-brand px-3.5 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark"
+        >
+          <PlusIcon className="h-4 w-4" />
+          Ota-onaga yozish
+        </button>
       </div>
+
+      {composing && (
+        <NewAppealDialog
+          onClose={() => setComposing(false)}
+          onCreated={() => {
+            // Yangi yozishma roʻyxat boshiga tushadi — tanlovni boʻshatsak,
+            // pastdagi "active" oʻzi eng yangisiga tushadi.
+            setActiveId("");
+            setFilter("all");
+            setComposing(false);
+          }}
+        />
+      )}
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
         {/* 1-ustun: roʻyxat */}
@@ -106,8 +134,12 @@ export function ConversationsBoard() {
               key={active.id}
               appeal={active}
               viewer="staff"
-              viewerStaffId={DIRECTOR.id}
+              viewerStaffId={ADMINISTRATOR.id}
               defaultOpen
+              onSend={(text) =>
+                dispatch({ type: "SEND_APPEAL_MESSAGE", appealId: active.id, text })
+              }
+              onClose={() => dispatch({ type: "CLOSE_APPEAL", appealId: active.id })}
             />
           </div>
         ) : (
@@ -122,6 +154,231 @@ export function ConversationsBoard() {
     </div>
   );
 }
+
+/** Tayyor mavzular — admin koʻp yozadigan holatlar. */
+const APPEAL_TEMPLATES: { title: string; text: string }[] = [
+  {
+    title: "Toʻlov muddati haqida eslatma",
+    text: "Assalomu alaykum. Joriy oy uchun shartnoma toʻlovi muddati yaqinlashdi. Qulay vaqtda maktab hisobiga oʻtkazishingizni soʻraymiz. Savol boʻlsa — shu yerda yozing.",
+  },
+  {
+    title: "Davomat boʻyicha suhbat",
+    text: "Assalomu alaykum. Farzandingizning soʻnggi kunlardagi davomati boʻyicha gaplashib olsak. Qachon qoʻngʻiroq qilishimiz qulay?",
+  },
+  {
+    title: "Hujjatlarni toʻldirish",
+    text: "Assalomu alaykum. Shaxsiy ishga bir nechta hujjat yetishmayapti. Iloji boʻlsa shu hafta ichida maktabga olib kelsangiz.",
+  },
+  {
+    title: "Ustozlar boʻyicha fikringiz",
+    text: "Assalomu alaykum. Maktab sifatini yaxshilash uchun ustozlar faoliyati boʻyicha fikringizni bilmoqchi edik. Bir necha daqiqa vaqt ajrata olasizmi?",
+  },
+];
+
+/**
+ * Yangi yozishma — maktab birinchi boʻlib yozadi.
+ *
+ * Ota-ona alohida roʻyxatda emas: oʻquvchi tanlanadi, vasiy va sinf
+ * oʻquvchi kartochkasidan olinadi. Shunda notoʻgʻri odamga yozib
+ * yuborish ehtimoli yoʻqoladi.
+ */
+function NewAppealDialog({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const { students } = useAdmin();
+  const dispatch = useAdminDispatch();
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<AdminStudent | null>(null);
+  const [title, setTitle] = useState("");
+  const [text, setText] = useState("");
+
+  const matches = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (q.length < 2) return [];
+    return students
+      .filter(
+        (s) =>
+          s.status === "active" &&
+          (s.fullName.toLowerCase().includes(q) ||
+            s.guardianName.toLowerCase().includes(q) ||
+            s.className.toLowerCase().includes(q)),
+      )
+      .slice(0, 8);
+  }, [students, query]);
+
+  const valid = Boolean(selected && title.trim() && text.trim());
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-foreground/25 p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Yangi yozishma"
+        className="animate-enter my-8 w-full max-w-lg rounded-xl border border-border bg-surface shadow-lg"
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-border p-4">
+          <div>
+            <h2 className="text-base font-semibold text-foreground">Ota-onaga yozish</h2>
+            <p className="text-xs text-foreground-muted">
+              Yozishma audit jurnaliga tushadi; backend ulanganda ota-ona
+              kabinetiga va botga ham boradi
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Yopish"
+            className="focus-ring flex h-8 w-8 items-center justify-center rounded-lg text-foreground-muted hover:bg-surface-muted"
+          >
+            <XIcon className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-4 p-4">
+          {selected ? (
+            <div className="flex items-center justify-between gap-2 rounded-lg bg-brand-tint px-3 py-2.5">
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-semibold text-brand-dark">
+                  {selected.guardianName}
+                </span>
+                <span className="block truncate text-xs text-foreground-muted">
+                  {selected.fullName} · {selected.className} · {selected.guardianPhone}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelected(null)}
+                className="focus-ring shrink-0 rounded px-2 py-1 text-xs font-medium text-brand-dark hover:underline"
+              >
+                Oʻzgartirish
+              </button>
+            </div>
+          ) : (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-foreground">
+                Oʻquvchi yoki ota-ona
+              </label>
+              <div className="relative">
+                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted" />
+                <input
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Ism yoki sinf boʻyicha qidiring…"
+                  className={`${dialogInputClass} pl-9`}
+                />
+              </div>
+              {query.trim().length >= 2 && (
+                <ul className="mt-2 max-h-56 overflow-y-auto rounded-lg border border-border">
+                  {matches.map((student) => (
+                    <li key={student.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelected(student);
+                          setQuery("");
+                        }}
+                        className="focus-ring-inset flex w-full items-center justify-between gap-2 border-b border-border px-3 py-2 text-left text-sm transition-colors last:border-0 hover:bg-surface-muted"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium text-foreground">
+                            {student.fullName}
+                          </span>
+                          <span className="block truncate text-xs text-foreground-muted">
+                            {student.className} · vasiy: {student.guardianName}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                  {matches.length === 0 && (
+                    <li className="px-3 py-4 text-center text-sm text-foreground-muted">
+                      Topilmadi.
+                    </li>
+                  )}
+                </ul>
+              )}
+            </div>
+          )}
+
+          <div>
+            <p className="mb-1.5 text-xs font-medium text-foreground">Tayyor mavzular</p>
+            <div className="flex flex-wrap gap-1.5">
+              {APPEAL_TEMPLATES.map((tpl) => (
+                <button
+                  key={tpl.title}
+                  type="button"
+                  onClick={() => {
+                    setTitle(tpl.title);
+                    setText(tpl.text);
+                  }}
+                  className="focus-ring rounded-full border border-border px-3 py-1 text-xs font-medium text-foreground-muted transition-colors hover:border-brand hover:text-brand-dark"
+                >
+                  {tpl.title}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-foreground">Mavzu</span>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Masalan: Toʻlov muddati haqida eslatma"
+              className={dialogInputClass}
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-foreground">Xabar</span>
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={5}
+              placeholder="Assalomu alaykum…"
+              className={`${dialogInputClass} h-auto resize-none py-2`}
+            />
+          </label>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 border-t border-border bg-surface-muted/50 px-4 py-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="focus-ring rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted"
+          >
+            Bekor qilish
+          </button>
+          <button
+            type="button"
+            disabled={!valid}
+            onClick={() => {
+              if (!selected) return;
+              dispatch({
+                type: "START_APPEAL",
+                studentId: selected.id,
+                title: title.trim(),
+                text: text.trim(),
+              });
+              onCreated();
+            }}
+            className="focus-ring rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark disabled:opacity-50"
+          >
+            Yozishmani boshlash
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const dialogInputClass =
+  "h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none transition-colors placeholder:text-foreground-muted/70 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25";
 
 function ConversationItem({
   appeal,

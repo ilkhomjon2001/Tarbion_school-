@@ -1,4 +1,5 @@
 import { AdminMobileTopBar, AdminSidebar, AdminTopbar } from "@/components/admin/AdminShell";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { AdminProvider } from "@/lib/admin/store";
 
 /**
@@ -12,15 +13,17 @@ import { AdminProvider } from "@/lib/admin/store";
  */
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AdminProvider>
-      <div className="min-h-full bg-background">
-        <AdminSidebar />
-        <div className="flex min-h-full flex-col md:pl-64">
-          <AdminMobileTopBar />
-          <AdminTopbar />
-          <div className="mx-auto w-full max-w-6xl flex-1 pb-10">{children}</div>
+    <AuthGuard role="admin">
+      <AdminProvider>
+        <div className="min-h-full bg-background">
+          <AdminSidebar />
+          <div className="flex min-h-full flex-col md:pl-64">
+            <AdminMobileTopBar />
+            <AdminTopbar />
+            <div className="mx-auto w-full max-w-6xl flex-1 pb-10">{children}</div>
+          </div>
         </div>
-      </div>
-    </AdminProvider>
+      </AdminProvider>
+    </AuthGuard>
   );
 }

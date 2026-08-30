@@ -4,16 +4,19 @@ import Link from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/ui/BrandLogo";
-import { BellIcon, LogoutIcon, MenuIcon, XIcon } from "@/components/ui/icons";
+import { LogoutIcon, MenuIcon, UserIcon, XIcon } from "@/components/ui/icons";
+import { AdminNotifications } from "@/components/admin/AdminNotifications";
 import { AdminSearch } from "@/components/admin/AdminSearch";
 import { ADMIN_NAV, isNavActive } from "@/components/admin/nav";
-import { ADMIN_NAME } from "@/lib/admin/store";
+import { useAdmin } from "@/lib/admin/store";
+import { logout } from "@/lib/auth";
 
 const SUBTITLE = "Administrator";
 
 /** Chapdagi doimiy panel — faqat md dan yuqorida. */
 export function AdminSidebar() {
   const pathname = usePathname();
+  const { profile } = useAdmin();
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border bg-surface md:flex">
@@ -52,19 +55,28 @@ export function AdminSidebar() {
       </nav>
 
       <div className="border-t border-border p-3">
-        <div className="mb-2 flex items-center gap-2.5 px-2 py-1.5">
+        <Link
+          href="/admin/profil"
+          aria-current={pathname.startsWith("/admin/profil") ? "page" : undefined}
+          className={`focus-ring mb-2 flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors ${
+            pathname.startsWith("/admin/profil") ? "bg-brand-tint" : "hover:bg-surface-muted"
+          }`}
+        >
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-semibold text-brand-foreground">
-            {initials(ADMIN_NAME)}
+            {initials(profile.fullName)}
           </span>
           <span className="min-w-0">
             <span className="block truncate text-sm font-medium text-foreground">
-              {ADMIN_NAME}
+              {profile.fullName}
             </span>
-            <span className="block truncate text-xs text-foreground-muted">{SUBTITLE}</span>
+            <span className="block truncate text-xs text-foreground-muted">
+              {profile.position}
+            </span>
           </span>
-        </div>
+        </Link>
         <Link
           href="/login"
+          onClick={() => logout()}
           className="focus-ring flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-muted hover:text-danger"
         >
           <LogoutIcon className="h-5 w-5 shrink-0" />
@@ -77,14 +89,21 @@ export function AdminSidebar() {
 
 /** Yuqoridagi qidiruv paneli — md dan yuqorida. */
 export function AdminTopbar() {
+  const { profile } = useAdmin();
+
   return (
     <header className="sticky top-0 z-20 hidden items-center gap-4 border-b border-border bg-surface/95 px-6 py-3 backdrop-blur md:flex">
       <AdminSearch className="w-full max-w-xs" />
       <div className="ml-auto flex items-center gap-3">
-        <NotificationButton />
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-semibold text-brand-foreground">
-          {initials(ADMIN_NAME)}
-        </span>
+        <AdminNotifications />
+        <Link
+          href="/admin/profil"
+          aria-label="Profil"
+          title={profile.fullName}
+          className="focus-ring flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-semibold text-brand-foreground transition-opacity hover:opacity-90"
+        >
+          {initials(profile.fullName)}
+        </Link>
       </div>
     </header>
   );
@@ -108,7 +127,7 @@ export function AdminMobileTopBar() {
 
       <AdminSearch className="min-w-0 flex-1" compact />
 
-      <NotificationButton />
+      <AdminNotifications />
 
       {open && (
         <div className="fixed inset-0 z-40 md:hidden">
@@ -158,7 +177,16 @@ export function AdminMobileTopBar() {
 
             <div className="border-t border-border p-3">
               <Link
+                href="/admin/profil"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground-muted hover:bg-surface-muted hover:text-foreground"
+              >
+                <UserIcon className="h-5 w-5 shrink-0" />
+                Profil
+              </Link>
+              <Link
                 href="/login"
+                onClick={() => logout()}
                 className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground-muted hover:bg-surface-muted hover:text-danger"
               >
                 <LogoutIcon className="h-5 w-5 shrink-0" />
@@ -169,19 +197,6 @@ export function AdminMobileTopBar() {
         </div>
       )}
     </header>
-  );
-}
-
-function NotificationButton() {
-  return (
-    <button
-      type="button"
-      aria-label="Bildirishnomalar"
-      className="focus-ring relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-surface-muted"
-    >
-      <BellIcon className="h-5 w-5" />
-      <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-danger" />
-    </button>
   );
 }
 

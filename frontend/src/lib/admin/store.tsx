@@ -11,13 +11,17 @@ import {
 import {
   ACADEMIC_YEAR,
   ADMIN_NAME,
+  buildAppeals,
   buildApplications,
   buildAuditLog,
+  buildClasses,
   buildConversationNotes,
   buildDocumentRequests,
+  buildProfile,
   buildQuarters,
   buildRooms,
   buildStudents,
+  buildSubjects,
   buildSurveyResults,
   buildSurveys,
   ISSUED_DOCUMENTS_BEFORE,
@@ -27,7 +31,10 @@ import {
   DEBT_ACTION_LABELS,
   DOCUMENT_TYPE_LABELS,
   PAYMENT_METHOD_LABELS,
+  type AdminClass,
+  type AdminProfile,
   type AdminStudent,
+  type AdminSubject,
   type Application,
   type AuditAction,
   type AuditEntry,
@@ -42,6 +49,8 @@ import {
   type Room,
   type SurveyDefinition,
 } from "@/lib/admin/types";
+import { withNewMessage, type Appeal } from "@/lib/school/appeals";
+import { ADMINISTRATOR, staffById } from "@/lib/school/staff";
 import { formatSom } from "@/lib/format";
 
 /**
@@ -56,6 +65,7 @@ import { formatSom } from "@/lib/format";
  * komponentlar oʻzgarmaydi.
  */
 export interface AdminState {
+  profile: AdminProfile;
   students: AdminStudent[];
   payments: PaymentEntry[];
   debtActions: DebtAction[];
@@ -63,7 +73,10 @@ export interface AdminState {
   applications: Application[];
   documents: DocumentRequest[];
   notes: ConversationNote[];
+  appeals: Appeal[];
   surveys: SurveyDefinition[];
+  classes: AdminClass[];
+  subjects: AdminSubject[];
   rooms: Room[];
   quarters: Quarter[];
   audit: AuditEntry[];
@@ -102,6 +115,16 @@ export type AdminEvent =
   | { type: "ADD_ROOM"; room: Omit<Room, "id" | "status"> }
   | { type: "ARCHIVE_ROOM"; roomId: string }
   | { type: "UPDATE_QUARTER"; quarterId: string; from: string; to: string }
+  | { type: "ADD_CLASS"; grade: number; parallel: string; homeroomTeacherId: string; capacity: number }
+  | { type: "UPDATE_CLASS"; classId: string; homeroomTeacherId: string; capacity: number }
+  | { type: "ARCHIVE_CLASS"; classId: string }
+  | { type: "ADD_SUBJECT"; name: string; hoursPerWeek: number; teacherIds: string[] }
+  | { type: "ARCHIVE_SUBJECT"; subjectId: string }
+  | { type: "UPDATE_PROFILE"; profile: Omit<AdminProfile, "staffId"> }
+  /** Admin ota-onaga birinchi boʻlib yozadi. */
+  | { type: "START_APPEAL"; studentId: string; title: string; text: string }
+  | { type: "SEND_APPEAL_MESSAGE"; appealId: string; text: string }
+  | { type: "CLOSE_APPEAL"; appealId: string }
   | { type: "CHANGE_CLASS"; studentIds: string[]; className: string }
   | {
       type: "ISSUE_DOCUMENT";
@@ -116,6 +139,7 @@ export type AdminEvent =
 function initialState(): AdminState {
   const students = buildStudents();
   return {
+    profile: buildProfile(),
     students,
     payments: [],
     debtActions: [],
@@ -123,7 +147,10 @@ function initialState(): AdminState {
     applications: buildApplications(),
     documents: buildDocumentRequests(students),
     notes: buildConversationNotes(),
+    appeals: buildAppeals(),
     surveys: buildSurveys(),
+    classes: buildClasses(),
+    subjects: buildSubjects(),
     rooms: buildRooms(),
     quarters: buildQuarters(),
     audit: buildAuditLog(),
@@ -147,7 +174,9 @@ function withAudit(
   const entry: AuditEntry = {
     id: nextId("aud"),
     at: nowLabel(),
-    actor: ADMIN_NAME,
+    // Profil tahrirlansa — keyingi yozuvlar yangi ism bilan tushadi,
+    // eskilari tegilmaydi (audit yozuvi oʻzgarmaydi).
+    actor: state.profile.fullName,
     action,
     entity,
     detail,
@@ -159,6 +188,17 @@ function nowLabel(): string {
   const d = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Bugundan N kun keyingi sana, ISO. */
+function plusDays(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function staffName(staffId: string): string {
+  return staffById(staffId)?.shortName ?? "—";
 }
 
 function studentLabel(state: AdminState, studentId: string): string {
@@ -177,7 +217,7 @@ function reducer(state: AdminState, event: AdminEvent): AdminState {
         paidAt: event.paidAt,
         receiptNo: event.receiptNo,
         note: event.note,
-        createdBy: ADMIN_NAME,
+        createdBy: state.profile.fullName,
         kind: "payment",
       };
       return {
@@ -208,7 +248,7 @@ function reducer(state: AdminState, event: AdminEvent): AdminState {
         note: event.reason,
         kind: "storno",
         paidAt: nowLabel().slice(0, 10),
-        createdBy: ADMIN_NAME,
+        createdBy: state.profile.fullName,
       };
       return {
         ...state,
@@ -237,7 +277,7 @@ function reducer(state: AdminState, event: AdminEvent): AdminState {
         amount: event.amount,
         reason: event.reason,
         createdAt: nowLabel(),
-        createdBy: ADMIN_NAME,
+        createdBy: state.profile.fullName,
       };
       return {
         ...state,
@@ -277,7 +317,7 @@ function reducer(state: AdminState, event: AdminEvent): AdminState {
         channel: event.channel,
         text: event.text,
         sentAt: nowLabel(),
-        sentBy: ADMIN_NAME,
+        sentBy: state.profile.fullName,
       };
       return {
         ...state,
@@ -374,7 +414,7 @@ function reducer(state: AdminState, event: AdminEvent): AdminState {
         ...event.survey,
         id: nextId("sv"),
         createdAt: nowLabel(),
-        createdBy: ADMIN_NAME,
+        createdBy: state.profile.fullName,
         answeredCount: 0,
       };
       return {
@@ -447,6 +487,189 @@ function reducer(state: AdminState, event: AdminEvent): AdminState {
       };
     }
 
+    case "ADD_CLASS": {
+      const name = `${event.grade}-${event.parallel}`;
+      if (state.classes.some((c) => c.name === name && c.status === "active")) return state;
+      const cls: AdminClass = {
+        id: nextId("cls"),
+        name,
+        grade: event.grade,
+        parallel: event.parallel,
+        stage: event.grade <= 6 ? "boshlangʻich" : event.grade <= 9 ? "oʻrta" : "yuqori",
+        homeroomTeacherId: event.homeroomTeacherId,
+        capacity: event.capacity,
+        status: "active",
+      };
+      return {
+        ...state,
+        classes: [...state.classes, cls].sort(
+          (a, b) => a.grade - b.grade || a.parallel.localeCompare(b.parallel),
+        ),
+        audit: withAudit(
+          state,
+          "reference",
+          name,
+          `Yangi sinf ochildi · sinf rahbari ${staffName(event.homeroomTeacherId)} · ${event.capacity} oʻrin`,
+        ),
+      };
+    }
+
+    case "UPDATE_CLASS": {
+      const cls = state.classes.find((c) => c.id === event.classId);
+      if (!cls) return state;
+      return {
+        ...state,
+        classes: state.classes.map((c) =>
+          c.id === event.classId
+            ? { ...c, homeroomTeacherId: event.homeroomTeacherId, capacity: event.capacity }
+            : c,
+        ),
+        audit: withAudit(
+          state,
+          "reference",
+          cls.name,
+          `Sinf rahbari ${staffName(event.homeroomTeacherId)} · sigʻim ${event.capacity}`,
+        ),
+      };
+    }
+
+    case "ARCHIVE_CLASS": {
+      const cls = state.classes.find((c) => c.id === event.classId);
+      // Oʻquvchisi bor sinf arxivlanmaydi — avval koʻchirish kerak.
+      if (!cls || state.students.some((s) => s.status === "active" && s.className === cls.name)) {
+        return state;
+      }
+      return {
+        ...state,
+        classes: state.classes.map((c) =>
+          c.id === event.classId ? { ...c, status: "archived" as const } : c,
+        ),
+        audit: withAudit(state, "reference", cls.name, "Sinf arxivlandi"),
+      };
+    }
+
+    case "ADD_SUBJECT": {
+      const name = event.name.trim();
+      if (!name || state.subjects.some((s) => s.status === "active" && s.name === name)) {
+        return state;
+      }
+      const subject: AdminSubject = {
+        id: nextId("subj"),
+        name,
+        classCount: 0,
+        hoursPerWeek: event.hoursPerWeek,
+        teacherIds: event.teacherIds,
+        status: "active",
+      };
+      return {
+        ...state,
+        subjects: [subject, ...state.subjects],
+        audit: withAudit(
+          state,
+          "reference",
+          name,
+          `Yangi fan qoʻshildi · haftasiga ${event.hoursPerWeek} soat · ${event.teacherIds.length} ustoz`,
+        ),
+      };
+    }
+
+    case "ARCHIVE_SUBJECT":
+      return {
+        ...state,
+        subjects: state.subjects.map((s) =>
+          s.id === event.subjectId ? { ...s, status: "archived" as const } : s,
+        ),
+        audit: withAudit(
+          state,
+          "reference",
+          state.subjects.find((s) => s.id === event.subjectId)?.name ?? "Fan",
+          "Fan oʻquv rejasidan chiqarildi",
+        ),
+      };
+
+    case "UPDATE_PROFILE":
+      return {
+        ...state,
+        profile: { ...state.profile, ...event.profile },
+        audit: withAudit(
+          state,
+          "profile",
+          event.profile.fullName,
+          "Profil maʼlumotlari yangilandi",
+        ),
+      };
+
+    case "START_APPEAL": {
+      const student = state.students.find((s) => s.id === event.studentId);
+      if (!student) return state;
+      const appeal: Appeal = {
+        id: nextId("ap"),
+        target: "rahbariyat",
+        assigneeId: ADMINISTRATOR.id,
+        className: student.className,
+        studentFullName: student.fullName,
+        parentName: student.guardianName,
+        title: event.title,
+        // Maktab birinchi yozdi — ota-onaning javobi kutilmoqda.
+        status: "in_review",
+        createdAt: nowLabel(),
+        dueAt: plusDays(3),
+        messages: [
+          {
+            id: nextId("apm"),
+            author: "staff",
+            staffId: ADMINISTRATOR.id,
+            text: event.text,
+            createdAt: nowLabel(),
+          },
+        ],
+      };
+      return {
+        ...state,
+        appeals: [appeal, ...state.appeals],
+        audit: withAudit(
+          state,
+          "appeal",
+          `${student.guardianName} (${student.fullName})`,
+          `Maktab yozishmani boshladi · ${event.title}`,
+        ),
+      };
+    }
+
+    case "SEND_APPEAL_MESSAGE":
+      return {
+        ...state,
+        appeals: state.appeals.map((a) =>
+          a.id === event.appealId
+            ? withNewMessage(a, {
+                author: "staff",
+                staffId: ADMINISTRATOR.id,
+                text: event.text,
+              })
+            : a,
+        ),
+        audit: withAudit(
+          state,
+          "appeal",
+          state.appeals.find((a) => a.id === event.appealId)?.parentName ?? "Ota-ona",
+          `Javob yuborildi · ${event.text.slice(0, 60)}`,
+        ),
+      };
+
+    case "CLOSE_APPEAL":
+      return {
+        ...state,
+        appeals: state.appeals.map((a) =>
+          a.id === event.appealId ? { ...a, status: "closed" as const } : a,
+        ),
+        audit: withAudit(
+          state,
+          "appeal",
+          state.appeals.find((a) => a.id === event.appealId)?.title ?? "Murojaat",
+          "Murojaat yopildi",
+        ),
+      };
+
     case "CHANGE_CLASS":
       return {
         ...state,
@@ -474,7 +697,7 @@ function reducer(state: AdminState, event: AdminEvent): AdminState {
                 status: "issued" as const,
                 number,
                 issuedAt: nowLabel().slice(0, 10),
-                issuedBy: ADMIN_NAME,
+                issuedBy: state.profile.fullName,
                 recipient: event.recipient,
                 copies: event.copies,
                 extraText: event.extraText,
@@ -494,7 +717,7 @@ function reducer(state: AdminState, event: AdminEvent): AdminState {
       const note: ConversationNote = {
         ...event.note,
         id: nextId("note"),
-        authorName: ADMIN_NAME,
+        authorName: state.profile.fullName,
         createdAt: nowLabel(),
       };
       return {
@@ -559,6 +782,99 @@ export function useDebtors() {
         .sort((a, b) => overdueDays(b) - overdueDays(a)),
     [students],
   );
+}
+
+/** Faol sinflar — qabul, koʻchirish va soʻrovnoma shu roʻyxatdan tanlaydi. */
+export function useActiveClasses(): AdminClass[] {
+  const { classes } = useAdmin();
+  return useMemo(() => classes.filter((c) => c.status === "active"), [classes]);
+}
+
+export interface AdminNotification {
+  id: string;
+  title: string;
+  detail: string;
+  href: string;
+  tone: "info" | "warning" | "danger" | "brand";
+  count: number;
+}
+
+/**
+ * Bildirishnomalar — alohida roʻyxat emas, mavjud holatdan hisoblanadi.
+ * Shu sabab amal bajarilishi bilan (toʻlov kiritildi, ariza koʻrildi)
+ * qoʻngʻiroqdagi son ham oʻzgaradi.
+ */
+export function useNotifications(): AdminNotification[] {
+  const { students, applications, documents, appeals, surveys } = useAdmin();
+
+  return useMemo(() => {
+    const list: AdminNotification[] = [];
+
+    const newApplications = applications.filter((a) => a.status === "new").length;
+    if (newApplications > 0) {
+      list.push({
+        id: "n-app",
+        title: "Yangi ariza",
+        detail: `${newApplications} ta ariza koʻrib chiqilmagan`,
+        href: "/admin/qabul",
+        tone: "brand",
+        count: newApplications,
+      });
+    }
+
+    const pendingDocs = documents.filter((d) => d.status !== "issued").length;
+    if (pendingDocs > 0) {
+      list.push({
+        id: "n-doc",
+        title: "Maʼlumotnoma soʻrovi",
+        detail: `${pendingDocs} ta soʻrov navbatda`,
+        href: "/admin/malumotnomalar",
+        tone: "info",
+        count: pendingDocs,
+      });
+    }
+
+    const overdue = students.filter(
+      (s) => s.status === "active" && debtOf(s) > 0 && overdueDays(s) > 0,
+    ).length;
+    if (overdue > 0) {
+      list.push({
+        id: "n-debt",
+        title: "Muddati oʻtgan toʻlov",
+        detail: `${overdue} nafar oʻquvchida kechikish bor`,
+        href: "/admin/tolovlar",
+        tone: "danger",
+        count: overdue,
+      });
+    }
+
+    const unanswered = appeals.filter((a) => a.status === "new").length;
+    if (unanswered > 0) {
+      list.push({
+        id: "n-appeal",
+        title: "Javobsiz murojaat",
+        detail: `${unanswered} ta murojaatga javob berilmagan`,
+        href: "/admin/murojaatlar",
+        tone: "warning",
+        count: unanswered,
+      });
+    }
+
+    const openSurveys = surveys.filter((s) => s.status === "active");
+    const waiting = openSurveys.reduce((sum, s) => sum + (s.sentCount - s.answeredCount), 0);
+    if (waiting > 0) {
+      list.push({
+        id: "n-survey",
+        title: "Soʻrovnoma davom etmoqda",
+        detail: `${waiting} nafar ota-ona hali javob bermagan`,
+        href: "/admin/sorovnomalar",
+        tone: "info",
+        count: openSurveys.length,
+      });
+    }
+
+    return list;
+  }, [students, applications, documents, appeals, surveys]);
 }
 
 export function useFinanceSummary() {

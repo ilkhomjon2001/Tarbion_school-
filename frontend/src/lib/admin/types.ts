@@ -12,6 +12,8 @@
  *   – har bir amal `AuditEntry` hosil qiladi (4-qoida).
  */
 
+import type { ClassStage } from "@/lib/director/school-data";
+
 export type StudentStatus = "active" | "archived";
 
 export interface AdminStudent {
@@ -271,12 +273,68 @@ export interface Room {
   status: "active" | "archived";
 }
 
+/**
+ * Sinf maʼlumotnomasi. Boshlangʻich roʻyxat `lib/school/staff.ts` dagi dars
+ * yuklamasidan chiqadi; admin qoʻshgan sinf shu yerda yashaydi va qabul
+ * sehrgarida darhol tanlanadigan boʻladi.
+ */
+export interface AdminClass {
+  id: string;
+  name: string;
+  grade: number;
+  parallel: string;
+  stage: ClassStage;
+  homeroomTeacherId: string;
+  /** Sinf sigʻimi — qabulda boʻsh joy shundan hisoblanadi. */
+  capacity: number;
+  status: "active" | "archived";
+}
+
+export interface AdminSubject {
+  id: string;
+  name: string;
+  /** Nechta sinfda oʻqitiladi. */
+  classCount: number;
+  /** Barcha sinflar boʻyicha haftalik jami soat. */
+  hoursPerWeek: number;
+  teacherIds: string[];
+  status: "active" | "archived";
+}
+
 export interface Quarter {
   id: string;
   name: string;
   from: string;
   to: string;
 }
+
+// ─────────────────────── Administrator profili ───────────────────────
+
+export interface AdminProfile {
+  staffId: string;
+  fullName: string;
+  position: string;
+  phone: string;
+  email: string;
+  /** Qabul vaqti — maʼlumotnoma va murojaat javoblarida koʻrsatiladi. */
+  workHours: string;
+  office: string;
+}
+
+/**
+ * Administrator huquqlari. Bu roʻyxat FAQAT koʻrsatish uchun — haqiqiy
+ * tekshiruv serverda boʻladi (CLAUDE.md 7-qoida).
+ */
+export const ADMIN_PERMISSIONS: { label: string; allowed: boolean }[] = [
+  { label: "Oʻquvchi qabul qilish va arxivlash", allowed: true },
+  { label: "Toʻlov kiritish, storno va qarzdorlik amallari", allowed: true },
+  { label: "Maʼlumotnoma berish va reyestr yuritish", allowed: true },
+  { label: "Maʼlumot bazasi: sinf, fan, xona, chorak", allowed: true },
+  { label: "Ota-onalar bilan yozishma va soʻrovnoma", allowed: true },
+  { label: "Davomatni 24 soatdan keyin tuzatish (DAV-03)", allowed: true },
+  { label: "Baho qoʻyish va jurnal yuritish", allowed: false },
+  { label: "Audit yozuvini oʻchirish yoki tahrirlash", allowed: false },
+];
 
 // ─────────────────────────── Audit ───────────────────────────
 
@@ -291,7 +349,9 @@ export type AuditAction =
   | "document"
   | "note"
   | "survey"
-  | "reference";
+  | "reference"
+  | "appeal"
+  | "profile";
 
 export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   payment: "Toʻlov kiritildi",
@@ -305,6 +365,8 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   note: "Suhbat qaydnomasi",
   survey: "Soʻrovnoma",
   reference: "Maʼlumot bazasi",
+  appeal: "Murojaat",
+  profile: "Profil",
 };
 
 export interface AuditEntry {

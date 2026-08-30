@@ -9,6 +9,7 @@ import { formatSom } from "@/lib/format";
 import {
   debtOf,
   overdueDays,
+  useActiveClasses,
   useAdmin,
   useAdminDispatch,
   useFinanceSummary,
@@ -20,7 +21,7 @@ import {
   type DebtActionType,
   type PaymentMethod,
 } from "@/lib/admin/types";
-import { allClassNames } from "@/lib/school/staff";
+
 
 type StatusFilter = "all" | "overdue" | "partial" | "extended";
 
@@ -43,6 +44,7 @@ const DRAWER_TABS: { id: DrawerTab; label: string }[] = [
 
 export function AdminPaymentsBoard() {
   const { students, debtActions } = useAdmin();
+  const classes = useActiveClasses();
   const finance = useFinanceSummary();
   const [query, setQuery] = useState("");
   const [className, setClassName] = useState("all");
@@ -145,7 +147,7 @@ export function AdminPaymentsBoard() {
           className="focus-ring h-10 rounded-lg border border-border bg-surface px-3 text-sm"
         >
           <option value="all">Sinfni tanlang</option>
-          {allClassNames().map((n) => (
+          {classes.map(({ name: n }) => (
             <option key={n} value={n}>
               {n}
             </option>

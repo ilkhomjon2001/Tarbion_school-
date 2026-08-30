@@ -5,20 +5,38 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { CheckIcon, PlusIcon } from "@/components/ui/icons";
 import { formatSom } from "@/lib/format";
-import { ACADEMIC_YEAR, useAdmin, useAdminDispatch } from "@/lib/admin/store";
+import {
+  ACADEMIC_YEAR,
+  useActiveClasses,
+  useAdmin,
+  useAdminDispatch,
+} from "@/lib/admin/store";
 import { APPLICATION_STATUS_LABELS, type Application } from "@/lib/admin/types";
-import { CLASSES } from "@/lib/director/school-data";
-import { homeroomTeacherOf } from "@/lib/school/staff";
+import { staffById } from "@/lib/school/staff";
 
 const STEPS = ["Oʻquvchi", "Ota-ona / vasiy", "Sinf va shartnoma", "Tasdiqlash"];
 
 const MONTHS_IN_YEAR = 9;
-const CLASS_CAPACITY = 30;
 
 const RELATIONS = ["Ota", "Ona", "Vasiy", "Boshqa"];
 
+/** Sinf tanlash roʻyxati — nom, band joy va sinf rahbari bir joyda. */
+interface ClassOption {
+  name: string;
+  count: number;
+  free: number;
+  homeroomTeacherId: string;
+}
+
+/** Sinf rahbarini nomi boʻyicha topish — maʼlumot bazasidagi roʻyxatdan. */
+function useHomeroomName(className: string): string {
+  const classes = useActiveClasses();
+  const id = classes.find((c) => c.name === className)?.homeroomTeacherId ?? "";
+  return staffById(id)?.fullName ?? "—";
+}
+
 /** Boʻsh forma — "Ariza kutmasdan qoʻshish" uchun. */
-function emptyApplication(): Application {
+function emptyApplication(defaultClass: string): Application {
   return {
     id: "",
     studentFullName: "",
@@ -29,7 +47,7 @@ function emptyApplication(): Application {
     guardianPhone: "+998 ",
     guardianRelation: "Ota",
     address: "",
-    className: CLASSES[0]?.name ?? "",
+    className: defaultClass,
     academicYear: ACADEMIC_YEAR,
     enrollDate: "2026-09-02",
     monthlyFee: 3_500_000,
@@ -52,10 +70,12 @@ function emptyApplication(): Application {
 export function EnrollWizard({ startBlank = false }: { startBlank?: boolean }) {
   const router = useRouter();
   const { applications, students } = useAdmin();
+  const classes = useActiveClasses();
   const dispatch = useAdminDispatch();
 
+  const defaultClass = classes[0]?.name ?? "";
   const [draft, setDraft] = useState<Application | null>(
-    startBlank ? emptyApplication() : null,
+    startBlank ? emptyApplication(defaultClass) : null,
   );
   const [step, setStep] = useState(startBlank ? 0 : 2);
   const [done, setDone] = useState<string | null>(null);
@@ -65,18 +85,19 @@ export function EnrollWizard({ startBlank = false }: { startBlank?: boolean }) {
 
   // Sinf toʻlganini oʻquvchilar sonidan hisoblaymiz — qoʻlda yozilgan
   // "joy yoʻq" bayrogʻi tez eskiradi.
-  const capacity = useMemo(() => {
+  const capacity = useMemo<ClassOption[]>(() => {
     const counts = new Map<string, number>();
     for (const s of students) {
       if (s.status !== "active") continue;
       counts.set(s.className, (counts.get(s.className) ?? 0) + 1);
     }
-    return CLASSES.map((c) => ({
+    return classes.map((c) => ({
       name: c.name,
       count: counts.get(c.name) ?? 0,
-      free: CLASS_CAPACITY - (counts.get(c.name) ?? 0),
+      free: c.capacity - (counts.get(c.name) ?? 0),
+      homeroomTeacherId: c.homeroomTeacherId,
     }));
-  }, [students]);
+  }, [students, classes]);
 
   function startFromApplication(application: Application) {
     setDraft({ ...application });
@@ -86,7 +107,7 @@ export function EnrollWizard({ startBlank = false }: { startBlank?: boolean }) {
   }
 
   function startBlankDraft() {
-    setDraft(emptyApplication());
+    setDraft(emptyApplication(defaultClass));
     setStep(0);
     setDone(null);
     setTouched(false);
@@ -468,8 +489,10 @@ function ContractStep({
 }: {
   draft: Application;
   update: (patch: Partial<Application>) => void;
-  capacity: { name: string; count: number; free: number }[];
+  capacity: ClassOption[];
 }) {
+  const homeroomName = useHomeroomName(draft.className);
+
   return (
     <>
       <h2 className="mb-4 text-base font-semibold text-foreground">
@@ -493,7 +516,7 @@ function ContractStep({
             ))}
           </select>
           <span className="mt-1 block text-xs text-foreground-muted">
-            Sinf rahbari: {homeroomTeacherOf(draft.className)?.fullName ?? "—"}
+            Sinf rahbari: {homeroomName}
           </span>
         </Field>
         <Field label="Qabul sanasi">
@@ -617,6 +640,8 @@ function Stepper({ step, onGo }: { step: number; onGo: (target: number) => void 
 }
 
 function ConfirmStep({ application }: { application: Application }) {
+  const homeroomName = useHomeroomName(application.className);
+
   return (
     <>
       <h2 className="mb-1 text-base font-semibold text-foreground">Tasdiqlash</h2>
@@ -628,9 +653,7 @@ function ConfirmStep({ application }: { application: Application }) {
         <Row label="Oʻquvchi">{application.studentFullName}</Row>
         <Row label="Tugʻilgan sana">{application.birthDate || "—"}</Row>
         <Row label="Sinf">{application.className}</Row>
-        <Row label="Sinf rahbari">
-          {homeroomTeacherOf(application.className)?.fullName ?? "—"}
-        </Row>
+        <Row label="Sinf rahbari">{homeroomName}</Row>
         <Row label="Qabul sanasi">{application.enrollDate}</Row>
         <Row label="Oldingi maktab">{application.previousSchool || "—"}</Row>
         <Row label="Ota-ona / vasiy">

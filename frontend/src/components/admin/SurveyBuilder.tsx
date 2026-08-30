@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { PlusIcon, TrashIcon, XIcon } from "@/components/ui/icons";
-import { useAdmin, useAdminDispatch } from "@/lib/admin/store";
+import { useActiveClasses, useAdmin, useAdminDispatch } from "@/lib/admin/store";
 import { DEFAULT_SURVEY_QUESTIONS } from "@/lib/admin/types";
-import { allClassNames } from "@/lib/school/staff";
+
 
 const PERIODS = [
   "2026 · 1-chorak",
@@ -23,6 +23,7 @@ const PERIODS = [
  */
 export function SurveyBuilder({ onClose }: { onClose: () => void }) {
   const { students } = useAdmin();
+  const classes = useActiveClasses();
   const dispatch = useAdminDispatch();
 
   const [title, setTitle] = useState("Oʻqituvchilar faoliyati — yangi soʻrovnoma");
@@ -147,7 +148,7 @@ export function SurveyBuilder({ onClose }: { onClose: () => void }) {
 
           {audience === "classes" && (
             <div className="flex flex-wrap gap-1.5">
-              {allClassNames().map((name) => (
+              {classes.map(({ name }) => (
                 <button
                   key={name}
                   type="button"

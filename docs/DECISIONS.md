@@ -184,3 +184,45 @@ kerak boʻlardi (~200 KB bitta tugma uchun). Oʻrniga `globals.css` da
 `window.print()` chaqiriladi. Brauzerning "PDF sifatida saqlash"
 imkoniyati haqiqiy PDF beradi. Backend ulanganda server tomonda
 generatsiya qilinadi (muhr va imzo bilan).
+
+## 2026-08-30 · Yozishmalar admin do'koniga koʻchirildi
+Admin ota-onaga BIRINCHI boʻlib yoza olishi kerak edi, lekin murojaatlar
+`lib/school/appeals.ts` dagi oʻzgarmas massivda turardi. Endi
+`buildAppeals()` uni admin do'koniga chuqur nusxalaydi; `AppealThread`
+ikki rejimli boʻldi — `onSend`/`onClose` berilsa yozishma tashqaridan
+boshqariladi (admin), berilmasa komponentning oʻz holatida qoladi
+(ota-ona va ustoz kabinetlari). Backend ulanganda ikkala rejim ham bitta
+`appeal_messages` API chaqiruviga tushadi.
+
+## 2026-08-30 · Sinf va fan maʼlumotnomasi admin do'konida
+"Maʼlumot bazasi" boʻlimi boshqaruvni vaʼda qilardi-yu, sinf va fan
+roʻyxati faqat oʻqish edi. Endi `classes`/`subjects` do'konda: sinf
+ochish, sinf rahbari va sigʻimni oʻzgartirish, fan qoʻshish va rejadan
+chiqarish. Boshlangʻich roʻyxat baribir `lib/school/staff.ts` dan
+chiqadi. DEMO cheklovi: admin qoʻshgan sinf faqat admin kabinetida
+koʻrinadi — boshqa kabinetlar hamon umumiy modulni oʻqiydi. Qabul,
+toʻlov, oʻquvchilar va soʻrovnoma roʻyxatlari esa do'kondan oladi,
+shuning uchun yangi sinf u yerlarda darhol tanlanadi.
+
+## 2026-08-30 · Bildirishnomalar saqlanmaydi, hisoblanadi
+Qoʻngʻiroqdagi roʻyxat alohida jadval emas — `useNotifications()` joriy
+holatdan hisoblaydi (koʻrilmagan ariza, navbatdagi maʼlumotnoma, muddati
+oʻtgan toʻlov, javobsiz murojaat, tugallanmagan soʻrovnoma). "Oʻqilgan"
+holatini yuritish kerak emas: ish bajarilishi bilan bildirishnoma oʻzi
+yoʻqoladi va son kamayadi.
+
+## 2026-08-30 · Administrator — toʻqilgan ism emas, xodim yozuvi
+`ADMIN_NAME` alohida konstanta edi va xodimlar roʻyxatidagi administrator
+bilan mos kelmasdi. Endi `STAFF` dagi `role: "admin"` yozuvidan olinadi
+(`ADMINISTRATOR`), profil esa do'konda saqlanadi. Audit yozuvidagi "kim"
+ustuni `state.profile.fullName` dan yoziladi — profil oʻzgarsa faqat
+KEYINGI yozuvlar yangi ism bilan tushadi, eskilari tegilmaydi (4-qoida).
+
+## 2026-08-30 · Barcha kabinetlarga AuthGuard, rol bilan
+Avval faqat oʻquvchi kabineti tekshirilardi; `/teacher`, `/ota-ona`,
+`/rahbar`, `/admin` manzillari login qilmasdan ochilardi. Endi har bir
+route guruhida `AuthGuard role="…"`: sessiya yoʻq boʻlsa `/login` ga,
+rol boshqa kabinetniki boʻlsa oʻz kabinetiga qaytaradi. Bu HIMOYA EMAS
+(7-qoida) — faqat toʻgʻri xatti-harakat. Yon taʼsiri: himoyalangan
+sahifalar serverda boʻsh render qilinadi va tarkib gidratsiyadan keyin
+chiqadi.

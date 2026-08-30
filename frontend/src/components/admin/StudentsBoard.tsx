@@ -6,9 +6,9 @@ import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { StudentDrawer } from "@/components/admin/StudentDrawer";
 import { PlusIcon, SearchIcon, UsersIcon } from "@/components/ui/icons";
-import { debtOf, useAdmin, useAdminDispatch } from "@/lib/admin/store";
+import { debtOf, useActiveClasses, useAdmin, useAdminDispatch } from "@/lib/admin/store";
 import type { AdminStudent } from "@/lib/admin/types";
-import { allClassNames } from "@/lib/school/staff";
+
 
 const PAGE_SIZE = 15;
 
@@ -23,6 +23,7 @@ const STATUS_LABELS: Record<StatusFilter, string> = {
 /** Oʻquvchilar bazasi — qidiruv, filtr, ommaviy amallar. */
 export function StudentsBoard({ initialQuery = "" }: { initialQuery?: string }) {
   const { students } = useAdmin();
+  const classes = useActiveClasses();
   const [query, setQuery] = useState(initialQuery);
   const [className, setClassName] = useState("all");
   const [status, setStatus] = useState<StatusFilter>("active");
@@ -98,7 +99,7 @@ export function StudentsBoard({ initialQuery = "" }: { initialQuery?: string }) 
           className="focus-ring h-10 rounded-lg border border-border bg-surface px-3 text-sm"
         >
           <option value="all">Barcha sinflar</option>
-          {allClassNames().map((name) => (
+          {classes.map(({ name }) => (
             <option key={name} value={name}>
               {name}
             </option>
@@ -373,6 +374,7 @@ function StudentRow({
 /** Bir nechta oʻquvchi tanlanganda chiqadigan amallar paneli. */
 function BulkBar({ selected, onDone }: { selected: string[]; onDone: () => void }) {
   const dispatch = useAdminDispatch();
+  const classes = useActiveClasses();
   const [className, setClassName] = useState("");
 
   return (
@@ -389,7 +391,7 @@ function BulkBar({ selected, onDone }: { selected: string[]; onDone: () => void 
           className="focus-ring h-9 rounded-lg border border-border bg-surface px-2 text-sm"
         >
           <option value="">Sinfni tanlang</option>
-          {allClassNames().map((name) => (
+          {classes.map(({ name }) => (
             <option key={name} value={name}>
               {name}
             </option>

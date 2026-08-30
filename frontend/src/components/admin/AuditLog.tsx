@@ -20,6 +20,8 @@ const ACTION_TONE: Record<AuditAction, "success" | "danger" | "warning" | "info"
   note: "neutral",
   survey: "brand",
   reference: "neutral",
+  appeal: "info",
+  profile: "neutral",
 };
 
 /**

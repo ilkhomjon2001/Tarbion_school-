@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
-import { PlusIcon, UsersIcon } from "@/components/ui/icons";
+import { UsersIcon } from "@/components/ui/icons";
 import { reassignHomeroom } from "@/lib/director/data";
 import {
   attendanceDaysOf,
@@ -114,13 +114,10 @@ export function ClassesBoard({
             </button>
           ))}
         </div>
-        <button
-          type="button"
-          className="flex h-10 items-center gap-1.5 rounded-lg bg-brand px-3.5 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-dark focus-ring"
-        >
-          <PlusIcon className="h-4 w-4" />
-          Yangi sinf
-        </button>
+        {/* Rahbariyat maʼlumot kiritmaydi — sinf ochish administrator ishi. */}
+        <p className="text-xs text-foreground-muted">
+          Yangi sinf ochish — administrator kabinetida (Maʼlumot bazasi → Sinflar).
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">

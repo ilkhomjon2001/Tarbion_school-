@@ -56,6 +56,8 @@ export function staffById(id: string): Staff | null {
 
 export const PSYCHOLOGIST = STAFF.find((s) => s.role === "psychologist")!;
 export const DIRECTOR = STAFF.find((s) => s.role === "director")!;
+/** Administrator — admin kabinetiga kirgan xodim. */
+export const ADMINISTRATOR = STAFF.find((s) => s.role === "admin")!;
 
 // ───────────────────────── Dars yuklamasi ─────────────────────────
 

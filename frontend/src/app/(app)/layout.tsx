@@ -25,7 +25,7 @@ export default async function AppLayout({
   const searchIndex = buildSearchIndex({ homework, tests, announcements });
 
   return (
-    <AuthGuard>
+    <AuthGuard role="student">
       <div className="min-h-full bg-background">
         <Sidebar student={student} />
         <div className="flex min-h-full flex-col md:pl-64">

@@ -127,7 +127,7 @@ function DocumentBuilder({
   student: AdminStudent;
 }) {
   const dispatch = useAdminDispatch();
-  const { documentCounter } = useAdmin();
+  const { documentCounter, profile } = useAdmin();
   const [type, setType] = useState<DocumentType>(request.type);
   const [recipient, setRecipient] = useState("");
   const [copies, setCopies] = useState(1);
@@ -250,6 +250,9 @@ function DocumentBuilder({
               <span>
                 Direktor
                 <span className="mt-4 block w-28 border-b border-foreground-muted" />
+                <span className="mt-2 block">
+                  Tayyorladi: {profile.fullName} · {profile.phone}
+                </span>
               </span>
               <span className="flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-border text-center text-[9px]">
                 Muhr oʻrni
