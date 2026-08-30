@@ -17,11 +17,22 @@ backendga oʻtganda nima qolganini koʻrsatadi.
 
 **Holat (30-avgust 2026):** 56 ta taskdan frontend prototipi
 ✅ 26 tasida tayyor · 🟡 12 tasida qisman · ⬜ 18 tasida yoʻq.
-Backend tomondan hech bir task yopilmagan — 10 tasi `[~]` (boshlangan).
+Backend tomondan **T-001 va T-002 yopildi**: `main.py`, `/health`,
+alembic (23 jadval), docker-compose (PostgreSQL 18), test fixture'lari.
 
-Eng katta boʻshliq: `backend/app/main.py`, `api/v1/`, alembic va `bot/`
-umuman yoʻq. Shu sabab 1-bosqichning hech bir «Tayyor» mezoni bajarilmagan,
-frontend esa 2- va 3-bosqich ekranlarigacha borib qoʻygan.
+**Yangilik (30-avgust, kechqurun):** baza lokalda koʻtarildi va
+seed yuklandi — 362 oʻquvchi, 776 dars, 17.6k davomat yozuvi
+(`app/seed.py`). Birinchi ishlaydigan endpointlar chiqdi:
+`/api/v1/auth/{login,refresh,logout,me}` va
+`/api/v1/director/{overview,classes,teachers}`. Frontendda
+`/rahbar/jonli` ular bilan uchi-uchiga ishlaydi. Testlar: 19 ta.
+
+T-003, T-004, T-005 hamon `[~]`: endpointlar ishlaydi, lekin
+«Tayyor» mezonlaridagi sessiya roʻyxati, parol almashtirish va
+blokirovka testlari yozilmagan.
+
+Qolgan boʻshliq: `bot/` da faqat README, moliya jadvallari yoʻq,
+qolgan rahbariyat sahifalari hamon mock ustida.
 
 ---
 
