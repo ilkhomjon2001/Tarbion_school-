@@ -65,6 +65,7 @@ import {
   type SurveyDefinition,
   type UserAccount,
 } from "@/lib/admin/types";
+import { useAccess } from "@/lib/access-api";
 import { effectiveSections, ROLE_DEFAULT_SECTIONS } from "@/lib/access";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 import { withNewMessage, type Appeal } from "@/lib/school/appeals";
@@ -1226,19 +1227,26 @@ export function useCurrentUser(role: UserRole | null): UserAccount | null {
   }, [users, profile.staffId, role]);
 }
 
-/** Joriy foydalanuvchi koʻra oladigan boʻlim manzillari. */
-export function useVisibleSections(role: UserRole | null): Set<string> {
-  const { users, profile, roleSections } = useAdmin();
+/**
+ * Joriy foydalanuvchi koʻra oladigan boʻlim manzillari.
+ *
+ * Roʻyxat SERVERDAN keladi (`/auth/me` javobidagi `sections`). Avval u
+ * mockdagi `users` roʻyxatidan hisoblanardi; endi hisob bitta joyda —
+ * backendda (T-005). Aks holda frontend va server farq qilib, odam
+ * koʻrgan tugmasini bosganda 403 olardi.
+ *
+ * `role` parametri saqlandi: chaqiruv joylari oʻzgarmasin. U endi
+ * ishlatilmaydi — rol ham serverdan keladigan roʻyxatga singdirilgan.
+ */
+export function useVisibleSections(_role?: UserRole | null): Set<string> {
+  const { sections, loading } = useAccess();
   return useMemo(() => {
-    const user =
-      role === "superadmin"
-        ? users.find((u) => u.role === "superadmin")
-        : users.find((u) => u.staffId === profile.staffId);
-    const effective = user
-      ? effectiveSections(user.role, user.sections, roleSections)
-      : effectiveSections(role ?? "admin", null, roleSections);
-    return new Set(effective);
-  }, [users, profile.staffId, roleSections, role]);
+    // Yuklanayotganda boʻsh toʻplam — menyu bir zumga yashirinadi.
+    // Toʻliq menyuni koʻrsatib keyin yigʻishdan koʻra shu yaxshi:
+    // odam koʻrmasligi kerak boʻlgan boʻlim koʻzga tashlanmaydi.
+    if (loading) return new Set<string>();
+    return new Set(sections);
+  }, [sections, loading]);
 }
 
 export interface ContractMonth {

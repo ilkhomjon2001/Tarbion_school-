@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { BrandLogo } from "@/components/ui/BrandLogo";
+import { useAccess } from "@/lib/access-api";
 import { logout } from "@/lib/auth";
 import type { Child } from "@/lib/parent/data";
 import { unreadCount } from "@/lib/parent/news";
@@ -64,6 +65,14 @@ export function ParentShell({
 }) {
   const royxat = siblings ?? [child];
   const pathname = usePathname();
+
+  // Menyu serverdan kelgan boʻlimlar boʻyicha (T-005).
+  const { sections } = useAccess();
+  const nav = useMemo(() => NAV.filter((i) => sections.includes(i.href)), [sections]);
+  const sidebarNav = useMemo(
+    () => SIDEBAR_NAV.filter((i) => sections.includes(i.href)),
+    [sections],
+  );
   const router = useRouter();
   const [unread, setUnread] = useState(0);
 
@@ -82,7 +91,7 @@ export function ParentShell({
 
         <nav aria-label="Asosiy navigatsiya" className="flex-1 overflow-y-auto px-3 py-2">
           <ul className="flex flex-col gap-1">
-            {SIDEBAR_NAV.map(({ href, label, icon: Icon, ...rest }) => {
+            {sidebarNav.map(({ href, label, icon: Icon, ...rest }) => {
               const exact = "exact" in rest && rest.exact;
               const active = exact ? pathname === href : pathname.startsWith(href);
               return (
@@ -201,7 +210,7 @@ export function ParentShell({
         className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
         <ul className="flex">
-          {NAV.map(({ href, label, icon: Icon, ...rest }) => {
+          {nav.map(({ href, label, icon: Icon, ...rest }) => {
             const exact = "exact" in rest && rest.exact;
             const active = exact ? pathname === href : pathname.startsWith(href);
             return (

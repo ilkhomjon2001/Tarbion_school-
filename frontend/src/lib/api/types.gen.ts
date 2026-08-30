@@ -720,6 +720,26 @@ export type MessageCreateIn = {
 };
 
 /**
+ * PermissionOut
+ *
+ * Huquq va uning oʻzbekcha izohi.
+ */
+export type PermissionOut = {
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Group
+     */
+    group: string;
+};
+
+/**
  * ReadinessOut
  *
  * Ilova soʻrov qabul qilishga tayyormi.
@@ -736,6 +756,58 @@ export type ReadinessOut = {
      * Database
      */
     database: boolean;
+};
+
+/**
+ * SectionOut
+ *
+ * Reyestrdagi bitta boʻlim.
+ */
+export type SectionOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Cabinet
+     */
+    cabinet: string;
+    /**
+     * Locked
+     */
+    locked: boolean;
+    /**
+     * Superadmin Only
+     */
+    superadmin_only: boolean;
+};
+
+/**
+ * SetPermissionsIn
+ *
+ * Toʻliq roʻyxat — qoʻshish/olib tashlash emas.
+ */
+export type SetPermissionsIn = {
+    /**
+     * Permissions
+     */
+    permissions?: Array<string>;
+};
+
+/**
+ * SetSectionsIn
+ *
+ * `None` — istisnoni bekor qilib rol standartiga qaytarish.
+ */
+export type SetSectionsIn = {
+    /**
+     * Sections
+     */
+    sections?: Array<string> | null;
 };
 
 /**
@@ -901,6 +973,58 @@ export type TokenOut = {
 };
 
 /**
+ * UserAccessOut
+ *
+ * Foydalanuvchining toʻliq kirish holati.
+ */
+export type UserAccessOut = {
+    /**
+     * User Id
+     */
+    user_id: string;
+    /**
+     * Login
+     */
+    login: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Roles
+     */
+    roles: Array<string>;
+    /**
+     * Cabinet
+     */
+    cabinet: string;
+    /**
+     * Is Active
+     */
+    is_active: boolean;
+    /**
+     * Is Archived
+     */
+    is_archived: boolean;
+    /**
+     * Sections
+     */
+    sections: Array<string>;
+    /**
+     * Default Sections
+     */
+    default_sections: Array<string>;
+    /**
+     * Customized
+     */
+    customized: boolean;
+    /**
+     * Permissions
+     */
+    permissions: Array<string>;
+};
+
+/**
  * UserOut
  */
 export type UserOut = {
@@ -928,6 +1052,18 @@ export type UserOut = {
      * Must Change Password
      */
     must_change_password: boolean;
+    /**
+     * Cabinet
+     */
+    cabinet?: string;
+    /**
+     * Sections
+     */
+    sections?: Array<string>;
+    /**
+     * Permissions
+     */
+    permissions?: Array<string>;
 };
 
 /**
@@ -1055,6 +1191,170 @@ export type AuthChangePasswordResponses = {
 };
 
 export type AuthChangePasswordResponse = AuthChangePasswordResponses[keyof AuthChangePasswordResponses];
+
+export type AccessSectionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/access/sections';
+};
+
+export type AccessSectionsResponses = {
+    /**
+     * Response Access Sections
+     *
+     * Successful Response
+     */
+    200: Array<SectionOut>;
+};
+
+export type AccessSectionsResponse = AccessSectionsResponses[keyof AccessSectionsResponses];
+
+export type AccessPermissionRegistryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/access/permissions';
+};
+
+export type AccessPermissionRegistryResponses = {
+    /**
+     * Response Access Permission Registry
+     *
+     * Successful Response
+     */
+    200: Array<PermissionOut>;
+};
+
+export type AccessPermissionRegistryResponse = AccessPermissionRegistryResponses[keyof AccessPermissionRegistryResponses];
+
+export type AccessUsersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Q
+         *
+         * Login yoki ism boʻyicha qidirish
+         */
+        q?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/access/users';
+};
+
+export type AccessUsersErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AccessUsersError = AccessUsersErrors[keyof AccessUsersErrors];
+
+export type AccessUsersResponses = {
+    /**
+     * Response Access Users
+     *
+     * Successful Response
+     */
+    200: Array<UserAccessOut>;
+};
+
+export type AccessUsersResponse = AccessUsersResponses[keyof AccessUsersResponses];
+
+export type AccessUserAccessData = {
+    body?: never;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: string;
+    };
+    query?: never;
+    url: '/api/v1/access/users/{user_id}';
+};
+
+export type AccessUserAccessErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AccessUserAccessError = AccessUserAccessErrors[keyof AccessUserAccessErrors];
+
+export type AccessUserAccessResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserAccessOut;
+};
+
+export type AccessUserAccessResponse = AccessUserAccessResponses[keyof AccessUserAccessResponses];
+
+export type AccessSetSectionsData = {
+    body: SetSectionsIn;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: string;
+    };
+    query?: never;
+    url: '/api/v1/access/users/{user_id}/sections';
+};
+
+export type AccessSetSectionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AccessSetSectionsError = AccessSetSectionsErrors[keyof AccessSetSectionsErrors];
+
+export type AccessSetSectionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserAccessOut;
+};
+
+export type AccessSetSectionsResponse = AccessSetSectionsResponses[keyof AccessSetSectionsResponses];
+
+export type AccessSetPermissionsData = {
+    body: SetPermissionsIn;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: string;
+    };
+    query?: never;
+    url: '/api/v1/access/users/{user_id}/permissions';
+};
+
+export type AccessSetPermissionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AccessSetPermissionsError = AccessSetPermissionsErrors[keyof AccessSetPermissionsErrors];
+
+export type AccessSetPermissionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserAccessOut;
+};
+
+export type AccessSetPermissionsResponse = AccessSetPermissionsResponses[keyof AccessSetPermissionsResponses];
 
 export type DirectorOverviewData = {
     body?: never;

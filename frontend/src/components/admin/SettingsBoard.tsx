@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { CheckIcon, SearchIcon } from "@/components/ui/icons";
+import { AccessCenter } from "@/components/admin/AccessCenter";
 import { useAdmin, useAdminDispatch } from "@/lib/admin/store";
 import type { SchoolSettings, UserAccount } from "@/lib/admin/types";
 import {
@@ -65,7 +66,9 @@ export function SettingsBoard() {
         ))}
       </div>
 
-      {tab === "users" && <UsersTab />}
+      {/* Foydalanuvchilar bandi HAQIQIY API bilan ishlaydi (T-005).
+          Qolgan bandlar hali mock ustida. */}
+      {tab === "users" && <AccessCenter />}
       {tab === "roles" && <RolesTab />}
       {tab === "school" && <SchoolTab />}
 

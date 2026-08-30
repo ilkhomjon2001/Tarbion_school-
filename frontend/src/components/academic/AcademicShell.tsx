@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
+import { useMemo } from "react";
+
+import { useAccess } from "@/lib/access-api";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import {
   BarChartIcon,
@@ -40,6 +43,13 @@ function isActive(href: string, pathname: string): boolean {
 export function AcademicSidebar() {
   const pathname = usePathname();
 
+  // Menyu serverdan kelgan boʻlimlar boʻyicha (T-005).
+  const { sections } = useAccess();
+  const nav = useMemo(
+    () => ACADEMIC_NAV.filter((i) => sections.includes(i.href)),
+    [sections],
+  );
+
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border bg-surface md:flex">
       <div className="px-5 py-5">
@@ -48,7 +58,7 @@ export function AcademicSidebar() {
 
       <nav aria-label="Asosiy navigatsiya" className="flex-1 overflow-y-auto px-3 py-2">
         <ul className="flex flex-col gap-1">
-          {ACADEMIC_NAV.map(({ href, label, icon: ItemIcon }) => {
+          {nav.map(({ href, label, icon: ItemIcon }) => {
             const active = isActive(href, pathname);
             return (
               <li key={href}>
@@ -105,6 +115,12 @@ export function AcademicSidebar() {
 
 export function AcademicMobileTopBar() {
   const pathname = usePathname();
+
+  const { sections } = useAccess();
+  const nav = useMemo(
+    () => ACADEMIC_NAV.filter((i) => sections.includes(i.href)),
+    [sections],
+  );
   const [open, setOpen] = useState(false);
 
   return (
@@ -143,7 +159,7 @@ export function AcademicMobileTopBar() {
 
             <nav className="flex-1 overflow-y-auto px-3 py-2">
               <ul className="flex flex-col gap-1">
-                {ACADEMIC_NAV.map(({ href, label, icon: ItemIcon }) => {
+                {nav.map(({ href, label, icon: ItemIcon }) => {
                   const active = isActive(href, pathname);
                   return (
                     <li key={href}>

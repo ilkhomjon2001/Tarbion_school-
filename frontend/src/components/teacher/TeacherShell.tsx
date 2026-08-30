@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAccess } from "@/lib/access-api";
 import { BrandLogo } from "@/components/ui/BrandLogo";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { DEMO_LESSONS, DEMO_TEACHER } from "@/lib/teacher/data";
 import { classColor } from "@/lib/teacher/schedule";
@@ -62,6 +63,19 @@ export function TeacherShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+
+  // Menyu SERVERDAN kelgan boʻlimlar boʻyicha filtrlanadi (T-005).
+  // Super administrator ustozdan boʻlimni olib qoʻysa, u shu yerda
+  // yoʻqoladi. Bu HIMOYA EMAS — soʻrovni server baribir tekshiradi.
+  const { sections, loading: accessLoading } = useAccess();
+  const groups = useMemo(
+    () =>
+      NAV_GROUPS.map((g) => ({
+        ...g,
+        items: g.items.filter((i) => sections.includes(i.href)),
+      })).filter((g) => g.items.length > 0),
+    [sections],
+  );
   const [open, setOpen] = useState(false);
 
   return (
@@ -79,7 +93,7 @@ export function TeacherShell({
           </div>
 
           <nav className="flex-1 overflow-y-auto px-3 pb-2">
-            {NAV_GROUPS.map((group) => (
+            {groups.map((group) => (
               <div key={group.title} className="mb-4 last:mb-0">
                 <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wide text-foreground-muted/70">
                   {group.title}

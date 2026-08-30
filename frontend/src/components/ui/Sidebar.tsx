@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useMemo } from "react";
+
 import { BrandLogo } from "@/components/ui/BrandLogo";
+import { useAccess } from "@/lib/access-api";
 import { logout } from "@/lib/auth";
 import {
   BellIcon,
@@ -30,6 +33,13 @@ const NAV_ITEMS = [
 
 export function Sidebar({ student }: { student: Student }) {
   const pathname = usePathname();
+
+  // Menyu serverdan kelgan boʻlimlar boʻyicha (T-005).
+  const { sections } = useAccess();
+  const nav = useMemo(
+    () => NAV_ITEMS.filter((i) => sections.includes(i.href)),
+    [sections],
+  );
   const router = useRouter();
 
   return (
@@ -40,7 +50,7 @@ export function Sidebar({ student }: { student: Student }) {
 
       <nav aria-label="Asosiy navigatsiya" className="flex-1 overflow-y-auto px-3 py-2">
         <ul className="flex flex-col gap-1">
-          {NAV_ITEMS.map(({ href, label, icon: ItemIcon }) => {
+          {nav.map(({ href, label, icon: ItemIcon }) => {
             const isActive =
               href === "/student" ? pathname === href : pathname.startsWith(href);
             return (

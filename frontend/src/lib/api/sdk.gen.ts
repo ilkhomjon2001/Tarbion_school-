@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AppealsAddMessageData, AppealsAddMessageErrors, AppealsAddMessageResponses, AppealsAppealsSummaryData, AppealsAppealsSummaryResponses, AppealsComposeOptionsData, AppealsComposeOptionsResponses, AppealsCreateAppealData, AppealsCreateAppealErrors, AppealsCreateAppealResponses, AppealsCreateNoteData, AppealsCreateNoteErrors, AppealsCreateNoteResponses, AppealsGetAppealData, AppealsGetAppealErrors, AppealsGetAppealResponses, AppealsListAppealsData, AppealsListAppealsErrors, AppealsListAppealsResponses, AppealsListNotesData, AppealsListNotesErrors, AppealsListNotesResponses, AppealsStatsClassesData, AppealsStatsClassesResponses, AppealsUpdateAssigneeData, AppealsUpdateAssigneeErrors, AppealsUpdateAssigneeResponses, AppealsUpdateStatusData, AppealsUpdateStatusErrors, AppealsUpdateStatusResponses, AttendanceClassStudentsData, AttendanceClassStudentsErrors, AttendanceClassStudentsResponses, AttendanceLessonAttendanceData, AttendanceLessonAttendanceErrors, AttendanceLessonAttendanceResponses, AttendanceMarkData, AttendanceMarkErrors, AttendanceMarkResponses, AttendanceMyLessonsData, AttendanceMyLessonsErrors, AttendanceMyLessonsResponses, AttendanceStatsData, AttendanceStatsErrors, AttendanceStatsResponses, AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRefreshData, AuthRefreshResponses, DirectorClassesData, DirectorClassesResponses, DirectorOverviewData, DirectorOverviewErrors, DirectorOverviewResponses, DirectorTeachersData, DirectorTeachersResponses, ParentChildAttendanceData, ParentChildAttendanceErrors, ParentChildAttendanceResponses, ParentMyChildrenData, ParentMyChildrenResponses, ServiceHealthData, ServiceHealthResponses, ServiceReadinessData, ServiceReadinessResponses } from './types.gen';
+import type { AccessPermissionRegistryData, AccessPermissionRegistryResponses, AccessSectionsData, AccessSectionsResponses, AccessSetPermissionsData, AccessSetPermissionsErrors, AccessSetPermissionsResponses, AccessSetSectionsData, AccessSetSectionsErrors, AccessSetSectionsResponses, AccessUserAccessData, AccessUserAccessErrors, AccessUserAccessResponses, AccessUsersData, AccessUsersErrors, AccessUsersResponses, AppealsAddMessageData, AppealsAddMessageErrors, AppealsAddMessageResponses, AppealsAppealsSummaryData, AppealsAppealsSummaryResponses, AppealsComposeOptionsData, AppealsComposeOptionsResponses, AppealsCreateAppealData, AppealsCreateAppealErrors, AppealsCreateAppealResponses, AppealsCreateNoteData, AppealsCreateNoteErrors, AppealsCreateNoteResponses, AppealsGetAppealData, AppealsGetAppealErrors, AppealsGetAppealResponses, AppealsListAppealsData, AppealsListAppealsErrors, AppealsListAppealsResponses, AppealsListNotesData, AppealsListNotesErrors, AppealsListNotesResponses, AppealsStatsClassesData, AppealsStatsClassesResponses, AppealsUpdateAssigneeData, AppealsUpdateAssigneeErrors, AppealsUpdateAssigneeResponses, AppealsUpdateStatusData, AppealsUpdateStatusErrors, AppealsUpdateStatusResponses, AttendanceClassStudentsData, AttendanceClassStudentsErrors, AttendanceClassStudentsResponses, AttendanceLessonAttendanceData, AttendanceLessonAttendanceErrors, AttendanceLessonAttendanceResponses, AttendanceMarkData, AttendanceMarkErrors, AttendanceMarkResponses, AttendanceMyLessonsData, AttendanceMyLessonsErrors, AttendanceMyLessonsResponses, AttendanceStatsData, AttendanceStatsErrors, AttendanceStatsResponses, AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRefreshData, AuthRefreshResponses, DirectorClassesData, DirectorClassesResponses, DirectorOverviewData, DirectorOverviewErrors, DirectorOverviewResponses, DirectorTeachersData, DirectorTeachersResponses, ParentChildAttendanceData, ParentChildAttendanceErrors, ParentChildAttendanceResponses, ParentMyChildrenData, ParentMyChildrenResponses, ServiceHealthData, ServiceHealthResponses, ServiceReadinessData, ServiceReadinessResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -42,6 +42,12 @@ export const authLogout = <ThrowOnError extends boolean = false>(options?: Optio
 
 /**
  * Me
+ *
+ * Joriy foydalanuvchi — boʻlim va huquqlari bilan.
+ *
+ * Sahifa yangilanganda frontend menyuni shu javobdan tiklaydi.
+ * Bazadan qayta oʻqiladi: super administrator huquqni olib qoʻygan
+ * boʻlsa, eski token bilan eski menyu ishlab ketmasin.
  */
 export const authMe = <ThrowOnError extends boolean = false>(options?: Options<AuthMeData, ThrowOnError>): RequestResult<AuthMeResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AuthMeResponses, unknown, ThrowOnError>({ url: '/api/v1/auth/me', ...options });
 
@@ -55,6 +61,69 @@ export const authMe = <ThrowOnError extends boolean = false>(options?: Options<A
  */
 export const authChangePassword = <ThrowOnError extends boolean = false>(options: Options<AuthChangePasswordData, ThrowOnError>): RequestResult<AuthChangePasswordResponses, AuthChangePasswordErrors, ThrowOnError> => (options.client ?? client).post<AuthChangePasswordResponses, AuthChangePasswordErrors, ThrowOnError>({
     url: '/api/v1/auth/change-password',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Sections
+ *
+ * Boʻlimlar reyestri.
+ *
+ * Bu shunchaki roʻyxat — hech kimning maʼlumoti yoʻq, shuning uchun
+ * har bir kirgan foydalanuvchiga ochiq. Kim NIMANI koʻrishi esa
+ * `/access/users/{id}` da.
+ */
+export const accessSections = <ThrowOnError extends boolean = false>(options?: Options<AccessSectionsData, ThrowOnError>): RequestResult<AccessSectionsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AccessSectionsResponses, unknown, ThrowOnError>({ url: '/api/v1/access/sections', ...options });
+
+/**
+ * Permission Registry
+ *
+ * Huquqlar reyestri — oʻzbekcha nomi va guruhi bilan.
+ */
+export const accessPermissionRegistry = <ThrowOnError extends boolean = false>(options?: Options<AccessPermissionRegistryData, ThrowOnError>): RequestResult<AccessPermissionRegistryResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AccessPermissionRegistryResponses, unknown, ThrowOnError>({ url: '/api/v1/access/permissions', ...options });
+
+/**
+ * Users
+ */
+export const accessUsers = <ThrowOnError extends boolean = false>(options?: Options<AccessUsersData, ThrowOnError>): RequestResult<AccessUsersResponses, AccessUsersErrors, ThrowOnError> => (options?.client ?? client).get<AccessUsersResponses, AccessUsersErrors, ThrowOnError>({ url: '/api/v1/access/users', ...options });
+
+/**
+ * User Access
+ *
+ * Bitta foydalanuvchining kirish holati.
+ *
+ * Har kim OʻZ holatini koʻra oladi — kabinet menyusi shundan
+ * chiziladi. Boshqasiniki uchun huquq kerak.
+ */
+export const accessUserAccess = <ThrowOnError extends boolean = false>(options: Options<AccessUserAccessData, ThrowOnError>): RequestResult<AccessUserAccessResponses, AccessUserAccessErrors, ThrowOnError> => (options.client ?? client).get<AccessUserAccessResponses, AccessUserAccessErrors, ThrowOnError>({ url: '/api/v1/access/users/{user_id}', ...options });
+
+/**
+ * Set Sections
+ *
+ * Foydalanuvchi koʻradigan boʻlimlarni belgilaydi.
+ *
+ * `sections: null` — istisnoni bekor qilib rol standartiga qaytaradi.
+ */
+export const accessSetSections = <ThrowOnError extends boolean = false>(options: Options<AccessSetSectionsData, ThrowOnError>): RequestResult<AccessSetSectionsResponses, AccessSetSectionsErrors, ThrowOnError> => (options.client ?? client).put<AccessSetSectionsResponses, AccessSetSectionsErrors, ThrowOnError>({
+    url: '/api/v1/access/users/{user_id}/sections',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Set Permissions
+ *
+ * Huquqlarni toʻliq almashtiradi (qoʻshish/olib tashlash emas).
+ */
+export const accessSetPermissions = <ThrowOnError extends boolean = false>(options: Options<AccessSetPermissionsData, ThrowOnError>): RequestResult<AccessSetPermissionsResponses, AccessSetPermissionsErrors, ThrowOnError> => (options.client ?? client).put<AccessSetPermissionsResponses, AccessSetPermissionsErrors, ThrowOnError>({
+    url: '/api/v1/access/users/{user_id}/permissions',
     ...options,
     headers: {
         'Content-Type': 'application/json',
