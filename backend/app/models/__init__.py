@@ -27,6 +27,7 @@ from app.models.identity import (
     User,
     UserRole,
 )
+from app.models.scheduling import Lesson, ScheduleEntry
 from app.models.school import (
     ClassSubject,
     Guardian,
@@ -36,7 +37,6 @@ from app.models.school import (
     Subject,
     TeacherSubject,
 )
-from app.models.scheduling import Lesson, ScheduleEntry
 
 __all__ = [
     "ATTENDANCE_LABELS_UZ",

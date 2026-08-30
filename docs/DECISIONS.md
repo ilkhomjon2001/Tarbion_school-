@@ -365,6 +365,82 @@ kirgan 1990-yilgi xodim — 18 yoshli direktor — paydo boʻlgandi.
 Ishdan boʻshagan xodim oʻchirilmaydi: `status: "archived"` boʻladi va
 `ExitRecord` sababi bilan qoladi. Kadrlar aylanmasi shundan hisoblanadi.
 
+## 2026-08-30 · Stack yopildi: Next.js + FastAPI + PostgreSQL
+
+Backend uchun Node (NestJS), Go (Fiber) va Python (FastAPI) solishtirildi.
+Yuk hisoblandi: ~1000–2000 hisob, cho'qqi 30–80 so'rov/soniya. Eng past
+o'rindagi framework ham 16 000 so'rov/soniya beradi — **tezlik hech qaysi
+variantda cheklov emas.** Shu sababli boshqa mezonlar hal qildi:
+
+1. `backend/app/` da 1898 qator kod allaqachon yozilgan (modellar,
+   `access.py`, auth, audit). Tashlash — 2–3 hafta yo'qotish.
+2. Payme/Click/Uzum uchun **PayTechUZ** FastAPI'ni native qo'llaydi. Node'da
+   TS SDK bor, Go'da tayyor kutubxona yo'q. To'lov — eng katta integratsiya
+   riski.
+3. aiogram bot backend bilan **umumiy baza va umumiy `access.py`** ishlatadi.
+   Node'da bot baribir alohida Python xizmat bo'lardi.
+4. HolliHop CRM integratsiyasi kodi Pythonda mavjud (`rnd-counter/hollihop.py`).
+5. Deploy yo'li sinalgan: o'sha serverda `rnd-counter` FastAPI systemd +
+   autopull bilan ishlaydi.
+
+Go rad etildi: 20 barobar tez, lekin bizga 200 barobar ortiqcha zaxira
+allaqachon bor. Evaziga to'lov kutubxonasi yo'q va ikki kishilik jamoada
+har funksiya sekinroq chiqadi.
+
+Frontend o'zgarmaydi — Next.js 15 da 60 sahifa ishlab turibdi.
+
+## 2026-08-30 · Frontend–backend shartnomasi: OpenAPI generatsiyasi
+
+TypeScript tiplari qo'lda yozilmaydi. FastAPI `/openapi.json` dan
+`@hey-api/openapi-ts` orqali tiplar va TanStack Query hooklari
+generatsiya qilinadi.
+
+Sabab: qo'lda yozilgan tip backend o'zgarganda **jimgina eskiradi** — xato
+faqat ishlab chiqarishda, foydalanuvchi ekranida ko'rinadi. Generatsiya
+qilinganda Pydantic sxemasi o'zgarsa `pnpm build` darhol yiqiladi.
+
+tRPC ko'rib chiqilmadi: u faqat TS backend bilan ishlaydi.
+
+## 2026-08-30 · Token localStorage'dan httpOnly cookie'ga
+
+Hozirgi demo `localStorage` ishlatadi — backendsiz boshqa yo'l yo'q edi.
+Ishlab chiqarishda token `HttpOnly; Secure; SameSite=Lax` cookie'da bo'ladi.
+
+Sabab: `localStorage` ni sahifadagi har qanday JavaScript o'qiy oladi.
+Bitta XSS — buzilgan npm paketi yoki matnni ekranga chiqarishdagi xato —
+butun hisobni beradi. httpOnly cookie'ni JS umuman ko'rmaydi.
+
+Brauzer to'g'ridan-to'g'ri `api.tarbion.uz` ga murojaat qiladi. Next.js
+oraliq qatlam (BFF) qilinmadi: token httpOnly cookie'da bo'lgani uchun
+qo'shimcha himoya bermaydi, faqat bitta tarmoq qadami qo'shadi.
+
+## 2026-08-30 · Baza O'zbekistonda joylashtiriladi
+
+O'RQ-547 ning 2026-yil 26-mart tahririga ko'ra biometrik ma'lumot majburiy
+O'zbekistonda saqlanadi; qolgani chet elda mumkin, lekin Vazirlar Mahkamasi
+tasdiqlagan mamlakatlar ro'yxati va shartlar bilan.
+
+O'quvchi surati shaxsni aniqlash uchun ishlatilsa biometrik deb talqin
+qilinishi mumkin, va ro'yxat holati noaniq. Contabo (Germaniya) o'rniga
+O'zbekistondagi hosting tanlandi — huquqiy noaniqlik yo'qoladi va
+Toshkentdan kechikish 60–80 ms o'rniga 5–10 ms bo'ladi.
+
+Yuristdan tasdiq kutilmoqda. Hal bo'lmaguncha ishlab chiqarish serveriga
+real o'quvchi ma'lumoti yuklanmaydi.
+
+## 2026-08-30 · PostgreSQL 16 emas, 18
+
+Ish mashinasida PostgreSQL 18.4 o'rnatilgan edi. Ikkita yo'l bor edi:
+lokalga qo'shimcha 16 o'rnatish yoki hujjatdagi versiyani 18 ga ko'tarish.
+
+18 tanlandi: hozir ishlab chiqarish bazasi hali yaratilmagan, demak
+"pastga tushirish" majburiyati yo'q. Dev va prod bir xil major versiyada
+bo'lishi kerak — aks holda 18 da ishlagan so'rov 16 da boshqacha
+rejalashtirilishi mumkin.
+
+`docker-compose.yml` ham `postgres:18-alpine` ga o'tkazildi — Docker
+ishlatadigan odam ham xuddi shu versiyani oladi.
+
 ## 2026-08-30 · Backend bilan umumiy kodlar — `lib/contracts.ts`
 Ikki odam ikki tomonda ishlaydi va enum'lar jimgina ajralib ketardi.
 Tekshirganda uchta haqiqiy nomuvofiqlik chiqdi:
@@ -405,3 +481,34 @@ tekshirildi.
 
 `scripts/` `tsconfig.json` dan chiqarildi: Node `--experimental-strip-types`
 import yoʻlida `.ts` kengaytmasini talab qiladi, Next esa uni rad etadi.
+
+## 2026-08-30 · `contracts.ts` va OpenAPI generatsiyasi — ikkalasi ham kerak
+Ikki qaror bir-biriga zid koʻrinishi mumkin: biri «TS tiplari qoʻlda
+yozilmaydi», ikkinchisi qoʻlda yozilgan `lib/contracts.ts` ni kiritadi.
+Zidlik yoʻq, chunki ular boshqa narsani qoplaydi.
+
+Generatsiya soʻrov/javob sxemalarini beradi va uning uchun ISHLAYDIGAN
+API kerak. Hozir `api/v1/` boʻsh — generatsiya qiladigan narsa yoʻq,
+frontend esa bugun ishlashi kerak.
+
+Ikkinchidan, `ATTENDANCE_LABELS_UZ` va `SUBMISSION_LABELS_UZ` — Pydantic
+sxemasi emas, oddiy `dict` konstantasi. Ular OpenAPI ga umuman tushmaydi.
+Endpointlar chiqqanda ham yorliqlar qoʻlda koʻchiriladi (yoki backend
+ularni alohida endpoint orqali beradi — hali kelishilmagan).
+
+Shu sabab: endpoint paydo boʻlganda `contracts.ts` dagi enum union'lari
+generatsiya qilingan tiplarga almashtiriladi va oʻchiriladi; yorliq va
+vazn jadvallari qoladi. `pnpm check:contracts` shu oʻtish davrida
+ogʻishni tutib turadi.
+
+## 2026-08-30 · `academic` roli `is_staff_wide` ga qoʻshildi
+Rolni enum'ga qoʻshishning oʻzi yetarli emas edi: `access.py` uni
+bilmagani uchun oʻquv boʻlimi foydalanuvchisi `accessible_student_ids()`
+dan BOʻSH toʻplam olardi — yaʼni bironta oʻquvchini koʻrmasdi.
+
+Oʻquv boʻlimi imtihon, dars rejasi va ustozlar faoliyatini barcha sinflar
+kesimida koʻradi, shuning uchun u `is_staff_wide` ga kiritildi.
+
+MUHIM cheklov: bu faqat oʻquvchi va sinf koʻrinishi. Moliya endpointlari
+paydo boʻlganda ular `is_staff_wide` ga TAYANMASLIGI kerak — oʻquv boʻlimi
+toʻlov va qarzdorlikni koʻrmaydi. Izoh `access.py` da qoldirildi.

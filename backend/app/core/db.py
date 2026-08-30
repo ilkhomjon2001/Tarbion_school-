@@ -1,7 +1,9 @@
 """Async SQLAlchemy engine va sessiya."""
 
 from collections.abc import AsyncGenerator
+from typing import Annotated
 
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import settings
@@ -41,3 +43,10 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
         except Exception:
             await session.rollback()
             raise
+
+
+# Har bir endpointda yozish o'rniga shu alias ishlatiladi:
+#     async def endpoint(session: SessionDep) -> ...
+# `Annotated` shakli majburiy: `Depends()` ni argument sukutida yozish
+# ruff B008 ni uyg'otadi va FastAPI hujjatida ham eskirgan uslub.
+SessionDep = Annotated[AsyncSession, Depends(get_session)]

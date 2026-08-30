@@ -11,7 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Entity
 
 
-class AttendanceStatus(str, enum.Enum):
+class AttendanceStatus(enum.StrEnum):
     """DAV-01: keldi, kelmadi, sababli, kechikdi."""
 
     PRESENT = "present"

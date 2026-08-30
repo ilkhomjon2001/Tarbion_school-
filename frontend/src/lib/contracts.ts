@@ -13,9 +13,28 @@
  *   BackendRole       → backend/app/models/identity.py
  *
  * Ikkalasi ajralib ketmasligi uchun tekshiruv bor:
- *   node --experimental-strip-types scripts/check-contracts.ts
+ *   pnpm check:contracts
  * U backenddagi Python enum'larini oʻqib, shu fayl bilan solishtiradi.
  * Sherik enum'ga qiymat qoʻshsa — tekshiruv yiqiladi va biz koʻramiz.
+ *
+ * ── Bu fayl OpenAPI generatsiyasiga ZID EMAS ──
+ *
+ * DECISIONS.md da kelishilgan: soʻrov va javob tiplari qoʻlda yozilmaydi,
+ * FastAPI '/openapi.json' dan '@hey-api/openapi-ts' orqali generatsiya
+ * qilinadi. Bu fayl uning oʻrnini bosmaydi, chunki:
+ *
+ *   1) Generatsiya uchun ishlaydigan API kerak. Hozir 'api/v1/' boʻsh —
+ *      generatsiya qiladigan narsa yoʻq, frontend esa bugun ishlashi kerak.
+ *   2) Oʻzbekcha yorliqlar ('ATTENDANCE_LABELS_UZ') Pydantic sxemasi emas,
+ *      oddiy 'dict' konstantasi — ular OpenAPI ga UMUMAN tushmaydi.
+ *      Endpoint chiqqanda ham ular shu yerda qoladi (yoki backend ularni
+ *      alohida endpoint orqali beradi — hali kelishilmagan).
+ *   3) Vazn jadvali ('GRADE_WEIGHTS') — frontend hisobi, backendda u har
+ *      bir baho uchun 'grades.weight' ustunida saqlanadi.
+ *
+ * Endpoint paydo boʻlganda: enum'lar generatsiya qilingan tiplardan
+ * olinadi va bu fayldagi qoʻlda yozilgan union'lar oʻchiriladi; yorliq
+ * va vazn jadvallari qoladi.
  */
 
 // ───────────────────────── Davomat ─────────────────────────

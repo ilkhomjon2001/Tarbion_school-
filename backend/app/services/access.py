@@ -51,8 +51,20 @@ class CurrentUser:
 
     @property
     def is_staff_wide(self) -> bool:
-        """Butun maktab kesimida koʻra oladigan rollar."""
-        return self.has(RoleName.ADMIN.value, RoleName.DIRECTOR.value, RoleName.SUPERADMIN.value)
+        """Butun maktab kesimida koʻra oladigan rollar.
+
+        Oʻquv boʻlimi (`academic`) ham shu yerda: u imtihon, dars rejasi va
+        ustozlar faoliyatini BARCHA sinflar kesimida koʻradi. Lekin bu faqat
+        oʻquvchi va sinf koʻrinishi — moliya endpointlari paydo boʻlganda
+        ular ALOHIDA tekshiruv qoʻyishi kerak, `is_staff_wide` ga tayanmasin:
+        oʻquv boʻlimi toʻlov va qarzdorlikni koʻrmaydi.
+        """
+        return self.has(
+            RoleName.ADMIN.value,
+            RoleName.DIRECTOR.value,
+            RoleName.SUPERADMIN.value,
+            RoleName.ACADEMIC.value,
+        )
 
     @property
     def is_teacher(self) -> bool:
@@ -96,9 +108,7 @@ async def accessible_class_ids(session: AsyncSession, user: CurrentUser) -> set[
     return ids
 
 
-async def accessible_student_ids(
-    session: AsyncSession, user: CurrentUser
-) -> set[uuid.UUID] | None:
+async def accessible_student_ids(session: AsyncSession, user: CurrentUser) -> set[uuid.UUID] | None:
     """Foydalanuvchi koʻra oladigan oʻquvchilar. `None` = hammasi.
 
     - admin / direktor / superadmin → hammasi

@@ -12,15 +12,15 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
-    UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import INET, UUID as PgUUID
+from sqlalchemy.dialects.postgresql import INET
+from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import AppendOnly, Base, Entity, UUIDPk
 
 
-class RoleName(str, enum.Enum):
+class RoleName(enum.StrEnum):
     STUDENT = "student"
     PARENT = "parent"
     TEACHER = "teacher"
@@ -75,7 +75,7 @@ class User(Entity):
 
     @property
     def short_name(self) -> str:
-        """"Aliyev S." koʻrinishi — jadval ustunlariga sigʻishi uchun."""
+        """ "Aliyev S." koʻrinishi — jadval ustunlariga sigʻishi uchun."""
         initial = f"{self.first_name[0]}." if self.first_name else ""
         return f"{self.last_name} {initial}".strip()
 
@@ -88,7 +88,10 @@ class UserRole(Base):
     """AUT-04: bir foydalanuvchi bir nechta rolga ega boʻlishi mumkin."""
 
     __tablename__ = "user_roles"
-    __table_args__ = (UniqueConstraint("user_id", "role_id"),)
+    # UniqueConstraint ataylab yoʻq: birlamchi kalitning oʻzi (user_id, role_id)
+    # takrorlanishni taqiqlaydi. Qoʻshimcha UNIQUE bir xil ustunlar boʻyicha
+    # yozilganda Postgres uni yaratmaydi, Alembic esa har autogenerate da
+    # "yetishmayapti" deb qayta-qayta migratsiya yozib beradi.
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         PgUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
@@ -108,9 +111,7 @@ class RefreshToken(Base, UUIDPk):
     """
 
     __tablename__ = "refresh_tokens"
-    __table_args__ = (
-        Index("ix_refresh_tokens_user_active", "user_id", "revoked_at"),
-    )
+    __table_args__ = (Index("ix_refresh_tokens_user_active", "user_id", "revoked_at"),)
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         PgUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
