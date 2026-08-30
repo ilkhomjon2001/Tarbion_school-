@@ -34,6 +34,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.db import SessionFactory
+from app.core.naming import build_login, login_variant
 from app.core.security import hash_password
 from app.core.timeutil import combine_local
 from app.models import (
@@ -130,6 +131,23 @@ async def reset(session: AsyncSession) -> None:
 # ───────────────────────── Yuklash ─────────────────────────
 
 
+def _unique_login(band: set[str], last_name: str, first_name: str) -> str:
+    """Seed uchun takrorlanmas login.
+
+    `user_service.next_free_login` bazaga soʻrov yuboradi — seedda minglab
+    qator boʻlgani uchun bu sekin. Bu yerda band loginlar toʻplamda
+    saqlanadi va bitta ham soʻrov ketmaydi.
+    """
+    base = build_login(last_name, first_name)
+    i = 1
+    while True:
+        nomzod = login_variant(base, i)
+        if nomzod not in band:
+            band.add(nomzod)
+            return nomzod
+        i += 1
+
+
 async def ensure_roles(session: AsyncSession) -> dict[str, Role]:
     existing = {r.name: r for r in (await session.execute(select(Role))).scalars()}
     for name in RoleName:
@@ -181,13 +199,13 @@ async def seed(session: AsyncSession, data: dict[str, Any]) -> None:
         ends = time.fromisoformat(b["endsAt"])
         bells[b["period"]] = (starts, ends)
         session.add(
-            BellSchedule(
-                academic_year_id=ay.id, period=b["period"], starts_at=starts, ends_at=ends
-            )
+            BellSchedule(academic_year_id=ay.id, period=b["period"], starts_at=starts, ends_at=ends)
         )
     await session.flush()
-    print(f"  oʻquv yili {ay.name}: {len(data['terms'])} chorak, "
-          f"{len(holiday_days)} taʼtil kuni, {len(bells)} para")
+    print(
+        f"  oʻquv yili {ay.name}: {len(data['terms'])} chorak, "
+        f"{len(holiday_days)} taʼtil kuni, {len(bells)} para"
+    )
 
     # ── Fanlar ──
     subjects: dict[str, Subject] = {}
@@ -200,9 +218,11 @@ async def seed(session: AsyncSession, data: dict[str, Any]) -> None:
 
     # ── Xodimlar ──
     staff: dict[str, User] = {}
+    band: set[str] = set()
     pwd = hash_password(DEMO_PASSWORD)
     for person in data["staff"]:
         u = User(
+            login=_unique_login(band, person["lastName"], person["firstName"]),
             phone=person["phone"],
             password_hash=pwd,
             last_name=person["lastName"],
@@ -257,9 +277,7 @@ async def seed(session: AsyncSession, data: dict[str, Any]) -> None:
         subject = subjects[a["subject"]]
         teacher = staff[a["teacherRef"]]
         session.add(
-            ClassSubject(
-                class_id=cls.id, subject_id=subject.id, weekly_hours=a["hoursPerWeek"]
-            )
+            ClassSubject(class_id=cls.id, subject_id=subject.id, weekly_hours=a["hoursPerWeek"])
         )
 
         for _ in range(a["hoursPerWeek"]):
@@ -295,8 +313,10 @@ async def seed(session: AsyncSession, data: dict[str, Any]) -> None:
             )
             placed += 1
     await session.flush()
-    print(f"  jadval: {placed} ta dars sloti"
-          + (f" · joylashmadi {len(unplaced)}" if unplaced else ""))
+    print(
+        f"  jadval: {placed} ta dars sloti"
+        + (f" · joylashmadi {len(unplaced)}" if unplaced else "")
+    )
 
     # ── Oʻquvchilar va vasiylar ──
     students: dict[str, Student] = {}
@@ -330,6 +350,7 @@ async def seed(session: AsyncSession, data: dict[str, Any]) -> None:
             continue
         phone = f"9989{i:08d}"
         parent = User(
+            login=_unique_login(band, s["lastName"], "ota"),
             phone=phone,
             password_hash=pwd,
             last_name=s["lastName"],
@@ -354,8 +375,14 @@ async def seed(session: AsyncSession, data: dict[str, Any]) -> None:
 
     # ── Darslar ──
     entries = (
-        await session.execute(select(ScheduleEntry).where(ScheduleEntry.academic_year_id == ay.id))
-    ).scalars().all()
+        (
+            await session.execute(
+                select(ScheduleEntry).where(ScheduleEntry.academic_year_id == ay.id)
+            )
+        )
+        .scalars()
+        .all()
+    )
     by_weekday: dict[int, list[ScheduleEntry]] = {}
     for e in entries:
         by_weekday.setdefault(e.weekday, []).append(e)
@@ -451,6 +478,13 @@ async def seed(session: AsyncSession, data: dict[str, Any]) -> None:
 
 
 async def main() -> None:
+    # Windows konsoli sukut boʻyicha cp1251 — `ʻ` (U+02BB) chiqarilganda
+    # butun skript UnicodeEncodeError bilan yiqiladi. Chiqishni UTF-8 ga
+    # oʻtkazamiz, imkonsiz belgilarni esa almashtiramiz.
+    for oqim in (sys.stdout, sys.stderr):
+        if hasattr(oqim, "reconfigure"):
+            oqim.reconfigure(encoding="utf-8", errors="replace")
+
     parser = argparse.ArgumentParser(description="Tarbion demo maʼlumotini yuklaydi")
     parser.add_argument("--reset", action="store_true", help="avval jadvallarni tozalash")
     args = parser.parse_args()

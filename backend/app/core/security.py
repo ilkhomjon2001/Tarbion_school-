@@ -15,6 +15,7 @@ from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerifyMismatchError
 
 from app.core.config import settings
+from app.core.exceptions import ValidationError
 from app.core.timeutil import utcnow
 
 # argon2id, OWASP tavsiya etgan minimumdan yuqori parametrlar.
@@ -108,3 +109,41 @@ def compare_digest(a: str, b: str) -> bool:
 def generate_numeric_code(digits: int = 6) -> str:
     """Bir martalik tasdiq kodi (AUT-02)."""
     return "".join(secrets.choice("0123456789") for _ in range(digits))
+
+
+#: Administrator hisob ochganda beriladigan boshlang'ich parol uzunligi.
+#: Loyiha egasining talabi: 5 xonali raqam — ustozga og'zaki aytish oson.
+INITIAL_PASSWORD_DIGITS = 5
+
+#: Foydalanuvchi o'zi tanlaydigan parol uchun eng kam uzunlik. Boshlang'ich
+#: paroldan uzunroq: u vaqtinchalik, bu esa doimiy.
+MIN_PASSWORD_LENGTH = 8
+
+
+def generate_initial_password() -> str:
+    """Yangi hisob uchun 5 xonali parol.
+
+    OGOHLANTIRISH: 5 xonali raqam — atigi 100 000 variant. Bu parol
+    FAQAT birinchi kirish uchun: hisob `must_change_password=True` bilan
+    yaratiladi va foydalanuvchi kirgan zahoti parolni almashtiradi.
+    Uni doimiy parol sifatida qoldirmang.
+
+    Himoya `login_attempts` bloklashiga tayanadi (5 urinish → 15 daqiqa).
+
+    Birinchi raqam ham tasodifiy — "0" bilan boshlanadigan parollar ham
+    chiqadi va bu ataylab: birinchi raqamni cheklash variantlar sonini
+    kamaytirardi.
+    """
+    return generate_numeric_code(INITIAL_PASSWORD_DIGITS)
+
+
+def validate_new_password(password: str) -> None:
+    """Foydalanuvchi o'zi tanlagan parolni tekshiradi.
+
+    Faqat uzunlik: murakkablik talablari (katta harf, belgi) odamlarni
+    `Parol1!` yozishga majbur qiladi va amalda kuch qo'shmaydi.
+    """
+    if len(password) < MIN_PASSWORD_LENGTH:
+        raise ValidationError(f"Parol kamida {MIN_PASSWORD_LENGTH} belgidan iborat boʻlishi kerak.")
+    if password.isdigit():
+        raise ValidationError("Parol faqat raqamlardan iborat boʻlmasin.")

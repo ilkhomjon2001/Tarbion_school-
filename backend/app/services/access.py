@@ -33,17 +33,21 @@ class CurrentUser:
     """So'rov davomidagi foydalanuvchi — model emas, oddiy qiymat obyekti."""
 
     id: uuid.UUID
+    login: str
     full_name: str
     short_name: str
     roles: frozenset[str]
+    must_change_password: bool
 
     @classmethod
     def from_model(cls, user: User) -> "CurrentUser":
         return cls(
             id=user.id,
+            login=user.login,
             full_name=user.full_name,
             short_name=user.short_name,
             roles=frozenset(user.role_names),
+            must_change_password=user.must_change_password,
         )
 
     def has(self, *roles: str) -> bool:

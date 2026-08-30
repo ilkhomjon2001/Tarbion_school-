@@ -6,14 +6,15 @@ from pydantic import BaseModel, Field
 
 
 class LoginIn(BaseModel):
-    # Telefon istalgan koʻrinishda kelishi mumkin (+998 90 111 22 33),
-    # servisda normallashtiriladi.
-    phone: str = Field(min_length=7, max_length=20)
+    # Login `familiya.ism` shaklida (app/core/naming.py). Katta-kichik
+    # harf farq qilmaydi — servisda kichik harfga keltiriladi.
+    login: str = Field(min_length=2, max_length=64)
     password: str = Field(min_length=1, max_length=128)
 
 
 class UserOut(BaseModel):
     id: uuid.UUID
+    login: str
     full_name: str
     short_name: str
     roles: list[str]

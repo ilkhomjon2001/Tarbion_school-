@@ -107,9 +107,9 @@ export type HealthOut = {
  */
 export type LoginIn = {
     /**
-     * Phone
+     * Login
      */
-    phone: string;
+    login: string;
     /**
      * Password
      */
@@ -202,6 +202,10 @@ export type UserOut = {
      * Id
      */
     id: string;
+    /**
+     * Login
+     */
+    login: string;
     /**
      * Full Name
      */

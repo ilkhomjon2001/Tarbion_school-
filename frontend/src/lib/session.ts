@@ -56,9 +56,9 @@ export function isAuthenticated(): boolean {
   return accessToken !== null;
 }
 
-export async function login(phone: string, password: string): Promise<UserOut> {
+export async function login(login: string, password: string): Promise<UserOut> {
   configure();
-  const { data, error } = await authLogin({ body: { phone, password } });
+  const { data, error } = await authLogin({ body: { login, password } });
   if (error || !data) {
     throw new SessionError(messageOf(error), statusOf(error));
   }

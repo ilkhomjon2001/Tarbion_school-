@@ -39,6 +39,7 @@ def _set_refresh_cookie(response: Response, token: str) -> None:
 def _user_out(user) -> UserOut:  # noqa: ANN001 — SQLAlchemy modeli
     return UserOut(
         id=user.id,
+        login=user.login,
         full_name=user.full_name,
         short_name=user.short_name,
         roles=user.role_names,
@@ -52,7 +53,7 @@ async def login(
 ) -> TokenOut:
     user, access, refresh = await auth_service.authenticate(
         session,
-        phone_raw=payload.phone,
+        login_raw=payload.login,
         password=payload.password,
         ip=_client_ip(request),
         user_agent=request.headers.get("User-Agent"),
@@ -86,10 +87,9 @@ async def logout(request: Request, response: Response, session: SessionDep) -> N
 async def me(user: CurrentUserDep) -> UserOut:
     return UserOut(
         id=user.id,
+        login=user.login,
         full_name=user.full_name,
         short_name=user.short_name,
         roles=sorted(user.roles),
-        # `CurrentUser` da bu maydon yoʻq — /me faqat kimligini qaytaradi,
-        # parol holati login javobida keladi.
-        must_change_password=False,
+        must_change_password=user.must_change_password,
     )

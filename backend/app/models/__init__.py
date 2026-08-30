@@ -21,10 +21,12 @@ from app.models.homework import (
 from app.models.identity import (
     LoginAttempt,
     LoginLog,
+    Permission,
     RefreshToken,
     Role,
     RoleName,
     User,
+    UserPermission,
     UserRole,
 )
 from app.models.scheduling import Lesson, ScheduleEntry
@@ -63,6 +65,7 @@ __all__ = [
     "Lesson",
     "LoginAttempt",
     "LoginLog",
+    "Permission",
     "RefreshToken",
     "Role",
     "RoleName",
@@ -74,5 +77,6 @@ __all__ = [
     "TeacherSubject",
     "Term",
     "User",
+    "UserPermission",
     "UserRole",
 ]

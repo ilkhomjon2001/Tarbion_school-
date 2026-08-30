@@ -1,6 +1,5 @@
 """Autentifikatsiya (T-004). TZ: AUT-01, AUT-05, AUT-06, AUT-07, AUT-08."""
 
-import re
 import uuid
 from datetime import timedelta
 
@@ -26,28 +25,21 @@ from app.core.timeutil import utcnow
 from app.models import AuditAction, LoginAttempt, LoginLog, RefreshToken, Role, User
 from app.services import audit_service
 
-_DIGITS = re.compile(r"\D")
 
+def normalize_login(raw: str) -> str:
+    """Kiritilgan loginni yagona shaklga keltiradi.
 
-def normalize_phone(raw: str) -> str:
-    """+998 90 123 45 67 → 998901234567.
-
-    Login identifikatori yagona shaklda saqlanadi, aks holda bitta odam
-    ikki xil yozilib ikki hisob ochib yuboradi.
+    Odamlar loginni katta harf bilan yoki boʻshliq bilan yozadi. Bazada
+    login kichik harfda saqlanadi, shuning uchun solishtirishdan oldin
+    ham shunga keltiriladi — aks holda `Aliyev.Sardor` kira olmasdi.
     """
-    digits = _DIGITS.sub("", raw or "")
-    if digits.startswith("998"):
-        pass
-    elif len(digits) == 9:
-        digits = "998" + digits
-    elif digits.startswith("8") and len(digits) == 10:
-        digits = "998" + digits[1:]
-    if len(digits) != 12 or not digits.startswith("998"):
-        raise ValidationError("Telefon raqami notoʻgʻri. Namuna: +998 90 123 45 67")
-    return digits
+    login = (raw or "").strip().lower()
+    if not login:
+        raise ValidationError("Login kiritilmadi.")
+    return login
 
 
-async def _is_locked(session: AsyncSession, phone: str) -> bool:
+async def _is_locked(session: AsyncSession, login: str) -> bool:
     """AUT-05: oxirgi oynada 5 ta muvaffaqiyatsiz urinish boʻlsa — bloklangan.
 
     Redis yoʻq (DECISIONS.md), hisob shu jadvaldan olinadi. Oxirgi
@@ -58,7 +50,7 @@ async def _is_locked(session: AsyncSession, phone: str) -> bool:
 
     last_ok = await session.scalar(
         select(func.max(LoginAttempt.created_at)).where(
-            LoginAttempt.phone == phone, LoginAttempt.successful.is_(True)
+            LoginAttempt.login == login, LoginAttempt.successful.is_(True)
         )
     )
     since = max(window_start, last_ok) if last_ok else window_start
@@ -67,7 +59,7 @@ async def _is_locked(session: AsyncSession, phone: str) -> bool:
         select(func.count())
         .select_from(LoginAttempt)
         .where(
-            LoginAttempt.phone == phone,
+            LoginAttempt.login == login,
             LoginAttempt.successful.is_(False),
             LoginAttempt.created_at >= since,
         )
@@ -78,35 +70,35 @@ async def _is_locked(session: AsyncSession, phone: str) -> bool:
 async def authenticate(
     session: AsyncSession,
     *,
-    phone_raw: str,
+    login_raw: str,
     password: str,
     ip: str | None,
     user_agent: str | None,
 ) -> tuple[User, str, str]:
     """Kirish. (user, access_token, refresh_token) qaytaradi."""
-    phone = normalize_phone(phone_raw)
+    login = normalize_login(login_raw)
 
-    if await _is_locked(session, phone):
+    if await _is_locked(session, login):
         raise AccountLockedError(
             f"Hisob {settings.login_lockout_minutes} daqiqaga bloklandi. "
             "Keyinroq qayta urinib koʻring."
         )
 
     user = await session.scalar(
-        select(User).options(selectinload(User.roles)).where(User.phone == phone)
+        select(User).options(selectinload(User.roles)).where(User.login == login)
     )
 
     # Parolni foydalanuvchi topilmasa ham tekshirmaymiz, lekin javob vaqti
     # bir xil boʻlishi uchun xesh solishtiriladi (user enumeration'ga qarshi).
     ok = bool(user) and verify_password(password, user.password_hash)  # type: ignore[union-attr]
     if not ok:
-        session.add(LoginAttempt(phone=phone, successful=False, ip_address=ip))
+        session.add(LoginAttempt(login=login, successful=False, ip_address=ip))
         await session.commit()
         raise InvalidCredentialsError
 
     assert user is not None
     if not user.is_active or user.is_archived:
-        session.add(LoginAttempt(phone=phone, successful=False, ip_address=ip))
+        session.add(LoginAttempt(login=login, successful=False, ip_address=ip))
         await session.commit()
         raise AccountInactiveError
 
@@ -116,7 +108,7 @@ async def authenticate(
 
     now = utcnow()
     user.last_login_at = now
-    session.add(LoginAttempt(phone=phone, successful=True, ip_address=ip))
+    session.add(LoginAttempt(login=login, successful=True, ip_address=ip))
     # AUT-06: har kirish jurnalga.
     session.add(LoginLog(user_id=user.id, ip_address=ip, user_agent=(user_agent or "")[:255]))
     audit_service.record(

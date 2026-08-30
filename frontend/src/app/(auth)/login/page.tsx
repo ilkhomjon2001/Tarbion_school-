@@ -25,11 +25,12 @@ import {
  * yopilganda yoki "Chiqish" bosilganda yoʻqoladi). Qarang: `lib/auth.ts`.
  */
 
-const DEMO_PHONE = "+998 90 123 45 67";
+// Demo login — backend seed qilgan hisoblardan biri.
+const DEMO_LOGIN = "aliyev.sardor";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [phone, setPhone] = useState(DEMO_PHONE);
+  const [userLogin, setUserLogin] = useState(DEMO_LOGIN);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,9 +45,8 @@ export default function LoginPage() {
     setError(null);
     setLocked(false);
 
-    const digits = phone.replace(/\D/g, "");
-    if (digits.length < 9) {
-      setError("Telefon raqami notoʻgʻri. Namuna: +998 90 123 45 67");
+    if (userLogin.trim().length < 2) {
+      setError("Loginni kiriting. Namuna: aliyev.sardor");
       return;
     }
     if (!password) {
@@ -66,7 +66,7 @@ export default function LoginPage() {
     // Demo: notoʻgʻri parol holati.
     if (password === "xato") {
       setLoading(false);
-      setError("Telefon raqami yoki parol notoʻgʻri.");
+      setError("Login yoki parol notoʻgʻri.");
       return;
     }
 
@@ -131,18 +131,19 @@ export default function LoginPage() {
             </fieldset>
 
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium">
-                Telefon raqami
+              <label htmlFor="login" className="block text-sm font-medium">
+                Login
               </label>
               <input
-                id="phone"
-                name="phone"
-                type="tel"
-                inputMode="tel"
+                id="login"
+                name="login"
+                type="text"
                 autoComplete="username"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+998 00 000 00 00"
+                autoCapitalize="none"
+                spellCheck={false}
+                value={userLogin}
+                onChange={(e) => setUserLogin(e.target.value)}
+                placeholder="familiya.ism"
                 aria-invalid={Boolean(error)}
                 className="mt-1.5 h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none transition-colors placeholder:text-foreground-muted/60 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
               />

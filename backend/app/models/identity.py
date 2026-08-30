@@ -21,6 +21,12 @@ from app.models.base import AppendOnly, Base, Entity, UUIDPk
 
 
 class RoleName(enum.StrEnum):
+    """Rollar. Frontenddagi `lib/roles.ts` bilan bir xil boʻlishi shart.
+
+    `homeroom_teacher` — ustozning ustiga qoʻshiladigan rol (sinf rahbari),
+    alohida kabineti yoʻq. `academic` — oʻquv boʻlimi kabineti.
+    """
+
     STUDENT = "student"
     PARENT = "parent"
     TEACHER = "teacher"
@@ -46,9 +52,14 @@ class User(Entity):
 
     __tablename__ = "users"
 
-    # Login identifikatori. Faqat raqamlar, +998 bilan normallashtiriladi.
-    phone: Mapped[str] = mapped_column(String(20), unique=True, nullable=False, index=True)
+    # Kirish identifikatori — `familiya.ism` (app/core/naming.py).
+    # Foydalanuvchi tanlamaydi, administrator hisob ochganda tizim yasaydi.
+    login: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    # Telefon endi kirish uchun EMAS — aloqa va SMS uchun. Oʻquvchilarda
+    # telefon boʻlmasligi mumkin, shuning uchun majburiy emas.
+    phone: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
 
     last_name: Mapped[str] = mapped_column(String(80), nullable=False)
     first_name: Mapped[str] = mapped_column(String(80), nullable=False)
@@ -136,10 +147,11 @@ class LoginAttempt(AppendOnly):
     """
 
     __tablename__ = "login_attempts"
-    __table_args__ = (Index("ix_login_attempts_phone_time", "phone", "created_at"),)
+    __table_args__ = (Index("ix_login_attempts_login_time", "login", "created_at"),)
 
-    # Foydalanuvchi topilmasa ham yoziladi, shuning uchun user_id emas, phone.
-    phone: Mapped[str] = mapped_column(String(20), nullable=False)
+    # Foydalanuvchi topilmasa ham yoziladi (mavjud boʻlmagan login bilan
+    # urinish ham hisoblanadi), shuning uchun user_id emas, loginning oʻzi.
+    login: Mapped[str] = mapped_column(String(64), nullable=False)
     successful: Mapped[bool] = mapped_column(nullable=False)
     ip_address: Mapped[str | None] = mapped_column(INET)
 
@@ -155,3 +167,39 @@ class LoginLog(AppendOnly):
     )
     ip_address: Mapped[str | None] = mapped_column(INET)
     user_agent: Mapped[str | None] = mapped_column(String(255))
+
+
+class Permission(enum.StrEnum):
+    """Rolga qoʻshimcha beriladigan aniq huquqlar.
+
+    Rol nima koʻrishini belgilaydi, huquq esa nima QILA OLISHINI. Ikkalasi
+    alohida, chunki maktabda ikkita administrator bir xil kabinetda ishlab,
+    biri hisob ocha oladi, ikkinchisi yoʻq.
+
+    Superadministratorga bularning hech biri berilmaydi — u hammasiga ega
+    (`has_permission` ga qara).
+    """
+
+    USERS_CREATE = "users.create"
+    USERS_MANAGE = "users.manage"
+    USERS_RESET_PASSWORD = "users.reset_password"  # noqa: S105 — huquq nomi, parol emas
+    PERMISSIONS_GRANT = "permissions.grant"
+
+
+class UserPermission(Entity):
+    """Foydalanuvchiga berilgan huquq.
+
+    Bekor qilinganda oʻchirilmaydi, arxivlanadi (CLAUDE.md 1-qoida) —
+    "kim kimga qachon huquq bergan va qachon olib qoʻygan" tarixi qoladi.
+    """
+
+    __tablename__ = "user_permissions"
+    __table_args__ = (Index("ix_user_permissions_lookup", "user_id", "permission", "is_archived"),)
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    permission: Mapped[str] = mapped_column(String(64), nullable=False)
+    granted_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )

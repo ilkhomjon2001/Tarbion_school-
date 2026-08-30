@@ -36,18 +36,20 @@ DAY = date(2026, 9, 15)
 
 
 async def _roles(session: AsyncSession) -> dict[str, Role]:
-    out: dict[str, Role] = {}
-    for name in RoleName:
-        role = Role(name=name.value, description="")
-        session.add(role)
-        out[name.value] = role
-    await session.flush()
+    """Rollar migratsiyada seed qilingan — bu yerda faqat oʻqiladi.
+
+    Avval har test oʻzi yaratardi; endi `t003` migratsiyasi ularni qatʼiy
+    UUID bilan qoʻyadi va qayta yaratish `unique` cheklovini buzadi.
+    """
+    out = {r.name: r for r in (await session.execute(select(Role))).scalars()}
+    yetishmaydi = {n.value for n in RoleName} - set(out)
+    assert not yetishmaydi, f"Migratsiyada yoʻq rollar: {sorted(yetishmaydi)}"
     return out
 
 
-async def _user(session: AsyncSession, roles: dict[str, Role], role: str, phone: str) -> User:
+async def _user(session: AsyncSession, roles: dict[str, Role], role: str, login: str) -> User:
     user = User(
-        phone=phone,
+        login=login,
         password_hash=hash_password(PASSWORD),
         last_name="Sinov",
         first_name=role.capitalize(),
@@ -63,10 +65,10 @@ async def school(session: AsyncSession) -> dict[str, object]:
     """Bitta sinf, bitta dars, ikkita oʻquvchi va toʻrtta rol."""
     roles = await _roles(session)
 
-    director = await _user(session, roles, RoleName.DIRECTOR.value, "998900000001")
-    teacher = await _user(session, roles, RoleName.TEACHER.value, "998900000002")
-    parent = await _user(session, roles, RoleName.PARENT.value, "998900000003")
-    academic = await _user(session, roles, RoleName.ACADEMIC.value, "998900000004")
+    director = await _user(session, roles, RoleName.DIRECTOR.value, "sinov.director")
+    teacher = await _user(session, roles, RoleName.TEACHER.value, "sinov.teacher")
+    parent = await _user(session, roles, RoleName.PARENT.value, "sinov.parent")
+    academic = await _user(session, roles, RoleName.ACADEMIC.value, "sinov.academic")
 
     year = AcademicYear(
         name="2026-2027", starts_on=date(2026, 8, 24), ends_on=date(2027, 5, 25), is_current=True
@@ -76,9 +78,7 @@ async def school(session: AsyncSession) -> dict[str, object]:
 
     subject = Subject(name="Matematika", short_name="Mat")
     session.add(subject)
-    school_class = SchoolClass(
-        academic_year_id=year.id, name="8-A", homeroom_teacher_id=teacher.id
-    )
+    school_class = SchoolClass(academic_year_id=year.id, name="8-A", homeroom_teacher_id=teacher.id)
     session.add(school_class)
     await session.flush()
 
@@ -143,10 +143,8 @@ async def school(session: AsyncSession) -> dict[str, object]:
     }
 
 
-async def _token(client: AsyncClient, phone: str) -> str:
-    resp = await client.post(
-        "/api/v1/auth/login", json={"phone": phone, "password": PASSWORD}
-    )
+async def _token(client: AsyncClient, login: str) -> str:
+    resp = await client.post("/api/v1/auth/login", json={"login": login, "password": PASSWORD})
     assert resp.status_code == 200, resp.text
     return resp.json()["access_token"]
 
@@ -159,7 +157,7 @@ async def test_login_returns_user_and_sets_refresh_cookie(
     client: AsyncClient, school: dict[str, object]
 ) -> None:
     resp = await client.post(
-        "/api/v1/auth/login", json={"phone": "998900000001", "password": PASSWORD}
+        "/api/v1/auth/login", json={"login": "sinov.director", "password": PASSWORD}
     )
     assert resp.status_code == 200
     body = resp.json()
@@ -169,11 +167,9 @@ async def test_login_returns_user_and_sets_refresh_cookie(
     assert "tarbion_rt" in resp.cookies
 
 
-async def test_login_rejects_wrong_password(
-    client: AsyncClient, school: dict[str, object]
-) -> None:
+async def test_login_rejects_wrong_password(client: AsyncClient, school: dict[str, object]) -> None:
     resp = await client.post(
-        "/api/v1/auth/login", json={"phone": "998900000001", "password": "xato"}
+        "/api/v1/auth/login", json={"login": "sinov.director", "password": "xato"}
     )
     assert resp.status_code == 401
 
@@ -181,7 +177,7 @@ async def test_login_rejects_wrong_password(
 async def test_overview_counts_come_from_database(
     client: AsyncClient, school: dict[str, object]
 ) -> None:
-    token = await _token(client, "998900000001")
+    token = await _token(client, "sinov.director")
     resp = await client.get("/api/v1/director/overview", headers=_auth(token))
     assert resp.status_code == 200
     body = resp.json()
@@ -222,23 +218,19 @@ async def test_overview_period_window_excludes_older_lessons(
     )
     await session.flush()
 
-    token = await _token(client, "998900000001")
+    token = await _token(client, "sinov.director")
 
-    wide = await client.get(
-        "/api/v1/director/overview", params={"days": 60}, headers=_auth(token)
-    )
+    wide = await client.get("/api/v1/director/overview", params={"days": 60}, headers=_auth(token))
     assert wide.json()["lessons_conducted"] == 2
 
-    narrow = await client.get(
-        "/api/v1/director/overview", params={"days": 7}, headers=_auth(token)
-    )
+    narrow = await client.get("/api/v1/director/overview", params={"days": 7}, headers=_auth(token))
     assert narrow.json()["lessons_conducted"] == 1
 
 
 async def test_classes_row_has_attendance_and_homeroom(
     client: AsyncClient, school: dict[str, object]
 ) -> None:
-    token = await _token(client, "998900000001")
+    token = await _token(client, "sinov.director")
     resp = await client.get("/api/v1/director/classes", headers=_auth(token))
     assert resp.status_code == 200
     rows = resp.json()
@@ -255,7 +247,7 @@ async def test_teachers_lists_only_staff_with_lessons(
     client: AsyncClient, school: dict[str, object]
 ) -> None:
     """Direktor ham, ota-ona ham darsi yoʻq — roʻyxatda faqat ustoz chiqadi."""
-    token = await _token(client, "998900000001")
+    token = await _token(client, "sinov.director")
     resp = await client.get("/api/v1/director/teachers", headers=_auth(token))
     assert resp.status_code == 200
     rows = resp.json()
@@ -278,12 +270,12 @@ async def test_director_endpoints_require_authentication(
     assert bad.status_code == 401
 
 
-@pytest.mark.parametrize("phone", ["998900000002", "998900000003"])
+@pytest.mark.parametrize("login", ["sinov.teacher", "sinov.parent"])
 async def test_teacher_and_parent_cannot_read_director_reports(
-    client: AsyncClient, school: dict[str, object], phone: str
+    client: AsyncClient, school: dict[str, object], login: str
 ) -> None:
     """Eng muhim test: notoʻgʻri rol 403 oladi, 200 emas."""
-    token = await _token(client, phone)
+    token = await _token(client, login)
     resp = await client.get("/api/v1/director/overview", headers=_auth(token))
     assert resp.status_code == 403
 
@@ -293,13 +285,13 @@ async def test_academic_head_can_read_director_reports(
 ) -> None:
     """Oʻquv boʻlimi imtihon va ustozlar faoliyatini barcha sinflar
     kesimida koʻradi — shu sabab hisobotlarga kirishi kerak."""
-    token = await _token(client, "998900000004")
+    token = await _token(client, "sinov.academic")
     resp = await client.get("/api/v1/director/classes", headers=_auth(token))
     assert resp.status_code == 200
 
 
 async def test_me_returns_current_user(client: AsyncClient, school: dict[str, object]) -> None:
-    token = await _token(client, "998900000001")
+    token = await _token(client, "sinov.director")
     resp = await client.get("/api/v1/auth/me", headers=_auth(token))
     assert resp.status_code == 200
     assert resp.json()["roles"] == [RoleName.DIRECTOR.value]
