@@ -5,10 +5,16 @@ import { Badge } from "@/components/ui/Badge";
 import { PlusIcon, UsersIcon } from "@/components/ui/icons";
 import { reassignHomeroom } from "@/lib/director/data";
 import {
+  attendanceDaysOf,
   attendanceOf,
   classAttendanceStat,
+  DAY_STATUS_LABELS,
   isAtRisk,
+  MONTH_LABEL,
+  schoolDaysOf,
   studentsOfClass,
+  type AttendanceDay,
+  type DayStatus,
 } from "@/lib/director/school-data";
 import { subjectTeachersOf } from "@/lib/school/staff";
 import type { ClassStage, SchoolClass, Teacher } from "@/lib/director/types";
@@ -350,10 +356,21 @@ function ClassAttendance({
   );
 }
 
+const DAY_CELL_CLASSES: Record<DayStatus, string> = {
+  present: "bg-surface-muted text-foreground-muted",
+  late: "bg-warning-tint text-warning",
+  excused: "bg-info-tint text-info",
+  absent: "bg-danger text-brand-foreground font-semibold",
+};
+
 /**
- * Oʻquvchilar roʻyxati. "Bugun" davrida holat belgisi, hafta/oy davrida
- * shu oʻquvchining davomat foizi koʻrsatiladi — shunda almashtirgich
- * sinf darajasida ham, oʻquvchi darajasida ham maʼnoli boʻladi.
+ * Oʻquvchilar roʻyxati.
+ *   "Bugun"  — holat belgisi (keldi / kelmadi),
+ *   hafta/oy — kunma-kun kalendar: qaysi sanada kelmagani koʻrinadi,
+ *              yonida umumiy foiz.
+ * Foizni koʻrsatishning oʻzi yetarli emas edi — "76%" nima uchun past
+ * ekanini aytmaydi, kalendar esa aynan qaysi kunlar tushib qolganini
+ * koʻrsatadi.
  */
 function StudentTable({
   schoolClass,
@@ -366,9 +383,11 @@ function StudentTable({
     const map = new Map(studentsOfClass(schoolClass.name).map((s) => [s.id, s]));
     return schoolClass.students.map((student) => {
       const record = map.get(student.id);
+      const calendarPeriod = period === "today" ? null : period;
       return {
         ...student,
-        percent: record && period !== "today" ? attendanceOf(record, period) : null,
+        percent: record && calendarPeriod ? attendanceOf(record, calendarPeriod) : null,
+        days: record && calendarPeriod ? attendanceDaysOf(record, calendarPeriod) : null,
       };
     });
   }, [schoolClass, period]);
@@ -379,63 +398,157 @@ function StudentTable({
       ? records
       : [...records].sort((a, b) => (a.percent ?? 0) - (b.percent ?? 0));
 
+  const isCalendar = period !== "today";
+  const days = isCalendar ? schoolDaysOf(period === "week" ? "week" : "month") : [];
+
   return (
-    <table className="w-full border-collapse text-sm">
-      <thead>
-        <tr className="text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
-          <th className="py-2">F.I.Sh</th>
-          <th className="w-40 py-2">{period === "today" ? "Status" : "Davomat"}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((student) => (
-          <tr
-            key={student.id}
-            className="border-t border-border transition-colors hover:bg-surface-muted/50"
-          >
-            <td className="flex items-center gap-2.5 py-2.5">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-[11px] font-semibold text-foreground-muted">
-                {student.fullName
-                  .split(" ")
-                  .slice(0, 2)
-                  .map((p) => p[0])
-                  .join("")}
-              </span>
-              {student.fullName}
-            </td>
-            <td className="py-2.5">
-              {student.percent === null ? (
-                <Badge tone={student.status === "active" ? "success" : "danger"}>
-                  {student.status === "active" ? "Faol" : "Sababsiz"}
-                </Badge>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <span className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-surface-muted">
+    <div className={isCalendar ? "scroll-x" : undefined}>
+      {isCalendar && <DayLegend />}
+
+      <table
+        className={`w-full border-collapse text-sm ${isCalendar ? "min-w-[720px]" : ""}`}
+      >
+        <thead>
+          <tr className="text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
+            <th className="py-2">F.I.Sh</th>
+            {isCalendar && (
+              <th className="py-2 font-medium normal-case">
+                <span className="flex items-center gap-[3px]">
+                  {days.map((d) => (
                     <span
-                      className={`bar-fill block h-full rounded-full ${
-                        student.percent >= 90
-                          ? "bg-success"
-                          : student.percent >= 85
-                            ? "bg-warning"
-                            : "bg-danger"
-                      }`}
-                      style={{ width: `${student.percent}%` }}
-                    />
-                  </span>
-                  <span
-                    className={`num text-xs font-medium ${
-                      isAtRisk(student.percent) ? "text-danger" : "text-foreground"
-                    }`}
-                  >
-                    {student.percent}%
-                  </span>
+                      key={d.date}
+                      className="num w-5 text-center text-[10px] tracking-normal"
+                    >
+                      {period === "week" ? d.weekdayShort : d.day}
+                    </span>
+                  ))}
                 </span>
-              )}
-            </td>
+              </th>
+            )}
+            <th className="w-32 py-2">{isCalendar ? "Davomat" : "Status"}</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((student) => (
+            <tr
+              key={student.id}
+              className="border-t border-border transition-colors hover:bg-surface-muted/50"
+            >
+              <td className="py-2.5 pr-3">
+                <span className="flex items-center gap-2.5">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-[11px] font-semibold text-foreground-muted">
+                    {student.fullName
+                      .split(" ")
+                      .slice(0, 2)
+                      .map((p) => p[0])
+                      .join("")}
+                  </span>
+                  <span className="whitespace-nowrap">{student.fullName}</span>
+                </span>
+                {student.days && <MissedDates days={student.days} />}
+              </td>
+
+              {isCalendar && (
+                <td className="py-2.5">
+                  <span className="flex items-center gap-[3px]">
+                    {student.days?.map((d) => (
+                      <span
+                        key={d.date}
+                        title={`${d.day}-sentabr, ${d.weekdayShort} · ${DAY_STATUS_LABELS[d.status]}`}
+                        className={`num flex h-5 w-5 items-center justify-center rounded text-[10px] ${DAY_CELL_CLASSES[d.status]}`}
+                      >
+                        {d.day}
+                      </span>
+                    ))}
+                  </span>
+                </td>
+              )}
+
+              <td className="py-2.5">
+                {student.percent === null ? (
+                  <Badge tone={student.status === "active" ? "success" : "danger"}>
+                    {student.status === "active" ? "Faol" : "Sababsiz"}
+                  </Badge>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <span className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-surface-muted">
+                      <span
+                        className={`bar-fill block h-full rounded-full ${
+                          student.percent >= 90
+                            ? "bg-success"
+                            : student.percent >= 85
+                              ? "bg-warning"
+                              : "bg-danger"
+                        }`}
+                        style={{ width: `${student.percent}%` }}
+                      />
+                    </span>
+                    <span
+                      className={`num text-xs font-medium ${
+                        isAtRisk(student.percent) ? "text-danger" : "text-foreground"
+                      }`}
+                    >
+                      {student.percent}%
+                    </span>
+                  </span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** Kalendar ranglari nimani anglatishi — legenda. */
+function DayLegend() {
+  const items: DayStatus[] = ["present", "late", "excused", "absent"];
+  return (
+    <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-foreground-muted">
+      <span className="font-medium text-foreground">{MONTH_LABEL}</span>
+      {items.map((status) => (
+        <span key={status} className="flex items-center gap-1.5">
+          <span
+            aria-hidden="true"
+            className={`h-3 w-3 rounded ${DAY_CELL_CLASSES[status].split(" ")[0]}`}
+          />
+          {DAY_STATUS_LABELS[status]}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Kelmagan sanalarni matn koʻrinishida — kalendarni sanamaslik uchun. */
+function MissedDates({ days }: { days: AttendanceDay[] }) {
+  const absent = days.filter((d) => d.status === "absent").map((d) => d.day);
+  const excused = days.filter((d) => d.status === "excused").map((d) => d.day);
+
+  if (absent.length === 0 && excused.length === 0) {
+    return (
+      <span className="mt-0.5 block pl-[38px] text-[11px] text-success">
+        Bir kun ham qoldirmagan
+      </span>
+    );
+  }
+
+  return (
+    <span className="mt-0.5 block pl-[38px] text-[11px] text-foreground-muted">
+      {absent.length > 0 && (
+        <>
+          Sababsiz: <span className="num font-medium text-danger">{absent.join(", ")}</span>
+          {"-sen"}
+        </>
+      )}
+      {absent.length > 0 && excused.length > 0 && " · "}
+      {excused.length > 0 && (
+        <>
+          Sababli: <span className="num font-medium text-info">{excused.join(", ")}</span>
+          {"-sen"}
+        </>
+      )}
+    </span>
   );
 }
 

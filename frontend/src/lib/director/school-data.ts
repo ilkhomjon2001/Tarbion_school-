@@ -422,6 +422,94 @@ export function isAtRisk(percent: number): boolean {
   return percent < RISK_THRESHOLD;
 }
 
+// ─────────────────────── Kunlik davomat (kalendar) ───────────────────────
+
+export type DayStatus = "present" | "late" | "excused" | "absent";
+
+export const DAY_STATUS_LABELS: Record<DayStatus, string> = {
+  present: "Keldi",
+  late: "Kechikdi",
+  excused: "Sababli",
+  absent: "Sababsiz",
+};
+
+export interface AttendanceDay {
+  /** ISO sana — kalit sifatida. */
+  date: string;
+  /** Oy kuni: 1–30. */
+  day: number;
+  /** Hafta kuni qisqartmasi: Du, Se, Ch, Pa, Ju, Sh. */
+  weekdayShort: string;
+  status: DayStatus;
+}
+
+const WEEKDAY_SHORT = ["Ya", "Du", "Se", "Ch", "Pa", "Ju", "Sh"];
+
+/**
+ * Demo oʻquv oyi — 2026-yil sentabr. Yakshanba dam olish kuni, qolgan
+ * oltita kun dars kuni (WEEKDAYS bilan bir xil).
+ *
+ * Backend ulanganda bu roʻyxat `academic_calendar` jadvalidan olinadi —
+ * bayram va karantin kunlari ham hisobga olinishi kerak.
+ */
+export const MONTH_LABEL = "Sentabr 2026";
+
+const SCHOOL_DAYS: { date: string; day: number; weekdayShort: string }[] = (() => {
+  const out: { date: string; day: number; weekdayShort: string }[] = [];
+  for (let day = 1; day <= 30; day += 1) {
+    const d = new Date(Date.UTC(2026, 8, day));
+    const weekday = d.getUTCDay();
+    if (weekday === 0) continue; // yakshanba — dars yoʻq
+    out.push({
+      date: `2026-09-${String(day).padStart(2, "0")}`,
+      day,
+      weekdayShort: WEEKDAY_SHORT[weekday],
+    });
+  }
+  return out;
+})();
+
+/** Haftalik koʻrinish — oxirgi olti dars kuni. */
+const WEEK_DAYS = SCHOOL_DAYS.slice(-6);
+
+export function schoolDaysOf(period: AttendancePeriod) {
+  return period === "week" ? WEEK_DAYS : SCHOOL_DAYS;
+}
+
+/**
+ * Oʻquvchining kunma-kun davomati. Kelmagan kunlar SONI foizga aniq mos
+ * keladi (foiz alohida, kalendar alohida hisoblansa, ular bir-biriga
+ * qarama-qarshi chiqib qolardi). Qaysi kunlar ekani xesh boʻyicha
+ * barqaror tanlanadi — sahifa yangilanganda oʻzgarmaydi.
+ */
+export function attendanceDaysOf(
+  student: StudentRecord,
+  period: AttendancePeriod,
+): AttendanceDay[] {
+  const days = schoolDaysOf(period);
+  const percent = attendanceOf(student, period);
+  const missedCount = Math.round((days.length * (100 - percent)) / 100);
+
+  // Kunlarni barqaror "tasodifiy" tartibda saralab, birinchilarini
+  // kelmagan deb belgilaymiz.
+  const ranked = days
+    .map((d) => ({ ...d, seed: hash(`${student.id}-${d.date}`) }))
+    .sort((a, b) => a.seed - b.seed);
+  const missed = new Set(ranked.slice(0, missedCount).map((d) => d.date));
+
+  return days.map((d) => {
+    const seed = hash(`${student.id}-${d.date}`);
+    let status: DayStatus;
+    if (missed.has(d.date)) {
+      // Kelmaganlarning uchdan biri sababli (ariza, kasallik varaqasi).
+      status = seed % 3 === 0 ? "excused" : "absent";
+    } else {
+      status = seed % 11 === 0 ? "late" : "present";
+    }
+    return { date: d.date, day: d.day, weekdayShort: d.weekdayShort, status };
+  });
+}
+
 /** Butun maktab boʻyicha oʻrtacha davomat. */
 export function schoolAttendance(period: AttendancePeriod): number {
   const values = ALL_STUDENTS.map((s) => attendanceOf(s, period));
