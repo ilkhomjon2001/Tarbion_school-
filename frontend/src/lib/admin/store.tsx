@@ -15,19 +15,23 @@ import {
   buildApplications,
   buildAuditLog,
   buildClasses,
+  buildContractEvents,
   buildConversationNotes,
   buildDocumentRequests,
   buildProfile,
   buildQuarters,
   buildRooms,
+  buildSchoolSettings,
   buildStudents,
   buildSubjects,
   buildSurveyResults,
   buildSurveys,
+  buildUsers,
   ISSUED_DOCUMENTS_BEFORE,
   SURVEY_ROUND,
 } from "@/lib/admin/seed";
 import {
+  CONTRACT_END_REASONS,
   DEBT_ACTION_LABELS,
   DOCUMENT_TYPE_LABELS,
   PAYMENT_METHOD_LABELS,
@@ -38,6 +42,8 @@ import {
   type Application,
   type AuditAction,
   type AuditEntry,
+  type ContractEndReason,
+  type ContractEvent,
   type ConversationNote,
   type DebtAction,
   type DebtActionType,
@@ -47,8 +53,12 @@ import {
   type Quarter,
   type Reminder,
   type Room,
+  type SchoolSettings,
   type SurveyDefinition,
+  type UserAccount,
 } from "@/lib/admin/types";
+import { effectiveSections, ROLE_DEFAULT_SECTIONS } from "@/lib/access";
+import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 import { withNewMessage, type Appeal } from "@/lib/school/appeals";
 import { ADMINISTRATOR, staffById } from "@/lib/school/staff";
 import { formatSom } from "@/lib/format";
@@ -79,6 +89,11 @@ export interface AdminState {
   subjects: AdminSubject[];
   rooms: Room[];
   quarters: Quarter[];
+  contracts: ContractEvent[];
+  users: UserAccount[];
+  /** Rol boʻyicha standart boʻlimlar — super admin oʻzgartira oladi. */
+  roleSections: Record<UserRole, string[]>;
+  settings: SchoolSettings;
   audit: AuditEntry[];
   /** Berilgan hujjatlar hisoblagichi — raqam generatsiyasi uchun. */
   documentCounter: number;
@@ -108,7 +123,14 @@ export type AdminEvent =
   /** `applicationId` boʻlmasa — admin qoʻlda kiritgan yangi oʻquvchi. */
   | { type: "ACCEPT_APPLICATION"; application: Application; applicationId?: string }
   | { type: "REJECT_APPLICATION"; applicationId: string; reason: string }
-  | { type: "ARCHIVE_STUDENT"; studentId: string; reason: string }
+  | {
+      type: "ARCHIVE_STUDENT";
+      studentId: string;
+      /** Shartnoma tugash sababi — ochiladigan roʻyxatdan. */
+      endReason: ContractEndReason;
+      endDate: string;
+      reason: string;
+    }
   | { type: "RESTORE_STUDENT"; studentId: string }
   | { type: "CREATE_SURVEY"; survey: Omit<SurveyDefinition, "id" | "createdAt" | "createdBy" | "answeredCount"> }
   | { type: "CLOSE_SURVEY"; surveyId: string }
@@ -125,6 +147,11 @@ export type AdminEvent =
   | { type: "START_APPEAL"; studentId: string; title: string; text: string }
   | { type: "SEND_APPEAL_MESSAGE"; appealId: string; text: string }
   | { type: "CLOSE_APPEAL"; appealId: string }
+  | { type: "SET_USER_ROLE"; userId: string; role: UserRole }
+  | { type: "SET_USER_SECTIONS"; userId: string; sections: string[] | null }
+  | { type: "SET_USER_STATUS"; userId: string; status: "active" | "blocked" }
+  | { type: "SET_ROLE_SECTIONS"; role: UserRole; sections: string[] }
+  | { type: "UPDATE_SETTINGS"; settings: SchoolSettings }
   | { type: "CHANGE_CLASS"; studentIds: string[]; className: string }
   | {
       type: "ISSUE_DOCUMENT";
@@ -153,6 +180,10 @@ function initialState(): AdminState {
     subjects: buildSubjects(),
     rooms: buildRooms(),
     quarters: buildQuarters(),
+    contracts: buildContractEvents(students),
+    users: buildUsers(),
+    roleSections: { ...ROLE_DEFAULT_SECTIONS },
+    settings: buildSchoolSettings(),
     audit: buildAuditLog(),
     documentCounter: ISSUED_DOCUMENTS_BEFORE,
   };
@@ -349,9 +380,23 @@ function reducer(state: AdminState, event: AdminEvent): AdminState {
         discountPercent: app.discountPercent,
         status: "active",
       };
+      // Qabul = shartnoma boshlanishi. "Kelgan-ketgan" bazasi shu
+      // yozuvlardan hisoblanadi, alohida qoʻlda kiritilmaydi.
+      const contract: ContractEvent = {
+        id: nextId("ce"),
+        studentId: student.id,
+        studentName: student.fullName,
+        className: student.className,
+        type: "start",
+        date: app.enrollDate,
+        note: event.applicationId ? "Arizadan qabul qilindi" : "Qoʻlda kiritildi",
+        monthlyFee: fee,
+        createdBy: state.profile.fullName,
+      };
       return {
         ...state,
         students: [student, ...state.students],
+        contracts: [contract, ...state.contracts],
         applications: state.applications.map((a) =>
           a.id === event.applicationId ? { ...a, status: "accepted" as const } : a,
         ),
@@ -380,34 +425,70 @@ function reducer(state: AdminState, event: AdminEvent): AdminState {
         ),
       };
 
-    case "ARCHIVE_STUDENT":
-      // Oʻchirilmaydi — arxivlanadi (1-qoida).
+    case "ARCHIVE_STUDENT": {
+      // Oʻchirilmaydi — arxivlanadi (1-qoida) va shartnoma tugash yozuvi
+      // qoʻshiladi: sabab va sana bilan.
+      const student = state.students.find((s) => s.id === event.studentId);
+      if (!student) return state;
+      const ending: ContractEvent = {
+        id: nextId("ce"),
+        studentId: student.id,
+        studentName: student.fullName,
+        className: student.className,
+        type: "end",
+        date: event.endDate,
+        reason: event.endReason,
+        note: event.reason,
+        monthlyFee: student.monthlyFee,
+        createdBy: state.profile.fullName,
+      };
       return {
         ...state,
         students: state.students.map((s) =>
           s.id === event.studentId ? { ...s, status: "archived" as const } : s,
         ),
+        contracts: [ending, ...state.contracts],
         audit: withAudit(
           state,
           "archive",
           studentLabel(state, event.studentId),
-          event.reason || "Sabab koʻrsatilmagan",
+          `${CONTRACT_END_REASONS[event.endReason]} · ${event.endDate}${
+            event.reason ? ` · ${event.reason}` : ""
+          }`,
         ),
       };
+    }
 
-    case "RESTORE_STUDENT":
+    case "RESTORE_STUDENT": {
+      const student = state.students.find((s) => s.id === event.studentId);
+      if (!student) return state;
+      // Qaytarish = yangi shartnoma boshlanishi. Eski tugash yozuvi
+      // oʻchirilmaydi — yil yakunidagi hisobot haqiqatni koʻrsatsin.
+      const restart: ContractEvent = {
+        id: nextId("ce"),
+        studentId: student.id,
+        studentName: student.fullName,
+        className: student.className,
+        type: "start",
+        date: nowLabel().slice(0, 10),
+        note: "Arxivdan qaytarildi",
+        monthlyFee: student.monthlyFee,
+        createdBy: state.profile.fullName,
+      };
       return {
         ...state,
         students: state.students.map((s) =>
           s.id === event.studentId ? { ...s, status: "active" as const } : s,
         ),
+        contracts: [restart, ...state.contracts],
         audit: withAudit(
           state,
           "restore",
           studentLabel(state, event.studentId),
-          "Arxivdan faol holatga qaytarildi",
+          "Arxivdan faol holatga qaytarildi, shartnoma qayta ochildi",
         ),
       };
+    }
 
     case "CREATE_SURVEY": {
       const survey: SurveyDefinition = {
@@ -670,6 +751,89 @@ function reducer(state: AdminState, event: AdminEvent): AdminState {
         ),
       };
 
+    case "SET_USER_ROLE": {
+      const user = state.users.find((u) => u.id === event.userId);
+      if (!user) return state;
+      return {
+        ...state,
+        users: state.users.map((u) =>
+          // Rol oʻzgarsa istisnolar bekor qilinadi — eski kabinetning
+          // boʻlimlari yangi rolga oʻtib ketmasin.
+          u.id === event.userId ? { ...u, role: event.role, sections: null } : u,
+        ),
+        audit: withAudit(
+          state,
+          "access",
+          user.fullName,
+          `Rol: ${ROLE_LABELS[user.role]} → ${ROLE_LABELS[event.role]}`,
+        ),
+      };
+    }
+
+    case "SET_USER_SECTIONS": {
+      const user = state.users.find((u) => u.id === event.userId);
+      if (!user) return state;
+      const detail =
+        event.sections === null
+          ? "Rol boʻyicha standart huquqlarga qaytarildi"
+          : `Koʻrinadigan boʻlimlar: ${
+              effectiveSections(user.role, event.sections, state.roleSections).length
+            } ta`;
+      return {
+        ...state,
+        users: state.users.map((u) =>
+          u.id === event.userId ? { ...u, sections: event.sections } : u,
+        ),
+        audit: withAudit(state, "access", user.fullName, detail),
+      };
+    }
+
+    case "SET_USER_STATUS": {
+      const user = state.users.find((u) => u.id === event.userId);
+      if (!user) return state;
+      return {
+        ...state,
+        users: state.users.map((u) =>
+          u.id === event.userId ? { ...u, status: event.status } : u,
+        ),
+        audit: withAudit(
+          state,
+          "access",
+          user.fullName,
+          event.status === "blocked" ? "Hisob bloklandi" : "Hisob faollashtirildi",
+        ),
+      };
+    }
+
+    case "SET_ROLE_SECTIONS":
+      return {
+        ...state,
+        roleSections: { ...state.roleSections, [event.role]: event.sections },
+        audit: withAudit(
+          state,
+          "access",
+          ROLE_LABELS[event.role],
+          `Rol standarti oʻzgardi: ${event.sections.length} ta boʻlim`,
+        ),
+      };
+
+    case "UPDATE_SETTINGS": {
+      const changed = (Object.keys(event.settings) as (keyof SchoolSettings)[]).filter(
+        (key) => event.settings[key] !== state.settings[key],
+      );
+      if (changed.length === 0) return state;
+      return {
+        ...state,
+        settings: event.settings,
+        audit: withAudit(
+          state,
+          "settings",
+          "Maktab sozlamalari",
+          `Oʻzgardi: ${changed.length} ta maydon`,
+        ),
+      };
+    }
+
     case "CHANGE_CLASS":
       return {
         ...state,
@@ -782,6 +946,72 @@ export function useDebtors() {
         .sort((a, b) => overdueDays(b) - overdueDays(a)),
     [students],
   );
+}
+
+/**
+ * Joriy foydalanuvchi — profil qaysi xodimga tegishli boʻlsa oʻsha hisob.
+ * Login sahifasida super admin tanlangan boʻlsa — `u-root`.
+ */
+export function useCurrentUser(role: UserRole | null): UserAccount | null {
+  const { users, profile } = useAdmin();
+  return useMemo(() => {
+    if (role === "superadmin") return users.find((u) => u.role === "superadmin") ?? null;
+    return users.find((u) => u.staffId === profile.staffId) ?? null;
+  }, [users, profile.staffId, role]);
+}
+
+/** Joriy foydalanuvchi koʻra oladigan boʻlim manzillari. */
+export function useVisibleSections(role: UserRole | null): Set<string> {
+  const { users, profile, roleSections } = useAdmin();
+  return useMemo(() => {
+    const user =
+      role === "superadmin"
+        ? users.find((u) => u.role === "superadmin")
+        : users.find((u) => u.staffId === profile.staffId);
+    const effective = user
+      ? effectiveSections(user.role, user.sections, roleSections)
+      : effectiveSections(role ?? "admin", null, roleSections);
+    return new Set(effective);
+  }, [users, profile.staffId, roleSections, role]);
+}
+
+export interface ContractMonth {
+  /** "2026-09" */
+  key: string;
+  label: string;
+  started: number;
+  ended: number;
+  net: number;
+}
+
+const MONTH_NAMES = [
+  "Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun",
+  "Iyul", "Avgust", "Sentabr", "Oktabr", "Noyabr", "Dekabr",
+];
+
+/** Oylar kesimida kelgan-ketgan — yangidan eskiga. */
+export function useContractMonths(fromYear = 2026): ContractMonth[] {
+  const { contracts } = useAdmin();
+  return useMemo(() => {
+    const map = new Map<string, ContractMonth>();
+    for (const c of contracts) {
+      if (Number(c.date.slice(0, 4)) < fromYear) continue;
+      const key = c.date.slice(0, 7);
+      const month = Number(key.slice(5, 7));
+      const row = map.get(key) ?? {
+        key,
+        label: `${MONTH_NAMES[month - 1]} ${key.slice(0, 4)}`,
+        started: 0,
+        ended: 0,
+        net: 0,
+      };
+      if (c.type === "start") row.started += 1;
+      else row.ended += 1;
+      row.net = row.started - row.ended;
+      map.set(key, row);
+    }
+    return [...map.values()].sort((a, b) => b.key.localeCompare(a.key));
+  }, [contracts, fromYear]);
 }
 
 /** Faol sinflar — qabul, koʻchirish va soʻrovnoma shu roʻyxatdan tanlaydi. */

@@ -7,7 +7,13 @@
  * (CLAUDE.md 7-qoida).
  */
 
-export type UserRole = "student" | "teacher" | "parent" | "director" | "admin";
+export type UserRole =
+  | "student"
+  | "teacher"
+  | "parent"
+  | "director"
+  | "admin"
+  | "superadmin";
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   student: "Oʻquvchi",
@@ -15,6 +21,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   parent: "Ota-ona",
   director: "Rahbariyat",
   admin: "Administrator",
+  superadmin: "Super administrator",
 };
 
 export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
@@ -23,6 +30,7 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   parent: "Farzand natijalari, toʻlov",
   director: "Hisobot va analitika",
   admin: "Qabul, toʻlov, hujjatlar",
+  superadmin: "Foydalanuvchilar, huquqlar, sozlamalar",
 };
 
 /** Rol tanlangandan keyin ochiladigan kabinet. */
@@ -32,6 +40,18 @@ export const ROLE_HOME: Record<UserRole, string> = {
   parent: "/ota-ona",
   director: "/rahbar",
   admin: "/admin",
+  // Super administrator ham admin kabinetida ishlaydi — farqi huquqlarda.
+  superadmin: "/admin",
+};
+
+/** Qaysi kabinetni ochadi — AuthGuard shu boʻyicha tekshiradi. */
+export const ROLE_CABINET: Record<UserRole, Exclude<UserRole, "superadmin">> = {
+  student: "student",
+  teacher: "teacher",
+  parent: "parent",
+  director: "director",
+  admin: "admin",
+  superadmin: "admin",
 };
 
 export const ROLES = Object.keys(ROLE_LABELS) as UserRole[];

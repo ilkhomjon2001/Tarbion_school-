@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { currentRole, isAuthenticated } from "@/lib/auth";
-import { ROLE_HOME, type UserRole } from "@/lib/roles";
+import { ROLE_CABINET, ROLE_HOME, type UserRole } from "@/lib/roles";
 
 /**
  * DEMO kirish tekshiruvi.
@@ -35,8 +35,9 @@ export function AuthGuard({
     }
     const actual = currentRole();
     // `actual === null` — eski sessiya, rol saqlanmagan: qulflab
-    // qoʻymaymiz, sessiya bor ekan kiritamiz.
-    if (role && actual && actual !== role) {
+    // qoʻymaymiz, sessiya bor ekan kiritamiz. Taqqoslash KABINET
+    // boʻyicha: super administrator ham admin kabinetida ishlaydi.
+    if (role && actual && ROLE_CABINET[actual] !== ROLE_CABINET[role]) {
       router.replace(ROLE_HOME[actual]);
       return;
     }

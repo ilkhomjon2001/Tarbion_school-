@@ -1,32 +1,52 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { LogoutIcon, MenuIcon, UserIcon, XIcon } from "@/components/ui/icons";
 import { AdminNotifications } from "@/components/admin/AdminNotifications";
 import { AdminSearch } from "@/components/admin/AdminSearch";
 import { ADMIN_NAV, isNavActive } from "@/components/admin/nav";
-import { useAdmin } from "@/lib/admin/store";
-import { logout } from "@/lib/auth";
+import { useAdmin, useVisibleSections } from "@/lib/admin/store";
+import { currentRole, logout } from "@/lib/auth";
+import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 
-const SUBTITLE = "Administrator";
+/**
+ * Joriy sessiyadagi rol. Brauzer xotirasidan oʻqiladi, shuning uchun
+ * birinchi renderda `null` — server bilan mos kelishi uchun.
+ */
+function useSessionRole(): UserRole | null {
+  const [role, setRole] = useState<UserRole | null>(null);
+  useEffect(() => setRole(currentRole()), []);
+  return role;
+}
+
+/**
+ * Koʻrinadigan menyu — super admin yashirgan boʻlim roʻyxatdan chiqadi.
+ * Bu HIMOYA EMAS (CLAUDE.md 7-qoida), faqat koʻrinishni boshqarish.
+ */
+function useNav() {
+  const visible = useVisibleSections(useSessionRole());
+  return useMemo(() => ADMIN_NAV.filter((item) => visible.has(item.href)), [visible]);
+}
 
 /** Chapdagi doimiy panel — faqat md dan yuqorida. */
 export function AdminSidebar() {
   const pathname = usePathname();
   const { profile } = useAdmin();
+  const role = useSessionRole();
+  const nav = useNav();
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border bg-surface md:flex">
       <div className="px-5 py-5">
-        <BrandLogo variant="wordmark" className="h-6 w-auto" subtitle={SUBTITLE} priority />
+        <BrandLogo variant="wordmark" className="h-6 w-auto" subtitle={role ? ROLE_LABELS[role] : "Administrator"} priority />
       </div>
 
       <nav aria-label="Asosiy navigatsiya" className="flex-1 overflow-y-auto px-3 py-2">
         <ul className="flex flex-col gap-1">
-          {ADMIN_NAV.map(({ href, label, icon: ItemIcon }) => {
+          {nav.map(({ href, label, icon: ItemIcon }) => {
             const active = isNavActive(href, pathname);
             return (
               <li key={href}>
@@ -112,6 +132,8 @@ export function AdminTopbar() {
 /** Telefon uchun — hamburger + qidiruv. */
 export function AdminMobileTopBar() {
   const pathname = usePathname();
+  const role = useSessionRole();
+  const nav = useNav();
   const [open, setOpen] = useState(false);
 
   return (
@@ -139,7 +161,7 @@ export function AdminMobileTopBar() {
           />
           <aside className="animate-expand absolute inset-y-0 left-0 flex w-64 flex-col bg-surface shadow-lg">
             <div className="flex items-center justify-between px-5 py-5">
-              <BrandLogo variant="wordmark" className="h-6 w-auto" subtitle={SUBTITLE} />
+              <BrandLogo variant="wordmark" className="h-6 w-auto" subtitle={role ? ROLE_LABELS[role] : "Administrator"} />
               <button
                 type="button"
                 aria-label="Yopish"
@@ -152,7 +174,7 @@ export function AdminMobileTopBar() {
 
             <nav className="flex-1 overflow-y-auto px-3 py-2">
               <ul className="flex flex-col gap-1">
-                {ADMIN_NAV.map(({ href, label, icon: ItemIcon }) => {
+                {nav.map(({ href, label, icon: ItemIcon }) => {
                   const active = isNavActive(href, pathname);
                   return (
                     <li key={href}>

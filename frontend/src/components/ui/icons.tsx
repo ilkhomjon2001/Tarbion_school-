@@ -178,6 +178,25 @@ export function SunriseIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function SettingsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2.5v2.2M12 19.3v2.2M21.5 12h-2.2M4.7 12H2.5M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6M18.7 18.7l-1.6-1.6M6.9 6.9 5.3 5.3" />
+    </Icon>
+  );
+}
+
+/** Shartnoma — qalqon shaklida, rasmiy hujjat maʼnosida. */
+export function ShieldIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M12 2.8 4.8 5.6v5.6c0 4.3 3 8.2 7.2 9.9 4.2-1.7 7.2-5.6 7.2-9.9V5.6L12 2.8Z" />
+      <path d="m9 11.8 2.1 2.1L15.2 10" />
+    </Icon>
+  );
+}
+
 export function UserIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

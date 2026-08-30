@@ -7,6 +7,7 @@ import {
   getTeacherStats,
   getTeacherWeeklySchedule,
 } from "@/lib/director/fetchers";
+import { teacherKpi } from "@/lib/director/teacher-kpi";
 
 export default async function TeacherProfilePage({
   params,
@@ -41,7 +42,12 @@ export default async function TeacherProfilePage({
         </div>
       </Card>
 
-      <TeacherProfileTabs weeklySchedule={weeklySchedule} classes={classes} stats={stats} />
+      <TeacherProfileTabs
+        weeklySchedule={weeklySchedule}
+        classes={classes}
+        stats={stats}
+        kpi={teacherKpi(id)}
+      />
     </div>
   );
 }

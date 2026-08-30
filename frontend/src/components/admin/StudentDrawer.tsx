@@ -7,10 +7,12 @@ import { XIcon } from "@/components/ui/icons";
 import { formatSom } from "@/lib/format";
 import { debtOf, overdueDays, useAdmin, useAdminDispatch } from "@/lib/admin/store";
 import {
+  CONTRACT_END_REASONS,
   DEBT_ACTION_LABELS,
   DOCUMENT_TYPE_LABELS,
   PAYMENT_METHOD_LABELS,
   type AdminStudent,
+  type ContractEndReason,
 } from "@/lib/admin/types";
 import { homeroomTeacherOf } from "@/lib/school/staff";
 
@@ -29,7 +31,9 @@ export function StudentDrawer({
   const dispatch = useAdminDispatch();
   const { payments, documents, debtActions } = useAdmin();
   const [confirmArchive, setConfirmArchive] = useState(false);
-  const [archiveReason, setArchiveReason] = useState("Maktabdan chiqdi");
+  const [archiveReason, setArchiveReason] = useState("Ota-ona arizasi asosida");
+  const [endReason, setEndReason] = useState<ContractEndReason>("boshqa_maktab");
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   const debt = debtOf(student);
   const days = overdueDays(student);
@@ -215,17 +219,45 @@ export function StudentDrawer({
           </Section>
 
           {student.status === "active" && (
-            <Section title="Arxivlash">
+            <Section title="Shartnomani yopish">
               {confirmArchive ? (
                 <div className="animate-enter flex flex-col gap-2">
                   <label className="block">
                     <span className="mb-1.5 block text-xs font-medium text-foreground">
-                      Sababi (audit jurnaliga yoziladi)
+                      Ketish sababi
+                    </span>
+                    <select
+                      value={endReason}
+                      onChange={(e) => setEndReason(e.target.value as ContractEndReason)}
+                      className="h-9 w-full rounded-lg border border-border bg-surface px-2.5 text-sm outline-none focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
+                    >
+                      {(Object.keys(CONTRACT_END_REASONS) as ContractEndReason[]).map((key) => (
+                        <option key={key} value={key}>
+                          {CONTRACT_END_REASONS[key]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-medium text-foreground">
+                      Oxirgi oʻqish kuni
+                    </span>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="h-9 w-full rounded-lg border border-border bg-surface px-2.5 text-sm outline-none focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-medium text-foreground">
+                      Izoh (audit jurnaliga yoziladi)
                     </span>
                     <input
                       value={archiveReason}
                       onChange={(e) => setArchiveReason(e.target.value)}
-                      className="h-9 w-full rounded-lg border border-border bg-surface px-2.5 text-sm outline-none focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
+                      placeholder="Masalan: ota-ona arizasi asosida"
+                      className="h-9 w-full rounded-lg border border-border bg-surface px-2.5 text-sm outline-none placeholder:text-foreground-muted/70 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
                     />
                   </label>
                   <div className="flex justify-end gap-2">
@@ -238,33 +270,35 @@ export function StudentDrawer({
                     </button>
                     <button
                       type="button"
-                      disabled={!archiveReason.trim()}
+                      disabled={!archiveReason.trim() || !endDate}
                       onClick={() => {
                         dispatch({
                           type: "ARCHIVE_STUDENT",
                           studentId: student.id,
+                          endReason,
+                          endDate,
                           reason: archiveReason.trim(),
                         });
                         setConfirmArchive(false);
                       }}
                       className="focus-ring rounded-lg bg-danger px-3 py-1.5 text-xs font-semibold text-brand-foreground transition-colors hover:opacity-90 disabled:opacity-50"
                     >
-                      Ha, arxivlansin
+                      Shartnomani yopish
                     </button>
                   </div>
                 </div>
               ) : (
                 <>
                   <p className="text-xs text-foreground-muted">
-                    Oʻquvchi oʻchirilmaydi — baholari, davomati va toʻlov tarixi hisobotlarda
-                    qoladi.
+                    Oʻquvchi oʻchirilmaydi — arxivlanadi. Baholari, davomati va toʻlov
+                    tarixi hisobotlarda qoladi, yozuv «Shartnomalar» bazasiga tushadi.
                   </p>
                   <button
                     type="button"
                     onClick={() => setConfirmArchive(true)}
                     className="focus-ring mt-2 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger-tint"
                   >
-                    Arxivlash
+                    Shartnomani yopish
                   </button>
                 </>
               )}

@@ -226,3 +226,41 @@ rol boshqa kabinetniki boʻlsa oʻz kabinetiga qaytaradi. Bu HIMOYA EMAS
 (7-qoida) — faqat toʻgʻri xatti-harakat. Yon taʼsiri: himoyalangan
 sahifalar serverda boʻsh render qilinadi va tarkib gidratsiyadan keyin
 chiqadi.
+
+## 2026-08-30 · Huquqlar ikki qavatli: rol standarti + foydalanuvchi istisnosi
+Maktab rahbari "super admin userlarga boʻlimlarni koʻrinadigan qilib
+beradi" degan edi — yaʼni huquq ROL emas, ODAM darajasida. Shuning uchun
+`lib/access.ts` da barcha kabinetlarning boʻlimlari reyestri, ustiga ikki
+qavat: `ROLE_DEFAULT_SECTIONS` (yangi foydalanuvchi shuni oladi) va
+`UserAccount.sections` (`null` boʻlsa standart, massiv boʻlsa istisno).
+Kabinet boshi qulflangan — aks holda odam oʻz kabinetiga kira olmay
+qoladi. Boʻlim manzili (`/admin/tolovlar`) ayni paytda kalit ham:
+navigatsiya va reyestr bir joydan chiqadi, ikkinchi roʻyxat yuritilmaydi.
+
+DEMO cheklovi: huquqlar admin do'konida yashaydi, shuning uchun
+filtrlash faqat admin kabinetining menyusida ishlaydi. Boshqa kabinetlar
+provider'dan tashqarida render qilinadi — ularga backend ulanganda
+qoʻllanadi. Baribir bu HIMOYA EMAS (7-qoida): tekshiruv serverda.
+
+## 2026-08-30 · Super administrator — rol, alohida kabinet emas
+Super admin ham `/admin` da ishlaydi, farqi faqat "Sozlamalar" boʻlimi va
+toʻliq huquq. Alohida kabinet qurish ikki marta menyu, ikki marta qidiruv
+degani boʻlardi. `ROLE_CABINET` xaritasi qoʻshildi — AuthGuard rolni emas,
+KABINETNI solishtiradi.
+
+## 2026-08-30 · Shartnoma harakati qoʻlda kiritilmaydi
+"Kelgan-ketgan" bazasi alohida forma emas: qabul qilinganda `start`,
+arxivlanganda sabab va sana bilan `end` yozuvi tushadi. Shu sabab jadval
+haqiqiy amallardan orqada qolmaydi. Arxivdan qaytarish eski `end` yozuvini
+oʻchirmaydi — yangi `start` qoʻshadi, aks holda yil yakunidagi
+"nechta kirdi / nechta chiqdi" notoʻgʻri chiqardi.
+
+## 2026-08-30 · Ustoz KPI — toʻrtta koʻrsatkich, toʻrtinchisi taklif
+Rahbar toʻrtta KPI aytgan, uchtasini eslagan: oylik imtihon natijasi,
+ichki qoidalarga amal qilish, ota-ona bilan hamkorlik. Toʻrtinchi oʻrniga
+"Jurnal va davomat intizomi" taklif qilindi — u allaqachon oʻlchanadigan
+maʼlumot (davomat 24 soat ichida belgilangan darslar ulushi). Interfeysda
+"Taklif — tasdiqlanmagan" belgisi bilan turadi, tasdiqlangach belgisi
+olib tashlanadi yoki koʻrsatkich almashtiriladi. Har bir ball ostida
+nimadan hisoblangani yozilgan: rahbar raqamni tekshira olmasa KPI
+ishonchsiz boʻlib qoladi.

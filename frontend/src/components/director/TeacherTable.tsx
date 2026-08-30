@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PlusIcon } from "@/components/ui/icons";
+import { kpiTone, teacherKpi } from "@/lib/director/teacher-kpi";
 import type { Teacher } from "@/lib/director/types";
 
 export function TeacherTable({
@@ -90,6 +91,7 @@ export function TeacherTable({
                 <th className="px-4 py-3">Fan(lar)</th>
                 <th className="px-4 py-3">Rahbarlik sinfi</th>
                 <th className="px-4 py-3">Yuklama (soat/hafta)</th>
+                <th className="px-4 py-3">KPI</th>
                 <th className="px-4 py-3">Holati</th>
               </tr>
             </thead>
@@ -121,6 +123,7 @@ export function TeacherTable({
                   <td className="px-4 py-2.5 text-xs italic text-foreground-muted">
                     Sinflar sahifasidan tayinlanadi
                   </td>
+                  <td className="px-4 py-2.5 text-foreground-muted">—</td>
                   <td className="px-4 py-2.5 text-foreground-muted">—</td>
                   <td className="px-4 py-2.5">
                     <div className="flex gap-2">
@@ -167,6 +170,9 @@ export function TeacherTable({
                   </td>
                   <td className="px-4 py-3 text-foreground-muted">{teacher.weeklyLoadHours}</td>
                   <td className="px-4 py-3">
+                    <KpiCell teacherId={teacher.id} />
+                  </td>
+                  <td className="px-4 py-3">
                     <Badge tone={teacher.status === "active" ? "success" : "neutral"}>
                       {teacher.status === "active" ? "Faol" : "Arxivlangan"}
                     </Badge>
@@ -198,4 +204,27 @@ function initials(fullName: string): string {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("");
+}
+
+/**
+ * Roʻyxatdagi KPI ustuni — bitta son va rang. Tafsiloti ustoz
+ * profilidagi «KPI» boʻlimida.
+ */
+function KpiCell({ teacherId }: { teacherId: string }) {
+  const { overall } = teacherKpi(teacherId);
+  const tone = kpiTone(overall);
+  const cls =
+    tone === "success"
+      ? "bg-success-tint text-success"
+      : tone === "warning"
+        ? "bg-warning-tint text-warning"
+        : "bg-danger-tint text-danger";
+  return (
+    <span
+      title="Toʻrtta koʻrsatkich oʻrtachasi"
+      className={`num inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls}`}
+    >
+      {overall}
+    </span>
+  );
 }

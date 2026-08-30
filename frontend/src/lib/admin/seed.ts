@@ -18,14 +18,20 @@ import {
   ADMINISTRATOR,
   allTeachers,
   HOMEROOM,
+  STAFF,
   subjectTeachersOf,
 } from "@/lib/school/staff";
 import {
+  CONTRACT_END_REASONS,
   DEFAULT_SURVEY_QUESTIONS,
   type AdminClass,
   type AdminProfile,
   type AdminStudent,
   type AdminSubject,
+  type ContractEndReason,
+  type ContractEvent,
+  type SchoolSettings,
+  type UserAccount,
   type Application,
   type AuditEntry,
   type ConversationNote,
@@ -411,6 +417,131 @@ export function buildConversationNotes(): ConversationNote[] {
       createdAt: "2026-03-12",
     },
   ];
+}
+
+// ─────────────────────── Shartnoma harakati ───────────────────────
+
+const END_REASON_KEYS = Object.keys(CONTRACT_END_REASONS) as ContractEndReason[];
+
+const END_NOTES: Record<ContractEndReason, string> = {
+  boshqa_maktab: "Ota-ona arizasi asosida, hujjatlar topshirildi",
+  kochib_ketdi: "Oila boshqa viloyatga koʻchdi",
+  moliyaviy: "Toʻlov imkoniyati boʻlmagani sababli",
+  oila_qarori: "Oila qarori bilan taʼlim shakli oʻzgartirildi",
+  bitirdi: "11-sinfni tamomladi, attestat berildi",
+  boshqa: "Ariza asosida",
+};
+
+/**
+ * Kelgan va ketgan shartnomalar.
+ *
+ * Kelganlar oʻquvchining `enrolledAt` sanasidan olinadi — alohida sana
+ * toʻqilmaydi. Ketganlar joriy oʻquv yili uchun bir nechta namuna: bazani
+ * boʻsh koʻrsatib qoʻymaslik uchun, sabab va sanasi bilan.
+ */
+export function buildContractEvents(students: AdminStudent[]): ContractEvent[] {
+  const starts: ContractEvent[] = students.map((s) => ({
+    id: `ce-start-${s.id}`,
+    studentId: s.id,
+    studentName: s.fullName,
+    className: s.className,
+    type: "start" as const,
+    date: s.enrolledAt,
+    note: "Shartnoma imzolandi",
+    monthlyFee: s.monthlyFee,
+    createdBy: ADMIN_NAME,
+  }));
+
+  // Ketganlar — roʻyxatdan barqaror tanlanadi, oʻquvchi arxivlanmaydi
+  // (ular allaqachon bazadan chiqqan, faol roʻyxatda yoʻq deb qaraladi).
+  const leavers = [12, 57, 104, 168, 233, 290, 341].map((index, i) => {
+    const student = students[index % students.length];
+    const seed = hash(`leave-${student.id}`);
+    const reason = END_REASON_KEYS[seed % END_REASON_KEYS.length];
+    const month = 9 + (i % 3); // sentabr–noyabr
+    const day = 1 + ((seed >>> 4) % 27);
+    return {
+      id: `ce-end-${i + 1}`,
+      studentId: student.id,
+      studentName: student.fullName,
+      className: student.className,
+      type: "end" as const,
+      date: `2026-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+      reason,
+      note: END_NOTES[reason],
+      monthlyFee: student.monthlyFee,
+      createdBy: ADMIN_NAME,
+    };
+  });
+
+  return [...starts, ...leavers].sort((a, b) => b.date.localeCompare(a.date));
+}
+
+// ─────────────────────── Foydalanuvchilar ───────────────────────
+
+/**
+ * Tizim foydalanuvchilari — xodimlar roʻyxatidan quriladi, alohida
+ * "hisob" toʻqilmaydi. Login `familiya.ism` shaklida.
+ */
+export function buildUsers(): UserAccount[] {
+  const ROLE_BY_STAFF: Record<string, UserAccount["role"]> = {
+    director: "director",
+    admin: "admin",
+    teacher: "teacher",
+    psychologist: "teacher",
+  };
+
+  const POSITION: Record<string, string> = {
+    director: "Direktor",
+    admin: "Maktab administratori",
+    teacher: "Fan oʻqituvchisi",
+    psychologist: "Psixolog",
+  };
+
+  const accounts: UserAccount[] = STAFF.map((person) => {
+    const seed = hash(`acc-${person.id}`);
+    const [family, first] = person.fullName.split(" ");
+    return {
+      id: `u-${person.id}`,
+      fullName: person.fullName,
+      staffId: person.id,
+      position: POSITION[person.role] ?? "Xodim",
+      login: `${family}.${first}`.toLowerCase().replace(/[ʻʼ']/g, ""),
+      role: ROLE_BY_STAFF[person.role] ?? "teacher",
+      sections: null,
+      status: "active" as const,
+      lastSeen: `${1 + (seed % 6)} soat oldin`,
+    };
+  });
+
+  // Super administrator — texnik hisob, xodimlar roʻyxatida yoʻq.
+  accounts.unshift({
+    id: "u-root",
+    fullName: "Tizim administratori",
+    position: "Super administrator",
+    login: "root",
+    role: "superadmin",
+    sections: null,
+    status: "active",
+    lastSeen: "Hozir",
+  });
+
+  return accounts;
+}
+
+// ─────────────────────── Maktab sozlamalari ───────────────────────
+
+export function buildSchoolSettings(): SchoolSettings {
+  return {
+    name: "«Tarbion» xususiy umumtaʼlim maktabi",
+    academicYear: ACADEMIC_YEAR,
+    defaultPayDay: 5,
+    maxDiscountPercent: 30,
+    overdueAfterDays: 5,
+    attendanceLockHours: 24,
+    phone: "+998 71 200 10 10",
+    address: "Toshkent sh., Yunusobod t., 4-daha, 1-uy",
+  };
 }
 
 // ─────────────────────────── Audit ───────────────────────────

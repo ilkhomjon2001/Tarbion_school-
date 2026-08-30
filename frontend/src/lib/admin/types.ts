@@ -13,6 +13,7 @@
  */
 
 import type { ClassStage } from "@/lib/director/school-data";
+import type { UserRole } from "@/lib/roles";
 
 export type StudentStatus = "active" | "archived";
 
@@ -308,6 +309,90 @@ export interface Quarter {
   to: string;
 }
 
+// ─────────────────────── Shartnoma harakati ───────────────────────
+
+/**
+ * Shartnoma boshlanishi va tugashi — "kelgan-ketgan" bazasi.
+ *
+ * Yozuv oʻchirilmaydi va tahrirlanmaydi: oʻquvchi arxivdan qaytarilsa,
+ * eski tugash yozuvi qolib, yangi boshlanish yozuvi qoʻshiladi. Shunda
+ * yil oxirida "nechta kirdi, nechta chiqdi" haqiqatni koʻrsatadi.
+ */
+export type ContractEventType = "start" | "end";
+
+export type ContractEndReason =
+  | "boshqa_maktab"
+  | "kochib_ketdi"
+  | "moliyaviy"
+  | "oila_qarori"
+  | "bitirdi"
+  | "boshqa";
+
+export const CONTRACT_END_REASONS: Record<ContractEndReason, string> = {
+  boshqa_maktab: "Boshqa maktabga oʻtdi",
+  kochib_ketdi: "Boshqa shaharga koʻchdi",
+  moliyaviy: "Moliyaviy sabab",
+  oila_qarori: "Oila qarori",
+  bitirdi: "Maktabni bitirdi",
+  boshqa: "Boshqa sabab",
+};
+
+export interface ContractEvent {
+  id: string;
+  studentId: string;
+  /** Yozuv paytidagi ism va sinf — oʻquvchi keyin oʻzgarsa ham tarix buzilmasin. */
+  studentName: string;
+  className: string;
+  type: ContractEventType;
+  /** ISO sana. */
+  date: string;
+  /** Faqat `end` uchun. */
+  reason?: ContractEndReason;
+  /** Sababning erkin matnli izohi. */
+  note: string;
+  /** Oylik shartnoma summasi, soʻmda. */
+  monthlyFee: number;
+  createdBy: string;
+}
+
+// ─────────────────────── Foydalanuvchilar ───────────────────────
+
+export type AccountStatus = "active" | "blocked";
+
+/**
+ * Tizim foydalanuvchisi. `sections === null` — rol boʻyicha standart
+ * huquqlar; massiv boʻlsa — super admin qoʻlda belgilagan istisno.
+ */
+export interface UserAccount {
+  id: string;
+  fullName: string;
+  /** Xodimlar roʻyxatidagi yozuv, boʻlsa. */
+  staffId?: string;
+  position: string;
+  login: string;
+  role: UserRole;
+  sections: string[] | null;
+  status: AccountStatus;
+  lastSeen: string;
+}
+
+// ─────────────────────── Maktab sozlamalari ───────────────────────
+
+export interface SchoolSettings {
+  name: string;
+  academicYear: string;
+  /** Shartnoma toʻlovining standart kuni. */
+  defaultPayDay: number;
+  /** Administrator mustaqil bera oladigan eng katta chegirma, foizda. */
+  maxDiscountPercent: number;
+  /** Necha kundan keyin qarzdorlik "kechikkan" hisoblanadi. */
+  overdueAfterDays: number;
+  /** Davomat ustoz uchun necha soatdan keyin yopiladi (DAV-03). */
+  attendanceLockHours: number;
+  phone: string;
+  address: string;
+}
+
 // ─────────────────────── Administrator profili ───────────────────────
 
 export interface AdminProfile {
@@ -351,7 +436,10 @@ export type AuditAction =
   | "survey"
   | "reference"
   | "appeal"
-  | "profile";
+  | "profile"
+  | "contract"
+  | "access"
+  | "settings";
 
 export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   payment: "Toʻlov kiritildi",
@@ -367,6 +455,9 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   reference: "Maʼlumot bazasi",
   appeal: "Murojaat",
   profile: "Profil",
+  contract: "Shartnoma",
+  access: "Huquqlar",
+  settings: "Sozlamalar",
 };
 
 export interface AuditEntry {
