@@ -226,6 +226,17 @@ export default function AttendancePage() {
     rowRefs.current[activeIndex]?.scrollIntoView({ block: "nearest" });
   }, [activeIndex]);
 
+  /**
+   * Jurnal uchun davomat xaritasi. Jonli `rows` dan olinadi — ustoz
+   * belgini oʻzgartirsa baho katagi darhol qulflanadi/ochiladi,
+   * saqlashni kutmaydi.
+   */
+  const gradeAttendance = useMemo(() => {
+    const map: Record<string, AttendanceStatus> = {};
+    for (const r of rows ?? []) map[r.studentId] = r.status;
+    return map;
+  }, [rows]);
+
   // Saqlanmagan oʻzgarish bilan sahifadan chiqish — ogohlantirish.
   useEffect(() => {
     if (!dirty) return;
@@ -535,6 +546,7 @@ export default function AttendancePage() {
                 students={rows}
                 editableDate={lesson.date}
                 showSummary={false}
+                attendance={gradeAttendance}
               />
             </section>
           )}

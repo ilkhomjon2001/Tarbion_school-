@@ -19,6 +19,7 @@ import {
 } from "@/lib/teacher/data";
 import type {
   AttendanceRow,
+  AttendanceStatus,
   HomeworkItem,
   SubmissionRow,
   TeacherLesson,
@@ -113,6 +114,30 @@ export function conductedForClass(className: string): ConductedLesson[] {
   return Object.values(getConducted())
     .filter((c) => c.className === className)
     .sort((a, b) => (a.date === b.date ? a.period - b.period : a.date < b.date ? -1 : 1));
+}
+
+/**
+ * Bitta kunning davomat holati: oʻquvchi id → holat.
+ *
+ * Baho qoʻyishda kerak — darsda boʻlmagan oʻquvchiga baho qoʻyilmaydi.
+ * Davomat lessonId boʻyicha saqlangani uchun avval oʻsha kunning
+ * shu sinf+fan darsi topiladi, keyin uning qatorlari olinadi.
+ *
+ * Boʻsh natija "davomat hali belgilanmagan" degani — bunda baho
+ * qoʻyish toʻsilmaydi.
+ */
+export function attendanceOn(
+  className: string,
+  subject: string,
+  date: string,
+): Record<string, AttendanceStatus> {
+  const rows = read<AttendanceRow[]>(KEY_ATTENDANCE);
+  const out: Record<string, AttendanceStatus> = {};
+  for (const c of Object.values(getConducted())) {
+    if (c.className !== className || c.subject !== subject || c.date !== date) continue;
+    for (const r of rows[c.lessonId] ?? []) out[r.studentId] = r.status;
+  }
+  return out;
 }
 
 export interface StudentStats {

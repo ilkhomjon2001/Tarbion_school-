@@ -14,7 +14,12 @@ import {
   type GradingScale,
 } from "@/lib/teacher/store";
 import { termForDate } from "@/lib/teacher/terms";
-import type { AttendanceRow } from "@/lib/teacher/types";
+import {
+  ATTENDANCE_LABELS,
+  ATTENDANCE_LETTERS,
+  type AttendanceRow,
+  type AttendanceStatus,
+} from "@/lib/teacher/types";
 
 /**
  * Baholar jurnali (JUR-01, JUR-02, JUR-03, JUR-04).
@@ -41,6 +46,7 @@ export function GradeBook({
   readOnly = false,
   editableDate = null,
   showSummary = true,
+  attendance,
 }: {
   className: string;
   subject: string;
@@ -61,6 +67,16 @@ export function GradeBook({
    * maʼlumot ustidan xulosa — chalgʻitadi.
    */
   showSummary?: boolean;
+  /**
+   * `editableDate` kunidagi davomat: oʻquvchi id → holat.
+   *
+   * Darsda boʻlmagan oʻquvchiga baho qoʻyilmaydi — kelmagan ham,
+   * sababli ham. Kechikkan oʻquvchi darsda boʻlgan, unga qoʻyiladi.
+   *
+   * Berilmasa yoki boʻsh boʻlsa — davomat hali belgilanmagan, baho
+   * toʻsilmaydi.
+   */
+  attendance?: Record<string, AttendanceStatus>;
 }) {
   // Soddalashtirildi: 5 ballik sukut boʻyicha. Maktab 100 ballikka
   // oʻtsa, bu sozlama admin panelidan keladi — har ustoz har safar
@@ -97,14 +113,22 @@ export function GradeBook({
     return list;
   }, [className, subject, editableDate]);
 
+  /** Darsda boʻlmagan oʻquvchi — baho qoʻyilmaydi. */
+  function absentOn(studentId: string, date: string): AttendanceStatus | null {
+    if (!attendance || date !== editableDate) return null;
+    const st = attendance[studentId];
+    return st === "absent" || st === "excused" ? st : null;
+  }
+
   /** Shu katakka baho qoʻyish mumkinmi. */
-  function canEdit(date: string): boolean {
+  function canEdit(studentId: string, date: string): boolean {
     if (readOnly) return false;
-    return editableDate === null || date === editableDate;
+    if (editableDate !== null && date !== editableDate) return false;
+    return absentOn(studentId, date) === null;
   }
 
   function put(studentId: string, date: string, value: number | null) {
-    if (!canEdit(date)) return;
+    if (!canEdit(studentId, date)) return;
     const next = { ...book, [studentId]: { ...(book[studentId] ?? {}) } };
     if (value === null) {
       delete next[studentId][date];
@@ -119,7 +143,7 @@ export function GradeBook({
 
   // Klaviatura: katak tanlangan holda raqam bosish
   useEffect(() => {
-    if (!active || !canEdit(active.date)) return;
+    if (!active || !canEdit(active.studentId, active.date)) return;
     function onKey(e: KeyboardEvent) {
       const t = e.target as HTMLElement | null;
       if (t?.tagName === "INPUT" || t?.tagName === "TEXTAREA") return;
@@ -150,6 +174,15 @@ export function GradeBook({
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
   }, []);
+
+  /** Bugun darsda boʻlmagan (baho qoʻyib boʻlmaydigan) oʻquvchilar soni. */
+  const blockedCount = useMemo(() => {
+    if (!attendance || !editableDate) return 0;
+    return students.filter((s) => {
+      const st = attendance[s.studentId];
+      return st === "absent" || st === "excused";
+    }).length;
+  }, [attendance, editableDate, students]);
 
   if (!ready) {
     return <div className="h-64 animate-pulse rounded-xl border border-border bg-surface" />;
@@ -269,7 +302,8 @@ export function GradeBook({
                     const g = row[c.date];
                     const isActive =
                       active?.studentId === s.studentId && active?.date === c.date;
-                    const editable = canEdit(c.date);
+                    const blocked = absentOn(s.studentId, c.date);
+                    const editable = canEdit(s.studentId, c.date);
                     return (
                       <td
                         key={c.date}
@@ -285,17 +319,28 @@ export function GradeBook({
                           }
                           aria-label={
                             `${s.fullName}, ${c.date}${g ? `: ${g.value}` : " — baho yoʻq"}`
-                            + (editable ? "" : " (qulflangan)")
+                            + (blocked
+                              ? ` — ${ATTENDANCE_LABELS[blocked].toLowerCase()}, baho qoʻyilmaydi`
+                              : editable ? "" : " (qulflangan)")
+                          }
+                          title={
+                            blocked
+                              ? `${ATTENDANCE_LABELS[blocked]} — darsda boʻlmagan oʻquvchiga baho qoʻyilmaydi`
+                              : undefined
                           }
                           className={`h-8 w-8 rounded-lg text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand ${
-                            g
-                              ? KIND_TONE[g.kind]
-                              : "text-foreground-muted/40"
+                            blocked
+                              ? blocked === "absent"
+                                ? "bg-danger-tint text-danger/70"
+                                : "bg-info-tint text-info/70"
+                              : g
+                                ? KIND_TONE[g.kind]
+                                : "text-foreground-muted/40"
                           } ${editable ? "hover:bg-surface-muted" : "cursor-default"} ${
                             isActive ? "ring-2 ring-brand" : ""
                           }`}
                         >
-                          {g ? g.value : "·"}
+                          {blocked ? ATTENDANCE_LETTERS[blocked] : g ? g.value : "·"}
                         </button>
 
                         {isActive && editable && (
@@ -352,6 +397,15 @@ export function GradeBook({
                 {editableDate.slice(8)}.{editableDate.slice(5, 7)}
               </span>{" "}
               ustuniga qoʻyiladi — oʻtgan kunlar qulflangan.
+            </>
+          )}
+          {blockedCount > 0 && (
+            <>
+              {" "}
+              <span className="font-medium text-foreground">{blockedCount}</span>{" "}
+              oʻquvchi darsda boʻlmagan (<span className="text-danger">Y</span>{" "}
+              kelmadi, <span className="text-info">S</span> sababli) — ularga
+              baho qoʻyilmaydi.
             </>
           )}
           {showSummary && (

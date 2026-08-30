@@ -15,8 +15,10 @@ import {
 import { StudentCard } from "@/components/teacher/StudentCard";
 import { TeacherShell } from "@/components/teacher/TeacherShell";
 import { buildInitialRows } from "@/lib/teacher/data";
+import type { AttendanceStatus } from "@/lib/teacher/types";
 import { classColor } from "@/lib/teacher/schedule";
 import {
+  attendanceOn,
   conductedForClass,
   studentStats,
   type ConductedLesson,
@@ -106,6 +108,14 @@ function JournalContent() {
   const [lessons, setLessons] = useState<ConductedLesson[] | null>(null);
   const [openStudent, setOpenStudent] = useState<StudentStats | null>(null);
 
+  /**
+   * Bugungi davomat — darsda boʻlmagan oʻquvchiga baho qoʻyilmasligi
+   * uchun. localStorage faqat brauzerda, shuning uchun effekt orqali.
+   */
+  const [todayAttendance, setTodayAttendance] = useState<
+    Record<string, AttendanceStatus>
+  >({});
+
   // Boshlangʻich sinf. Fan URL dan kelgan boʻlishi mumkin, shuning uchun
   // uni faqat sinf HAQIQATAN almashganda qayta tanlaymiz.
   const prevClass = useRef(selected);
@@ -132,6 +142,10 @@ function JournalContent() {
       : mySubjectsIn(selected);
     if (allowed.length > 0 && !allowed.includes(subject)) setSubject(allowed[0]);
   }, [asHomeroom, selected, subject]);
+
+  useEffect(() => {
+    setTodayAttendance(attendanceOn(selected, subject, TODAY));
+  }, [selected, subject]);
 
   const roster = useMemo(() => buildInitialRows(selected), [selected]);
   const term = termForDate(TODAY);
@@ -337,6 +351,7 @@ function JournalContent() {
             readOnly={!editable}
             editableDate={TODAY}
             showSummary={homeroom}
+            attendance={todayAttendance}
           />
         </>
       )}
