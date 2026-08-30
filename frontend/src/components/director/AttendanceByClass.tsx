@@ -26,35 +26,19 @@ const PERIODS: AttendancePeriod[] = ["week", "month"];
  */
 export function AttendanceByClass() {
   const [period, setPeriod] = useState<AttendancePeriod>("month");
-  const [parallel, setParallel] = useState<string>("all");
   const [openGrade, setOpenGrade] = useState<number | null>(null);
   const [openClass, setOpenClass] = useState<string | null>(null);
 
   const stats = useMemo(() => allClassAttendanceStats(period), [period]);
-  const parallels = useMemo(
-    () => Array.from(new Set(stats.map((s) => s.parallel))).sort(),
-    [stats],
-  );
-  const shownClasses = useMemo(
-    () => (parallel === "all" ? stats : stats.filter((s) => s.parallel === parallel)),
-    [stats, parallel],
-  );
-  const grades = useMemo(() => gradeAttendanceStats(shownClasses), [shownClasses]);
+  const grades = useMemo(() => gradeAttendanceStats(stats), [stats]);
 
-  const totalStudents = shownClasses.reduce((sum, s) => sum + s.studentCount, 0);
+  const totalStudents = stats.reduce((sum, s) => sum + s.studentCount, 0);
   const schoolAverage =
     totalStudents === 0
       ? 0
       : Math.round(
-          shownClasses.reduce((sum, s) => sum + s.averagePercent * s.studentCount, 0) /
-            totalStudents,
+          stats.reduce((sum, s) => sum + s.averagePercent * s.studentCount, 0) / totalStudents,
         );
-
-  function toggleParallel(next: string) {
-    setParallel(next);
-    setOpenGrade(null);
-    setOpenClass(null);
-  }
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface">
@@ -92,33 +76,8 @@ export function AttendanceByClass() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2.5">
-        <span className="text-sm text-foreground-muted">Parallel:</span>
-        <button
-          type="button"
-          onClick={() => toggleParallel("all")}
-          aria-pressed={parallel === "all"}
-          className={chipClass(parallel === "all")}
-        >
-          Barchasi
-        </button>
-        {parallels.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => toggleParallel(p)}
-            aria-pressed={parallel === p}
-            className={chipClass(parallel === p)}
-          >
-            {p}
-          </button>
-        ))}
-      </div>
-
       {grades.length === 0 ? (
-        <p className="px-4 py-8 text-center text-sm text-foreground-muted">
-          Bu parallelda sinf topilmadi.
-        </p>
+        <p className="px-4 py-8 text-center text-sm text-foreground-muted">Sinf topilmadi.</p>
       ) : (
         <ul>
           {grades.map((grade) => (
@@ -182,14 +141,6 @@ export function AttendanceByClass() {
       )}
     </div>
   );
-}
-
-function chipClass(active: boolean): string {
-  return `rounded-full px-3 py-1 text-xs font-medium transition-colors focus-ring ${
-    active
-      ? "bg-brand text-brand-foreground"
-      : "border border-border bg-surface text-foreground-muted hover:bg-surface-muted"
-  }`;
 }
 
 function barColor(percent: number): string {

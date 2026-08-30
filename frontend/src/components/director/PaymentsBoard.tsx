@@ -36,26 +36,15 @@ export function PaymentsBoard({
   summary: FinanceSummary;
   classStats: ClassPaymentStat[];
 }) {
-  const [parallel, setParallel] = useState<string>("all");
   const [openGrade, setOpenGrade] = useState<number | null>(null);
   const [openClass, setOpenClass] = useState<string | null>(null);
 
-  const parallels = useMemo(
-    () => Array.from(new Set(classStats.map((c) => c.parallel))).sort(),
-    [classStats],
-  );
+  const grades = useMemo(() => gradePaymentStats(classStats), [classStats]);
 
-  const shownClasses = useMemo(
-    () => (parallel === "all" ? classStats : classStats.filter((c) => c.parallel === parallel)),
-    [classStats, parallel],
-  );
-
-  const grades = useMemo(() => gradePaymentStats(shownClasses), [shownClasses]);
-
-  // Filtrlangan kesim boʻyicha jamlanma — jadval sarlavhasida.
-  const filteredTotals = useMemo(
+  // Maktab boʻyicha jamlanma — jadval sarlavhasida.
+  const totals = useMemo(
     () =>
-      shownClasses.reduce(
+      classStats.reduce(
         (acc, c) => ({
           expected: acc.expected + c.expected,
           collected: acc.collected + c.collected,
@@ -63,18 +52,10 @@ export function PaymentsBoard({
         }),
         { expected: 0, collected: 0, debt: 0 },
       ),
-    [shownClasses],
+    [classStats],
   );
-  const filteredPercent =
-    filteredTotals.expected === 0
-      ? 0
-      : Math.round((filteredTotals.collected / filteredTotals.expected) * 100);
-
-  function toggleParallel(next: string) {
-    setParallel(next);
-    setOpenGrade(null);
-    setOpenClass(null);
-  }
+  const totalPercent =
+    totals.expected === 0 ? 0 : Math.round((totals.collected / totals.expected) * 100);
 
   return (
     <div className="flex flex-col gap-5">
@@ -113,30 +94,6 @@ export function PaymentsBoard({
         </Card>
       </div>
 
-      {/* Parallel filtri */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-foreground-muted">Parallel:</span>
-        <button
-          type="button"
-          onClick={() => toggleParallel("all")}
-          aria-pressed={parallel === "all"}
-          className={chipClass(parallel === "all")}
-        >
-          Barchasi
-        </button>
-        {parallels.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => toggleParallel(p)}
-            aria-pressed={parallel === p}
-            className={chipClass(parallel === p)}
-          >
-            {p}
-          </button>
-        ))}
-      </div>
-
       {/* Sinf darajalari kesimi */}
       <div className="overflow-hidden rounded-xl border border-border bg-surface">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
@@ -144,16 +101,14 @@ export function PaymentsBoard({
             Sinf darajalari kesimida toʻlov
           </h2>
           <p className="text-xs text-foreground-muted">
-            Yigʻilgan <span className="num font-medium text-foreground">{filteredPercent}%</span> ·{" "}
-            <span className="num">{formatSom(filteredTotals.collected)}</span> / qarz{" "}
-            <span className="num text-danger">{formatSom(filteredTotals.debt)}</span>
+            Yigʻilgan <span className="num font-medium text-foreground">{totalPercent}%</span> ·{" "}
+            <span className="num">{formatSom(totals.collected)}</span> / qarz{" "}
+            <span className="num text-danger">{formatSom(totals.debt)}</span>
           </p>
         </div>
 
         {grades.length === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-foreground-muted">
-            Bu parallelda sinf topilmadi.
-          </p>
+          <p className="px-4 py-8 text-center text-sm text-foreground-muted">Sinf topilmadi.</p>
         ) : (
           <ul>
             {grades.map((grade) => (
@@ -226,14 +181,6 @@ export function PaymentsBoard({
       </div>
     </div>
   );
-}
-
-function chipClass(active: boolean): string {
-  return `rounded-full px-3 py-1.5 text-sm font-medium transition-colors focus-ring ${
-    active
-      ? "bg-brand text-brand-foreground"
-      : "border border-border bg-surface text-foreground-muted hover:bg-surface-muted"
-  }`;
 }
 
 function percentBar(percent: number): string {
