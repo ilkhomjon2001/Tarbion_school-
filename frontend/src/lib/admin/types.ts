@@ -309,6 +309,122 @@ export interface Quarter {
   to: string;
 }
 
+// ─────────────────────────── Lidlar ───────────────────────────
+
+/**
+ * Lid — hali ariza bermagan, faqat qiziqqan oila.
+ *
+ * Ariza (`Application`) dan farqi: arizada hujjat va shartnoma bor, lidda
+ * faqat telefon raqami va qiziqish. Lid bosqichma-bosqich siljiydi va
+ * oxirida arizaga aylanadi yoki yoʻqoladi — ikkalasi ham qayd etiladi,
+ * chunki «nechta qoʻngʻiroqdan nechta oʻquvchi chiqdi» degan savol
+ * marketing byudjetini belgilaydi.
+ */
+export type LeadStage =
+  | "yangi"
+  | "boglanildi"
+  | "tashrif"
+  | "sinov_kuni"
+  | "ariza"
+  | "rad";
+
+export const LEAD_STAGE_LABELS: Record<LeadStage, string> = {
+  yangi: "Yangi",
+  boglanildi: "Bogʻlanildi",
+  tashrif: "Tashrif buyurdi",
+  sinov_kuni: "Sinov kuni",
+  ariza: "Ariza berdi",
+  rad: "Yoʻqotildi",
+};
+
+/** Voronka tartibi — «rad» undan tashqarida. */
+export const LEAD_PIPELINE: LeadStage[] = [
+  "yangi",
+  "boglanildi",
+  "tashrif",
+  "sinov_kuni",
+  "ariza",
+];
+
+export type LeadSource =
+  | "instagram"
+  | "telegram"
+  | "tavsiya"
+  | "sayt"
+  | "telefon"
+  | "tashrif";
+
+export const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
+  instagram: "Instagram",
+  telegram: "Telegram",
+  tavsiya: "Tanish tavsiyasi",
+  sayt: "Veb-sayt",
+  telefon: "Telefon qoʻngʻirogʻi",
+  tashrif: "Oʻzi kelgan",
+};
+
+export interface Lead {
+  id: string;
+  childName: string;
+  birthYear: number;
+  /** Qaysi sinfga qiziqmoqda. */
+  targetClass: string;
+  parentName: string;
+  phone: string;
+  source: LeadSource;
+  stage: LeadStage;
+  note: string;
+  /** Masʼul xodim. */
+  ownerName: string;
+  createdAt: string;
+  /** Keyingi qadam sanasi — kechikkanlari roʻyxat tepasiga chiqadi. */
+  nextActionAt: string;
+  /** `rad` boʻlsa — sababi. */
+  lostReason?: string;
+}
+
+// ─────────────────────── Qoʻngʻiroqlar ───────────────────────
+
+export type CallDirection = "kirish" | "chiqish";
+
+export const CALL_DIRECTION_LABELS: Record<CallDirection, string> = {
+  kirish: "Kirish",
+  chiqish: "Chiqish",
+};
+
+export type CallOutcome =
+  | "javob_berdi"
+  | "javob_bermadi"
+  | "band"
+  | "qayta_qongiroq";
+
+export const CALL_OUTCOME_LABELS: Record<CallOutcome, string> = {
+  javob_berdi: "Gaplashildi",
+  javob_bermadi: "Javob bermadi",
+  band: "Band edi",
+  qayta_qongiroq: "Qayta qoʻngʻiroq soʻradi",
+};
+
+/**
+ * Qoʻngʻiroq yozuvi. Lidga yoki oʻquvchiga bogʻlanadi — shu sabab
+ * oʻquvchi profilida «toʻlov + suhbat + qoʻngʻiroq» bitta tarixda
+ * koʻrinadi.
+ */
+export interface CallLog {
+  id: string;
+  /** "2026-09-20 14:32" */
+  at: string;
+  direction: CallDirection;
+  phone: string;
+  contactName: string;
+  leadId?: string;
+  studentId?: string;
+  durationSec: number;
+  outcome: CallOutcome;
+  note: string;
+  operator: string;
+}
+
 // ─────────────────────── Shartnoma harakati ───────────────────────
 
 /**
@@ -439,7 +555,9 @@ export type AuditAction =
   | "profile"
   | "contract"
   | "access"
-  | "settings";
+  | "settings"
+  | "lead"
+  | "call";
 
 export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   payment: "Toʻlov kiritildi",
@@ -458,6 +576,8 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   contract: "Shartnoma",
   access: "Huquqlar",
   settings: "Sozlamalar",
+  lead: "Lid",
+  call: "Qoʻngʻiroq",
 };
 
 export interface AuditEntry {

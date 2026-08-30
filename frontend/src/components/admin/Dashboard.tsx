@@ -9,23 +9,30 @@ import {
   ClipboardIcon,
   GraduationCapIcon,
   MessageSquareIcon,
+  PhoneIcon,
 } from "@/components/ui/icons";
 import { formatSom } from "@/lib/format";
 import { debtOf, overdueDays, useAdmin, useAdminDispatch, useDebtors, useFinanceSummary } from "@/lib/admin/store";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/admin/types";
-import { APPEALS, isOpen } from "@/lib/school/appeals";
+import { isOpen } from "@/lib/school/appeals";
 
 const TODAY_LABEL = "20-sentabr, 2026";
 
 /** Admin bosh sahifasi — analitika emas, ish navbati. */
 export function AdminDashboard() {
-  const { applications, documents, students } = useAdmin();
+  const { applications, documents, students, appeals, leads } = useAdmin();
   const finance = useFinanceSummary();
   const debtors = useDebtors();
 
   const newApplications = applications.filter((a) => a.status === "new");
   const openDocuments = documents.filter((d) => d.status !== "issued");
-  const openAppeals = APPEALS.filter(isOpen);
+  const openAppeals = appeals.filter(isOpen);
+
+  // Lidlar: hali arizaga yetmagan va yoʻqotilmaganlari.
+  const activeLeads = leads.filter((l) => l.stage !== "rad" && l.stage !== "ariza").length;
+  const overdueLeads = leads.filter(
+    (l) => l.stage !== "rad" && l.stage !== "ariza" && l.nextActionAt < "2026-09-20",
+  ).length;
 
   // Eng kech qolgan qarzdor — navbatning birinchi qatoriga chiqadi.
   const worstDebtor = debtors[0];
@@ -44,14 +51,23 @@ export function AdminDashboard() {
         </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <QueueCard
+          href="/admin/lidlar"
+          icon={<PhoneIcon className="h-5 w-5" />}
+          tone="brand"
+          value={activeLeads}
+          label="Faol lidlar"
+          note={overdueLeads > 0 ? `${overdueLeads} tasi kechikdi` : undefined}
+          index={0}
+        />
         <QueueCard
           href="/admin/qabul"
           icon={<GraduationCapIcon className="h-5 w-5" />}
           tone="warning"
           value={newApplications.length}
           label="Yangi arizalar"
-          index={0}
+          index={1}
         />
         <QueueCard
           href="/admin/tolovlar"
@@ -60,7 +76,7 @@ export function AdminDashboard() {
           value={finance.debtorCount}
           label="Qarzdorlar"
           note={formatSom(finance.debt)}
-          index={1}
+          index={2}
         />
         <QueueCard
           href="/admin/malumotnomalar"
@@ -68,7 +84,7 @@ export function AdminDashboard() {
           tone="info"
           value={openDocuments.length}
           label="Maʼlumotnoma soʻrovi"
-          index={2}
+          index={3}
         />
         <QueueCard
           href="/admin/murojaatlar"
@@ -76,7 +92,7 @@ export function AdminDashboard() {
           tone="brand"
           value={openAppeals.length}
           label="Javob kutayotgan murojaat"
-          index={3}
+          index={4}
         />
       </div>
 

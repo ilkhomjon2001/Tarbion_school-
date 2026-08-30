@@ -5,8 +5,9 @@ export const metadata = { title: "Qabul — Tarbion administrator" };
 export default async function AdminEnrollPage({
   searchParams,
 }: {
-  searchParams: Promise<{ yangi?: string }>;
+  searchParams: Promise<{ yangi?: string; lid?: string }>;
 }) {
-  const { yangi } = await searchParams;
-  return <EnrollWizard startBlank={yangi === "1"} />;
+  const { yangi, lid } = await searchParams;
+  // `lid` — lidlar boʻlimidan kelgan: forma oldindan toʻldiriladi.
+  return <EnrollWizard startBlank={yangi === "1" || Boolean(lid)} fromLeadId={lid} />;
 }

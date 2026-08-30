@@ -306,3 +306,28 @@ Oʻquvchi va ota-ona kabinetlari alohida mock maʼlumotdan qurilgan
 `examIdentityFor(className, key)` — kabinet oʻquvchisini oʻsha sinfdagi
 haqiqiy yozuvga BARQAROR bogʻlaydi. Backend ulanganda kerak boʻlmaydi:
 id bitta boʻladi. Uni oʻsha vaqtda olib tashlash kerak.
+
+## 2026-08-30 · Lid — ariza emas, alohida obyekt
+Qabul arizasi (`Application`) allaqachon hujjat va shartnomani nazarda
+tutadi. Lid esa faqat telefon raqami va qiziqish — hali hech narsa
+yoʻq. Ikkalasini bitta modelga tiqish notoʻgʻri boʻlardi: lidda
+boʻsh maydonlar koʻp boʻlib, «ariza toʻldirilmagan» kabi koʻrinardi.
+
+Shu sabab `Lead` alohida: 5 bosqichli voronka (yangi → bogʻlanildi →
+tashrif → sinov kuni → ariza) va yoʻqotilganlar. Oxirgi bosqichda
+`/admin/qabul?lid=<id>` ga oʻtadi va sehrgar lid maʼlumotlari bilan
+oldindan toʻldiriladi — ikkinchi marta yozilmaydi.
+
+Lid OʻCHIRILMAYDI: «Yoʻqotildi» bosqichiga sabab bilan oʻtkaziladi.
+Aks holda «nechta qoʻngʻiroqdan nechta oʻquvchi chiqdi» degan savolga
+javob qolmasdi — marketing byudjeti shunga qarab belgilanadi.
+
+## 2026-08-30 · Qoʻngʻiroq logi lid VA oʻquvchiga bogʻlanadi
+`CallLog` da `leadId?` ham, `studentId?` ham bor. Shu sabab bitta yozuv
+ikki joyda koʻrinadi: lid kartochkasida va oʻquvchi profilidagi «Butun
+tarix» lentasida.
+
+`useStudentHistory()` beshta manbani (toʻlov, storno, qoʻngʻiroq, suhbat
+qaydnomasi, hujjat, shartnoma) bitta vaqt lentasiga yigʻadi. Rahbar
+soʻragan «oʻquvchi boʻyicha sessiyalar» aynan shu — alohida jadval
+qurilmadi, mavjud maʼlumot bir joyga keltirildi.

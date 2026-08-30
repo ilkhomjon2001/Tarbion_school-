@@ -5,7 +5,14 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { XIcon } from "@/components/ui/icons";
 import { formatSom } from "@/lib/format";
-import { debtOf, overdueDays, useAdmin, useAdminDispatch } from "@/lib/admin/store";
+import {
+  debtOf,
+  overdueDays,
+  useAdmin,
+  useAdminDispatch,
+  useStudentHistory,
+  type HistoryEntry,
+} from "@/lib/admin/store";
 import {
   CONTRACT_END_REASONS,
   DEBT_ACTION_LABELS,
@@ -30,6 +37,7 @@ export function StudentDrawer({
 }) {
   const dispatch = useAdminDispatch();
   const { payments, documents, debtActions } = useAdmin();
+  const timeline = useStudentHistory(student.id);
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [archiveReason, setArchiveReason] = useState("Ota-ona arizasi asosida");
   const [endReason, setEndReason] = useState<ContractEndReason>("boshqa_maktab");
@@ -218,6 +226,44 @@ export function StudentDrawer({
             </Link>
           </Section>
 
+          <Section title={`Butun tarix (${timeline.length})`}>
+            <p className="mb-2 text-xs text-foreground-muted">
+              Toʻlov, qoʻngʻiroq, suhbat, hujjat va shartnoma — vaqt boʻyicha
+              bitta lentada.
+            </p>
+            {timeline.length === 0 ? (
+              <Empty>Hali yozuv yoʻq.</Empty>
+            ) : (
+              <ol className="flex flex-col gap-2">
+                {timeline.map((entry) => (
+                  <li key={`${entry.kind}-${entry.id}`} className="flex gap-2.5">
+                    <span
+                      aria-hidden
+                      className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${HISTORY_DOT[entry.kind]}`}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-baseline justify-between gap-2">
+                        <span className="text-sm font-medium text-foreground">
+                          {entry.title}
+                        </span>
+                        <span className="num text-xs text-foreground-muted">{entry.at}</span>
+                      </span>
+                      <span className="block text-xs text-foreground-muted">
+                        {entry.detail}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+            <Link
+              href={`/admin/qongiroqlar?q=${encodeURIComponent(student.guardianName)}`}
+              className="focus-ring mt-3 inline-block rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-brand-dark transition-colors hover:bg-brand-tint"
+            >
+              Qoʻngʻiroqlar boʻlimida koʻrish
+            </Link>
+          </Section>
+
           {student.status === "active" && (
             <Section title="Shartnomani yopish">
               {confirmArchive ? (
@@ -337,3 +383,13 @@ function Empty({ children }: { children: React.ReactNode }) {
     </p>
   );
 }
+
+/** Tarix lentasidagi nuqta rangi — hodisa turini bir qarashda ajratadi. */
+const HISTORY_DOT: Record<HistoryEntry["kind"], string> = {
+  payment: "bg-success",
+  storno: "bg-danger",
+  call: "bg-info",
+  note: "bg-warning",
+  document: "bg-brand",
+  contract: "bg-foreground-muted",
+};
