@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { Header } from "@/components/ui/Header";
 import { formatDate } from "@/lib/format";
-import { GRADE_TYPE_LABELS } from "@/lib/labels";
+import { GRADE_KIND_LABELS } from "@/lib/labels";
 import { getGradeById, getHomeworkById } from "@/lib/mock/fetchers";
 
 export default async function GradeDetailPage({
@@ -29,7 +29,7 @@ export default async function GradeDetailPage({
             {grade.value}
           </span>
           <div className="min-w-0">
-            <Badge tone="brand">{GRADE_TYPE_LABELS[grade.type]}</Badge>
+            <Badge tone="brand">{GRADE_KIND_LABELS[grade.kind]}</Badge>
             <p className="mt-1 text-sm text-foreground-muted">
               {formatDate(grade.date)}
             </p>

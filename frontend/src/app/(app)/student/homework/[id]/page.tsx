@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { Header } from "@/components/ui/Header";
 import { HomeworkSubmitForm } from "@/components/features/student/HomeworkSubmitForm";
 import { formatDate } from "@/lib/format";
-import { HOMEWORK_LABELS, HOMEWORK_TONE } from "@/lib/labels";
+import { SUBMISSION_LABELS, SUBMISSION_TONE } from "@/lib/labels";
 import { getHomeworkById } from "@/lib/mock/fetchers";
 
 export default async function HomeworkDetailPage({
@@ -25,8 +25,8 @@ export default async function HomeworkDetailPage({
       <div className="flex flex-col gap-4 p-4">
         <Card>
           <div className="mb-2 flex items-center justify-between">
-            <Badge tone={HOMEWORK_TONE[homework.status]}>
-              {HOMEWORK_LABELS[homework.status]}
+            <Badge tone={SUBMISSION_TONE[homework.status]}>
+              {SUBMISSION_LABELS[homework.status]}
             </Badge>
             <span className="text-xs text-foreground-muted">
               Muddat: {formatDate(homework.dueDate)}

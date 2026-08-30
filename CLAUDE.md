@@ -191,6 +191,13 @@ cd bot && python main.py
 
 # testlar
 cd backend && pytest -q
+cd frontend && pnpm check:contracts   # backend enum'lari bilan moslik
 ```
+
+Backend va frontend umumiy kodlari (davomat holati, baho turi, vazifa
+holati, rollar) `frontend/src/lib/contracts.ts` da — u `backend/app/models/`
+dagi enum'larning aksi. Enum oʻzgarsa `pnpm check:contracts` yiqiladi.
+Frontendda yangi kod oʻylab topilmaydi: avval backend enum'i, keyin
+`contracts.ts`, keyin komponentlar.
 
 `.env` kalitlari `.env.example` da. Yangi kalit qo'shsang — ikkalasini ham yangila.

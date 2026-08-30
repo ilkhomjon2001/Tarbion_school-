@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { ChevronRightIcon } from "@/components/ui/icons";
 import { formatDate } from "@/lib/format";
-import { HOMEWORK_LABELS, HOMEWORK_TONE } from "@/lib/labels";
+import { SUBMISSION_LABELS, SUBMISSION_TONE } from "@/lib/labels";
 import type { Homework } from "@/lib/types";
 
 export function HomeworkListItem({ homework }: { homework: Homework }) {
@@ -20,8 +20,8 @@ export function HomeworkListItem({ homework }: { homework: Homework }) {
           Muddat: {formatDate(homework.dueDate)}
         </p>
       </div>
-      <Badge tone={HOMEWORK_TONE[homework.status]}>
-        {HOMEWORK_LABELS[homework.status]}
+      <Badge tone={SUBMISSION_TONE[homework.status]}>
+        {SUBMISSION_LABELS[homework.status]}
       </Badge>
       <ChevronRightIcon className="h-4 w-4 shrink-0 text-foreground-muted" />
     </Link>

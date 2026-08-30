@@ -294,29 +294,25 @@ export async function saveSubmissions(
 
 // ─────────────────────────── Baholar (JUR-01..04) ───────────────────────────
 
-/** JUR-03: baho turlari va ularning vazni. */
-export type GradeKind = "current" | "control" | "term" | "annual";
-
-export const GRADE_KIND_LABELS: Record<GradeKind, string> = {
-  current: "Joriy",
-  control: "Nazorat ishi",
-  term: "Chorak",
-  annual: "Yillik",
-};
-
 /**
- * Vaznlar — chorak bahosini hisoblashda ishlatiladi (JUR-04).
- * Nazorat ishi joriy bahodan ogʻirroq: bitta nazorat 3 ta joriy bahoga teng.
+ * JUR-02, JUR-03: baho turi, vazni va baholash tizimi.
+ *
+ * Taʼriflar `lib/contracts.ts` da — backenddagi `GradeKind`,
+ * `GradingScale` va `SCALE_MAX` ning aksi. Bu yerda faqat qayta
+ * eksport, shunda ustoz jurnali va oʻquvchi kabineti bir xil vazndan
+ * hisoblaydi.
  */
-export const GRADE_WEIGHTS: Record<GradeKind, number> = {
-  current: 1,
-  control: 3,
-  term: 0, // chorak bahosining oʻzi hisobga kirmaydi
-  annual: 0,
-};
+export {
+  GRADE_KIND_LABELS,
+  GRADE_WEIGHTS,
+  SCALE_MAX,
+  codeToScale,
+  scaleToCode,
+} from "@/lib/contracts";
+export type { GradeKind, GradingScale, GradingScaleCode } from "@/lib/contracts";
 
-/** JUR-02: baholash tizimi. */
-export type GradingScale = 5 | 100;
+import type { GradeKind, GradingScale } from "@/lib/contracts";
+import { GRADE_WEIGHTS } from "@/lib/contracts";
 
 export interface GradeEntry {
   value: number;

@@ -11,7 +11,7 @@ import { AnnouncementItem } from "@/components/features/student/AnnouncementItem
 import { LessonTimeline } from "@/components/features/student/LessonTimeline";
 import { AttendanceCalendar } from "@/components/features/student/AttendanceCalendar";
 import { RankingList } from "@/components/features/student/RankingList";
-import { GRADE_TYPE_LABELS } from "@/lib/labels";
+import { GRADE_KIND_LABELS } from "@/lib/labels";
 import { formatDate, formatWeekday } from "@/lib/format";
 import {
   getAttendanceSummary,
@@ -238,7 +238,7 @@ async function RecentGrades() {
           <div>
             <p className="text-sm font-medium text-foreground">{grade.subject}</p>
             <p className="text-xs text-foreground-muted">
-              {GRADE_TYPE_LABELS[grade.type]}
+              {GRADE_KIND_LABELS[grade.kind]}
             </p>
           </div>
           <Badge tone="brand">{grade.value}</Badge>

@@ -1,6 +1,15 @@
-export type AttendanceStatus = "present" | "absent" | "excused" | "late";
+/**
+ * Backend bilan umumiy kodlar `lib/contracts.ts` da — bu yerda ular faqat
+ * qayta eksport qilinadi, aks holda ikki joyda ikki xil roʻyxat paydo
+ * boʻladi (ilgari aynan shunday boʻlgan).
+ */
+export type {
+  AttendanceStatus,
+  GradeKind,
+  SubmissionStatus,
+} from "@/lib/contracts";
 
-export type HomeworkStatus = "assigned" | "submitted" | "late" | "graded";
+import type { AttendanceStatus, GradeKind, SubmissionStatus } from "@/lib/contracts";
 
 export type TestQuestionType = "single" | "multiple" | "matching" | "open";
 
@@ -48,7 +57,7 @@ export interface Homework {
   description: string;
   assignedDate: string;
   dueDate: string;
-  status: HomeworkStatus;
+  status: SubmissionStatus;
   grade?: number;
   teacherComment?: string;
   submissionText?: string;
@@ -96,13 +105,12 @@ export interface TestAttemptResult {
   pendingReviewCount: number;
 }
 
-export type GradeType = "joriy" | "nazorat" | "chorak" | "yillik";
-
 export interface GradeEntry {
   id: string;
   subject: string;
   date: string;
-  type: GradeType;
+  /** `contracts.ts::GradeKind` — backenddagi `grades.kind` ustuni. */
+  kind: GradeKind;
   value: number;
   teacherName: string;
   comment: string;

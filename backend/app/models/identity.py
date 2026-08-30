@@ -25,6 +25,10 @@ class RoleName(str, enum.Enum):
     PARENT = "parent"
     TEACHER = "teacher"
     HOMEROOM_TEACHER = "homeroom_teacher"
+    # Oʻquv boʻlimi: imtihon, dars rejasi, sifat nazorati. Maktab rahbari
+    # soʻragan alohida rol — administratordan farqli, moliya va qabulga
+    # tegmaydi.
+    ACADEMIC = "academic"
     ADMIN = "admin"
     DIRECTOR = "director"
     SUPERADMIN = "superadmin"

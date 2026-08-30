@@ -364,3 +364,44 @@ kirgan 1990-yilgi xodim — 18 yoshli direktor — paydo boʻlgandi.
 
 Ishdan boʻshagan xodim oʻchirilmaydi: `status: "archived"` boʻladi va
 `ExitRecord` sababi bilan qoladi. Kadrlar aylanmasi shundan hisoblanadi.
+
+## 2026-08-30 · Backend bilan umumiy kodlar — `lib/contracts.ts`
+Ikki odam ikki tomonda ishlaydi va enum'lar jimgina ajralib ketardi.
+Tekshirganda uchta haqiqiy nomuvofiqlik chiqdi:
+
+1. `GradeType` oʻzbekcha kalitlar bilan edi (`joriy | nazorat | chorak |
+   yillik`), backendda esa `GradeKind` inglizcha (`current | control |
+   term | annual`). CLAUDE.md «kod inglizcha» deydi. Frontend inglizchaga
+   oʻtkazildi.
+2. Nazorat ishining vazni ikki xil edi: `lib/grades.ts` da 2,
+   `lib/teacher/store.ts` da 3. Bir xil baholardan oʻquvchi kabineti va
+   ustoz jurnali ikki xil chorak oʻrtachasi chiqarardi. Yagona qiymat —
+   3 (ustoz modulidagi izoh aniqroq edi).
+3. `SubmissionStatus` da `returned` faqat ustoz kabinetida bor edi,
+   oʻquvchi kabinetida yoʻq. Endi ikkalasi bitta roʻyxatdan oladi.
+
+Barchasi `src/lib/contracts.ts` ga yigʻildi — u
+`backend/app/models/` dagi enum'larning aksi va qaysi fayldan
+kelganini koʻrsatadi. Qolgan modullar faqat qayta eksport qiladi.
+
+## 2026-08-30 · `academic` roli backend enum'iga qoʻshildi
+`RoleName` da oʻquv boʻlimi yoʻq edi, frontendda esa alohida kabinet bor.
+Enum qiymati oddiy `String(32)` — PG enum emas, shuning uchun migratsiya
+talab qilmaydi.
+
+Teskari yoʻnalishda `homeroom_teacher` backendda alohida rol, frontendda
+alohida KABINET emas: sinf rahbari ustoz kabinetida ishlaydi, farqi
+huquqlarda (`lib/teacher/roles.ts`). Bu ataylab shunday va
+`contracts.ts` da izohlangan.
+
+## 2026-08-30 · Kontrakt ogʻishini skript tutadi
+`pnpm check:contracts` backenddagi Python enum'larini va
+`*_LABELS_UZ` lugʻatlarini oʻqib, `lib/contracts.ts` bilan solishtiradi.
+TypeScript buni koʻrolmaydi — Python fayl unga begona.
+
+Skript ikki xil ogʻishni tutadi: enum'ga qiymat qoʻshilishi va
+oʻzbekcha yorliq matnining oʻzgarishi. Ikkalasi ham ataylab buzib
+tekshirildi.
+
+`scripts/` `tsconfig.json` dan chiqarildi: Node `--experimental-strip-types`
+import yoʻlida `.ts` kengaytmasini talab qiladi, Next esa uni rad etadi.

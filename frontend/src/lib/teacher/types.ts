@@ -7,14 +7,10 @@
  * backend ulanganda komponentlar oʻzgarmaydi.
  */
 
-export type AttendanceStatus = "present" | "absent" | "excused" | "late";
+// Backend bilan umumiy kodlar — `lib/contracts.ts` yagona manba.
+export type { AttendanceStatus, SubmissionStatus } from "@/lib/contracts";
 
-export type SubmissionStatus =
-  | "assigned"
-  | "submitted"
-  | "late"
-  | "graded"
-  | "returned";
+import type { AttendanceStatus, SubmissionStatus } from "@/lib/contracts";
 
 export interface TeacherProfile {
   id: string;

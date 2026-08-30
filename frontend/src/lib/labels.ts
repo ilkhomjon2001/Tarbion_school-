@@ -1,45 +1,21 @@
-import type { AttendanceStatus, GradeType, HomeworkStatus, MealType } from "@/lib/types";
+/**
+ * Interfeys yorliqlari.
+ *
+ * Backend bilan umumiy kodlarning yorligʻi `lib/contracts.ts` da —
+ * u yerdagilar `backend/app/models/` dagi `*_LABELS_UZ` lugʻatlarining
+ * aksi. Bu yerda ular qayta eksport qilinadi va faqat frontendga
+ * tegishli yorliqlar (ovqat turi kabi) qoʻshiladi.
+ */
 
-export const ATTENDANCE_LABELS: Record<AttendanceStatus, string> = {
-  present: "Keldi",
-  absent: "Kelmadi",
-  excused: "Sababli",
-  late: "Kechikdi",
-};
+import type { MealType } from "@/lib/types";
 
-export const ATTENDANCE_TONE: Record<
-  AttendanceStatus,
-  "success" | "danger" | "warning" | "info"
-> = {
-  present: "success",
-  absent: "danger",
-  excused: "info",
-  late: "warning",
-};
-
-export const HOMEWORK_LABELS: Record<HomeworkStatus, string> = {
-  assigned: "Berilgan",
-  submitted: "Topshirilgan",
-  late: "Kechikkan",
-  graded: "Baholangan",
-};
-
-export const HOMEWORK_TONE: Record<
-  HomeworkStatus,
-  "brand" | "success" | "warning" | "danger"
-> = {
-  assigned: "brand",
-  submitted: "brand",
-  late: "danger",
-  graded: "success",
-};
-
-export const GRADE_TYPE_LABELS: Record<GradeType, string> = {
-  joriy: "Joriy",
-  nazorat: "Nazorat ishi",
-  chorak: "Chorak",
-  yillik: "Yillik",
-};
+export {
+  ATTENDANCE_LABELS,
+  ATTENDANCE_TONE,
+  GRADE_KIND_LABELS,
+  SUBMISSION_LABELS,
+  SUBMISSION_TONE,
+} from "@/lib/contracts";
 
 export const MEAL_TYPE_LABELS: Record<MealType, string> = {
   breakfast: "Nonushta",

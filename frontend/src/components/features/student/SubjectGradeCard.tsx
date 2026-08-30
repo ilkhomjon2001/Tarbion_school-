@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { estimateQuarterGrade } from "@/lib/grades";
-import { GRADE_TYPE_LABELS } from "@/lib/labels";
+import { GRADE_KIND_LABELS } from "@/lib/labels";
 import type { SubjectGradeSummary } from "@/lib/types";
 
 const GRADE_DOT_CLASSES: Record<number, string> = {
@@ -42,7 +42,7 @@ export function SubjectGradeCard({
           <Link
             key={entry.id}
             href={`/student/grades/${entry.id}`}
-            title={`${GRADE_TYPE_LABELS[entry.type]} · ${entry.date}`}
+            title={`${GRADE_KIND_LABELS[entry.kind]} · ${entry.date}`}
             className={`flex h-8 w-8 items-center justify-center rounded-lg text-sm font-semibold transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand ${
               GRADE_DOT_CLASSES[entry.value] ?? "bg-surface-muted text-foreground"
             }`}

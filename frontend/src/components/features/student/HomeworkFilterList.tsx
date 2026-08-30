@@ -3,19 +3,19 @@
 import { useState } from "react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { HomeworkListItem } from "@/components/features/student/HomeworkListItem";
-import { HOMEWORK_LABELS } from "@/lib/labels";
-import type { Homework, HomeworkStatus } from "@/lib/types";
+import { SUBMISSION_LABELS } from "@/lib/labels";
+import type { Homework, SubmissionStatus } from "@/lib/types";
 
-const FILTERS: { key: HomeworkStatus | "all"; label: string }[] = [
+const FILTERS: { key: SubmissionStatus | "all"; label: string }[] = [
   { key: "all", label: "Barchasi" },
-  { key: "assigned", label: HOMEWORK_LABELS.assigned },
-  { key: "submitted", label: HOMEWORK_LABELS.submitted },
-  { key: "graded", label: HOMEWORK_LABELS.graded },
-  { key: "late", label: HOMEWORK_LABELS.late },
+  { key: "assigned", label: SUBMISSION_LABELS.assigned },
+  { key: "submitted", label: SUBMISSION_LABELS.submitted },
+  { key: "graded", label: SUBMISSION_LABELS.graded },
+  { key: "late", label: SUBMISSION_LABELS.late },
 ];
 
 export function HomeworkFilterList({ items }: { items: Homework[] }) {
-  const [filter, setFilter] = useState<HomeworkStatus | "all">("assigned");
+  const [filter, setFilter] = useState<SubmissionStatus | "all">("assigned");
   const filtered =
     filter === "all" ? items : items.filter((item) => item.status === filter);
 
