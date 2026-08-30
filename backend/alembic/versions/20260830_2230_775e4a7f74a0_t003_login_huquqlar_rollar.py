@@ -47,7 +47,15 @@ def upgrade() -> None:
     # nullable qoʻshiladi, id dan vaqtinchalik login yasaladi, keyin
     # NOT NULL qilinadi.
     op.add_column("users", sa.Column("login", sa.String(length=64), nullable=True))
-    op.execute("UPDATE users SET login = 'user' || left(id::text, 8) WHERE login IS NULL")
+    # TUZATILDI: avval `left(id::text, 8)` edi va toʻldirish `ix_users_login`
+    # unique indeksida yiqilardi. Sabab — kalitlar UUIDv7: birinchi 8 belgi
+    # VAQT belgisi, bir seansda yaratilgan 362 ta oʻquvchi vasiysi uchun u
+    # bir xil chiqadi ("user01a053c1" ikki marta). Boʻsh bazada bilinmaydi,
+    # maʼlumot bor bazada migratsiya butunlay oʻtmaydi. Toʻliq id olinadi:
+    # 4 + 32 = 36 belgi, `String(64)` ga sigʻadi va takrorlanmaydi.
+    op.execute(
+        "UPDATE users SET login = 'user' || replace(id::text, '-', '') WHERE login IS NULL"
+    )
     op.alter_column("users", "login", nullable=False)
     op.alter_column('users', 'phone',
                existing_type=sa.VARCHAR(length=20),
@@ -65,24 +73,27 @@ def upgrade() -> None:
     # koʻrsatardi.
     #
     # Rollar hech qachon oʻchirilmaydi — `roles` da `is_archived` ham yoʻq.
-    roles = sa.table(
-        "roles",
-        sa.column("id", sa.UUID()),
-        sa.column("name", sa.String()),
-        sa.column("description", sa.String()),
-    )
-    op.bulk_insert(
-        roles,
-        [
-            {"id": "0193b000-0000-7000-8000-000000000001", "name": "student", "description": "Oʻquvchi"},
-            {"id": "0193b000-0000-7000-8000-000000000002", "name": "parent", "description": "Ota-ona (vasiy)"},
-            {"id": "0193b000-0000-7000-8000-000000000003", "name": "teacher", "description": "Ustoz"},
-            {"id": "0193b000-0000-7000-8000-000000000004", "name": "homeroom_teacher", "description": "Sinf rahbari"},
-            {"id": "0193b000-0000-7000-8000-000000000005", "name": "academic", "description": "Oʻquv boʻlimi"},
-            {"id": "0193b000-0000-7000-8000-000000000006", "name": "admin", "description": "Administrator"},
-            {"id": "0193b000-0000-7000-8000-000000000007", "name": "director", "description": "Rahbariyat"},
-            {"id": "0193b000-0000-7000-8000-000000000008", "name": "superadmin", "description": "Super administrator"}
-        ],
+    # TUZATILDI: avval `op.bulk_insert` edi va rollar allaqachon mavjud
+    # bazada `uq_roles_name` da yiqilardi (eski seed `ensure_roles()` ularni
+    # yaratib qoʻygan boʻlishi mumkin). Migratsiya har qanday boshlangʻich
+    # holatda oʻtishi kerak, shuning uchun `ON CONFLICT DO NOTHING`.
+    #
+    # Mavjud qatorning id'si SAQLANADI — qayta yozilsa unga bogʻlangan
+    # `user_roles` yozuvlari yetim qolardi. Yangi muhitda esa id'lar shu
+    # yerdagi qatʼiy qiymatlar boʻladi.
+    op.execute(
+        """
+        INSERT INTO roles (id, name, description) VALUES
+        ('0193b000-0000-7000-8000-000000000001', 'student', 'Oʻquvchi'),
+        ('0193b000-0000-7000-8000-000000000002', 'parent', 'Ota-ona (vasiy)'),
+        ('0193b000-0000-7000-8000-000000000003', 'teacher', 'Ustoz'),
+        ('0193b000-0000-7000-8000-000000000004', 'homeroom_teacher', 'Sinf rahbari'),
+        ('0193b000-0000-7000-8000-000000000005', 'academic', 'Oʻquv boʻlimi'),
+        ('0193b000-0000-7000-8000-000000000006', 'admin', 'Administrator'),
+        ('0193b000-0000-7000-8000-000000000007', 'director', 'Rahbariyat'),
+        ('0193b000-0000-7000-8000-000000000008', 'superadmin', 'Super administrator')
+        ON CONFLICT (name) DO NOTHING
+        """
     )
 
 

@@ -79,7 +79,7 @@ export function LoginPanel({
   hint?: string;
   onSuccess: () => void;
 }) {
-  const [phone, setPhone] = useState("");
+  const [userLogin, setUserLogin] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -89,7 +89,7 @@ export function LoginPanel({
     setBusy(true);
     setError("");
     try {
-      await login(phone, password);
+      await login(userLogin.trim(), password);
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Kirib boʻlmadi");
@@ -107,12 +107,14 @@ export function LoginPanel({
 
       <form onSubmit={submit} className="mt-4 flex flex-col gap-3">
         <label className="block">
-          <span className="mb-1 block text-sm font-medium text-foreground">Telefon</span>
+          <span className="mb-1 block text-sm font-medium text-foreground">Login</span>
+          {/* Login foydalanuvchi tanlamaydi — tizim `familiya.ism`
+              shaklida yasaydi (backend `core/naming.py`). */}
           <input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            value={userLogin}
+            onChange={(e) => setUserLogin(e.target.value)}
             autoComplete="username"
-            placeholder="998901000002"
+            placeholder="qodirov.bahodir"
             className="focus-ring h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground"
           />
         </label>
@@ -135,7 +137,7 @@ export function LoginPanel({
 
         <button
           type="submit"
-          disabled={busy || !phone || !password}
+          disabled={busy || !userLogin.trim() || !password}
           className="focus-ring rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
         >
           {busy ? "Kirilmoqda…" : "Kirish"}

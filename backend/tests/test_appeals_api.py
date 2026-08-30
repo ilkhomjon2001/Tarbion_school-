@@ -43,20 +43,19 @@ DAY = date(2026, 9, 15)
 
 
 async def _roles(session: AsyncSession) -> dict[str, Role]:
-    out: dict[str, Role] = {}
-    for name in RoleName:
-        role = Role(name=name.value, description="")
-        session.add(role)
-        out[name.value] = role
-    await session.flush()
+    """Rollar `t003` migratsiyasida qatʼiy UUID bilan seed qilingan —
+    bu yerda faqat oʻqiladi, qayta yaratish `unique` ni buzadi."""
+    out = {r.name: r for r in (await session.execute(select(Role))).scalars()}
+    yetishmaydi = {n.value for n in RoleName} - set(out)
+    assert not yetishmaydi, f"Migratsiyada yoʻq rollar: {sorted(yetishmaydi)}"
     return out
 
 
 async def _user(
-    session: AsyncSession, roles: dict[str, Role], role_names: list[str], phone: str, last: str
+    session: AsyncSession, roles: dict[str, Role], role_names: list[str], login: str, last: str
 ) -> User:
     user = User(
-        phone=phone,
+        login=login,
         password_hash=hash_password(PASSWORD),
         last_name=last,
         first_name="Sinov",
@@ -72,23 +71,23 @@ async def world(session: AsyncSession) -> dict[str, object]:
     """Ikki oila, ikki sinf, ikki ustoz — «begona» tushunchasi paydo boʻlsin."""
     roles = await _roles(session)
 
-    admin = await _user(session, roles, [RoleName.ADMIN.value], "998900000001", "Adminov")
+    admin = await _user(session, roles, [RoleName.ADMIN.value], "sinov.admin", "Adminov")
     director = await _user(
-        session, roles, [RoleName.DIRECTOR.value], "998900000002", "Direktorov"
+        session, roles, [RoleName.DIRECTOR.value], "sinov.direktor", "Direktorov"
     )
     academic = await _user(
-        session, roles, [RoleName.ACADEMIC.value], "998900000003", "Oquvchiyev"
+        session, roles, [RoleName.ACADEMIC.value], "sinov.oquvbolim", "Oquvchiyev"
     )
     teacher_a = await _user(
         session,
         roles,
         [RoleName.TEACHER.value, RoleName.HOMEROOM_TEACHER.value],
-        "998900000004",
+        "sinov.ustoz_a",
         "Ustozov",
     )
-    teacher_b = await _user(session, roles, [RoleName.TEACHER.value], "998900000005", "Boshqayev")
-    parent_a = await _user(session, roles, [RoleName.PARENT.value], "998900000006", "Aliyev")
-    parent_b = await _user(session, roles, [RoleName.PARENT.value], "998900000007", "Valiyev")
+    teacher_b = await _user(session, roles, [RoleName.TEACHER.value], "sinov.ustoz_b", "Boshqayev")
+    parent_a = await _user(session, roles, [RoleName.PARENT.value], "sinov.otaona_a", "Aliyev")
+    parent_b = await _user(session, roles, [RoleName.PARENT.value], "sinov.otaona_b", "Valiyev")
 
     year = AcademicYear(
         name="2026-2027", starts_on=date(2026, 8, 24), ends_on=date(2027, 5, 25), is_current=True
@@ -150,10 +149,8 @@ async def world(session: AsyncSession) -> dict[str, object]:
     }
 
 
-async def _token(client: AsyncClient, phone: str) -> str:
-    resp = await client.post(
-        "/api/v1/auth/login", json={"phone": phone, "password": PASSWORD}
-    )
+async def _token(client: AsyncClient, login: str) -> str:
+    resp = await client.post("/api/v1/auth/login", json={"login": login, "password": PASSWORD})
     assert resp.status_code == 200, resp.text
     return resp.json()["access_token"]
 
@@ -163,10 +160,10 @@ def _auth(token: str) -> dict[str, str]:
 
 
 async def _open_appeal(
-    client: AsyncClient, world: dict, *, phone: str = "998900000006", **overrides
+    client: AsyncClient, world: dict, *, login: str = "sinov.otaona_a", **overrides
 ) -> dict:
     """Ota-ona A dan sinf rahbariga murojaat ochadi."""
-    token = await _token(client, phone)
+    token = await _token(client, login)
     body = {
         "student_id": str(world["student_a"].id),
         "target": "homeroom",
@@ -201,7 +198,7 @@ async def test_parent_creates_appeal_routed_to_homeroom_teacher(
 async def test_reply_from_teacher_marks_answered(client: AsyncClient, world: dict) -> None:
     """MUR-03/MUR-05: xodim javob berdi → holat «javob berildi»."""
     appeal = await _open_appeal(client, world)
-    token = await _token(client, "998900000004")  # ustoz A
+    token = await _token(client, "sinov.ustoz_a")  # ustoz A
 
     resp = await client.post(
         f"/api/v1/appeals/{appeal['id']}/messages",
@@ -224,14 +221,14 @@ async def test_parent_reply_after_answer_reopens_review(
     savol davom etayotgan boʻlsa ham murojaat «yopilgan»dek koʻrinardi.
     """
     appeal = await _open_appeal(client, world)
-    teacher = await _token(client, "998900000004")
+    teacher = await _token(client, "sinov.ustoz_a")
     await client.post(
         f"/api/v1/appeals/{appeal['id']}/messages",
         json={"body": "Javob."},
         headers=_auth(teacher),
     )
 
-    parent = await _token(client, "998900000006")
+    parent = await _token(client, "sinov.otaona_a")
     await client.post(
         f"/api/v1/appeals/{appeal['id']}/messages",
         json={"body": "Rahmat, lekin yana savolim bor."},
@@ -247,7 +244,7 @@ async def test_appeal_change_is_written_to_audit_log(
 ) -> None:
     """CLAUDE.md 4-qoida kengaytmasi: murojaat holati ham auditga tushadi."""
     appeal = await _open_appeal(client, world)
-    admin = await _token(client, "998900000001")
+    admin = await _token(client, "sinov.admin")
     await client.patch(
         f"/api/v1/appeals/{appeal['id']}/status",
         json={"status": "closed"},
@@ -272,7 +269,7 @@ async def test_appeal_change_is_written_to_audit_log(
 async def test_other_parent_sees_nothing_in_list(client: AsyncClient, world: dict) -> None:
     """Ota-ona B ota-ona A ning murojaatini roʻyxatda koʻrmaydi."""
     await _open_appeal(client, world)
-    token = await _token(client, "998900000007")
+    token = await _token(client, "sinov.otaona_b")
     resp = await client.get("/api/v1/appeals", headers=_auth(token))
     assert resp.status_code == 200
     assert resp.json() == []
@@ -281,7 +278,7 @@ async def test_other_parent_sees_nothing_in_list(client: AsyncClient, world: dic
 async def test_other_parent_gets_403_not_404(client: AsyncClient, world: dict) -> None:
     """X-3: ruxsat yoʻq → 403. 404 murojaat mavjudligini oshkor qilardi."""
     appeal = await _open_appeal(client, world)
-    token = await _token(client, "998900000007")
+    token = await _token(client, "sinov.otaona_b")
     resp = await client.get(f"/api/v1/appeals/{appeal['id']}", headers=_auth(token))
     assert resp.status_code == 403
     # Xabar umumiy — «bunday murojaat yoʻq» deyilmaydi.
@@ -290,7 +287,7 @@ async def test_other_parent_gets_403_not_404(client: AsyncClient, world: dict) -
 
 async def test_other_parent_cannot_post_message(client: AsyncClient, world: dict) -> None:
     appeal = await _open_appeal(client, world)
-    token = await _token(client, "998900000007")
+    token = await _token(client, "sinov.otaona_b")
     resp = await client.post(
         f"/api/v1/appeals/{appeal['id']}/messages",
         json={"body": "Begona xabar"},
@@ -303,7 +300,7 @@ async def test_parent_cannot_write_about_another_family_child(
     client: AsyncClient, world: dict
 ) -> None:
     """URL'dagi `student_id` ni almashtirish — BOLA hujumi (X-1)."""
-    token = await _token(client, "998900000006")
+    token = await _token(client, "sinov.otaona_a")
     resp = await client.post(
         "/api/v1/appeals",
         json={
@@ -325,7 +322,7 @@ async def test_parent_cannot_route_to_arbitrary_staff(
     `assignee_id` soʻrovdan keladi, lekin ishonchli deb qabul qilinmaydi:
     tanlangan xodim shu bolaga dars berayotgani tekshiriladi.
     """
-    token = await _token(client, "998900000006")
+    token = await _token(client, "sinov.otaona_a")
     resp = await client.post(
         "/api/v1/appeals",
         json={
@@ -346,26 +343,26 @@ async def test_teacher_sees_only_own_appeals(client: AsyncClient, world: dict) -
     """Ustoz B — boshqa sinf ustozi. Unga hech narsa koʻrinmaydi."""
     await _open_appeal(client, world)
 
-    own = await _token(client, "998900000004")
+    own = await _token(client, "sinov.ustoz_a")
     assert len((await client.get("/api/v1/appeals", headers=_auth(own))).json()) == 1
 
-    other = await _token(client, "998900000005")
+    other = await _token(client, "sinov.ustoz_b")
     assert (await client.get("/api/v1/appeals", headers=_auth(other))).json() == []
 
 
 async def test_teacher_cannot_open_foreign_appeal(client: AsyncClient, world: dict) -> None:
     appeal = await _open_appeal(client, world)
-    token = await _token(client, "998900000005")
+    token = await _token(client, "sinov.ustoz_b")
     resp = await client.get(f"/api/v1/appeals/{appeal['id']}", headers=_auth(token))
     assert resp.status_code == 403
 
 
-@pytest.mark.parametrize("phone", ["998900000001", "998900000002"])
+@pytest.mark.parametrize("login", ["sinov.admin", "sinov.direktor"])
 async def test_admin_and_director_see_everything(
-    client: AsyncClient, world: dict, phone: str
+    client: AsyncClient, world: dict, login: str
 ) -> None:
     await _open_appeal(client, world)
-    token = await _token(client, phone)
+    token = await _token(client, login)
     resp = await client.get("/api/v1/appeals", headers=_auth(token))
     assert resp.status_code == 200
     assert len(resp.json()) == 1
@@ -378,7 +375,7 @@ async def test_academic_head_cannot_read_appeals(client: AsyncClient, world: dic
     murojaatda oilaviy va moliyaviy holat haqida gap boradi.
     """
     await _open_appeal(client, world)
-    token = await _token(client, "998900000003")
+    token = await _token(client, "sinov.oquvbolim")
     assert (await client.get("/api/v1/appeals", headers=_auth(token))).json() == []
     stats = await client.get("/api/v1/appeals/stats/classes", headers=_auth(token))
     assert stats.status_code == 403
@@ -387,7 +384,7 @@ async def test_academic_head_cannot_read_appeals(client: AsyncClient, world: dic
 async def test_parent_cannot_change_status(client: AsyncClient, world: dict) -> None:
     """Ota-ona oʻz murojaatini «javob berildi» deb belgilay olmaydi."""
     appeal = await _open_appeal(client, world)
-    token = await _token(client, "998900000006")
+    token = await _token(client, "sinov.otaona_a")
     resp = await client.patch(
         f"/api/v1/appeals/{appeal['id']}/status",
         json={"status": "answered"},
@@ -398,7 +395,7 @@ async def test_parent_cannot_change_status(client: AsyncClient, world: dict) -> 
 
 async def test_staff_cannot_create_appeal(client: AsyncClient, world: dict) -> None:
     """Murojaatni faqat ota-ona ochadi; xodimlar ichki qayd qoldiradi."""
-    token = await _token(client, "998900000004")
+    token = await _token(client, "sinov.ustoz_a")
     resp = await client.post(
         "/api/v1/appeals",
         json={
@@ -425,7 +422,7 @@ async def test_internal_note_is_invisible_to_parent_and_teacher(
 ) -> None:
     """ADM-16: ichki qayd — maktabning oʻz kuzatuvi, ota-onaga koʻrinmaydi."""
     appeal = await _open_appeal(client, world)
-    admin = await _token(client, "998900000001")
+    admin = await _token(client, "sinov.admin")
 
     created = await client.post(
         f"/api/v1/appeals/{appeal['id']}/notes",
@@ -434,8 +431,8 @@ async def test_internal_note_is_invisible_to_parent_and_teacher(
     )
     assert created.status_code == 201
 
-    for phone in ("998900000006", "998900000004"):  # ota-ona, ustoz
-        token = await _token(client, phone)
+    for login in ("sinov.otaona_a", "sinov.ustoz_a"):  # ota-ona, ustoz
+        token = await _token(client, login)
         assert (
             await client.get(f"/api/v1/appeals/{appeal['id']}/notes", headers=_auth(token))
         ).status_code == 403
@@ -450,7 +447,7 @@ async def test_internal_note_is_invisible_to_parent_and_teacher(
 
 async def test_teacher_cannot_write_internal_note(client: AsyncClient, world: dict) -> None:
     appeal = await _open_appeal(client, world)
-    token = await _token(client, "998900000004")
+    token = await _token(client, "sinov.ustoz_a")
     resp = await client.post(
         f"/api/v1/appeals/{appeal['id']}/notes",
         json={"kind": "phone", "summary": "Ustoz qaydi"},
@@ -466,9 +463,9 @@ async def test_summary_is_scoped_per_user(client: AsyncClient, world: dict) -> N
     """Bir xil endpoint, har kimga oʻz raqami."""
     await _open_appeal(client, world)
 
-    parent_a = await _token(client, "998900000006")
-    parent_b = await _token(client, "998900000007")
-    admin = await _token(client, "998900000001")
+    parent_a = await _token(client, "sinov.otaona_a")
+    parent_b = await _token(client, "sinov.otaona_b")
+    admin = await _token(client, "sinov.admin")
 
     assert (await client.get("/api/v1/appeals/summary", headers=_auth(parent_a))).json()[
         "total"
@@ -481,7 +478,7 @@ async def test_summary_is_scoped_per_user(client: AsyncClient, world: dict) -> N
 
 async def test_class_stats_group_by_class(client: AsyncClient, world: dict) -> None:
     await _open_appeal(client, world)
-    token = await _token(client, "998900000002")  # direktor
+    token = await _token(client, "sinov.direktor")  # direktor
     rows = (await client.get("/api/v1/appeals/stats/classes", headers=_auth(token))).json()
     assert rows == [
         {
@@ -499,7 +496,7 @@ async def test_compose_options_lists_only_own_children_and_their_teachers(
     client: AsyncClient, world: dict
 ) -> None:
     """X-6: forma ota-onaga butun kadrlar tarkibini koʻrsatmaydi."""
-    token = await _token(client, "998900000006")
+    token = await _token(client, "sinov.otaona_a")
     body = (await client.get("/api/v1/appeals/options", headers=_auth(token))).json()
 
     assert len(body["children"]) == 1
@@ -514,14 +511,14 @@ async def test_compose_options_lists_only_own_children_and_their_teachers(
 
 async def test_closed_appeal_rejects_parent_message(client: AsyncClient, world: dict) -> None:
     appeal = await _open_appeal(client, world)
-    admin = await _token(client, "998900000001")
+    admin = await _token(client, "sinov.admin")
     await client.patch(
         f"/api/v1/appeals/{appeal['id']}/status",
         json={"status": "closed"},
         headers=_auth(admin),
     )
 
-    parent = await _token(client, "998900000006")
+    parent = await _token(client, "sinov.otaona_a")
     resp = await client.post(
         f"/api/v1/appeals/{appeal['id']}/messages",
         json={"body": "Yana yozmoqchiman"},
@@ -535,7 +532,7 @@ async def test_admin_assigns_management_appeal(client: AsyncClient, world: dict)
     appeal = await _open_appeal(client, world, target="management", title="Toʻlov haqida")
     assert appeal["assignee_id"] is None
 
-    admin = await _token(client, "998900000001")
+    admin = await _token(client, "sinov.admin")
     resp = await client.patch(
         f"/api/v1/appeals/{appeal['id']}/assignee",
         json={"assignee_id": str(world["director"].id)},
@@ -549,7 +546,7 @@ async def test_admin_assigns_management_appeal(client: AsyncClient, world: dict)
 
 async def test_teacher_cannot_assign(client: AsyncClient, world: dict) -> None:
     appeal = await _open_appeal(client, world, target="management", title="Toʻlov haqida")
-    token = await _token(client, "998900000004")
+    token = await _token(client, "sinov.ustoz_a")
     resp = await client.patch(
         f"/api/v1/appeals/{appeal['id']}/assignee",
         json={"assignee_id": str(world["teacher_a"].id)},
@@ -563,7 +560,7 @@ async def test_appeal_is_never_hard_deleted(
 ) -> None:
     """CLAUDE.md 1-qoida: yopilgan murojaat ham bazada qoladi."""
     appeal = await _open_appeal(client, world)
-    admin = await _token(client, "998900000001")
+    admin = await _token(client, "sinov.admin")
     await client.patch(
         f"/api/v1/appeals/{appeal['id']}/status",
         json={"status": "closed"},
@@ -582,7 +579,7 @@ async def test_note_can_rate_a_teacher(client: AsyncClient, world: dict) -> None
     («ota-ona darsdagi shovqindan norozi, ustoz bilan gaplashildi»).
     """
     appeal = await _open_appeal(client, world)
-    admin = await _token(client, "998900000001")
+    admin = await _token(client, "sinov.admin")
 
     resp = await client.post(
         f"/api/v1/appeals/{appeal['id']}/notes",
@@ -607,7 +604,7 @@ async def test_note_can_rate_a_teacher(client: AsyncClient, world: dict) -> None
 async def test_rating_requires_a_teacher(client: AsyncClient, world: dict) -> None:
     """Ustozsiz reyting maʼnosiz — u hisobotda kimga tegishli boʻlardi?"""
     appeal = await _open_appeal(client, world)
-    admin = await _token(client, "998900000001")
+    admin = await _token(client, "sinov.admin")
     resp = await client.post(
         f"/api/v1/appeals/{appeal['id']}/notes",
         json={"kind": "phone", "summary": "Umumiy suhbat", "teacher_rating": 5},
@@ -622,7 +619,7 @@ async def test_rating_out_of_range_is_rejected(
 ) -> None:
     """1..5 dan tashqari qiymat oʻrtacha koʻrsatkichni buzardi."""
     appeal = await _open_appeal(client, world)
-    admin = await _token(client, "998900000001")
+    admin = await _token(client, "sinov.admin")
     resp = await client.post(
         f"/api/v1/appeals/{appeal['id']}/notes",
         json={
