@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AppealsAddMessageData, AppealsAddMessageErrors, AppealsAddMessageResponses, AppealsAppealsSummaryData, AppealsAppealsSummaryResponses, AppealsComposeOptionsData, AppealsComposeOptionsResponses, AppealsCreateAppealData, AppealsCreateAppealErrors, AppealsCreateAppealResponses, AppealsCreateNoteData, AppealsCreateNoteErrors, AppealsCreateNoteResponses, AppealsGetAppealData, AppealsGetAppealErrors, AppealsGetAppealResponses, AppealsListAppealsData, AppealsListAppealsErrors, AppealsListAppealsResponses, AppealsListNotesData, AppealsListNotesErrors, AppealsListNotesResponses, AppealsStatsClassesData, AppealsStatsClassesResponses, AppealsUpdateAssigneeData, AppealsUpdateAssigneeErrors, AppealsUpdateAssigneeResponses, AppealsUpdateStatusData, AppealsUpdateStatusErrors, AppealsUpdateStatusResponses, AttendanceClassStudentsData, AttendanceClassStudentsErrors, AttendanceClassStudentsResponses, AttendanceLessonAttendanceData, AttendanceLessonAttendanceErrors, AttendanceLessonAttendanceResponses, AttendanceMarkData, AttendanceMarkErrors, AttendanceMarkResponses, AttendanceMyLessonsData, AttendanceMyLessonsErrors, AttendanceMyLessonsResponses, AttendanceStatsData, AttendanceStatsErrors, AttendanceStatsResponses, AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRefreshData, AuthRefreshResponses, DirectorClassesData, DirectorClassesResponses, DirectorOverviewData, DirectorOverviewErrors, DirectorOverviewResponses, DirectorTeachersData, DirectorTeachersResponses, ServiceHealthData, ServiceHealthResponses, ServiceReadinessData, ServiceReadinessResponses } from './types.gen';
+import type { AppealsAddMessageData, AppealsAddMessageErrors, AppealsAddMessageResponses, AppealsAppealsSummaryData, AppealsAppealsSummaryResponses, AppealsComposeOptionsData, AppealsComposeOptionsResponses, AppealsCreateAppealData, AppealsCreateAppealErrors, AppealsCreateAppealResponses, AppealsCreateNoteData, AppealsCreateNoteErrors, AppealsCreateNoteResponses, AppealsGetAppealData, AppealsGetAppealErrors, AppealsGetAppealResponses, AppealsListAppealsData, AppealsListAppealsErrors, AppealsListAppealsResponses, AppealsListNotesData, AppealsListNotesErrors, AppealsListNotesResponses, AppealsStatsClassesData, AppealsStatsClassesResponses, AppealsUpdateAssigneeData, AppealsUpdateAssigneeErrors, AppealsUpdateAssigneeResponses, AppealsUpdateStatusData, AppealsUpdateStatusErrors, AppealsUpdateStatusResponses, AttendanceClassStudentsData, AttendanceClassStudentsErrors, AttendanceClassStudentsResponses, AttendanceLessonAttendanceData, AttendanceLessonAttendanceErrors, AttendanceLessonAttendanceResponses, AttendanceMarkData, AttendanceMarkErrors, AttendanceMarkResponses, AttendanceMyLessonsData, AttendanceMyLessonsErrors, AttendanceMyLessonsResponses, AttendanceStatsData, AttendanceStatsErrors, AttendanceStatsResponses, AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRefreshData, AuthRefreshResponses, DirectorClassesData, DirectorClassesResponses, DirectorOverviewData, DirectorOverviewErrors, DirectorOverviewResponses, DirectorTeachersData, DirectorTeachersResponses, ParentChildAttendanceData, ParentChildAttendanceErrors, ParentChildAttendanceResponses, ParentMyChildrenData, ParentMyChildrenResponses, ServiceHealthData, ServiceHealthResponses, ServiceReadinessData, ServiceReadinessResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -259,6 +259,29 @@ export const attendanceStats = <ThrowOnError extends boolean = false>(options?: 
  * Sinfdagi har bir oʻquvchining davomati (DAV-02, sinf jurnali).
  */
 export const attendanceClassStudents = <ThrowOnError extends boolean = false>(options: Options<AttendanceClassStudentsData, ThrowOnError>): RequestResult<AttendanceClassStudentsResponses, AttendanceClassStudentsErrors, ThrowOnError> => (options.client ?? client).get<AttendanceClassStudentsResponses, AttendanceClassStudentsErrors, ThrowOnError>({ url: '/api/v1/attendance/classes/{class_id}/students', ...options });
+
+/**
+ * My Children
+ *
+ * Vasiyning farzandlari (OTA-02).
+ *
+ * Boʻsh roʻyxat — xato emas: vasiy hali bolaga biriktirilmagan boʻlishi
+ * mumkin. Kabinet «Farzand biriktirilmagan» matnini koʻrsatadi.
+ */
+export const parentMyChildren = <ThrowOnError extends boolean = false>(options?: Options<ParentMyChildrenData, ThrowOnError>): RequestResult<ParentMyChildrenResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ParentMyChildrenResponses, unknown, ThrowOnError>({ url: '/api/v1/parent/children', ...options });
+
+/**
+ * Child Attendance
+ *
+ * Farzandning kunma-kun davomati (OTA-03, kalendar).
+ *
+ * Sana berilmasa — joriy oy. Mahalliy kun boʻyicha (CLAUDE.md
+ * 3-qoida): UTC kuni olinsa oyning birinchi kuni tushib qolardi.
+ *
+ * Begona bolaning id si berilsa `403` (X-3: `404` emas — u obyekt
+ * mavjudligini oshkor qilardi).
+ */
+export const parentChildAttendance = <ThrowOnError extends boolean = false>(options: Options<ParentChildAttendanceData, ThrowOnError>): RequestResult<ParentChildAttendanceResponses, ParentChildAttendanceErrors, ThrowOnError> => (options.client ?? client).get<ParentChildAttendanceResponses, ParentChildAttendanceErrors, ThrowOnError>({ url: '/api/v1/parent/children/{student_id}/attendance', ...options });
 
 /**
  * Health

@@ -338,7 +338,7 @@ ustunlar — paralar. Tez to'ldirish uchun.
 
 ## Ota-ona kabineti va bot
 
-### [~] T-016 · Ota-ona kabineti — bosh sahifa va davomat  ← ISHDA (Ikrom, 31-avgust)
+### [x] T-016 · Ota-ona kabineti — bosh sahifa va davomat
 **TZ:** OTA-01, OTA-02, OTA-03, OTA-08
 **Kerak:** T-013, T-005
 **Frontend:** ✅ tayyor — `/ota-ona` — bugungi davomat va soʻnggi eʼlonlar, farzand almashtirgich. `/ota-ona/davomat` — oylik kalendar, sababli/sababsiz ranglar, oylik foiz. 360px dan ishlaydi.
@@ -349,9 +349,15 @@ Davomat sahifasi: oylik kalendar, sababli/sababsiz ranglar bilan ajratilgan,
 pastda oylik foiz.
 
 **Tayyor:**
-- [ ] Mobil-birinchi, 360px da to'liq ishlaydi
-- [ ] Bo'sh holat matnlari bor ("Bugun dars yo'q" va h.k.)
-- [ ] Test: boshqa oilaning ma'lumotiga URL orqali kirib bo'lmaydi
+- [x] Mobil-birinchi, 360px da to'liq ishlaydi
+- [x] Bo'sh holat matnlari bor ("Bugun dars yo'q", "Farzand biriktirilmagan")
+- [x] Test: boshqa oilaning ma'lumotiga URL orqali kirib bo'lmaydi → `403`
+      (`test_begona_bolaning_davomatini_kora_olmaydi`, jonli ham tekshirilgan)
+- [x] BACKENDGA ulandi: `GET /parent/children` va
+      `GET /parent/children/{id}/attendance`. Farzandlar ro'yxati
+      `guardians` jadvalidan, kalendar bazadagi davomatdan.
+- [x] Kalendar oyi endi dinamik (avval 2026-avgust qattiq yozilgandi),
+      oldinga/orqaga yurish tugmalari bilan
 
 ---
 

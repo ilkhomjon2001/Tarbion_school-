@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { logout } from "@/lib/auth";
-import { CHILDREN, type Child } from "@/lib/parent/data";
+import type { Child } from "@/lib/parent/data";
 import { unreadCount } from "@/lib/parent/news";
 
 /**
@@ -47,13 +47,22 @@ export function ParentShell({
   title,
   child,
   onChildChange,
+  siblings,
   children,
 }: {
   title: string;
   child: Child;
   onChildChange: (id: string) => void;
+  /**
+   * Farzandlar roʻyxati — almashtirgich uchun (OTA-02).
+   *
+   * Avval mockdagi `CHILDREN` dan olinardi. Endi propdan: roʻyxat
+   * backenddan keladi va har vasiyda boshqacha.
+   */
+  siblings?: Child[];
   children: React.ReactNode;
 }) {
+  const royxat = siblings ?? [child];
   const pathname = usePathname();
   const router = useRouter();
   const [unread, setUnread] = useState(0);
@@ -145,13 +154,13 @@ export function ParentShell({
           </div>
 
           {/* OTA-02: farzand almashtirgich */}
-          {CHILDREN.length > 1 && (
+          {royxat.length > 1 && (
             <div
               role="tablist"
               aria-label="Farzandni tanlash"
               className="flex gap-2 overflow-x-auto px-4 pb-3 sm:px-6"
             >
-              {CHILDREN.map((c) => {
+              {royxat.map((c) => {
                 const active = c.id === child.id;
                 return (
                   <button

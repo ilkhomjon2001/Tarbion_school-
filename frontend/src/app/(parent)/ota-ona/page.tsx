@@ -1,25 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ParentShell } from "@/components/parent/ParentShell";
+import { fetchAttendance, monthRange } from "@/lib/parent/api";
 import {
-  attendanceForMonth,
   formatSom,
   HOMEWORK,
   monthSummary,
   PAYMENTS,
   RECENT_GRADES,
-  TODAY,
-  TODAY_LABEL,
+  type DayAttendance,
 } from "@/lib/parent/data";
 import {
   newsForClass,
   NEWS_KIND_LABELS,
   NEWS_KIND_TONE,
 } from "@/lib/parent/news";
-import { useChild } from "@/lib/parent/useChild";
+import { useChildren } from "@/lib/parent/useChild";
 
 /**
  * Ota-ona bosh sahifasi (OTA-01).
@@ -29,33 +28,90 @@ import { useChild } from "@/lib/parent/useChild";
  * eʼlonlar. Ota-ona kuniga bir-ikki daqiqa kiradi — hammasi bitta
  * ekranda koʻrinishi kerak.
  */
+/** Bugungi sana — Asia/Tashkent boʻyicha (CLAUDE.md 3-qoida). */
+function bugungiSana(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tashkent" }).format(new Date());
+}
+
+const OYLAR = [
+  "yanvar", "fevral", "mart", "aprel", "may", "iyun",
+  "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr",
+];
+
 export default function ParentHomePage() {
-  const [child, setChild] = useChild();
+  const { child, children: farzandlar, select, loading, error } = useChildren();
 
-  const today = useMemo(() => {
-    const days = attendanceForMonth(child.id, 2026, 8);
-    return days.find((d) => d.date === TODAY) ?? null;
-  }, [child.id]);
+  const bugun = bugungiSana();
+  const [days, setDays] = useState<DayAttendance[] | null>(null);
 
-  const month = useMemo(
-    () => monthSummary(attendanceForMonth(child.id, 2026, 8)),
-    [child.id],
+  useEffect(() => {
+    if (!child) return;
+    let alive = true;
+    const [y, m] = bugun.split("-").map(Number);
+    fetchAttendance(child.id, monthRange(y, m))
+      .then((rows) => alive && setDays(rows))
+      .catch(() => alive && setDays([]));
+    return () => {
+      alive = false;
+    };
+  }, [child, bugun]);
+
+  const today = useMemo(
+    () => (days ?? []).find((d) => d.date === bugun) ?? null,
+    [days, bugun],
   );
+  const month = useMemo(() => monthSummary(days ?? []), [days]);
 
-  const grades = RECENT_GRADES[child.id] ?? [];
-  const news = useMemo(() => newsForClass(child.className), [child.className]);
-  const payment = PAYMENTS[child.id];
-  const pendingHw = (HOMEWORK[child.id] ?? []).filter(
-    (h) => h.status === "assigned" || h.status === "late",
+  // Baholar, toʻlov va uy vazifasi hali mock (JUR/TOL/UYV backendga
+  // chiqmagan). `child` yuklanmaguncha boʻsh qiymat olinadi.
+  const grades = child ? (RECENT_GRADES[child.id] ?? []) : [];
+  const news = useMemo(
+    () => (child ? newsForClass(child.className) : []),
+    [child],
   );
+  // Toʻlov hali mock. Bazada bu bola uchun yozuv boʻlmasa (yangi seed
+  // maʼlumoti) — nol balans, kartochka "Toʻlangan" koʻrsatadi.
+  const payment = (child ? PAYMENTS[child.id] : undefined) ?? {
+    balance: 0,
+    monthlyFee: 0,
+    nextDueDate: "—",
+    history: [],
+  };
+  const pendingHw = child
+    ? (HOMEWORK[child.id] ?? []).filter(
+        (h) => h.status === "assigned" || h.status === "late",
+      )
+    : [];
 
   const missed = today?.lessons.filter((l) => l.status !== "present") ?? [];
 
+  if (loading) return null;
+
+  if (!child) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4 text-center">
+        <div>
+          <p className="font-medium">{error ?? "Sizga farzand biriktirilmagan"}</p>
+          <p className="mt-1 text-sm text-foreground-muted">
+            Maktab administratoriga murojaat qiling.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <ParentShell title={`Salom! ${child.shortName}`} child={child} onChildChange={setChild}>
+    <ParentShell
+      title={`Salom! ${child.shortName}`}
+      child={child}
+      siblings={farzandlar}
+      onChildChange={select}
+    >
       {/* --- Bugungi holat --- */}
       <section className="mb-5">
-        <h2 className="mb-2.5 text-sm font-semibold">Bugun · {TODAY_LABEL}</h2>
+        <h2 className="mb-2.5 text-sm font-semibold">
+          Bugun · {Number(bugun.slice(8))}-{OYLAR[Number(bugun.slice(5, 7)) - 1]}
+        </h2>
 
         {!today ? (
           <div className="rounded-xl border border-border bg-surface px-5 py-8 text-center">

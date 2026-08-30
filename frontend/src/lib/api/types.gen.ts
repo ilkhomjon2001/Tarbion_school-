@@ -442,6 +442,37 @@ export type ChangePasswordIn = {
 };
 
 /**
+ * ChildOut
+ *
+ * Farzand kartochkasi (OTA-02, almashtirgich).
+ *
+ * Telefon, manzil va hujjat maydonlari ATAYLAB yoʻq (X-6) — ota-onaga
+ * oʻz farzandining sinfi va ismi yetarli, qolgani kerak emas.
+ */
+export type ChildOut = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Short Name
+     */
+    short_name: string;
+    /**
+     * Class Name
+     */
+    class_name: string;
+    /**
+     * Relation
+     */
+    relation: string;
+};
+
+/**
  * ClassAppealStatOut
  *
  * MUR-06: qaysi sinfda murojaat koʻp.
@@ -509,6 +540,26 @@ export type ClassRowOut = {
  * Administratorning ichki suhbat qaydi turi (ADM-16).
  */
 export type ContactKind = 'phone' | 'in_person' | 'online';
+
+/**
+ * DayAttendanceOut
+ *
+ * Bitta kunning davomati.
+ *
+ * Faqat DAVOMAT BELGILANGAN darslar. Ustoz hali belgilamagan dars
+ * bu yerga tushmaydi — «kelmadi» deb koʻrsatib ota-onani bekorga
+ * xavotirga solmaslik uchun.
+ */
+export type DayAttendanceOut = {
+    /**
+     * Date
+     */
+    date: string;
+    /**
+     * Lessons
+     */
+    lessons: Array<LessonStatusOut>;
+};
 
 /**
  * DirectorOverviewOut
@@ -620,6 +671,28 @@ export type LessonAttendanceOut = {
      * Students
      */
     students: Array<StudentRowOut>;
+};
+
+/**
+ * LessonStatusOut
+ */
+export type LessonStatusOut = {
+    /**
+     * Period
+     */
+    period: number;
+    /**
+     * Subject
+     */
+    subject: string;
+    /**
+     * Status
+     */
+    status: 'present' | 'absent' | 'excused' | 'late';
+    /**
+     * Note
+     */
+    note: string | null;
 };
 
 /**
@@ -1532,6 +1605,65 @@ export type AttendanceClassStudentsResponses = {
 };
 
 export type AttendanceClassStudentsResponse = AttendanceClassStudentsResponses[keyof AttendanceClassStudentsResponses];
+
+export type ParentMyChildrenData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/parent/children';
+};
+
+export type ParentMyChildrenResponses = {
+    /**
+     * Response Parent My Children
+     *
+     * Successful Response
+     */
+    200: Array<ChildOut>;
+};
+
+export type ParentMyChildrenResponse = ParentMyChildrenResponses[keyof ParentMyChildrenResponses];
+
+export type ParentChildAttendanceData = {
+    body?: never;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: {
+        /**
+         * Date From
+         */
+        date_from?: string | null;
+        /**
+         * Date To
+         */
+        date_to?: string | null;
+    };
+    url: '/api/v1/parent/children/{student_id}/attendance';
+};
+
+export type ParentChildAttendanceErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ParentChildAttendanceError = ParentChildAttendanceErrors[keyof ParentChildAttendanceErrors];
+
+export type ParentChildAttendanceResponses = {
+    /**
+     * Response Parent Child Attendance
+     *
+     * Successful Response
+     */
+    200: Array<DayAttendanceOut>;
+};
+
+export type ParentChildAttendanceResponse = ParentChildAttendanceResponses[keyof ParentChildAttendanceResponses];
 
 export type ServiceHealthData = {
     body?: never;

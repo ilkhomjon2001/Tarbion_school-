@@ -1,17 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ParentShell } from "@/components/parent/ParentShell";
+import { fetchAttendance, monthRange } from "@/lib/parent/api";
 import {
-  attendanceForMonth,
   dayStatus,
   monthSummary,
-  TODAY,
   type AttendanceStatus,
   type DayAttendance,
 } from "@/lib/parent/data";
-import { useChild } from "@/lib/parent/useChild";
+import { useChildren } from "@/lib/parent/useChild";
 
 /**
  * Davomat kalendari (OTA-03) va sababli qoldirish arizasi (DAV-04).
@@ -22,6 +21,16 @@ import { useChild } from "@/lib/parent/useChild";
 
 const WEEKDAYS = ["Du", "Se", "Ch", "Pa", "Ju", "Sh", "Ya"];
 
+const OYLAR = [
+  "Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun",
+  "Iyul", "Avgust", "Sentabr", "Oktabr", "Noyabr", "Dekabr",
+];
+
+/** Bugungi sana — Asia/Tashkent boʻyicha (CLAUDE.md 3-qoida). */
+function bugungiSana(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tashkent" }).format(new Date());
+}
+
 const CELL: Record<AttendanceStatus, { box: string; mark: string; label: string }> = {
   present: { box: "bg-success-tint text-success", mark: "✓", label: "Qatnashdi" },
   absent: { box: "bg-danger text-brand-foreground", mark: "✕", label: "Sababsiz" },
@@ -30,31 +39,97 @@ const CELL: Record<AttendanceStatus, { box: string; mark: string; label: string 
 };
 
 export default function ParentAttendancePage() {
-  const [child, setChild] = useChild();
+  const { child, children: farzandlar, select, loading, error: childError } = useChildren();
   const [openDay, setOpenDay] = useState<DayAttendance | null>(null);
   const [showForm, setShowForm] = useState(false);
 
-  const days = useMemo(() => attendanceForMonth(child.id, 2026, 8), [child.id]);
-  const summary = useMemo(() => monthSummary(days), [days]);
-  const byDate = useMemo(() => new Map(days.map((d) => [d.date, d])), [days]);
+  const bugun = bugungiSana();
+  // Koʻrsatilayotgan oy. Sukut — joriy oy; avval 2026-avgust qattiq
+  // yozilgandi va sentabrga oʻtganda sahifa eskirib qolardi.
+  const [ym, setYm] = useState(() => ({
+    year: Number(bugun.slice(0, 4)),
+    month: Number(bugun.slice(5, 7)),
+  }));
+
+  const [days, setDays] = useState<DayAttendance[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!child) return;
+    let alive = true;
+
+    setDays(null);
+    setError(null);
+    fetchAttendance(child.id, monthRange(ym.year, ym.month))
+      .then((rows) => alive && setDays(rows))
+      .catch(() => alive && setError("Davomatni yuklab boʻlmadi."));
+
+    return () => {
+      alive = false;
+    };
+  }, [child, ym.year, ym.month]);
+
+  const summary = useMemo(() => monthSummary(days ?? []), [days]);
+  const byDate = useMemo(() => new Map((days ?? []).map((d) => [d.date, d])), [days]);
 
   /** Oy katakchalari — dushanbadan boshlanadi. */
   const cells = useMemo(() => {
-    const first = new Date(2026, 7, 1);
+    const first = new Date(ym.year, ym.month - 1, 1);
     const lead = (first.getDay() + 6) % 7; // dushanba = 0
-    const last = new Date(2026, 8, 0).getDate();
+    const last = new Date(ym.year, ym.month, 0).getDate();
     return [
       ...Array.from({ length: lead }, () => null),
       ...Array.from({ length: last }, (_, i) => i + 1),
     ];
-  }, []);
+  }, [ym.year, ym.month]);
+
+  function siljit(delta: number) {
+    setYm((p) => {
+      const m = p.month + delta;
+      if (m < 1) return { year: p.year - 1, month: 12 };
+      if (m > 12) return { year: p.year + 1, month: 1 };
+      return { year: p.year, month: m };
+    });
+  }
+
+  if (loading) return null;
+
+  if (!child) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4 text-center">
+        <div>
+          <p className="font-medium">
+            {childError ?? "Sizga farzand biriktirilmagan"}
+          </p>
+          <p className="mt-1 text-sm text-foreground-muted">
+            Maktab administratoriga murojaat qiling.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <ParentShell title="Davomat" child={child} onChildChange={setChild}>
+    <ParentShell
+      title="Davomat"
+      child={child}
+      siblings={farzandlar}
+      onChildChange={select}
+    >
       {/* Oylik xulosa */}
       <div className="mb-4 rounded-xl border border-border bg-surface p-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="font-semibold">Avgust 2026</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-1">
+            <MonthButton label="Oldingi oy" onClick={() => siljit(-1)}>
+              ‹
+            </MonthButton>
+            <p className="min-w-[9.5rem] text-center font-semibold">
+              {OYLAR[ym.month - 1]} {ym.year}
+            </p>
+            <MonthButton label="Keyingi oy" onClick={() => siljit(1)}>
+              ›
+            </MonthButton>
+          </div>
           <p
             className={`text-2xl font-bold num ${summary.percent >= 90 ? "text-success" : "text-warning"}`}
           >
@@ -82,6 +157,15 @@ export default function ParentAttendancePage() {
         </dl>
       </div>
 
+      {error && (
+        <p
+          role="alert"
+          className="mb-4 rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger"
+        >
+          {error}
+        </p>
+      )}
+
       {/* Kalendar */}
       <div className="overflow-hidden rounded-xl border border-border bg-surface">
         <div className="grid grid-cols-7 border-b border-border bg-surface-muted/60">
@@ -95,12 +179,19 @@ export default function ParentAttendancePage() {
           ))}
         </div>
 
+        {days === null && !error ? (
+          <div className="grid grid-cols-7 gap-1 p-2" aria-busy="true" aria-label="Yuklanmoqda">
+            {Array.from({ length: 35 }, (_, i) => (
+              <span key={i} className="aspect-square animate-pulse rounded-lg bg-surface-muted" />
+            ))}
+          </div>
+        ) : (
         <div className="grid grid-cols-7 gap-1 p-2">
           {cells.map((d, i) => {
             if (d === null) return <span key={`x-${i}`} />;
-            const date = `2026-08-${String(d).padStart(2, "0")}`;
+            const date = `${ym.year}-${String(ym.month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
             const day = byDate.get(date);
-            const isToday = date === TODAY;
+            const isToday = date === bugun;
 
             if (!day) {
               return (
@@ -120,7 +211,7 @@ export default function ParentAttendancePage() {
                 key={date}
                 type="button"
                 onClick={() => setOpenDay(day)}
-                aria-label={`${d}-avgust: ${cell.label}`}
+                aria-label={`${d}-${OYLAR[ym.month - 1].toLowerCase()}: ${cell.label}`}
                 className={`flex aspect-square flex-col items-center justify-center rounded-lg text-sm font-medium transition-opacity hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand ${cell.box} ${
                   isToday ? "ring-2 ring-brand ring-offset-1" : ""
                 }`}
@@ -133,6 +224,7 @@ export default function ParentAttendancePage() {
             );
           })}
         </div>
+        )}
       </div>
 
       {/* Izoh — rang yolgʻiz maʼno tashimasin */}
@@ -257,7 +349,7 @@ function ExcuseForm({ onClose }: { onClose: () => void }) {
             id="ex-from"
             type="date"
             required
-            defaultValue="2026-08-26"
+            defaultValue={bugungiSana()}
             className="h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
           />
         </div>
@@ -269,7 +361,7 @@ function ExcuseForm({ onClose }: { onClose: () => void }) {
             id="ex-to"
             type="date"
             required
-            defaultValue="2026-08-26"
+            defaultValue={bugungiSana()}
             className="h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
           />
         </div>
@@ -328,5 +420,27 @@ function Stat({ label, value, tone }: { label: string; value: number; tone: stri
       <dt className="text-xs text-foreground-muted">{label}</dt>
       <dd className={`text-lg font-semibold ${tone}`}>{value}</dd>
     </div>
+  );
+}
+
+
+function MonthButton({
+  label,
+  onClick,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="flex h-11 w-11 items-center justify-center rounded-lg border border-border text-lg text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+    >
+      <span aria-hidden>{children}</span>
+    </button>
   );
 }
