@@ -271,11 +271,20 @@ async function AttendanceCard({ period }: { period: OverviewPeriod }) {
   const overview = await getDirectorOverview(period);
   return (
     <Card>
-      <h2 className="mb-2 text-base font-semibold text-foreground">
+      <h2 className="mb-1 text-base font-semibold text-foreground">
         {period === "year" ? "Davomat dinamikasi (oʻquv yili)" : "Davomat dinamikasi (oxirgi 30 kun)"}
       </h2>
+      <p className="mb-3 text-xs text-foreground-muted">
+        Darsga kelgan oʻquvchilar ulushi — maktab boʻyicha
+      </p>
       <AreaLineChart
         points={overview.attendanceTrend.map((p) => ({ label: p.dateLabel, value: p.percent }))}
+        ariaLabel="Davomat dinamikasi"
+        hint={
+          period === "year"
+            ? "Har bir nuqta — shu oydagi oʻrtacha davomat."
+            : "Har bir nuqta — shu kundagi oʻrtacha davomat."
+        }
       />
     </Card>
   );
