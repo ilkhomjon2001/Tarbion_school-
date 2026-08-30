@@ -148,3 +148,31 @@ ular serverda yoʻq va sahifa xatolik chegarasiga tushadi. Bunda `reset()`
 foydasiz: boʻlak qaytib kelmaydi. `lib/errors.ts` shu holatni aniqlaydi
 (ChunkLoadError va shunga oʻxshash xabarlar) va tugmani "Sahifani
 yangilash" ga (`location.reload()`) almashtiradi.
+
+## 2026-08-30 · Administrator kabineti — mijoz tomonidagi umumiy holat
+Boshqa kabinetlar server komponentlari va `delay()` bilan ishlaydi, admin
+esa boshqacha: u maʼlumot KIRITADI va kiritgani boshqa boʻlimlarda darhol
+koʻrinishi kerak (toʻlov kiritildi → qarzdorlar roʻyxatidan chiqdi →
+bosh sahifadagi raqam kamaydi → audit jurnaliga tushdi).
+
+Shu sabab `lib/admin/store.tsx` — layout darajasidagi context + reducer.
+Holat sahifalar orasida saqlanadi, brauzer yangilanganda boshlangʻich
+holatga qaytadi (loyiha egasi bilan shunday kelishilgan; localStorage
+tanlanmadi — sherikning maʼlumoti bilan farq qilib ketardi).
+
+Boshlangʻich maʼlumot `lib/admin/seed.ts` da YARATILMAYDI, balki
+`lib/director/school-data.ts` va `lib/school/staff.ts` dan olinadi —
+admin, rahbariyat, ustoz va ota-ona bitta maktabni koʻradi. Backend
+ulanganda reducer'ning har bir `case` i bitta API chaqiruviga aylanadi,
+komponentlar oʻzgarmaydi.
+
+Domen qoidalari reducer darajasida: toʻlov yozuvi tahrirlanmaydi, faqat
+storno (9-qoida); oʻquvchi oʻchirilmaydi, arxivlanadi (1-qoida); har bir
+amal `AuditEntry` qoldiradi (4-qoida).
+
+## 2026-08-30 · Login rol boʻyicha yoʻnaltiradi
+Avval login har doim `/student` ga olib borardi — beshinchi kabinet
+qoʻshilgach bu yaroqsiz boʻldi. `lib/roles.ts` da rol → kabinet
+xaritasi, login sahifasida DEMO uchun rol tanlagichi. Rol sessiyada
+saqlanadi (`lib/auth.ts`), lekin bu HIMOYA EMAS — backend ulanganda rol
+JWT ichidan keladi va tekshiruv serverda boʻladi (7-qoida).

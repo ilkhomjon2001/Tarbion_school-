@@ -4,6 +4,13 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { login } from "@/lib/auth";
+import {
+  ROLE_DESCRIPTIONS,
+  ROLE_HOME,
+  ROLE_LABELS,
+  ROLES,
+  type UserRole,
+} from "@/lib/roles";
 
 /**
  * Kirish sahifasi (AUT-01) — Stitch dizayni boʻyicha ikki ustunli:
@@ -29,6 +36,8 @@ export default function LoginPage() {
   const [locked, setLocked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [remember, setRemember] = useState(false);
+  // DEMO: haqiqiy tizimda rol JWT ichidan keladi, tanlanmaydi.
+  const [role, setRole] = useState<UserRole>("student");
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -61,8 +70,8 @@ export default function LoginPage() {
       return;
     }
 
-    login(remember);
-    router.push("/student");
+    login(remember, role);
+    router.push(ROLE_HOME[role]);
   }
 
   return (
@@ -89,6 +98,38 @@ export default function LoginPage() {
           </p>
 
           <form onSubmit={onSubmit} className="mt-7 space-y-4" noValidate>
+            {/* Rol tanlash — DEMO uchun. Backend ulanganda bu blok olib
+                tashlanadi: rol JWT ichidan keladi. */}
+            <fieldset>
+              <legend className="block text-sm font-medium">Kabinet</legend>
+              <div className="mt-1.5 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                {ROLES.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => setRole(item)}
+                    aria-pressed={role === item}
+                    className={`focus-ring rounded-lg border px-2.5 py-2 text-left transition-colors ${
+                      role === item
+                        ? "border-brand bg-brand-tint"
+                        : "border-border bg-surface hover:bg-surface-muted"
+                    }`}
+                  >
+                    <span
+                      className={`block text-sm font-medium ${
+                        role === item ? "text-brand-dark" : "text-foreground"
+                      }`}
+                    >
+                      {ROLE_LABELS[item]}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] leading-tight text-foreground-muted">
+                      {ROLE_DESCRIPTIONS[item]}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+
             <div>
               <label htmlFor="phone" className="block text-sm font-medium">
                 Telefon raqami
@@ -183,8 +224,8 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-6 rounded-lg bg-surface-muted px-3 py-2 text-xs leading-relaxed text-foreground-muted">
-            <span className="font-medium text-foreground">Demo rejimi.</span> Istalgan
-            parol bilan kiriladi. Xato holatini koʻrish uchun{" "}
+            <span className="font-medium text-foreground">Demo rejimi.</span> Kabinetni
+            tepadan tanlang, istalgan parol bilan kiriladi. Xato holatini koʻrish uchun{" "}
             <code className="rounded bg-surface px-1">xato</code>, blok holati uchun{" "}
             <code className="rounded bg-surface px-1">blok</code> deb yozing.
           </p>
