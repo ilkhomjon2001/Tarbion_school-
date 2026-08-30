@@ -364,3 +364,66 @@ kirgan 1990-yilgi xodim — 18 yoshli direktor — paydo boʻlgandi.
 
 Ishdan boʻshagan xodim oʻchirilmaydi: `status: "archived"` boʻladi va
 `ExitRecord` sababi bilan qoladi. Kadrlar aylanmasi shundan hisoblanadi.
+
+## 2026-08-30 · Stack yopildi: Next.js + FastAPI + PostgreSQL
+
+Backend uchun Node (NestJS), Go (Fiber) va Python (FastAPI) solishtirildi.
+Yuk hisoblandi: ~1000–2000 hisob, cho'qqi 30–80 so'rov/soniya. Eng past
+o'rindagi framework ham 16 000 so'rov/soniya beradi — **tezlik hech qaysi
+variantda cheklov emas.** Shu sababli boshqa mezonlar hal qildi:
+
+1. `backend/app/` da 1898 qator kod allaqachon yozilgan (modellar,
+   `access.py`, auth, audit). Tashlash — 2–3 hafta yo'qotish.
+2. Payme/Click/Uzum uchun **PayTechUZ** FastAPI'ni native qo'llaydi. Node'da
+   TS SDK bor, Go'da tayyor kutubxona yo'q. To'lov — eng katta integratsiya
+   riski.
+3. aiogram bot backend bilan **umumiy baza va umumiy `access.py`** ishlatadi.
+   Node'da bot baribir alohida Python xizmat bo'lardi.
+4. HolliHop CRM integratsiyasi kodi Pythonda mavjud (`rnd-counter/hollihop.py`).
+5. Deploy yo'li sinalgan: o'sha serverda `rnd-counter` FastAPI systemd +
+   autopull bilan ishlaydi.
+
+Go rad etildi: 20 barobar tez, lekin bizga 200 barobar ortiqcha zaxira
+allaqachon bor. Evaziga to'lov kutubxonasi yo'q va ikki kishilik jamoada
+har funksiya sekinroq chiqadi.
+
+Frontend o'zgarmaydi — Next.js 15 da 60 sahifa ishlab turibdi.
+
+## 2026-08-30 · Frontend–backend shartnomasi: OpenAPI generatsiyasi
+
+TypeScript tiplari qo'lda yozilmaydi. FastAPI `/openapi.json` dan
+`@hey-api/openapi-ts` orqali tiplar va TanStack Query hooklari
+generatsiya qilinadi.
+
+Sabab: qo'lda yozilgan tip backend o'zgarganda **jimgina eskiradi** — xato
+faqat ishlab chiqarishda, foydalanuvchi ekranida ko'rinadi. Generatsiya
+qilinganda Pydantic sxemasi o'zgarsa `pnpm build` darhol yiqiladi.
+
+tRPC ko'rib chiqilmadi: u faqat TS backend bilan ishlaydi.
+
+## 2026-08-30 · Token localStorage'dan httpOnly cookie'ga
+
+Hozirgi demo `localStorage` ishlatadi — backendsiz boshqa yo'l yo'q edi.
+Ishlab chiqarishda token `HttpOnly; Secure; SameSite=Lax` cookie'da bo'ladi.
+
+Sabab: `localStorage` ni sahifadagi har qanday JavaScript o'qiy oladi.
+Bitta XSS — buzilgan npm paketi yoki matnni ekranga chiqarishdagi xato —
+butun hisobni beradi. httpOnly cookie'ni JS umuman ko'rmaydi.
+
+Brauzer to'g'ridan-to'g'ri `api.tarbion.uz` ga murojaat qiladi. Next.js
+oraliq qatlam (BFF) qilinmadi: token httpOnly cookie'da bo'lgani uchun
+qo'shimcha himoya bermaydi, faqat bitta tarmoq qadami qo'shadi.
+
+## 2026-08-30 · Baza O'zbekistonda joylashtiriladi
+
+O'RQ-547 ning 2026-yil 26-mart tahririga ko'ra biometrik ma'lumot majburiy
+O'zbekistonda saqlanadi; qolgani chet elda mumkin, lekin Vazirlar Mahkamasi
+tasdiqlagan mamlakatlar ro'yxati va shartlar bilan.
+
+O'quvchi surati shaxsni aniqlash uchun ishlatilsa biometrik deb talqin
+qilinishi mumkin, va ro'yxat holati noaniq. Contabo (Germaniya) o'rniga
+O'zbekistondagi hosting tanlandi — huquqiy noaniqlik yo'qoladi va
+Toshkentdan kechikish 60–80 ms o'rniga 5–10 ms bo'ladi.
+
+Yuristdan tasdiq kutilmoqda. Hal bo'lmaguncha ishlab chiqarish serveriga
+real o'quvchi ma'lumoti yuklanmaydi.
