@@ -331,3 +331,36 @@ tarix» lentasida.
 qaydnomasi, hujjat, shartnoma) bitta vaqt lentasiga yigʻadi. Rahbar
 soʻragan «oʻquvchi boʻyicha sessiyalar» aynan shu — alohida jadval
 qurilmadi, mavjud maʼlumot bir joyga keltirildi.
+
+## 2026-08-30 · Sifat nazorati KPI ga qoʻshilmadi — alohida turadi
+Rahbar KPI uchun toʻrtta koʻrsatkich aytgan. Dars kuzatuvini beshinchi
+qilib qoʻshish — kelishilmagan narsani KPI ga tiqish boʻlardi. Shu sabab
+`lib/school/quality.ts` mustaqil: KPI raqamlardan (imtihon, davomat)
+chiqadi, sifat nazorati esa darsning oʻzini koʻrib baholaydi. Ustozlar
+jadvalida yonma-yon koʻrsatiladi, lekin umumiy ballga qoʻshilmaydi.
+
+Imtihon oʻrtachasi kuzatuv shkalasiga toʻgʻridan-toʻgʻri boʻlinmaydi:
+68 ball sinf uchun oddiy natija, lekin 3.4/5 — yomon dars. Markaz 4.0 ga
+qoʻyilib, imtihon natijasi uni ±0.8 ga suradi. Birinchi variantda
+boʻlish ishlatilgandi va 26 ta darsdan 23 tasi «tavsiya berildi» chiqdi —
+maktabda hamma dars yomon degan maʼnoni berardi.
+
+`CRITERION_BIAS` — ataylab qoʻyilgan ogʻish, tasodifiy emas: demo
+maʼlumotda ham «eng zaif mezon» aniq koʻrinsin va oʻquv boʻlimi keyingi
+seminar mavzusini bilsin.
+
+## 2026-08-30 · Kadrlar — `STAFF` ustiga qurildi, ikkinchi roʻyxat emas
+`lib/school/hr.ts` xodimlar roʻyxatini `lib/school/staff.ts` dan oladi va
+faqat MEHNAT maʼlumotini qoʻshadi (lavozim, staj, toifa, maosh). Ikkinchi
+roʻyxat tuzilganda kimdir ustozni bittasidan oʻchirib, ikkinchisida
+qoldirib yuborardi.
+
+Haftalik soat `weeklyLoadOf()` dan — toʻqilmaydi. Shu sabab «yuklama
+normadan yuqori» ogohlantirishi haqiqiy dars jadvaliga mos keladi.
+
+Tugʻilgan sana ishga kirgan sanadan chiqariladi (ishga kirganda 22–40
+yosh). Avval ikkalasi mustaqil generatsiya qilingandi va 2008-yilda ishga
+kirgan 1990-yilgi xodim — 18 yoshli direktor — paydo boʻlgandi.
+
+Ishdan boʻshagan xodim oʻchirilmaydi: `status: "archived"` boʻladi va
+`ExitRecord` sababi bilan qoladi. Kadrlar aylanmasi shundan hisoblanadi.

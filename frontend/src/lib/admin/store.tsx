@@ -69,6 +69,24 @@ import { effectiveSections, ROLE_DEFAULT_SECTIONS } from "@/lib/access";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 import { withNewMessage, type Appeal } from "@/lib/school/appeals";
 import { ADMINISTRATOR, staffById } from "@/lib/school/staff";
+import {
+  daysBetween,
+  EMPLOYEES,
+  EXITS,
+  EXIT_REASON_LABELS,
+  hrSummary,
+  LEAVES,
+  LEAVE_TYPE_LABELS,
+  POSITION_LABELS,
+  QUALIFICATION_LABELS,
+  VACANCIES,
+  type Employee,
+  type ExitReason,
+  type ExitRecord,
+  type LeaveRecord,
+  type LeaveType,
+  type Vacancy,
+} from "@/lib/school/hr";
 import { formatSom } from "@/lib/format";
 
 /**
@@ -101,6 +119,12 @@ export interface AdminState {
   leads: Lead[];
   calls: CallLog[];
   users: UserAccount[];
+  /** Kadrlar — xodimlar reyestri va mehnat maʼlumoti. */
+  employees: Employee[];
+  leaves: LeaveRecord[];
+  vacancies: Vacancy[];
+  /** Ishdan boʻshaganlar — yozuv oʻchirilmaydi (CLAUDE.md 1-qoida). */
+  exits: ExitRecord[];
   /** Rol boʻyicha standart boʻlimlar — super admin oʻzgartira oladi. */
   roleSections: Record<UserRole, string[]>;
   settings: SchoolSettings;
@@ -166,6 +190,23 @@ export type AdminEvent =
   | { type: "MOVE_LEAD"; leadId: string; stage: LeadStage; lostReason?: string }
   | { type: "UPDATE_LEAD"; leadId: string; patch: Partial<Lead> }
   | { type: "LOG_CALL"; call: Omit<CallLog, "id" | "operator"> }
+  | {
+      type: "ADD_LEAVE";
+      staffId: string;
+      leaveType: LeaveType;
+      from: string;
+      to: string;
+      note: string;
+    }
+  | {
+      type: "UPDATE_EMPLOYEE";
+      staffId: string;
+      patch: Pick<Employee, "position" | "contractType" | "qualification" | "salary">;
+    }
+  /** Ishdan boʻshatish — yozuv oʻchirilmaydi, arxivlanadi va sababi qoladi. */
+  | { type: "DISMISS_EMPLOYEE"; staffId: string; reason: ExitReason; leftAt: string; note: string }
+  | { type: "OPEN_VACANCY"; title: string; subject: string; hoursPerWeek: number; reason: string }
+  | { type: "CLOSE_VACANCY"; vacancyId: string }
   | { type: "CHANGE_CLASS"; studentIds: string[]; className: string }
   | {
       type: "ISSUE_DOCUMENT";
@@ -199,6 +240,10 @@ function initialState(): AdminState {
     leads,
     calls: buildCalls(leads, students),
     users: buildUsers(),
+    employees: EMPLOYEES.map((e) => ({ ...e })),
+    leaves: LEAVES.map((l) => ({ ...l })),
+    vacancies: VACANCIES.map((v) => ({ ...v })),
+    exits: EXITS.map((e) => ({ ...e })),
     roleSections: { ...ROLE_DEFAULT_SECTIONS },
     settings: buildSchoolSettings(),
     audit: buildAuditLog(),
@@ -846,6 +891,132 @@ function reducer(state: AdminState, event: AdminEvent): AdminState {
       };
     }
 
+    // ───────────────────────── Kadrlar ─────────────────────────
+
+    case "ADD_LEAVE": {
+      const employee = state.employees.find((e) => e.staffId === event.staffId);
+      if (!employee) return state;
+      const leave: LeaveRecord = {
+        id: nextId("lv"),
+        staffId: event.staffId,
+        type: event.leaveType,
+        from: event.from,
+        to: event.to,
+        days: daysBetween(event.from, event.to),
+        note: event.note,
+        createdBy: state.profile.fullName,
+      };
+      return {
+        ...state,
+        leaves: [leave, ...state.leaves],
+        audit: withAudit(
+          state,
+          "hr",
+          employee.fullName,
+          `${LEAVE_TYPE_LABELS[leave.type]} · ${leave.from} — ${leave.to} (${leave.days} kun)`,
+        ),
+      };
+    }
+
+    case "UPDATE_EMPLOYEE": {
+      const before = state.employees.find((e) => e.staffId === event.staffId);
+      if (!before) return state;
+      // Audit uchun faqat HAQIQATDA oʻzgargan maydonlar yoziladi.
+      const changes: string[] = [];
+      if (before.position !== event.patch.position) {
+        changes.push(
+          `lavozim: ${POSITION_LABELS[before.position]} → ${POSITION_LABELS[event.patch.position]}`,
+        );
+      }
+      if (before.contractType !== event.patch.contractType) {
+        changes.push(`shartnoma: ${before.contractType} → ${event.patch.contractType}`);
+      }
+      if (before.qualification !== event.patch.qualification) {
+        changes.push(
+          `toifa: ${QUALIFICATION_LABELS[before.qualification]} → ${
+            QUALIFICATION_LABELS[event.patch.qualification]
+          }`,
+        );
+      }
+      if (before.salary !== event.patch.salary) {
+        changes.push(`maosh: ${formatSom(before.salary)} → ${formatSom(event.patch.salary)}`);
+      }
+      if (changes.length === 0) return state;
+
+      return {
+        ...state,
+        employees: state.employees.map((e) =>
+          e.staffId === event.staffId ? { ...e, ...event.patch } : e,
+        ),
+        audit: withAudit(state, "hr", before.fullName, changes.join(" · ")),
+      };
+    }
+
+    case "DISMISS_EMPLOYEE": {
+      const employee = state.employees.find((e) => e.staffId === event.staffId);
+      if (!employee || employee.status === "archived") return state;
+      const exit: ExitRecord = {
+        id: nextId("ex"),
+        staffId: employee.staffId,
+        fullName: employee.fullName,
+        position: employee.position,
+        hiredAt: employee.hiredAt,
+        leftAt: event.leftAt,
+        reason: event.reason,
+        note: event.note,
+      };
+      return {
+        ...state,
+        // Oʻchirilmaydi — arxivlanadi (CLAUDE.md 1-qoida).
+        employees: state.employees.map((e) =>
+          e.staffId === event.staffId ? { ...e, status: "archived" as const } : e,
+        ),
+        exits: [exit, ...state.exits],
+        audit: withAudit(
+          state,
+          "hr",
+          employee.fullName,
+          `Ishdan boʻshatildi · ${EXIT_REASON_LABELS[event.reason]} · ${event.leftAt}${
+            event.note ? ` · ${event.note}` : ""
+          }`,
+        ),
+      };
+    }
+
+    case "OPEN_VACANCY": {
+      const vacancy: Vacancy = {
+        id: nextId("vac"),
+        title: event.title,
+        subject: event.subject,
+        hoursPerWeek: event.hoursPerWeek,
+        openedAt: new Date().toISOString().slice(0, 10),
+        reason: event.reason,
+        status: "ochiq",
+      };
+      return {
+        ...state,
+        vacancies: [vacancy, ...state.vacancies],
+        audit: withAudit(
+          state,
+          "hr",
+          vacancy.title,
+          `Vakansiya ochildi · haftasiga ${vacancy.hoursPerWeek} soat · ${vacancy.reason}`,
+        ),
+      };
+    }
+
+    case "CLOSE_VACANCY": {
+      const vacancy = state.vacancies.find((v) => v.id === event.vacancyId);
+      if (!vacancy || vacancy.status === "yopilgan") return state;
+      return {
+        ...state,
+        vacancies: state.vacancies.map((v) =>
+          v.id === event.vacancyId ? { ...v, status: "yopilgan" as const } : v,
+        ),
+        audit: withAudit(state, "hr", vacancy.title, "Vakansiya yopildi"),
+      };
+    }
+
     case "SET_USER_ROLE": {
       const user = state.users.find((u) => u.id === event.userId);
       if (!user) return state;
@@ -1321,6 +1492,15 @@ export function useNotifications(): AdminNotification[] {
 
     return list;
   }, [students, applications, documents, appeals, surveys, leads]);
+}
+
+/** Kadrlar boʻyicha umumiy koʻrsatkichlar — doʻkondagi holatdan. */
+export function useHrSummary() {
+  const { employees, leaves, vacancies, exits } = useAdmin();
+  return useMemo(
+    () => hrSummary(employees, leaves, vacancies, exits),
+    [employees, leaves, vacancies, exits],
+  );
 }
 
 export function useFinanceSummary() {

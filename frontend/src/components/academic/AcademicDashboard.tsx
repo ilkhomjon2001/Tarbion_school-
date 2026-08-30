@@ -8,6 +8,7 @@ import {
   statsOf,
   upcomingExams,
 } from "@/lib/school/exams";
+import { qualitySummary, qualityTone, upcomingObservations } from "@/lib/school/quality";
 import { ACADEMIC_HEAD, allTeachers, staffById } from "@/lib/school/staff";
 import { kpiTone, teacherKpi } from "@/lib/director/teacher-kpi";
 import { CLASSES } from "@/lib/director/school-data";
@@ -50,6 +51,9 @@ export function AcademicDashboard() {
     .filter((c) => c.examCount > 0)
     .sort((a, b) => a.average - b.average)
     .slice(0, 5);
+
+  const quality = qualitySummary();
+  const upcomingObs = upcomingObservations();
 
   // Eng past KPI li ustozlar.
   const weakTeachers = allTeachers()
@@ -101,11 +105,55 @@ export function AcademicDashboard() {
           </p>
         </Card>
         <Card className="animate-enter" style={{ animationDelay: "180ms" }}>
-          <p className="text-sm text-foreground-muted">Ustozlar</p>
-          <p className="num mt-1 text-2xl font-bold text-foreground">{allTeachers().length}</p>
-          <p className="mt-1 text-xs text-foreground-muted">KPI kuzatuvida</p>
+          <p className="text-sm text-foreground-muted">Dars kuzatuvi</p>
+          <p
+            className={`num mt-1 text-2xl font-bold ${
+              quality.average === null ? "text-foreground" : TONE_TEXT[qualityTone(quality.average)]
+            }`}
+          >
+            {quality.average ?? "—"}
+          </p>
+          <p className="mt-1 text-xs text-foreground-muted">
+            <span className="num">{quality.conducted}</span> ta kuzatuv ·{" "}
+            <span className="num">{allTeachers().length}</span> ustoz
+          </p>
         </Card>
       </div>
+
+      {(quality.awaitingScores > 0 || upcomingObs.length > 0) && (
+        <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
+            <h2 className="text-base font-semibold text-foreground">Sifat nazorati</h2>
+            <Link
+              href="/oquv-bolim/sifat"
+              className="focus-ring rounded text-sm font-medium text-brand-dark hover:underline"
+            >
+              Kuzatuvlar →
+            </Link>
+          </div>
+          <div className="flex flex-wrap gap-x-8 gap-y-2 px-4 py-3 text-sm">
+            {quality.awaitingScores > 0 && (
+              <p className="text-foreground-muted">
+                Varaqasi kiritilmagan:{" "}
+                <span className="num font-semibold text-warning">{quality.awaitingScores}</span> ta
+              </p>
+            )}
+            {upcomingObs.length > 0 && (
+              <p className="text-foreground-muted">
+                Keyingi kuzatuv:{" "}
+                <span className="num font-semibold text-foreground">{upcomingObs[0].date}</span> ·{" "}
+                {staffById(upcomingObs[0].teacherId)?.shortName ?? "—"} · {upcomingObs[0].className}
+              </p>
+            )}
+            {quality.weakest && (
+              <p className="text-foreground-muted">
+                Eng zaif mezon:{" "}
+                <span className="font-semibold text-foreground">{quality.weakest.label}</span>
+              </p>
+            )}
+          </div>
+        </section>
+      )}
 
       {awaiting.length > 0 && (
         <section className="overflow-hidden rounded-xl border border-warning/40 bg-surface shadow-sm">

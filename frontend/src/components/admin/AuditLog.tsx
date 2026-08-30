@@ -27,6 +27,7 @@ const ACTION_TONE: Record<AuditAction, "success" | "danger" | "warning" | "info"
   settings: "neutral",
   lead: "info",
   call: "brand",
+  hr: "warning",
 };
 
 /**
