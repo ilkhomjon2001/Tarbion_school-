@@ -357,7 +357,7 @@ function ClassAttendance({
 }
 
 const DAY_CELL_CLASSES: Record<DayStatus, string> = {
-  present: "bg-surface-muted text-foreground-muted",
+  present: "bg-success-tint text-success",
   late: "bg-warning-tint text-warning",
   excused: "bg-info-tint text-info",
   absent: "bg-danger text-brand-foreground font-semibold",
