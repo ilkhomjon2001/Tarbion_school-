@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { AreaLineChart, SimpleBarChart } from "@/components/director/charts";
 import { AttendanceByClass } from "@/components/director/AttendanceByClass";
 import { ExportReportButton } from "@/components/director/ExportReportButton";
@@ -39,7 +40,7 @@ function ReportsSkeleton() {
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
       {Array.from({ length: 4 }).map((_, i) => (
-        <Card key={i} className="h-64 animate-pulse" />
+        <ChartSkeleton key={i} />
       ))}
     </div>
   );
@@ -53,7 +54,7 @@ async function ExportSection() {
 async function ReportsSection() {
   const data = await getDirectorReports();
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+    <div className="animate-enter grid grid-cols-1 gap-5 lg:grid-cols-2">
       <Card>
         <h2 className="mb-1 text-base font-semibold text-foreground">
           Davomat trendi (oxirgi 30 kun)

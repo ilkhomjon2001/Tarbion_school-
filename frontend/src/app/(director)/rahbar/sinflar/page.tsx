@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Card } from "@/components/ui/Card";
+import { TableSkeleton } from "@/components/ui/Skeleton";
 import { ClassesBoard } from "@/components/director/ClassesBoard";
 import { getSchoolClasses, getTeachers } from "@/lib/director/fetchers";
 
@@ -12,7 +12,7 @@ export default function ClassesPage() {
           Sinflar roʻyxati, sinf rahbarlari va oʻquvchilar davomati
         </p>
       </div>
-      <Suspense fallback={<Card className="h-72 animate-pulse" />}>
+      <Suspense fallback={<TableSkeleton rows={7} columns={5} />}>
         <ClassesSection />
       </Suspense>
     </div>

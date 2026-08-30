@@ -30,22 +30,29 @@ export function BottomNav() {
       aria-label="Asosiy navigatsiya"
       className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      <ul className="mx-auto flex max-w-3xl overflow-x-auto">
+      {/* Bandlar ekranga sigʻmaydi — snap bilan surish sezilarli boʻlsin */}
+      <ul className="scroll-x mx-auto flex max-w-3xl snap-x snap-mandatory">
         {NAV_ITEMS.map(({ href, label, icon: ItemIcon }) => {
           const isActive =
             href === "/student" ? pathname === href : pathname.startsWith(href);
           return (
-            <li key={href} className="flex-1 min-w-[64px]">
+            <li key={href} className="min-w-[68px] flex-1 snap-start">
               <Link
                 href={href}
                 aria-current={isActive ? "page" : undefined}
-                className={`flex flex-col items-center gap-1 px-2 py-2.5 text-[11px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand ${
-                  isActive
-                    ? "text-brand"
-                    : "text-foreground-muted hover:text-foreground"
+                className={`focus-ring-inset relative flex flex-col items-center gap-1 px-2 py-2.5 text-[11px] font-medium transition-colors ${
+                  isActive ? "text-brand" : "text-foreground-muted hover:text-foreground"
                 }`}
               >
-                <ItemIcon className="h-5 w-5" />
+                {isActive && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-x-3 top-0 h-0.5 rounded-b-full bg-brand"
+                  />
+                )}
+                <ItemIcon
+                  className={`h-5 w-5 transition-transform ${isActive ? "scale-110" : ""}`}
+                />
                 <span className="text-center leading-tight">{label}</span>
               </Link>
             </li>

@@ -115,3 +115,28 @@ int32 ga aylantirib manfiy indeks berib qoʻygan va build buzilgan edi.
 olib tashlandi — endi `lib/school/staff.ts` + `school-data.ts` dan hosil
 qilinadi. Ustoz yuklamasi (`weeklyLoadHours`) ham qoʻlda emas, haqiqiy
 dars biriktirmalari yigʻindisidan hisoblanadi.
+
+## 2026-08-30 · Harakat qatlami `globals.css` da, komponentda emas
+Animatsiya har komponentda alohida yozilsa, davomiylik va egri chiziq
+har joyda boshqacha boʻlib ketadi. Shu sabab bitta manba:
+`--ease-out-soft`, `--duration-fast/base` tokenlari va `animate-enter`,
+`animate-expand`, `skeleton`, `bar-fill`, `card-interactive`,
+`focus-ring`, `scroll-x` utilitalari. Komponentda xom `@keyframes` yoki
+ixtiyoriy `duration-*` yozilmaydi.
+
+`prefers-reduced-motion: reduce` butun loyihada animatsiya va
+oʻtishlarni oʻchiradi — vestibulyar buzilishlarda siljish bosh
+aylanishiga sabab boʻladi. Interfeys ishlaydi, faqat harakatsiz.
+
+## 2026-08-30 · Skeleton kontent shaklini takrorlaydi
+`<Card className="h-96 animate-pulse" />` kabi boʻsh kulrang qutilar
+oʻrniga `StatCardSkeleton` / `ChartSkeleton` / `TableSkeleton`. Sabab:
+maʼlumot kelganda sahifa sakramaydi (layout shift) va foydalanuvchi nima
+kutayotganini oldindan koʻradi.
+
+## 2026-08-30 · Xatolik va yuklanish chegaralari qoʻshildi
+Loyihada `error.tsx` / `loading.tsx` umuman yoʻq edi — server
+komponentidagi har qanday xato Next.js ning inglizcha standart ekranini
+koʻrsatardi. Endi: ildizda `error.tsx` + `not-found.tsx`, rahbariyat
+boʻlimida oʻz `error.tsx` (sidebar joyida qoladi) va `loading.tsx`.
+Backend ulanganda `console.error` oʻrniga kuzatuv xizmatiga yuboriladi.

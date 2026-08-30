@@ -80,7 +80,7 @@ export function PaymentsBoard({
     <div className="flex flex-col gap-5">
       {/* Jamlanma kartochkalar — summa kartochka ichida */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card>
+        <Card className="animate-enter">
           <p className="text-sm text-foreground-muted">Bu oy tushum</p>
           <p className="num mt-1 text-xl font-bold text-foreground">
             {formatSom(summary.collected)}
@@ -91,7 +91,7 @@ export function PaymentsBoard({
           </p>
         </Card>
 
-        <Card>
+        <Card className="animate-enter" style={{ animationDelay: "60ms" }}>
           <p className="text-sm text-foreground-muted">Kechikkan toʻlovlar</p>
           <p className="num mt-1 text-xl font-bold text-danger">{formatSom(summary.debt)}</p>
           <p className="mt-1 text-xs text-foreground-muted">
@@ -101,7 +101,7 @@ export function PaymentsBoard({
           </p>
         </Card>
 
-        <Card>
+        <Card className="animate-enter" style={{ animationDelay: "120ms" }}>
           <p className="text-sm text-foreground-muted">Bu oy toʻlangan</p>
           <p className="num mt-1 text-xl font-bold text-success">
             {summary.paidCount} ta oʻquvchi
@@ -185,8 +185,11 @@ export function PaymentsBoard({
                   setOpenClass(null);
                 }}
               >
+                <p className="mb-2 text-[11px] text-foreground-muted sm:hidden">
+                  Jadvalni yon tomonga suring →
+                </p>
                 <div className="overflow-hidden rounded-lg border border-border bg-surface">
-                  <div className="overflow-x-auto">
+                  <div className="scroll-x">
                     <table className="w-full min-w-[680px] border-collapse text-sm">
                       <thead>
                         <tr className="border-b border-border bg-surface-muted/60 text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
@@ -226,7 +229,7 @@ export function PaymentsBoard({
 }
 
 function chipClass(active: boolean): string {
-  return `rounded-full px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+  return `rounded-full px-3 py-1.5 text-sm font-medium transition-colors focus-ring ${
     active
       ? "bg-brand text-brand-foreground"
       : "border border-border bg-surface text-foreground-muted hover:bg-surface-muted"
@@ -250,17 +253,22 @@ function ClassRow({
 
   return (
     <>
+      {/* Butun qator bosiladi — kichik chevronni nishonga olish shart emas */}
       <tr
-        className={`border-b border-border last:border-0 ${
+        onClick={onToggle}
+        className={`cursor-pointer border-b border-border transition-colors last:border-0 ${
           isOpen ? "bg-brand-tint/30" : "hover:bg-surface-muted/50"
         }`}
       >
         <td className="px-3 py-2.5">
           <button
             type="button"
-            onClick={onToggle}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle();
+            }}
             aria-expanded={isOpen}
-            className="font-medium text-foreground hover:text-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            className="focus-ring rounded font-medium text-foreground hover:text-brand-dark"
           >
             {stat.className}
           </button>
@@ -272,7 +280,7 @@ function ClassRow({
           <div className="flex items-center gap-2">
             <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-muted">
               <div
-                className={`h-full rounded-full ${percentBar(stat.collectedPercent)}`}
+                className={`bar-fill h-full rounded-full ${percentBar(stat.collectedPercent)}`}
                 style={{ width: `${stat.collectedPercent}%` }}
               />
             </div>
@@ -287,9 +295,12 @@ function ClassRow({
         <td className="px-3 py-2.5 text-right">
           <button
             type="button"
-            onClick={onToggle}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle();
+            }}
             aria-label={`${stat.className} oʻquvchilarini ${isOpen ? "yopish" : "koʻrish"}`}
-            className="text-foreground-muted transition-colors hover:text-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            className="focus-ring rounded text-foreground-muted transition-colors hover:text-brand-dark"
           >
             <ChevronRightIcon
               className={`h-4 w-4 transition-transform ${isOpen ? "rotate-90" : ""}`}
@@ -300,11 +311,11 @@ function ClassRow({
 
       {isOpen && (
         <tr className="border-b border-border bg-surface-muted/40">
-          <td colSpan={7} className="px-3 py-3">
+          <td colSpan={7} className="animate-expand px-3 py-3">
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-foreground-muted">
               {stat.className} — oʻquvchilar kesimida
             </p>
-            <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+            <div className="scroll-x rounded-lg border border-border bg-surface">
               <table className="w-full min-w-[560px] border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
@@ -320,7 +331,10 @@ function ClassRow({
                   {students.map((student) => {
                     const debt = student.monthlyFee - student.paidAmount;
                     return (
-                      <tr key={student.id} className="border-b border-border last:border-0">
+                      <tr
+                        key={student.id}
+                        className="border-b border-border transition-colors last:border-0 hover:bg-surface-muted/50"
+                      >
                         <td className="px-3 py-2 font-medium text-foreground">
                           {student.fullName}
                         </td>

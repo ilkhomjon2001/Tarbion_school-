@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Card } from "@/components/ui/Card";
+import { StatCardSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
 import { PaymentsBoard } from "@/components/director/PaymentsBoard";
 import { getClassPaymentStats, getFinanceSummary } from "@/lib/director/fetchers";
 
@@ -24,10 +24,10 @@ function PaymentsSkeleton() {
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <Card key={i} className="h-28 animate-pulse" />
+          <StatCardSkeleton key={i} />
         ))}
       </div>
-      <Card className="h-96 animate-pulse" />
+      <TableSkeleton rows={7} columns={4} />
     </div>
   );
 }

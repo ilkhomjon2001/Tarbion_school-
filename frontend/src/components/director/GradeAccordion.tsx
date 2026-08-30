@@ -35,7 +35,7 @@ export function GradeAccordionItem({
         type="button"
         onClick={onToggle}
         aria-expanded={isOpen}
-        className={`flex w-full flex-col gap-2 px-4 py-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand sm:flex-row sm:items-center sm:gap-4 ${
+        className={`focus-ring-inset flex w-full cursor-pointer flex-col gap-2 px-4 py-3 text-left transition-colors sm:flex-row sm:items-center sm:gap-4 ${
           isOpen ? "bg-brand-tint/40" : "hover:bg-surface-muted/60"
         }`}
       >
@@ -55,7 +55,7 @@ export function GradeAccordionItem({
         <div className="flex flex-1 items-center gap-2">
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-muted">
             <div
-              className={`h-full rounded-full ${barClass}`}
+              className={`bar-fill h-full rounded-full ${barClass}`}
               style={{ width: `${percent}%` }}
             />
           </div>
@@ -76,7 +76,11 @@ export function GradeAccordionItem({
         />
       </button>
 
-      {isOpen && <div className="border-t border-border bg-surface-muted/30 p-3">{children}</div>}
+      {isOpen && (
+        <div className="animate-expand border-t border-border bg-surface-muted/30 p-3">
+          {children}
+        </div>
+      )}
     </li>
   );
 }

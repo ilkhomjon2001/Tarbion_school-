@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { MessageSquareIcon } from "@/components/ui/icons";
 import { AppealThread } from "@/components/shared/AppealThread";
 import {
   APPEAL_TARGET_LABELS,
@@ -75,13 +77,19 @@ export function AppealsBoard({ appeals }: { appeals: Appeal[] }) {
         )}
 
         {shown.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-surface-muted px-4 py-10 text-center">
-            <p className="text-sm font-medium text-foreground">Murojaat yoʻq</p>
-          </div>
+          <EmptyState
+            icon={<MessageSquareIcon className="h-5 w-5" />}
+            title="Murojaat yoʻq"
+            description={
+              tab === "management"
+                ? "Rahbariyatga hozircha hech kim murojaat qilmagan."
+                : "Ustozlarga hozircha murojaat kelmagan."
+            }
+          />
         ) : (
           <ul className="flex flex-col gap-3">
-            {shown.map((appeal) => (
-              <li key={appeal.id}>
+            {shown.map((appeal, i) => (
+              <li key={appeal.id} className="animate-enter" style={{ animationDelay: `${i * 40}ms` }}>
                 {tab === "teachers" && <AssigneeLine appeal={appeal} />}
                 <AppealThread
                   appeal={appeal}
@@ -125,7 +133,7 @@ function TabButton({
       role="tab"
       aria-selected={active}
       onClick={onClick}
-      className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+      className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors focus-ring ${
         active
           ? "border-brand text-brand-dark"
           : "border-transparent text-foreground-muted hover:text-foreground"
@@ -201,12 +209,12 @@ function ClassChart({
               </span>
               <div className="flex h-5 flex-1 overflow-hidden rounded-full bg-surface-muted">
                 <div
-                  className="h-full bg-brand"
+                  className="bar-fill h-full bg-brand"
                   style={{ width: `${(stat.toManagement / max) * 100}%` }}
                   title={`Rahbariyatga: ${stat.toManagement}`}
                 />
                 <div
-                  className="h-full bg-info"
+                  className="bar-fill h-full bg-info"
                   style={{ width: `${(stat.toTeachers / max) * 100}%` }}
                   title={`Ustozlarga: ${stat.toTeachers}`}
                 />

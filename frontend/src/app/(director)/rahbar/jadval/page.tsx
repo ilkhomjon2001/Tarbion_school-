@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Card } from "@/components/ui/Card";
+import { TableSkeleton } from "@/components/ui/Skeleton";
 import { ScheduleBuilder } from "@/components/director/ScheduleBuilder";
 import {
   getInitialScheduleGrid,
@@ -18,7 +18,7 @@ export default function DirectorSchedulePage() {
           belgilang.
         </p>
       </div>
-      <Suspense fallback={<Card className="h-96 animate-pulse" />}>
+      <Suspense fallback={<TableSkeleton rows={9} columns={5} />}>
         <ScheduleSection />
       </Suspense>
     </div>
