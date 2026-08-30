@@ -61,7 +61,8 @@ export function AppealThread({
   const listRef = useRef<HTMLUListElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const assignee = staffById(appeal.assigneeId);
+  // Ism avval javobdan olinadi (API), topilmasa mock roʻyxatidan.
+  const assigneeName = appeal.assigneeName ?? staffById(appeal.assigneeId)?.shortName ?? null;
   const messageCount = appeal.messages.length;
 
   // Yozishma ochilganda va yangi xabar qoʻshilganda oxiriga tushamiz —
@@ -88,7 +89,7 @@ export function AppealThread({
   const counterparty =
     viewer === "parent"
       ? `${APPEAL_TARGET_LABELS[appeal.target]}${appeal.subject ? ` · ${appeal.subject}` : ""}${
-          assignee ? ` · ${assignee.shortName}` : ""
+          assigneeName ? ` · ${assigneeName}` : ""
         }`
       : `${appeal.parentName} · ${appeal.studentFullName} (${appeal.className})`;
 
@@ -140,7 +141,9 @@ export function AppealThread({
           {/* Uzun yozishma kartochkani choʻzib yubormasin */}
           <ul ref={listRef} className="flex max-h-80 flex-col gap-2 overflow-y-auto pr-1">
             {appeal.messages.map((message) => {
-              const author = message.staffId ? staffById(message.staffId) : null;
+              const author =
+                message.authorName ??
+                (message.staffId ? staffById(message.staffId)?.shortName : null);
               const mine = message.author === viewer;
               return (
                 <li
@@ -152,7 +155,7 @@ export function AppealThread({
                   }`}
                 >
                   <p className="mb-0.5 text-[11px] font-medium opacity-70">
-                    {message.author === "parent" ? appeal.parentName : (author?.shortName ?? "Maktab")}
+                    {message.author === "parent" ? appeal.parentName : (author ?? "Maktab")}
                   </p>
                   <p className="whitespace-pre-wrap">{message.text}</p>
                   <p className="mt-0.5 text-[10px] opacity-60">{message.createdAt}</p>

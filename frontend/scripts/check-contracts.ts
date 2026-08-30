@@ -12,9 +12,15 @@
 
 import { readFileSync, existsSync } from "node:fs";
 import {
+  APPEAL_STATUS_LABELS,
+  APPEAL_STATUSES,
+  APPEAL_TARGET_LABELS,
+  APPEAL_TARGETS,
   ATTENDANCE_LABELS,
   ATTENDANCE_STATUSES,
   BACKEND_ROLES,
+  CONTACT_KIND_LABELS,
+  CONTACT_KINDS,
   GRADE_KINDS,
   SCALE_MAX,
   SUBMISSION_LABELS,
@@ -90,6 +96,7 @@ console.log("── Enum qiymatlari ──");
 const attendance = read("attendance.py");
 const homework = read("homework.py");
 const identity = read("identity.py");
+const appeals = read("appeals.py");
 
 const beAttendance = enumValues(attendance, "AttendanceStatus");
 ok(
@@ -117,6 +124,19 @@ ok(
 
 const beRoles = enumValues(identity, "RoleName");
 ok("RoleName", same(beRoles, BACKEND_ROLES), show(beRoles, BACKEND_ROLES));
+
+const beTarget = enumValues(appeals, "AppealTarget");
+ok("AppealTarget", same(beTarget, APPEAL_TARGETS), show(beTarget, APPEAL_TARGETS));
+
+const beAppealStatus = enumValues(appeals, "AppealStatus");
+ok(
+  "AppealStatus",
+  same(beAppealStatus, APPEAL_STATUSES),
+  show(beAppealStatus, APPEAL_STATUSES),
+);
+
+const beContact = enumValues(appeals, "ContactKind");
+ok("ContactKind", same(beContact, CONTACT_KINDS), show(beContact, CONTACT_KINDS));
 
 console.log("── Oʻzbekcha yorliqlar ──");
 
@@ -161,6 +181,28 @@ checkLabels(
   "SubmissionStatus",
   "SUBMISSION_LABELS_UZ",
   SUBMISSION_LABELS,
+);
+
+checkLabels(
+  "APPEAL_TARGET_LABELS_UZ",
+  appeals,
+  "AppealTarget",
+  "APPEAL_TARGET_LABELS_UZ",
+  APPEAL_TARGET_LABELS,
+);
+checkLabels(
+  "APPEAL_STATUS_LABELS_UZ",
+  appeals,
+  "AppealStatus",
+  "APPEAL_STATUS_LABELS_UZ",
+  APPEAL_STATUS_LABELS,
+);
+checkLabels(
+  "CONTACT_KIND_LABELS_UZ",
+  appeals,
+  "ContactKind",
+  "CONTACT_KIND_LABELS_UZ",
+  CONTACT_KIND_LABELS,
 );
 
 console.log("── SCALE_MAX qiymatlari ──");

@@ -747,7 +747,7 @@ function reducer(state: AdminState, event: AdminEvent): AdminState {
       if (!student) return state;
       const appeal: Appeal = {
         id: nextId("ap"),
-        target: "rahbariyat",
+        target: "management",
         assigneeId: ADMINISTRATOR.id,
         className: student.className,
         studentFullName: student.fullName,

@@ -11,8 +11,8 @@ type Filter = "all" | AppealTarget;
 
 const FILTERS: { id: Filter; label: string }[] = [
   { id: "all", label: "Barchasi" },
-  { id: "sinf_rahbari", label: "Sinf rahbari sifatida" },
-  { id: "fan_oqituvchisi", label: "Fan oʻqituvchisi sifatida" },
+  { id: "homeroom", label: "Sinf rahbari sifatida" },
+  { id: "subject_teacher", label: "Fan oʻqituvchisi sifatida" },
 ];
 
 /**

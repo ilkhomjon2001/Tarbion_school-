@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 from sqlalchemy import text
 
+from app.api.v1 import appeals as appeals_router
 from app.api.v1 import auth as auth_router
 from app.api.v1 import director as director_router
 from app.core.config import settings
@@ -73,6 +74,7 @@ app.add_exception_handler(Exception, unhandled_error_handler)
 API_V1 = "/api/v1"
 app.include_router(auth_router.router, prefix=API_V1)
 app.include_router(director_router.router, prefix=API_V1)
+app.include_router(appeals_router.router, prefix=API_V1)
 
 
 @app.get("/health", response_model=HealthOut, tags=["service"])

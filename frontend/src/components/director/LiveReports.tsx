@@ -3,11 +3,14 @@
 /**
  * Jonli hisobot — barcha raqam BAZADAN.
  *
- * Nega alohida sahifa, mavjudlarini almashtirish emas: qolgan rahbariyat
- * sahifalari Server Component va mock ustida ishlaydi, ular maktab
- * rahbariga koʻrsatiladi. Ularni bir kechada API ga koʻchirish prototipni
- * ishlamay qoldirardi. Bu sahifa zanjirni uchi-uchiga isbotlaydi:
- * login → token → soʻrov → baza.
+ * Nega alohida sahifa: qolgan rahbariyat sahifalari (davomat, baho,
+ * imtihon) hali mock ustida ishlaydi va ular maktab rahbariga
+ * koʻrsatiladi — hammasini bir kechada koʻchirish prototipni ishlamay
+ * qoldirardi. Sahifalar bittalab koʻchiriladi; murojaatlar allaqachon
+ * oʻtdi (`components/shared/LiveAppeals.tsx`).
+ *
+ * Sessiya (kirish, tokenni tiklash, 401) shu yerda emas —
+ * `components/shared/LiveSession.tsx` da, barcha kabinetlar uchun bir xil.
  *
  * Maʼlumot MIJOZ tomonida olinadi: token brauzer xotirasida, Server
  * Component uni koʻrmaydi. Bu tasodifiy emas — DECISIONS.md da BFF
@@ -26,7 +29,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { AlertTriangleIcon } from "@/components/ui/icons";
 import { directorClasses, directorOverview, directorTeachers } from "@/lib/api/sdk.gen";
 import type { ClassRowOut, DirectorOverviewOut, TeacherRowOut } from "@/lib/api/types.gen";
-import { SessionError, getUser, login, restore, withAuth } from "@/lib/session";
+import { LiveSession, messageOf } from "@/components/shared/LiveSession";
+import { getUser, withAuth } from "@/lib/session";
 
 interface Loaded {
   overview: DirectorOverviewOut;
@@ -34,10 +38,23 @@ interface Loaded {
   teachers: TeacherRowOut[];
 }
 
-type Phase = "checking" | "anonymous" | "loading" | "ready" | "failed";
+type Phase = "loading" | "ready" | "failed";
 
 export function LiveReports() {
-  const [phase, setPhase] = useState<Phase>("checking");
+  return (
+    <div className="flex flex-col gap-5 p-4 md:p-6">
+      <LiveSession
+        title="Jonli hisobot"
+        hint="Backend ishga tushmagan boʻlsa bu sahifa boʻsh qoladi — qolgan rahbariyat boʻlimlari mustaqil ishlaydi."
+      >
+        {(reloadKey) => <Reports key={reloadKey} />}
+      </LiveSession>
+    </div>
+  );
+}
+
+function Reports() {
+  const [phase, setPhase] = useState<Phase>("loading");
   const [data, setData] = useState<Loaded | null>(null);
   const [error, setError] = useState<string>("");
   const [days, setDays] = useState(30);
@@ -54,42 +71,19 @@ export function LiveReports() {
       setData({ overview, classes, teachers });
       setPhase("ready");
     } catch (err) {
-      if (err instanceof SessionError && err.status === 401) {
-        setPhase("anonymous");
-        return;
-      }
-      setError(err instanceof Error ? err.message : "Nomaʼlum xato");
+      setError(messageOf(err));
       setPhase("failed");
     }
   }, []);
 
-  // Sahifa yangilanganda access token yoʻqoladi — refresh cookie'dan
-  // tiklanadi. Cookie ham boʻlmasa, kirish formasi koʻrsatiladi.
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const ok = await restore();
-      if (cancelled) return;
-      if (ok) void load(days);
-      else setPhase("anonymous");
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // Faqat bir marta — davr oʻzgarganda qayta tiklash kerak emas.
+    void load(days);
+    // Faqat bir marta — davr tugmasi `load` ni oʻzi chaqiradi.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (phase === "checking") {
-    return <p className="p-4 text-sm text-foreground-muted md:p-6">Sessiya tekshirilmoqda…</p>;
-  }
-
-  if (phase === "anonymous") {
-    return <LoginPanel onSuccess={() => load(days)} />;
-  }
-
   return (
-    <div className="flex flex-col gap-5 p-4 md:p-6">
+    <div className="flex flex-col gap-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-h2 font-bold text-foreground">Jonli hisobot</h1>
@@ -311,79 +305,4 @@ function toneOf(percent: number): string {
   if (percent >= 90) return "text-success";
   if (percent >= 80) return "text-warning";
   return "text-danger";
-}
-
-/** Kirish formasi — backend hisoblari bilan. */
-function LoginPanel({ onSuccess }: { onSuccess: () => void }) {
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-
-  async function submit(event: React.FormEvent) {
-    event.preventDefault();
-    setBusy(true);
-    setError("");
-    try {
-      await login(phone, password);
-      onSuccess();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Kirib boʻlmadi");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
-      <div>
-        <h1 className="text-h2 font-bold text-foreground">Jonli hisobot</h1>
-        <p className="text-sm text-foreground-muted">
-          Bu sahifa bazadan oʻqiydi — backend hisobingiz bilan kiring
-        </p>
-      </div>
-
-      <Card className="max-w-md">
-        <form onSubmit={submit} className="flex flex-col gap-3">
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium text-foreground">Telefon</span>
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              autoComplete="username"
-              placeholder="+998 90 100 00 01"
-              className="focus-ring h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground"
-            />
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium text-foreground">Parol</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              className="focus-ring h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground"
-            />
-          </label>
-
-          {error && (
-            <p className="rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">{error}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={busy || !phone || !password}
-            className="focus-ring rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark disabled:opacity-50"
-          >
-            {busy ? "Kirilmoqda…" : "Kirish"}
-          </button>
-        </form>
-
-        <p className="mt-3 border-t border-border pt-3 text-xs text-foreground-muted">
-          Backend ishga tushmagan boʻlsa bu sahifa boʻsh qoladi — qolgan
-          rahbariyat boʻlimlari mustaqil ishlaydi.
-        </p>
-      </Card>
-    </div>
-  );
 }

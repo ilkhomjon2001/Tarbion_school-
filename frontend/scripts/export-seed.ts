@@ -22,6 +22,8 @@ import {
   TEACHING_ASSIGNMENTS,
   allTeachers,
 } from "../src/lib/school/staff.ts";
+import { APPEALS } from "../src/lib/school/appeals.ts";
+import { buildConversationNotes } from "../src/lib/admin/seed.ts";
 import { BELL_SCHEDULE } from "../src/lib/teacher/schedule.ts";
 import { ACADEMIC_YEAR, BREAKS, TERMS } from "../src/lib/teacher/terms.ts";
 
@@ -91,6 +93,100 @@ const students = ALL_STUDENTS.map((s) => {
   };
 });
 
+
+// ─────────────────────── Murojaatlar ───────────────────────
+
+// Murojaat yoʻnalishi endi `lib/contracts.ts` orqali backend enum'ining
+// AYNAN oʻzi — bu yerda moslashtirish kerak emas. Ichki qayd turi esa hali
+// admin do'konining oʻzbekcha kalitlarida.
+const NOTE_KIND_TO_BACKEND: Record<string, string> = {
+  telefon: "phone",
+  yuzma: "in_person",
+  onlayn: "online",
+};
+
+/**
+ * Murojaatdagi «Abdullayev Alisher» kabi ismlar generatsiya qilingan
+ * oʻquvchilar roʻyxatida yoʻq — mock murojaatlar alohida yozilgan. Shu
+ * sabab har bir murojaatga OʻSHA SINFDAN haqiqiy oʻquvchi biriktiriladi
+ * (murojaat id'si boʻyicha barqaror tanlov), matndagi ism esa
+ * almashtiriladi. Aks holda bazada mavjud boʻlmagan bolaga murojaat
+ * yozilardi va foreign key yiqilardi.
+ */
+function pickStudent(className: string, key: string) {
+  const pool = ALL_STUDENTS.filter((s) => s.className === className);
+  if (pool.length === 0) return null;
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i += 1) {
+    h ^= key.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return pool[(h >>> 0) % pool.length];
+}
+
+const appeals = APPEALS.flatMap((a) => {
+  const student = pickStudent(a.className, a.id);
+  if (!student) return [];
+
+  // Xabar matnida bolaning ismi uchraydi ("Alisher algebradan orqada
+  // qolyapti"). Mock ismlar bir xil tartibda emas — baʼzisi "Familiya Ism",
+  // baʼzisi "Ism Familiya" — shuning uchun ikkala boʻlak ham almashtiriladi.
+  // 4 harfdan qisqa boʻlak tegilmaydi: u oddiy soʻzga tushib qolishi mumkin.
+  const realFirst = student.fullName.split(/\s+/).slice(-1)[0];
+  const mockParts = a.studentFullName.split(/\s+/).filter((p) => p.length >= 4);
+  const rename = (text: string) =>
+    mockParts.reduce(
+      (acc, part) => acc.split(part).join(realFirst),
+      text.split(a.studentFullName).join(student.fullName),
+    );
+
+  // Fan oʻqituvchisi — sinfning HAQIQIY yuklamasidan. Backend ham aynan
+  // shu qoidani tekshiradi ("bu oʻqituvchi farzandingizga dars bermaydi"),
+  // shuning uchun mos kelmagan juftlik seed'da ham qolmasligi kerak.
+  let subject: string | null = null;
+  let teacherRef: string | null = null;
+  if (a.target === "subject_teacher") {
+    const forClass = TEACHING_ASSIGNMENTS.filter((x) => x.className === a.className);
+    const exact = forClass.find((x) => x.subject === a.subject);
+    const chosen = exact ?? forClass[0];
+    if (!chosen) return [];
+    subject = chosen.subject;
+    teacherRef = chosen.teacherId;
+  }
+
+  return [
+    {
+      ref: a.id,
+      studentRef: student.id,
+      className: a.className,
+      target: a.target,
+      subject,
+      assigneeRef: teacherRef,
+      title: a.title,
+      status: a.status,
+      createdAt: a.createdAt,
+      dueAt: a.dueAt,
+      messages: a.messages.map((m) => ({
+        author: m.author,
+        staffRef: m.staffId ?? null,
+        text: rename(m.text),
+        createdAt: m.createdAt,
+      })),
+    },
+  ];
+});
+
+const appealNotes = buildConversationNotes()
+  .filter((n) => appeals.some((a) => a.ref === n.appealId))
+  .map((n) => ({
+    appealRef: n.appealId,
+    kind: NOTE_KIND_TO_BACKEND[n.kind] ?? "phone",
+    summary: n.summary,
+    aboutTeacherRef: n.teacherId ?? null,
+    teacherRating: n.rating ?? null,
+    teacherComment: n.comment ?? null,
+  }));
+
 const payload = {
   generatedAt: new Date().toISOString(),
   academicYear: {
@@ -115,6 +211,8 @@ const payload = {
   staff,
   classes,
   students,
+  appeals,
+  appealNotes,
   assignments: TEACHING_ASSIGNMENTS.map((a) => ({
     className: a.className,
     subject: a.subject,
@@ -133,3 +231,4 @@ console.log(`  oʻquvchi     ${payload.students.length}`);
 console.log(`  yuklama      ${payload.assignments.length}`);
 console.log(`  chorak       ${payload.terms.length}`);
 console.log(`  para         ${payload.bellSchedule.length}`);
+console.log(`  murojaat     ${payload.appeals.length} · ichki qayd ${payload.appealNotes.length}`);
