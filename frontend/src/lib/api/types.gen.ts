@@ -19,6 +19,25 @@ export type AttendancePoint = {
 };
 
 /**
+ * ChangePasswordIn
+ *
+ * Parolni almashtirish (AUT-08).
+ *
+ * Eski parol soʻraladi — ochiq qolgan sessiyani topgan odam hisobni
+ * butunlay egallab olmasin.
+ */
+export type ChangePasswordIn = {
+    /**
+     * Current Password
+     */
+    current_password: string;
+    /**
+     * New Password
+     */
+    new_password: string;
+};
+
+/**
  * ClassRowOut
  */
 export type ClassRowOut = {
@@ -324,6 +343,31 @@ export type AuthMeResponses = {
 };
 
 export type AuthMeResponse = AuthMeResponses[keyof AuthMeResponses];
+
+export type AuthChangePasswordData = {
+    body: ChangePasswordIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/change-password';
+};
+
+export type AuthChangePasswordErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AuthChangePasswordError = AuthChangePasswordErrors[keyof AuthChangePasswordErrors];
+
+export type AuthChangePasswordResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AuthChangePasswordResponse = AuthChangePasswordResponses[keyof AuthChangePasswordResponses];
 
 export type DirectorOverviewData = {
     body?: never;

@@ -1,21 +1,27 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { currentRole, isAuthenticated } from "@/lib/auth";
+import { currentRole, restore } from "@/lib/auth";
 import { ROLE_CABINET, ROLE_HOME, type UserRole } from "@/lib/roles";
+import { getUser, isAuthenticated } from "@/lib/session";
 
 /**
- * DEMO kirish tekshiruvi.
+ * Kirish tekshiruvi.
  *
- * Ikki holatni ushlaydi:
- *   – sessiya yoʻq → /login;
- *   – sessiya bor, lekin rol boshqa kabinetniki → oʻz kabinetiga qaytaradi
- *     (oʻquvchi /admin manzilini qoʻlda yozsa — /student ga tushadi).
+ * Access token XOTIRADA saqlanadi, shuning uchun sahifa yangilanganda
+ * yoʻqoladi. `restore()` httpOnly refresh cookie'si orqali yangi token
+ * oladi — foydalanuvchi har F5 da qayta kirmaydi.
  *
- * Bu haqiqiy himoya EMAS (CLAUDE.md 7-qoida: rol tekshiruvi har doim
- * serverda). Backend/JWT ulanmaguncha faqat toʻgʻri xatti-harakatni
- * frontendda koʻrsatib turadi.
+ * Uch holat ushlanadi:
+ *   – sessiya yoʻq → `/login`
+ *   – parol almashtirilmagan → `/parol` (5 xonali boshlangʻich parol
+ *     doimiy qolib ketmasin)
+ *   – rol boshqa kabinetniki → oʻz kabinetiga
+ *
+ * Bu HIMOYA EMAS (CLAUDE.md 7-qoida): har bir soʻrovni backend
+ * qaytadan tekshiradi. Bu yerdagi tekshiruv — foydalanuvchi boshi
+ * berk koʻchaga kirib qolmasligi uchun.
  */
 export function AuthGuard({
   children,
@@ -26,23 +32,42 @@ export function AuthGuard({
   role?: UserRole;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      router.replace("/login");
-      return;
-    }
-    const actual = currentRole();
-    // `actual === null` — eski sessiya, rol saqlanmagan: qulflab
-    // qoʻymaymiz, sessiya bor ekan kiritamiz. Taqqoslash KABINET
-    // boʻyicha: super administrator ham admin kabinetida ishlaydi.
-    if (role && actual && ROLE_CABINET[actual] !== ROLE_CABINET[role]) {
-      router.replace(ROLE_HOME[actual]);
-      return;
-    }
-    setReady(true);
-  }, [router, role]);
+    let alive = true;
+
+    (async () => {
+      // Xotiradagi token yoʻq boʻlsa cookie orqali tiklaymiz.
+      const ok = isAuthenticated() || (await restore());
+      if (!alive) return;
+
+      if (!ok) {
+        router.replace("/login");
+        return;
+      }
+
+      // Boshlangʻich parol hali almashtirilmagan — boshqa hech qayerga
+      // oʻtkazmaymiz. `/parol` sahifasining oʻzi bundan mustasno.
+      if (getUser()?.must_change_password && pathname !== "/parol") {
+        router.replace("/parol");
+        return;
+      }
+
+      const actual = currentRole();
+      if (role && actual && ROLE_CABINET[actual] !== ROLE_CABINET[role]) {
+        router.replace(ROLE_HOME[actual]);
+        return;
+      }
+
+      setReady(true);
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [router, role, pathname]);
 
   if (!ready) return null;
   return <>{children}</>;

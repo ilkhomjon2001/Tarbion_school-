@@ -229,7 +229,10 @@ async def seed(session: AsyncSession, data: dict[str, Any]) -> None:
             first_name=person["firstName"],
             middle_name=person["middleName"],
             email=person["email"],
-            must_change_password=True,
+            # Seed hisoblariga kuchli parol beriladi (DEMO_PASSWORD), 5 xonali
+            # vaqtinchalik parol emas. `must_change_password` aynan shu
+            # vaqtinchalik parol uchun — shuning uchun bu yerda False.
+            must_change_password=False,
         )
         u.roles = [roles[r] for r in person["roles"] if r in roles]
         session.add(u)
@@ -356,7 +359,7 @@ async def seed(session: AsyncSession, data: dict[str, Any]) -> None:
             last_name=s["lastName"],
             first_name="Ota-ona",
             middle_name=None,
-            must_change_password=True,
+            must_change_password=False,
         )
         parent.roles = [roles[RoleName.PARENT.value]]
         session.add(parent)

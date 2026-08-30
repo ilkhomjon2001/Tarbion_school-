@@ -13,8 +13,10 @@ from fastapi import APIRouter, Request, Response, status
 from app.api.v1.deps import CurrentUserDep
 from app.core.config import settings
 from app.core.db import SessionDep
-from app.schemas.auth import LoginIn, TokenOut, UserOut
-from app.services import auth_service
+from app.core.exceptions import AuthRequiredError
+from app.models import User
+from app.schemas.auth import ChangePasswordIn, LoginIn, TokenOut, UserOut
+from app.services import auth_service, user_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -92,4 +94,29 @@ async def me(user: CurrentUserDep) -> UserOut:
         short_name=user.short_name,
         roles=sorted(user.roles),
         must_change_password=user.must_change_password,
+    )
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+async def change_password(
+    payload: ChangePasswordIn,
+    request: Request,
+    current: CurrentUserDep,
+    session: SessionDep,
+) -> None:
+    """Foydalanuvchi oʻz parolini almashtiradi.
+
+    Boshlangʻich 5 xonali parol shu yerda doimiysiga almashtiriladi va
+    `must_change_password` oʻchadi.
+    """
+    user = await session.get(User, current.id)
+    if user is None:
+        raise AuthRequiredError
+
+    await user_service.change_own_password(
+        session,
+        user=user,
+        current_password=payload.current_password,
+        new_password=payload.new_password,
+        ip=_client_ip(request),
     )

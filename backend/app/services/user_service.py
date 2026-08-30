@@ -185,6 +185,7 @@ async def change_own_password(
         actor_id=user.id,
         ip=ip,
     )
+    await session.commit()
 
 
 async def reset_password(

@@ -325,3 +325,58 @@ async def test_ozini_arxivlab_bolmaydi(session: AsyncSession) -> None:
     sa = await _make_user(session, "sa.ozi", RoleName.SUPERADMIN.value)
     with pytest.raises(ValidationError, match="Oʻz hisobingizni"):
         await user_service.archive_user(session, actor=_current(sa), user_id=sa.id)
+
+
+# ─────────────────────── /auth/change-password ───────────────────────
+
+
+async def test_parol_almashtirish_endpointi(client, session: AsyncSession) -> None:  # noqa: ANN001
+    """Boshlangʻich 5 xonali parol API orqali almashtiriladi."""
+    sa = await _make_user(session, "sa.endpoint", RoleName.SUPERADMIN.value)
+    yangi = await user_service.create_user(
+        session,
+        actor=_current(sa),
+        last_name="Sanoqli",
+        first_name="Foydalanuvchi",
+        roles=[RoleName.TEACHER.value],
+    )
+    await session.flush()
+    boshlangich = yangi.initial_password
+
+    kirish = await client.post(
+        "/api/v1/auth/login",
+        json={"login": yangi.user.login, "password": boshlangich},
+    )
+    assert kirish.status_code == 200, kirish.text
+    assert kirish.json()["user"]["must_change_password"] is True
+    token = kirish.json()["access_token"]
+
+    javob = await client.post(
+        "/api/v1/auth/change-password",
+        json={"current_password": boshlangich, "new_password": "yangiParol2026"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert javob.status_code == 204, javob.text
+
+    # Eski parol endi ishlamaydi
+    eski = await client.post(
+        "/api/v1/auth/login",
+        json={"login": yangi.user.login, "password": boshlangich},
+    )
+    assert eski.status_code == 401
+
+    # Yangisi ishlaydi va bayroq oʻchgan
+    yangisi = await client.post(
+        "/api/v1/auth/login",
+        json={"login": yangi.user.login, "password": "yangiParol2026"},
+    )
+    assert yangisi.status_code == 200
+    assert yangisi.json()["user"]["must_change_password"] is False
+
+
+async def test_parol_almashtirish_token_talab_qiladi(client) -> None:  # noqa: ANN001
+    javob = await client.post(
+        "/api/v1/auth/change-password",
+        json={"current_password": "12345", "new_password": "yangiParol2026"},
+    )
+    assert javob.status_code == 401

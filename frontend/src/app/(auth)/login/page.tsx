@@ -3,42 +3,35 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { login } from "@/lib/auth";
-import {
-  ROLE_DESCRIPTIONS,
-  ROLE_HOME,
-  ROLE_LABELS,
-  ROLES,
-  type UserRole,
-} from "@/lib/roles";
+import { signIn } from "@/lib/auth";
+import { ROLE_HOME } from "@/lib/roles";
+import { SessionError } from "@/lib/session";
 
 /**
  * Kirish sahifasi (AUT-01) — Stitch dizayni boʻyicha ikki ustunli:
  * chapda brend paneli, oʻngda forma.
  *
- * Demo rejimi: backend hali ulanmagan, shuning uchun har qanday parol bilan
- * kiritadi. Xato va blok holatlari koʻrsatish uchun maxsus qiymatlar bor
- * (pastdagi maslahat qatoriga qara).
+ * HAQIQIY backend bilan ishlaydi. Rol TANLANMAYDI — u serverdan, JWT
+ * ichidan keladi va shunga qarab kabinet ochiladi. Avvalgi demo rejimida
+ * rol tugmalari bor edi; ular olib tashlandi, chunki rolni foydalanuvchi
+ * tanlashi mumkinligi tushunmovchilik tugʻdirardi.
  *
  * "Ushbu qurilmada eslab qolish" — yoqilsa sessiya `localStorage`da (brauzer
  * yopilsa ham saqlanadi), oʻchirilgan boʻlsa `sessionStorage`da (tab/brauzer
  * yopilganda yoki "Chiqish" bosilganda yoʻqoladi). Qarang: `lib/auth.ts`.
  */
 
-// Demo login — backend seed qilgan hisoblardan biri.
-const DEMO_LOGIN = "aliyev.sardor";
+
 
 export default function LoginPage() {
   const router = useRouter();
-  const [userLogin, setUserLogin] = useState(DEMO_LOGIN);
+  const [userLogin, setUserLogin] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [locked, setLocked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [remember, setRemember] = useState(false);
-  // DEMO: haqiqiy tizimda rol JWT ichidan keladi, tanlanmaydi.
-  const [role, setRole] = useState<UserRole>("student");
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -55,23 +48,27 @@ export default function LoginPage() {
     }
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-
-    // Demo: AUT-05 blok holatini koʻrsatish uchun.
-    if (password === "blok") {
+    try {
+      const { role, mustChangePassword } = await signIn(
+        userLogin.trim(),
+        password,
+        remember,
+      );
+      // Boshlangʻich 5 xonali parol doimiy qolib ketmasin.
+      router.replace(mustChangePassword ? "/parol" : ROLE_HOME[role]);
+    } catch (err) {
       setLoading(false);
-      setLocked(true);
-      return;
+      // 423 — AUT-05 boʻyicha hisob vaqtincha bloklangan.
+      if (err instanceof SessionError && err.status === 423) {
+        setLocked(true);
+        return;
+      }
+      setError(
+        err instanceof SessionError
+          ? err.message
+          : "Serverga ulanib boʻlmadi. Internetni tekshiring.",
+      );
     }
-    // Demo: notoʻgʻri parol holati.
-    if (password === "xato") {
-      setLoading(false);
-      setError("Login yoki parol notoʻgʻri.");
-      return;
-    }
-
-    login(remember, role);
-    router.push(ROLE_HOME[role]);
   }
 
   return (
@@ -98,38 +95,6 @@ export default function LoginPage() {
           </p>
 
           <form onSubmit={onSubmit} className="mt-7 space-y-4" noValidate>
-            {/* Rol tanlash — DEMO uchun. Backend ulanganda bu blok olib
-                tashlanadi: rol JWT ichidan keladi. */}
-            <fieldset>
-              <legend className="block text-sm font-medium">Kabinet</legend>
-              <div className="mt-1.5 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-                {ROLES.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => setRole(item)}
-                    aria-pressed={role === item}
-                    className={`focus-ring rounded-lg border px-2.5 py-2 text-left transition-colors ${
-                      role === item
-                        ? "border-brand bg-brand-tint"
-                        : "border-border bg-surface hover:bg-surface-muted"
-                    }`}
-                  >
-                    <span
-                      className={`block text-sm font-medium ${
-                        role === item ? "text-brand-dark" : "text-foreground"
-                      }`}
-                    >
-                      {ROLE_LABELS[item]}
-                    </span>
-                    <span className="mt-0.5 block text-[11px] leading-tight text-foreground-muted">
-                      {ROLE_DESCRIPTIONS[item]}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-
             <div>
               <label htmlFor="login" className="block text-sm font-medium">
                 Login
@@ -225,10 +190,9 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-6 rounded-lg bg-surface-muted px-3 py-2 text-xs leading-relaxed text-foreground-muted">
-            <span className="font-medium text-foreground">Demo rejimi.</span> Kabinetni
-            tepadan tanlang, istalgan parol bilan kiriladi. Xato holatini koʻrish uchun{" "}
-            <code className="rounded bg-surface px-1">xato</code>, blok holati uchun{" "}
-            <code className="rounded bg-surface px-1">blok</code> deb yozing.
+            Login va parolni maktab administratori beradi. Login{" "}
+            <code className="rounded bg-surface px-1">familiya.ism</code> koʻrinishida.
+            Parolni unutsangiz administratorga murojaat qiling.
           </p>
         </div>
       </div>

@@ -96,14 +96,20 @@ export async function restore(): Promise<boolean> {
 
 export async function logout(): Promise<void> {
   configure();
-  try {
-    await authLogout();
-  } catch {
-    // Chiqish har qanday holatda mahalliy holatni tozalaydi — server
-    // javob bermasa ham foydalanuvchi chiqib ketgan boʻlishi kerak.
-  }
+
+  // Mahalliy holat AVVAL tozalanadi. Chaqiruv joylari `logout()` ni
+  // kutmasdan `/login` ga oʻtadi — server javobini kutib tursak, oʻsha
+  // qisqa vaqtda token hali amal qilib turardi.
   accessToken = null;
   currentUser = null;
+
+  try {
+    // Server refresh cookie'ni bekor qiladi. Bu MUHIM: aks holda cookie
+    // qolib, keyingi `restore()` chiqib ketgan odamni qaytarib kiritardi.
+    await authLogout();
+  } catch {
+    // Server javob bermasa ham foydalanuvchi chiqib ketgan boʻlishi kerak.
+  }
 }
 
 /**

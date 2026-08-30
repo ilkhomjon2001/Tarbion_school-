@@ -1,57 +1,128 @@
 "use client";
 
 /**
- * DEMO autentifikatsiya qatlami.
+ * Sessiya qatlami — endi HAQIQIY backend bilan ishlaydi.
  *
- * Backend hali yoʻq (T-004 "Login, JWT, sessiya" bajarilmagan). Haqiqiy
- * loyihada bu yerda access/refresh JWT va serverdagi sessiya jadvali
- * ishlaydi (AUT-05, AUT-09). Hozircha faqat login sahifasidagi "ushbu
- * qurilmada eslab qolish" xatti-harakatini frontendda toʻgʻri koʻrsatish
- * uchun brauzer xotirasi ishlatiladi:
+ * Bu fayl avval demo edi: `localStorage` ga soxta token yozardi va rol
+ * login sahifasida qoʻlda tanlanardi. Endi u `lib/session.ts` ustidagi
+ * yupqa qatlam. Nega alohida fayl qoldi: `logout`, `currentRole` va
+ * `isRemembered` toʻqqizta komponentda ishlatiladi — hammasini birdan
+ * qayta yozish oʻrniga shu yerda moslashtirildi.
  *
- * - "Eslab qolish" YOQILGAN  → `localStorage` (brauzer yopilsa ham qoladi).
- * - "Eslab qolish" OʻCHIRILGAN → `sessionStorage` (tab/brauzer yopilsa
- *   yoki "Chiqish" bosilsa yoʻqoladi — umumiy maktab kompyuterlari uchun
- *   muhim: keyingi oʻquvchi login sahifasini koʻradi, avtomatik kirmaydi).
+ * Token XOTIRADA (`lib/session.ts`), `localStorage` da EMAS — bitta XSS
+ * butun hisobni bermasin (docs/XAVFSIZLIK.md, X-4). Refresh token esa
+ * httpOnly cookie'da: JavaScript uni koʻrmaydi.
  *
- * Rol ham shu yerda saqlanadi — faqat kerakli kabinetga yoʻnaltirish
- * uchun. Bu himoya EMAS: rol tekshiruvi serverda boʻlishi shart
- * (CLAUDE.md 7-qoida).
+ * `localStorage` da faqat ikkita zararsiz narsa qoladi: "eslab qolish"
+ * bayrogʻi va oxirgi rol — sahifa yangilanganda kabinetni darhol
+ * koʻrsatish uchun. Ikkalasi ham HIMOYA EMAS, faqat qulaylik: haqiqiy
+ * tekshiruv serverda (CLAUDE.md 7-qoida).
  */
 
+import * as session from "@/lib/session";
 import { isRole, type UserRole } from "@/lib/roles";
 
-const TOKEN_KEY = "tarbion.auth.token";
-const ROLE_KEY = "tarbion.auth.role";
+const REMEMBER_KEY = "tarbion.auth.remember";
+const ROLE_HINT_KEY = "tarbion.auth.role";
 
-export function login(remember: boolean, role: UserRole): void {
-  const token = `demo-${Date.now()}`;
-  const store = remember ? localStorage : sessionStorage;
-  store.setItem(TOKEN_KEY, token);
-  store.setItem(ROLE_KEY, role);
+/** Kirish. Rol serverdan keladi — tanlanmaydi. */
+export async function signIn(
+  login: string,
+  password: string,
+  remember: boolean,
+): Promise<{ role: UserRole; mustChangePassword: boolean }> {
+  const user = await session.login(login, password);
+  const role = primaryRole(user.roles);
+
+  try {
+    if (remember) localStorage.setItem(REMEMBER_KEY, "1");
+    else localStorage.removeItem(REMEMBER_KEY);
+    sessionStorage.setItem(ROLE_HINT_KEY, role);
+    if (remember) localStorage.setItem(ROLE_HINT_KEY, role);
+  } catch {
+    /* xotira bloklangan — kirish baribir ishlaydi */
+  }
+
+  return { role, mustChangePassword: user.must_change_password };
 }
 
-export function logout(): void {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(ROLE_KEY);
-  sessionStorage.removeItem(TOKEN_KEY);
-  sessionStorage.removeItem(ROLE_KEY);
+export async function logout(): Promise<void> {
+  await session.logout();
+  try {
+    localStorage.removeItem(REMEMBER_KEY);
+    localStorage.removeItem(ROLE_HINT_KEY);
+    sessionStorage.removeItem(ROLE_HINT_KEY);
+  } catch {
+    /* xotira bloklangan */
+  }
 }
 
 export function isAuthenticated(): boolean {
-  if (typeof window === "undefined") return false;
-  return Boolean(localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY));
+  return session.isAuthenticated();
 }
 
-/** Joriy sessiya "eslab qolingan" holatdami (localStorage'da saqlanganmi). */
+/** Sahifa yangilangandan keyin sessiyani tiklaydi (refresh cookie orqali). */
+export async function restore(): Promise<boolean> {
+  return session.restore();
+}
+
+/** Joriy sessiya "eslab qolingan" holatdami. */
 export function isRemembered(): boolean {
   if (typeof window === "undefined") return false;
-  return Boolean(localStorage.getItem(TOKEN_KEY));
+  try {
+    return localStorage.getItem(REMEMBER_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 
-/** Joriy sessiyadagi rol — yoʻq boʻlsa `null`. */
+/**
+ * Joriy rol. Avval jonli sessiyadan, boʻlmasa oxirgi maʼlum roldan.
+ *
+ * Saqlangan qiymat faqat kabinetni darhol koʻrsatish uchun — u bilan
+ * hech qanday maʼlumot ochilmaydi, har soʻrovni server tekshiradi.
+ */
 export function currentRole(): UserRole | null {
+  const user = session.getUser();
+  if (user) return primaryRole(user.roles);
+
   if (typeof window === "undefined") return null;
-  const value = localStorage.getItem(ROLE_KEY) ?? sessionStorage.getItem(ROLE_KEY);
-  return isRole(value) ? value : null;
+  try {
+    const saqlangan =
+      sessionStorage.getItem(ROLE_HINT_KEY) ?? localStorage.getItem(ROLE_HINT_KEY);
+    return isRole(saqlangan) ? saqlangan : null;
+  } catch {
+    return null;
+  }
+}
+
+export function mustChangePassword(): boolean {
+  return session.getUser()?.must_change_password ?? false;
+}
+
+/**
+ * Bir nechta roldan qaysi kabinet ochilishini tanlaydi.
+ *
+ * Tartib ataylab: sinf rahbari ham ustoz, super administrator ham
+ * administrator kabinetida ishlaydi. Eng keng huquqli rol birinchi
+ * tekshiriladi, shunda superadmin oʻquvchi kabinetiga tushib qolmaydi.
+ */
+const ROLE_PRIORITY: UserRole[] = [
+  "superadmin",
+  "admin",
+  "director",
+  "academic",
+  "teacher",
+  "parent",
+  "student",
+];
+
+export function primaryRole(roles: readonly string[]): UserRole {
+  for (const role of ROLE_PRIORITY) {
+    if (roles.includes(role)) return role;
+  }
+  // `homeroom_teacher` — ustozning ustiga qoʻshiladigan rol, oʻz
+  // kabineti yoʻq. Boshqa rol topilmasa ustoz kabineti ochiladi.
+  if (roles.includes("homeroom_teacher")) return "teacher";
+  return "student";
 }
