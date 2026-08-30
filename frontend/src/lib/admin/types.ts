@@ -222,6 +222,62 @@ export interface SurveyRound {
   answeredCount: number;
 }
 
+export type SurveyStatus = "draft" | "active" | "closed";
+
+export const SURVEY_STATUS_LABELS: Record<SurveyStatus, string> = {
+  draft: "Qoralama",
+  active: "Faol",
+  closed: "Yopilgan",
+};
+
+export interface SurveyQuestion {
+  id: string;
+  text: string;
+}
+
+/** Administrator yaratadigan soʻrovnoma. */
+export interface SurveyDefinition {
+  id: string;
+  title: string;
+  period: string;
+  /** Butun maktabgami yoki tanlangan sinflargami. */
+  audience: "all" | "classes";
+  classNames: string[];
+  questions: SurveyQuestion[];
+  status: SurveyStatus;
+  createdAt: string;
+  createdBy: string;
+  /** Yuborilgan va javob berilgan ota-onalar soni. */
+  sentCount: number;
+  answeredCount: number;
+}
+
+/** Yangi soʻrovnoma uchun standart savollar — mezonlar shulardan chiqadi. */
+export const DEFAULT_SURVEY_QUESTIONS = [
+  "Darsni tushunarli tushuntiradi",
+  "Oʻquvchilar bilan munosabati",
+  "Dars intizomi",
+  "Uy vazifalarini tekshirishi",
+];
+
+// ─────────────────────── Maʼlumot bazasi ───────────────────────
+
+export interface Room {
+  id: string;
+  number: string;
+  kind: string;
+  capacity: number;
+  floor: number;
+  status: "active" | "archived";
+}
+
+export interface Quarter {
+  id: string;
+  name: string;
+  from: string;
+  to: string;
+}
+
 // ─────────────────────────── Audit ───────────────────────────
 
 export type AuditAction =
@@ -231,8 +287,11 @@ export type AuditAction =
   | "reminder"
   | "enroll"
   | "archive"
+  | "restore"
   | "document"
-  | "note";
+  | "note"
+  | "survey"
+  | "reference";
 
 export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   payment: "Toʻlov kiritildi",
@@ -241,8 +300,11 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   reminder: "Eslatma yuborildi",
   enroll: "Oʻquvchi qabul qilindi",
   archive: "Arxivlandi",
+  restore: "Arxivdan qaytarildi",
   document: "Maʼlumotnoma berildi",
   note: "Suhbat qaydnomasi",
+  survey: "Soʻrovnoma",
+  reference: "Maʼlumot bazasi",
 };
 
 export interface AuditEntry {

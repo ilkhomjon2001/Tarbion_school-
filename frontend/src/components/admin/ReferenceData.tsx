@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
+import { PlusIcon } from "@/components/ui/icons";
 import { formatSom } from "@/lib/format";
-import { useAdmin } from "@/lib/admin/store";
+import { useAdmin, useAdminDispatch } from "@/lib/admin/store";
 import { CLASSES } from "@/lib/director/school-data";
 import { allTeachers, homeroomTeacherOf, subjectTeachersOf } from "@/lib/school/staff";
 import { PERIOD_TIMES, WEEKDAYS } from "@/lib/director/types";
@@ -17,24 +18,11 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "calendar", label: "Oʻquv yili" },
 ];
 
-const ROOMS = [
-  { number: "101", kind: "Oddiy sinf xonasi", capacity: 30, floor: 1 },
-  { number: "108", kind: "Ona tili kabineti", capacity: 28, floor: 1 },
-  { number: "110", kind: "Tarix kabineti", capacity: 28, floor: 1 },
-  { number: "204", kind: "Matematika kabineti", capacity: 30, floor: 2 },
-  { number: "206", kind: "Ingliz tili kabineti", capacity: 24, floor: 2 },
-  { number: "301", kind: "Fizika laboratoriyasi", capacity: 24, floor: 3 },
-  { number: "302", kind: "Kimyo laboratoriyasi", capacity: 24, floor: 3 },
-  { number: "305", kind: "Informatika xonasi", capacity: 20, floor: 3 },
-  { number: "Sport", kind: "Sport zali", capacity: 60, floor: 1 },
-];
-
-const QUARTERS = [
-  { name: "1-chorak", from: "2026-09-01", to: "2026-10-30", weeks: 9, status: "Joriy" },
-  { name: "2-chorak", from: "2026-11-09", to: "2026-12-29", weeks: 7, status: "Rejada" },
-  { name: "3-chorak", from: "2027-01-12", to: "2027-03-20", weeks: 10, status: "Rejada" },
-  { name: "4-chorak", from: "2027-03-30", to: "2027-05-25", weeks: 8, status: "Rejada" },
-];
+/** Ikki sana orasidagi toʻliq haftalar soni. */
+function weeksBetween(from: string, to: string): number {
+  const days = (new Date(to).getTime() - new Date(from).getTime()) / 86_400_000;
+  return Math.max(0, Math.round(days / 7));
+}
 
 /**
  * Maʼlumot bazasi — sinf, fan, xona va oʻquv yili maʼlumotnomalari.
@@ -44,7 +32,8 @@ const QUARTERS = [
  */
 export function ReferenceData() {
   const [tab, setTab] = useState<Tab>("classes");
-  const { students } = useAdmin();
+  const { students, rooms, quarters } = useAdmin();
+  const activeRooms = rooms.filter((r) => r.status === "active");
 
   const counts = useMemo(() => {
     const map = new Map<string, number>();
@@ -138,46 +127,11 @@ export function ReferenceData() {
         />
       )}
 
-      {tab === "rooms" && (
-        <Table
-          head={["Xona", "Turi", "Sigʻimi", "Qavat"]}
-          rows={ROOMS.map((room) => [
-            <span key="n" className="num font-medium text-foreground">
-              {room.number}
-            </span>,
-            room.kind,
-            <span key="c" className="num">
-              {room.capacity}
-            </span>,
-            <span key="f" className="num">
-              {room.floor}
-            </span>,
-          ])}
-        />
-      )}
+      {tab === "rooms" && <RoomsTab />}
 
       {tab === "calendar" && (
         <div className="flex flex-col gap-4">
-          <Table
-            head={["Chorak", "Boshlanishi", "Tugashi", "Haftalar", "Holati"]}
-            rows={QUARTERS.map((q) => [
-              <span key="n" className="font-medium text-foreground">
-                {q.name}
-              </span>,
-              <span key="f" className="num">
-                {q.from}
-              </span>,
-              <span key="t" className="num">
-                {q.to}
-              </span>,
-              <span key="w" className="num">
-                {q.weeks}
-              </span>,
-              <Badge key="s" tone={q.status === "Joriy" ? "success" : "neutral"}>
-                {q.status}
-              </Badge>,
-            ])}
-          />
+          <QuartersTable />
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <section className="rounded-xl border border-border bg-surface p-4 shadow-sm">
@@ -215,12 +169,294 @@ export function ReferenceData() {
         <span className="num font-medium text-foreground">{CLASSES.length}</span> sinf ·{" "}
         <span className="num font-medium text-foreground">{subjects.length}</span> fan ·{" "}
         <span className="num font-medium text-foreground">{allTeachers().length}</span> ustoz ·{" "}
-        <span className="num font-medium text-foreground">{ROOMS.length}</span> xona · oylik
+        <span className="num font-medium text-foreground">{activeRooms.length}</span> xona ·{" "}
+        <span className="num font-medium text-foreground">{quarters.length}</span> chorak · oylik
         shartnoma diapazoni {formatSom(3_000_000)} – {formatSom(4_000_000)}
       </p>
     </div>
   );
 }
+
+/** Xonalar — qoʻshish va foydalanishdan chiqarish mumkin. */
+function RoomsTab() {
+  const { rooms } = useAdmin();
+  const dispatch = useAdminDispatch();
+  const [adding, setAdding] = useState(false);
+  const [number, setNumber] = useState("");
+  const [kind, setKind] = useState("Oddiy sinf xonasi");
+  const [capacity, setCapacity] = useState(30);
+  const [floor, setFloor] = useState(1);
+
+  const duplicate = rooms.some(
+    (r) => r.status === "active" && r.number.toLowerCase() === number.trim().toLowerCase(),
+  );
+  const valid = number.trim().length > 0 && capacity > 0 && !duplicate;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-foreground-muted">
+          Dars jadvali tuzishda shu roʻyxatdan xona tanlanadi.
+        </p>
+        <button
+          type="button"
+          onClick={() => setAdding((v) => !v)}
+          className="focus-ring inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand px-3 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark"
+        >
+          <PlusIcon className="h-4 w-4" />
+          Yangi xona
+        </button>
+      </div>
+
+      {adding && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!valid) return;
+            dispatch({
+              type: "ADD_ROOM",
+              room: { number: number.trim(), kind, capacity, floor },
+            });
+            setNumber("");
+            setAdding(false);
+          }}
+          className="animate-expand grid grid-cols-1 gap-3 rounded-xl border border-border bg-surface p-4 shadow-sm sm:grid-cols-4"
+        >
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-foreground">Xona raqami</span>
+            <input
+              value={number}
+              onChange={(e) => setNumber(e.target.value)}
+              placeholder="Masalan: 207"
+              className={refInputClass}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-foreground">Turi</span>
+            <input
+              value={kind}
+              onChange={(e) => setKind(e.target.value)}
+              className={refInputClass}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-foreground">Sigʻimi</span>
+            <input
+              type="number"
+              min={1}
+              value={capacity}
+              onChange={(e) => setCapacity(Number(e.target.value))}
+              className={refInputClass}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-foreground">Qavat</span>
+            <input
+              type="number"
+              min={1}
+              max={5}
+              value={floor}
+              onChange={(e) => setFloor(Number(e.target.value))}
+              className={refInputClass}
+            />
+          </label>
+
+          {duplicate && (
+            <p className="text-xs text-danger sm:col-span-4">
+              Bu raqamli xona allaqachon mavjud.
+            </p>
+          )}
+
+          <div className="flex justify-end gap-2 sm:col-span-4">
+            <button
+              type="button"
+              onClick={() => setAdding(false)}
+              className="focus-ring rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted"
+            >
+              Bekor qilish
+            </button>
+            <button
+              type="submit"
+              disabled={!valid}
+              className="focus-ring rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark disabled:opacity-50"
+            >
+              Xonani saqlash
+            </button>
+          </div>
+        </form>
+      )}
+
+      <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+        <div className="scroll-x">
+          <table className="w-full min-w-[560px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-border bg-surface-muted/60 text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
+                <th className="px-3 py-3">Xona</th>
+                <th className="px-3 py-3">Turi</th>
+                <th className="px-3 py-3">Sigʻimi</th>
+                <th className="px-3 py-3">Qavat</th>
+                <th className="px-3 py-3">Holati</th>
+                <th className="px-3 py-3" />
+              </tr>
+            </thead>
+            <tbody>
+              {rooms.map((room) => (
+                <tr
+                  key={room.id}
+                  className="border-b border-border transition-colors last:border-0 hover:bg-surface-muted/50"
+                >
+                  <td className="num px-3 py-2.5 font-medium text-foreground">{room.number}</td>
+                  <td className="px-3 py-2.5 text-foreground-muted">{room.kind}</td>
+                  <td className="num px-3 py-2.5 text-foreground-muted">{room.capacity}</td>
+                  <td className="num px-3 py-2.5 text-foreground-muted">{room.floor}</td>
+                  <td className="px-3 py-2.5">
+                    <Badge tone={room.status === "active" ? "success" : "neutral"}>
+                      {room.status === "active" ? "Faol" : "Foydalanilmaydi"}
+                    </Badge>
+                  </td>
+                  <td className="px-3 py-2.5 text-right">
+                    {room.status === "active" && (
+                      <button
+                        type="button"
+                        onClick={() => dispatch({ type: "ARCHIVE_ROOM", roomId: room.id })}
+                        className="focus-ring rounded px-2 py-1 text-xs font-medium text-foreground-muted transition-colors hover:text-danger"
+                      >
+                        Chiqarish
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="border-t border-border px-4 py-3 text-xs text-foreground-muted">
+          Xona oʻchirilmaydi — foydalanishdan chiqariladi, eski jadvallarda nomi saqlanadi.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** Chorak sanalari — bu yerdan oʻzgartiriladi. */
+function QuartersTable() {
+  const { quarters } = useAdmin();
+  const dispatch = useAdminDispatch();
+  const [editing, setEditing] = useState<string | null>(null);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+
+  const today = "2026-09-20";
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+      <div className="scroll-x">
+        <table className="w-full min-w-[620px] border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-border bg-surface-muted/60 text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
+              <th className="px-3 py-3">Chorak</th>
+              <th className="px-3 py-3">Boshlanishi</th>
+              <th className="px-3 py-3">Tugashi</th>
+              <th className="px-3 py-3">Haftalar</th>
+              <th className="px-3 py-3">Holati</th>
+              <th className="px-3 py-3" />
+            </tr>
+          </thead>
+          <tbody>
+            {quarters.map((quarter) => {
+              const isEditing = editing === quarter.id;
+              const current = today >= quarter.from && today <= quarter.to;
+              const invalid = isEditing && from >= to;
+              return (
+                <tr
+                  key={quarter.id}
+                  className="border-b border-border transition-colors last:border-0 hover:bg-surface-muted/50"
+                >
+                  <td className="px-3 py-2.5 font-medium text-foreground">{quarter.name}</td>
+                  <td className="px-3 py-2.5">
+                    {isEditing ? (
+                      <input
+                        type="date"
+                        value={from}
+                        onChange={(e) => setFrom(e.target.value)}
+                        className={refInputClass}
+                      />
+                    ) : (
+                      <span className="num text-foreground-muted">{quarter.from}</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    {isEditing ? (
+                      <input
+                        type="date"
+                        value={to}
+                        onChange={(e) => setTo(e.target.value)}
+                        className={refInputClass}
+                      />
+                    ) : (
+                      <span className="num text-foreground-muted">{quarter.to}</span>
+                    )}
+                  </td>
+                  <td className="num px-3 py-2.5 text-foreground-muted">
+                    {weeksBetween(quarter.from, quarter.to)}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <Badge tone={current ? "success" : "neutral"}>
+                      {current ? "Joriy" : today > quarter.to ? "Tugagan" : "Rejada"}
+                    </Badge>
+                  </td>
+                  <td className="px-3 py-2.5 text-right">
+                    {isEditing ? (
+                      <span className="flex justify-end gap-1.5">
+                        <button
+                          type="button"
+                          disabled={invalid}
+                          onClick={() => {
+                            dispatch({ type: "UPDATE_QUARTER", quarterId: quarter.id, from, to });
+                            setEditing(null);
+                          }}
+                          className="focus-ring rounded-md bg-brand px-2.5 py-1 text-xs font-semibold text-brand-foreground disabled:opacity-50"
+                        >
+                          Saqlash
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditing(null)}
+                          className="focus-ring rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground-muted"
+                        >
+                          Bekor
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditing(quarter.id);
+                          setFrom(quarter.from);
+                          setTo(quarter.to);
+                        }}
+                        className="focus-ring rounded px-2 py-1 text-xs font-medium text-brand-dark transition-colors hover:underline"
+                      >
+                        Sanalarni oʻzgartirish
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="border-t border-border px-4 py-3 text-xs text-foreground-muted">
+        Chorak sanalari jurnal, baho va hisobotlarga taʼsir qiladi — oʻzgarish audit
+        jurnaliga tushadi.
+      </p>
+    </div>
+  );
+}
+
+const refInputClass =
+  "h-9 w-full rounded-lg border border-border bg-surface px-2.5 text-sm outline-none transition-colors placeholder:text-foreground-muted/70 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25";
 
 function Table({ head, rows }: { head: string[]; rows: React.ReactNode[][] }) {
   return (

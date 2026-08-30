@@ -13,14 +13,18 @@ import {
   type StudentRecord,
 } from "@/lib/director/school-data";
 import { allTeachers, HOMEROOM } from "@/lib/school/staff";
-import type {
-  AdminStudent,
-  Application,
-  AuditEntry,
-  ConversationNote,
-  DocumentRequest,
-  SurveyRound,
-  TeacherSurveyResult,
+import {
+  DEFAULT_SURVEY_QUESTIONS,
+  type AdminStudent,
+  type Application,
+  type AuditEntry,
+  type ConversationNote,
+  type DocumentRequest,
+  type Quarter,
+  type Room,
+  type SurveyDefinition,
+  type SurveyRound,
+  type TeacherSurveyResult,
 } from "@/lib/admin/types";
 
 /** Barqaror xesh — `school-data.ts` dagi bilan bir xil mantiq. */
@@ -252,6 +256,50 @@ function homeroomOrTaught(teacherId: string, seed: number): string {
   if (own) return own;
   const names = Object.keys(HOMEROOM);
   return names[seed % names.length];
+}
+
+export function buildSurveys(): SurveyDefinition[] {
+  return [
+    {
+      id: "sv-1",
+      title: "Oʻqituvchilar faoliyati — 1-chorak",
+      period: SURVEY_ROUND.label,
+      audience: "all",
+      classNames: [],
+      questions: DEFAULT_SURVEY_QUESTIONS.map((text, i) => ({ id: `q-${i + 1}`, text })),
+      status: "active",
+      createdAt: "2026-09-05 09:00",
+      createdBy: ADMIN_NAME,
+      sentCount: SURVEY_ROUND.sentCount,
+      answeredCount: SURVEY_ROUND.answeredCount,
+    },
+  ];
+}
+
+// ─────────────────────── Maʼlumot bazasi ───────────────────────
+
+export function buildRooms(): Room[] {
+  const rows = [
+    { number: "101", kind: "Oddiy sinf xonasi", capacity: 30, floor: 1 },
+    { number: "108", kind: "Ona tili kabineti", capacity: 28, floor: 1 },
+    { number: "110", kind: "Tarix kabineti", capacity: 28, floor: 1 },
+    { number: "204", kind: "Matematika kabineti", capacity: 30, floor: 2 },
+    { number: "206", kind: "Ingliz tili kabineti", capacity: 24, floor: 2 },
+    { number: "301", kind: "Fizika laboratoriyasi", capacity: 24, floor: 3 },
+    { number: "302", kind: "Kimyo laboratoriyasi", capacity: 24, floor: 3 },
+    { number: "305", kind: "Informatika xonasi", capacity: 20, floor: 3 },
+    { number: "Sport", kind: "Sport zali", capacity: 60, floor: 1 },
+  ];
+  return rows.map((row, i) => ({ ...row, id: `room-${i + 1}`, status: "active" as const }));
+}
+
+export function buildQuarters(): Quarter[] {
+  return [
+    { id: "q1", name: "1-chorak", from: "2026-09-01", to: "2026-10-30" },
+    { id: "q2", name: "2-chorak", from: "2026-11-09", to: "2026-12-29" },
+    { id: "q3", name: "3-chorak", from: "2027-01-12", to: "2027-03-20" },
+    { id: "q4", name: "4-chorak", from: "2027-03-30", to: "2027-05-25" },
+  ];
 }
 
 // ─────────────────────── Suhbat qaydnomalari ───────────────────────

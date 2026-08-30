@@ -176,3 +176,11 @@ qoʻshilgach bu yaroqsiz boʻldi. `lib/roles.ts` da rol → kabinet
 xaritasi, login sahifasida DEMO uchun rol tanlagichi. Rol sessiyada
 saqlanadi (`lib/auth.ts`), lekin bu HIMOYA EMAS — backend ulanganda rol
 JWT ichidan keladi va tekshiruv serverda boʻladi (7-qoida).
+
+## 2026-08-30 · PDF — brauzerning chop etish oynasi orqali
+Maʼlumotnomani PDF qilish uchun jsPDF/pdfmake kabi kutubxona ulash
+kerak boʻlardi (~200 KB bitta tugma uchun). Oʻrniga `globals.css` da
+`@media print` qoidasi: hujjatdan boshqa hamma narsa yashiriladi va
+`window.print()` chaqiriladi. Brauzerning "PDF sifatida saqlash"
+imkoniyati haqiqiy PDF beradi. Backend ulanganda server tomonda
+generatsiya qilinadi (muhr va imzo bilan).

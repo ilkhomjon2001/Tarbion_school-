@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { StudentDrawer } from "@/components/admin/StudentDrawer";
 import { PlusIcon, SearchIcon, UsersIcon } from "@/components/ui/icons";
 import { debtOf, useAdmin, useAdminDispatch } from "@/lib/admin/store";
 import type { AdminStudent } from "@/lib/admin/types";
@@ -28,6 +29,9 @@ export function StudentsBoard({ initialQuery = "" }: { initialQuery?: string }) 
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
   const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [profileFor, setProfileFor] = useState<string | null>(null);
+
+  const profile = profileFor ? students.find((s) => s.id === profileFor) : null;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -66,7 +70,7 @@ export function StudentsBoard({ initialQuery = "" }: { initialQuery?: string }) 
           </p>
         </div>
         <Link
-          href="/admin/qabul"
+          href="/admin/qabul?yangi=1"
           className="focus-ring inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg bg-brand px-3.5 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark"
         >
           <PlusIcon className="h-4 w-4" />
@@ -162,6 +166,7 @@ export function StudentsBoard({ initialQuery = "" }: { initialQuery?: string }) 
                     menuOpen={menuFor === student.id}
                     onMenu={() => setMenuFor(menuFor === student.id ? null : student.id)}
                     onClose={() => setMenuFor(null)}
+                    onOpenProfile={() => setProfileFor(student.id)}
                   />
                 ))}
               </tbody>
@@ -198,6 +203,8 @@ export function StudentsBoard({ initialQuery = "" }: { initialQuery?: string }) 
           </div>
         </div>
       )}
+
+      {profile && <StudentDrawer student={profile} onClose={() => setProfileFor(null)} />}
     </div>
   );
 }
@@ -209,6 +216,7 @@ function StudentRow({
   menuOpen,
   onMenu,
   onClose,
+  onOpenProfile,
 }: {
   student: AdminStudent;
   checked: boolean;
@@ -216,6 +224,7 @@ function StudentRow({
   menuOpen: boolean;
   onMenu: () => void;
   onClose: () => void;
+  onOpenProfile: () => void;
 }) {
   const dispatch = useAdminDispatch();
   const debt = debtOf(student);
@@ -234,7 +243,11 @@ function StudentRow({
         />
       </td>
       <td className="px-3 py-2.5">
-        <span className="flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={onOpenProfile}
+          className="focus-ring flex w-full items-center gap-2.5 rounded text-left"
+        >
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-muted text-[11px] font-semibold text-foreground-muted">
             {student.fullName
               .split(" ")
@@ -243,10 +256,12 @@ function StudentRow({
               .join("")}
           </span>
           <span className="min-w-0">
-            <span className="block truncate font-medium text-foreground">{student.fullName}</span>
+            <span className="block truncate font-medium text-foreground hover:text-brand-dark">
+              {student.fullName}
+            </span>
             <span className="num block text-xs text-foreground-muted">{student.birthYear}</span>
           </span>
-        </span>
+        </button>
       </td>
       <td className="px-3 py-2.5 text-foreground-muted">{student.className}</td>
       <td className="px-3 py-2.5">
@@ -295,6 +310,16 @@ function StudentRow({
             className="animate-expand absolute right-2 top-10 z-20 w-56 rounded-lg border border-border bg-surface py-1 text-left shadow-lg"
             onMouseLeave={onClose}
           >
+            <button
+              type="button"
+              onClick={() => {
+                onOpenProfile();
+                onClose();
+              }}
+              className="block w-full px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-surface-muted"
+            >
+              Profilni koʻrish
+            </button>
             <Link
               href={`/admin/malumotnomalar?student=${student.id}`}
               className="block px-3 py-2 text-sm text-foreground transition-colors hover:bg-surface-muted"
@@ -313,20 +338,29 @@ function StudentRow({
             >
               Ota-ona bilan bogʻlanish
             </Link>
-            {student.status === "active" && (
+            {student.status === "active" ? (
               <button
                 type="button"
                 onClick={() => {
-                  dispatch({
-                    type: "ARCHIVE_STUDENT",
-                    studentId: student.id,
-                    reason: "Maktabdan chiqdi",
-                  });
+                  // Tasdiq va sabab profil panelida soʻraladi — bir bosishda
+                  // arxivlanib qolmasin.
+                  onOpenProfile();
                   onClose();
                 }}
                 className="block w-full px-3 py-2 text-left text-sm text-danger transition-colors hover:bg-danger-tint"
               >
-                Arxivlash
+                Arxivlash…
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  dispatch({ type: "RESTORE_STUDENT", studentId: student.id });
+                  onClose();
+                }}
+                className="block w-full px-3 py-2 text-left text-sm text-success transition-colors hover:bg-success-tint"
+              >
+                Arxivdan qaytarish
               </button>
             )}
           </div>

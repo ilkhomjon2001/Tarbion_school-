@@ -223,7 +223,7 @@ function DocumentBuilder({
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-foreground-muted">
             Oldindan koʻrish
           </p>
-          <article className="mx-auto max-w-[440px] rounded bg-surface p-6 text-[13px] leading-relaxed shadow-sm">
+          <article className="print-doc mx-auto max-w-[440px] rounded bg-surface p-6 text-[13px] leading-relaxed shadow-sm">
             <header className="border-b border-border pb-3 text-center">
               <p className="text-sm font-bold text-brand">{SCHOOL_NAME}</p>
               <p className="mt-0.5 text-[11px] text-foreground-muted">
@@ -266,9 +266,10 @@ function DocumentBuilder({
         <div className="flex gap-2">
           <button
             type="button"
+            onClick={() => window.print()}
             className="focus-ring rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted"
           >
-            PDF yuklab olish
+            Chop etish / PDF
           </button>
           <button
             type="button"

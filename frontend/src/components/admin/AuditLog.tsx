@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ClockIcon, SearchIcon } from "@/components/ui/icons";
+import { downloadCsv } from "@/lib/csv";
 import { useAdmin } from "@/lib/admin/store";
 import { AUDIT_ACTION_LABELS, type AuditAction } from "@/lib/admin/types";
 
@@ -14,8 +15,11 @@ const ACTION_TONE: Record<AuditAction, "success" | "danger" | "warning" | "info"
   reminder: "info",
   enroll: "brand",
   archive: "neutral",
+  restore: "success",
   document: "info",
   note: "neutral",
+  survey: "brand",
+  reference: "neutral",
 };
 
 /**
@@ -45,11 +49,32 @@ export function AuditLog() {
 
   return (
     <div className="flex flex-col gap-4 p-4 md:p-6">
-      <div>
-        <h1 className="text-h2 font-bold text-foreground">Audit jurnali</h1>
-        <p className="text-sm text-foreground-muted">
-          Baho, davomat, toʻlov va hujjatlardagi har bir oʻzgarish shu yerda qayd etiladi
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-h2 font-bold text-foreground">Audit jurnali</h1>
+          <p className="text-sm text-foreground-muted">
+            Baho, davomat, toʻlov va hujjatlardagi har bir oʻzgarish shu yerda qayd etiladi
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={rows.length === 0}
+          onClick={() =>
+            downloadCsv("tarbion-audit-jurnali", [
+              ["Vaqt", "Amal", "Obyekt", "Tafsilot", "Kim"],
+              ...rows.map((e) => [
+                e.at,
+                AUDIT_ACTION_LABELS[e.action],
+                e.entity,
+                e.detail,
+                e.actor,
+              ]),
+            ])
+          }
+          className="focus-ring h-10 shrink-0 rounded-lg border border-border bg-surface px-3.5 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted disabled:opacity-50"
+        >
+          Jurnalni yuklab olish (CSV)
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-2 rounded-xl border border-border bg-surface p-3 shadow-sm">

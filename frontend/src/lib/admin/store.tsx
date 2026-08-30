@@ -15,8 +15,11 @@ import {
   buildAuditLog,
   buildConversationNotes,
   buildDocumentRequests,
+  buildQuarters,
+  buildRooms,
   buildStudents,
   buildSurveyResults,
+  buildSurveys,
   ISSUED_DOCUMENTS_BEFORE,
   SURVEY_ROUND,
 } from "@/lib/admin/seed";
@@ -34,7 +37,10 @@ import {
   type DocumentRequest,
   type PaymentEntry,
   type PaymentMethod,
+  type Quarter,
   type Reminder,
+  type Room,
+  type SurveyDefinition,
 } from "@/lib/admin/types";
 import { formatSom } from "@/lib/format";
 
@@ -57,6 +63,9 @@ export interface AdminState {
   applications: Application[];
   documents: DocumentRequest[];
   notes: ConversationNote[];
+  surveys: SurveyDefinition[];
+  rooms: Room[];
+  quarters: Quarter[];
   audit: AuditEntry[];
   /** Berilgan hujjatlar hisoblagichi — raqam generatsiyasi uchun. */
   documentCounter: number;
@@ -83,9 +92,16 @@ export type AdminEvent =
       reason: string;
     }
   | { type: "SEND_REMINDER"; studentIds: string[]; channel: "bot" | "sms"; text: string }
-  | { type: "ACCEPT_APPLICATION"; application: Application }
+  /** `applicationId` boʻlmasa — admin qoʻlda kiritgan yangi oʻquvchi. */
+  | { type: "ACCEPT_APPLICATION"; application: Application; applicationId?: string }
   | { type: "REJECT_APPLICATION"; applicationId: string; reason: string }
   | { type: "ARCHIVE_STUDENT"; studentId: string; reason: string }
+  | { type: "RESTORE_STUDENT"; studentId: string }
+  | { type: "CREATE_SURVEY"; survey: Omit<SurveyDefinition, "id" | "createdAt" | "createdBy" | "answeredCount"> }
+  | { type: "CLOSE_SURVEY"; surveyId: string }
+  | { type: "ADD_ROOM"; room: Omit<Room, "id" | "status"> }
+  | { type: "ARCHIVE_ROOM"; roomId: string }
+  | { type: "UPDATE_QUARTER"; quarterId: string; from: string; to: string }
   | { type: "CHANGE_CLASS"; studentIds: string[]; className: string }
   | {
       type: "ISSUE_DOCUMENT";
@@ -107,6 +123,9 @@ function initialState(): AdminState {
     applications: buildApplications(),
     documents: buildDocumentRequests(students),
     notes: buildConversationNotes(),
+    surveys: buildSurveys(),
+    rooms: buildRooms(),
+    quarters: buildQuarters(),
     audit: buildAuditLog(),
     documentCounter: ISSUED_DOCUMENTS_BEFORE,
   };
@@ -294,13 +313,15 @@ function reducer(state: AdminState, event: AdminEvent): AdminState {
         ...state,
         students: [student, ...state.students],
         applications: state.applications.map((a) =>
-          a.id === app.id ? { ...a, status: "accepted" as const } : a,
+          a.id === event.applicationId ? { ...a, status: "accepted" as const } : a,
         ),
         audit: withAudit(
           state,
           "enroll",
           `${app.studentFullName} (${app.className})`,
-          `Shartnoma ${formatSom(fee)}${app.discountPercent ? ` · chegirma ${app.discountPercent}%` : ""}`,
+          `${event.applicationId ? "Arizadan" : "Qoʻlda kiritildi"} · shartnoma ${formatSom(fee)}${
+            app.discountPercent ? ` · chegirma ${app.discountPercent}%` : ""
+          }`,
         ),
       };
     }
@@ -333,6 +354,98 @@ function reducer(state: AdminState, event: AdminEvent): AdminState {
           event.reason || "Sabab koʻrsatilmagan",
         ),
       };
+
+    case "RESTORE_STUDENT":
+      return {
+        ...state,
+        students: state.students.map((s) =>
+          s.id === event.studentId ? { ...s, status: "active" as const } : s,
+        ),
+        audit: withAudit(
+          state,
+          "restore",
+          studentLabel(state, event.studentId),
+          "Arxivdan faol holatga qaytarildi",
+        ),
+      };
+
+    case "CREATE_SURVEY": {
+      const survey: SurveyDefinition = {
+        ...event.survey,
+        id: nextId("sv"),
+        createdAt: nowLabel(),
+        createdBy: ADMIN_NAME,
+        answeredCount: 0,
+      };
+      return {
+        ...state,
+        surveys: [survey, ...state.surveys],
+        audit: withAudit(
+          state,
+          "survey",
+          survey.title,
+          `${survey.sentCount} nafar ota-onaga yuborildi · ${survey.questions.length} ta savol`,
+        ),
+      };
+    }
+
+    case "CLOSE_SURVEY":
+      return {
+        ...state,
+        surveys: state.surveys.map((s) =>
+          s.id === event.surveyId ? { ...s, status: "closed" as const } : s,
+        ),
+        audit: withAudit(
+          state,
+          "survey",
+          state.surveys.find((s) => s.id === event.surveyId)?.title ?? "—",
+          "Soʻrovnoma yopildi",
+        ),
+      };
+
+    case "ADD_ROOM": {
+      const room: Room = { ...event.room, id: nextId("room"), status: "active" };
+      return {
+        ...state,
+        rooms: [...state.rooms, room],
+        audit: withAudit(
+          state,
+          "reference",
+          `${room.number}-xona`,
+          `Qoʻshildi · ${room.kind} · ${room.capacity} oʻrin`,
+        ),
+      };
+    }
+
+    case "ARCHIVE_ROOM":
+      return {
+        ...state,
+        rooms: state.rooms.map((r) =>
+          r.id === event.roomId ? { ...r, status: "archived" as const } : r,
+        ),
+        audit: withAudit(
+          state,
+          "reference",
+          `${state.rooms.find((r) => r.id === event.roomId)?.number}-xona`,
+          "Foydalanishdan chiqarildi",
+        ),
+      };
+
+    case "UPDATE_QUARTER": {
+      const quarter = state.quarters.find((q) => q.id === event.quarterId);
+      return {
+        ...state,
+        quarters: state.quarters.map((q) =>
+          q.id === event.quarterId ? { ...q, from: event.from, to: event.to } : q,
+        ),
+        audit: withAudit(
+          state,
+          "reference",
+          quarter?.name ?? "Chorak",
+          `Sanalar oʻzgartirildi: ${event.from} — ${event.to}`,
+        ),
+      };
+    }
 
     case "CHANGE_CLASS":
       return {

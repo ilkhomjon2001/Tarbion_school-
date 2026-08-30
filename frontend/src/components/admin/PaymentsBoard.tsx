@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { SearchIcon, WalletIcon, XIcon } from "@/components/ui/icons";
+import { PlusIcon, SearchIcon, WalletIcon, XIcon } from "@/components/ui/icons";
 import { formatSom } from "@/lib/format";
 import {
   debtOf,
@@ -48,6 +48,9 @@ export function AdminPaymentsBoard() {
   const [className, setClassName] = useState("all");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [drawer, setDrawer] = useState<Drawer>(null);
+  // Qarzi yoʻq oʻquvchi ham oldindan toʻlov qilishi mumkin — shu sabab
+  // tanlash oynasi jadvaldan alohida.
+  const [picking, setPicking] = useState(false);
 
   const extendedIds = useMemo(
     () => new Set(debtActions.filter((a) => a.type === "extend").map((a) => a.studentId)),
@@ -75,11 +78,21 @@ export function AdminPaymentsBoard() {
 
   return (
     <div className="flex flex-col gap-5 p-4 md:p-6">
-      <div>
-        <h1 className="text-h2 font-bold text-foreground">Toʻlovlar</h1>
-        <p className="text-sm text-foreground-muted">
-          Qarzdorlar bilan ishlash va toʻlov qabul qilish
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-h2 font-bold text-foreground">Toʻlovlar</h1>
+          <p className="text-sm text-foreground-muted">
+            Qarzdorlar bilan ishlash va toʻlov qabul qilish
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setPicking(true)}
+          className="focus-ring inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg bg-brand px-3.5 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark"
+        >
+          <PlusIcon className="h-4 w-4" />
+          Toʻlov kiritish
+        </button>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -199,6 +212,117 @@ export function AdminPaymentsBoard() {
           onClose={() => setDrawer(null)}
         />
       )}
+
+      {picking && (
+        <StudentPicker
+          onPick={(id) => {
+            setPicking(false);
+            setDrawer({ studentId: id, tab: "payment" });
+          }}
+          onClose={() => setPicking(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Toʻlov kiritish uchun oʻquvchi tanlash — qarzdor boʻlishi shart emas. */
+function StudentPicker({
+  onPick,
+  onClose,
+}: {
+  onPick: (studentId: string) => void;
+  onClose: () => void;
+}) {
+  const { students } = useAdmin();
+  const [query, setQuery] = useState("");
+
+  const hits = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const active = students.filter((s) => s.status === "active");
+    if (q.length < 2) return active.slice(0, 8);
+    return active
+      .filter(
+        (s) =>
+          s.fullName.toLowerCase().includes(q) ||
+          s.guardianName.toLowerCase().includes(q) ||
+          s.className.toLowerCase() === q,
+      )
+      .slice(0, 20);
+  }, [students, query]);
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-start justify-center p-4 pt-[10vh]">
+      <button
+        type="button"
+        aria-label="Yopish"
+        onClick={onClose}
+        className="absolute inset-0 bg-foreground/20"
+      />
+      <div className="animate-enter relative w-full max-w-md overflow-hidden rounded-xl border border-border bg-surface shadow-lg">
+        <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+          <h2 className="text-base font-semibold text-foreground">Oʻquvchini tanlang</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Yopish"
+            className="focus-ring rounded-lg p-1.5 text-foreground-muted transition-colors hover:bg-surface-muted"
+          >
+            <XIcon className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="p-3">
+          <div className="relative">
+            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted" />
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Ism, ota-ona yoki sinf (masalan 7-B)"
+              aria-label="Oʻquvchi qidirish"
+              className="h-10 w-full rounded-lg border border-border bg-surface pl-9 pr-3 text-sm outline-none focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
+            />
+          </div>
+        </div>
+
+        <ul className="max-h-80 overflow-y-auto border-t border-border">
+          {hits.length === 0 ? (
+            <li className="px-4 py-6 text-center text-sm text-foreground-muted">
+              Oʻquvchi topilmadi.
+            </li>
+          ) : (
+            hits.map((student) => {
+              const debt = debtOf(student);
+              return (
+                <li key={student.id}>
+                  <button
+                    type="button"
+                    onClick={() => onPick(student.id)}
+                    className="flex w-full items-center justify-between gap-3 border-b border-border px-4 py-2.5 text-left transition-colors last:border-0 hover:bg-surface-muted"
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium text-foreground">
+                        {student.fullName}
+                      </span>
+                      <span className="block text-xs text-foreground-muted">
+                        {student.className} · {student.guardianName}
+                      </span>
+                    </span>
+                    <span className="num shrink-0 text-xs font-medium">
+                      {debt > 0 ? (
+                        <span className="text-danger">{formatSom(debt)}</span>
+                      ) : (
+                        <span className="text-success">Qarzsiz</span>
+                      )}
+                    </span>
+                  </button>
+                </li>
+              );
+            })
+          )}
+        </ul>
+      </div>
     </div>
   );
 }

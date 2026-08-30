@@ -290,6 +290,31 @@
   }
 }
 
+/* Chop etish. Rasmiy hujjat (maʼlumotnoma) chiqarilganda sahifadagi
+   qolgan hamma narsa yashiriladi — brauzerning "PDF sifatida saqlash"
+   imkoniyati bilan haqiqiy PDF chiqadi, qoʻshimcha kutubxonasiz. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .print-doc,
+  .print-doc * {
+    visibility: visible;
+  }
+
+  .print-doc {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    box-shadow: none;
+    border: 0;
+    padding: 0;
+  }
+}
+
 /* Harakat sezuvchan foydalanuvchilar uchun — vestibulyar buzilishlarda
    siljish va porlash bosh aylanishiga sabab boʻladi. Interfeys ishlaydi,
    faqat animatsiyasiz. */
