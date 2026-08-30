@@ -275,7 +275,7 @@ Chorak boshlanganda avtomatik generatsiya, ta'til kunlari o'tkazib yuboriladi.
 
 ## Davomat
 
-### [~] T-013 · Davomat modeli va API
+### [~] T-013 · Davomat modeli va API  ← ISHDA (Ikrom, 31-avgust)
 **TZ:** DAV-01, DAV-03, DAV-06, DAV-07
 **Kerak:** T-012
 **Frontend:** 🟡 qisman — `/teacher/davomat/[lessonId]` — 4 holat (keldi / kelmadi / sababli / kechikdi). 24 soat qulfi va audit backendda. Davomat foizi `lib/director/school-data.ts` da hisoblanadi (oʻquvchi / sinf / davr kesimida).
