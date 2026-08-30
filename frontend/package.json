@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "check:contracts": "node --experimental-strip-types scripts/check-contracts.ts",
-    "export:seed": "node --experimental-strip-types --import ./scripts/alias-hook-register.mjs scripts/export-seed.ts"
+    "export:seed": "node --experimental-strip-types --import ./scripts/alias-hook-register.mjs scripts/export-seed.ts",
+    "gen:api": "openapi-ts -i http://localhost:8000/openapi.json -o src/lib/api"
   },
   "dependencies": {
     "next": "^15",
@@ -18,6 +19,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@hey-api/openapi-ts": "^0.99.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^18",

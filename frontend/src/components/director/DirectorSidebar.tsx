@@ -8,6 +8,7 @@ import {
   GraduationCapIcon,
   GridIcon,
   CalendarIcon,
+  ClockIcon,
   LogoutIcon,
   MessageSquareIcon,
   UsersIcon,
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { href: "/rahbar/ustozlar", label: "Ustozlar", icon: GraduationCapIcon },
   { href: "/rahbar/tolovlar", label: "Toʻlovlar", icon: WalletIcon },
   { href: "/rahbar/hisobotlar", label: "Hisobotlar", icon: BarChartIcon },
+  { href: "/rahbar/jonli", label: "Jonli hisobot", icon: ClockIcon },
 ] as const;
 
 export function DirectorSidebar() {

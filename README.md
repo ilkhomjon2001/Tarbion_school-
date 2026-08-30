@@ -142,14 +142,33 @@ cd frontend && corepack pnpm build
 ## API tiplari
 
 Frontenddagi TypeScript tiplari **qoʻlda yozilmaydi** — backendning
-OpenAPI sxemasidan generatsiya qilinadi. Backend endpointi oʻzgarsa:
+OpenAPI sxemasidan generatsiya qilinadi. Backend endpointi oʻzgarsa
+(uvicorn ishlab turgan holda):
 
 ```bash
-cd frontend
-npx @hey-api/openapi-ts -i http://localhost:8000/openapi.json -o src/lib/api
+cd frontend && corepack pnpm gen:api
 ```
 
+Natija `src/lib/api/` ga tushadi va git'da saqlanadi — shunda backend
+ishlamayotgan mashinada ham `pnpm build` oʻtadi. Qoʻlda tahrirlanmaydi;
+eslint uni ataylab tekshirmaydi.
+
+`operationId` backendda `generate_unique_id_function` bilan belgilanadi,
+shuning uchun funksiya nomlari `directorOverview` koʻrinishida — FastAPI
+standarti `overviewApiV1DirectorOverviewGet` degan nom yasaydi.
+
 Shundan keyin `pnpm exec tsc --noEmit` moslikni tekshiradi.
+
+### Sessiya
+
+`src/lib/session.ts` — access token XOTIRADA, `localStorage` da emas.
+Sahifa yangilanganda `restore()` httpOnly cookie'dagi refresh token
+orqali yangi access token oladi. `withAuth()` 401 kelganda bir marta
+yangilab qayta uradi.
+
+Jonli maʼlumotni koʻrish: <http://localhost:3000/rahbar/jonli> —
+kirish `+998 90 100 00 01` / `Tarbion2026!` (seed direktori).
+Qolgan rahbariyat sahifalari hali mock ustida ishlaydi.
 
 ---
 

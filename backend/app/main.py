@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.routing import APIRoute
 from sqlalchemy import text
 
 from app.api.v1 import auth as auth_router
@@ -30,6 +31,18 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     await engine.dispose()
 
 
+def operation_id(route: APIRoute) -> str:
+    """OpenAPI operationId — `director_overview` koʻrinishida.
+
+    FastAPI standart holda `overview_api_v1_director_overview_get` kabi
+    nom yasaydi va generatsiya qilingan TS funksiyasi
+    `overviewApiV1DirectorOverviewGet` boʻlib chiqadi — oʻqib boʻlmaydi.
+    Teg + funksiya nomi yetarli va barqaror.
+    """
+    tag = route.tags[0] if route.tags else "app"
+    return f"{tag}_{route.name}"
+
+
 app = FastAPI(
     title="Tarbion API",
     description="Tarbion maktab boshqaruv platformasi",
@@ -40,6 +53,7 @@ app = FastAPI(
     docs_url=None if settings.is_production else "/docs",
     redoc_url=None,
     openapi_url=None if settings.is_production else "/openapi.json",
+    generate_unique_id_function=operation_id,
 )
 
 # Cookie bilan ishlaymiz (X-4), shuning uchun `allow_credentials=True` va
