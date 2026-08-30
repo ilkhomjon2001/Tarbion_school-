@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AppealsAddMessageData, AppealsAddMessageErrors, AppealsAddMessageResponses, AppealsAppealsSummaryData, AppealsAppealsSummaryResponses, AppealsComposeOptionsData, AppealsComposeOptionsResponses, AppealsCreateAppealData, AppealsCreateAppealErrors, AppealsCreateAppealResponses, AppealsCreateNoteData, AppealsCreateNoteErrors, AppealsCreateNoteResponses, AppealsGetAppealData, AppealsGetAppealErrors, AppealsGetAppealResponses, AppealsListAppealsData, AppealsListAppealsErrors, AppealsListAppealsResponses, AppealsListNotesData, AppealsListNotesErrors, AppealsListNotesResponses, AppealsStatsClassesData, AppealsStatsClassesResponses, AppealsUpdateAssigneeData, AppealsUpdateAssigneeErrors, AppealsUpdateAssigneeResponses, AppealsUpdateStatusData, AppealsUpdateStatusErrors, AppealsUpdateStatusResponses, AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRefreshData, AuthRefreshResponses, DirectorClassesData, DirectorClassesResponses, DirectorOverviewData, DirectorOverviewErrors, DirectorOverviewResponses, DirectorTeachersData, DirectorTeachersResponses, ServiceHealthData, ServiceHealthResponses, ServiceReadinessData, ServiceReadinessResponses } from './types.gen';
+import type { AppealsAddMessageData, AppealsAddMessageErrors, AppealsAddMessageResponses, AppealsAppealsSummaryData, AppealsAppealsSummaryResponses, AppealsComposeOptionsData, AppealsComposeOptionsResponses, AppealsCreateAppealData, AppealsCreateAppealErrors, AppealsCreateAppealResponses, AppealsCreateNoteData, AppealsCreateNoteErrors, AppealsCreateNoteResponses, AppealsGetAppealData, AppealsGetAppealErrors, AppealsGetAppealResponses, AppealsListAppealsData, AppealsListAppealsErrors, AppealsListAppealsResponses, AppealsListNotesData, AppealsListNotesErrors, AppealsListNotesResponses, AppealsStatsClassesData, AppealsStatsClassesResponses, AppealsUpdateAssigneeData, AppealsUpdateAssigneeErrors, AppealsUpdateAssigneeResponses, AppealsUpdateStatusData, AppealsUpdateStatusErrors, AppealsUpdateStatusResponses, AttendanceClassStudentsData, AttendanceClassStudentsErrors, AttendanceClassStudentsResponses, AttendanceLessonAttendanceData, AttendanceLessonAttendanceErrors, AttendanceLessonAttendanceResponses, AttendanceMarkData, AttendanceMarkErrors, AttendanceMarkResponses, AttendanceMyLessonsData, AttendanceMyLessonsErrors, AttendanceMyLessonsResponses, AttendanceStatsData, AttendanceStatsErrors, AttendanceStatsResponses, AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRefreshData, AuthRefreshResponses, DirectorClassesData, DirectorClassesResponses, DirectorOverviewData, DirectorOverviewErrors, DirectorOverviewResponses, DirectorTeachersData, DirectorTeachersResponses, ServiceHealthData, ServiceHealthResponses, ServiceReadinessData, ServiceReadinessResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -204,6 +204,61 @@ export const appealsCreateNote = <ThrowOnError extends boolean = false>(options:
         ...options.headers
     }
 });
+
+/**
+ * My Lessons
+ *
+ * Ustozning shu kundagi darslari.
+ *
+ * Sana berilmasa MAHALLIY bugun olinadi (CLAUDE.md 3-qoida) — UTC kuni
+ * emas, aks holda ertalabki darslar kechagi kunga tushib qolardi.
+ */
+export const attendanceMyLessons = <ThrowOnError extends boolean = false>(options?: Options<AttendanceMyLessonsData, ThrowOnError>): RequestResult<AttendanceMyLessonsResponses, AttendanceMyLessonsErrors, ThrowOnError> => (options?.client ?? client).get<AttendanceMyLessonsResponses, AttendanceMyLessonsErrors, ThrowOnError>({ url: '/api/v1/attendance/my-lessons', ...options });
+
+/**
+ * Lesson Attendance
+ *
+ * Dars roʻyxati va mavjud davomat.
+ *
+ * Roʻyxat toʻliq qaytadi — davomat hali belgilanmagan boʻlsa
+ * `status` maydonlari `null`.
+ */
+export const attendanceLessonAttendance = <ThrowOnError extends boolean = false>(options: Options<AttendanceLessonAttendanceData, ThrowOnError>): RequestResult<AttendanceLessonAttendanceResponses, AttendanceLessonAttendanceErrors, ThrowOnError> => (options.client ?? client).get<AttendanceLessonAttendanceResponses, AttendanceLessonAttendanceErrors, ThrowOnError>({ url: '/api/v1/attendance/lessons/{lesson_id}', ...options });
+
+/**
+ * Mark
+ *
+ * Butun sinf davomatini saqlaydi (DAV-01).
+ *
+ * DAV-03: dars tugaganidan 24 soat oʻtgan boʻlsa ustoz `403` oladi,
+ * administrator esa oʻzgartira oladi. Har oʻzgarish `audit_log` ga
+ * eski va yangi qiymat bilan tushadi (DAV-07).
+ */
+export const attendanceMark = <ThrowOnError extends boolean = false>(options: Options<AttendanceMarkData, ThrowOnError>): RequestResult<AttendanceMarkResponses, AttendanceMarkErrors, ThrowOnError> => (options.client ?? client).post<AttendanceMarkResponses, AttendanceMarkErrors, ThrowOnError>({
+    url: '/api/v1/attendance/lessons/{lesson_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Stats
+ *
+ * DAV-06: davomat foizi — oʻquvchi / sinf / fan / ustoz kesimida.
+ *
+ * Kesimlar birga ishlatiladi. Ota-ona faqat oʻz farzandi boʻyicha
+ * natija oladi — filtr soʻrov darajasida (X-1).
+ */
+export const attendanceStats = <ThrowOnError extends boolean = false>(options?: Options<AttendanceStatsData, ThrowOnError>): RequestResult<AttendanceStatsResponses, AttendanceStatsErrors, ThrowOnError> => (options?.client ?? client).get<AttendanceStatsResponses, AttendanceStatsErrors, ThrowOnError>({ url: '/api/v1/attendance/stats', ...options });
+
+/**
+ * Class Students
+ *
+ * Sinfdagi har bir oʻquvchining davomati (DAV-02, sinf jurnali).
+ */
+export const attendanceClassStudents = <ThrowOnError extends boolean = false>(options: Options<AttendanceClassStudentsData, ThrowOnError>): RequestResult<AttendanceClassStudentsResponses, AttendanceClassStudentsErrors, ThrowOnError> => (options.client ?? client).get<AttendanceClassStudentsResponses, AttendanceClassStudentsErrors, ThrowOnError>({ url: '/api/v1/attendance/classes/{class_id}/students', ...options });
 
 /**
  * Health

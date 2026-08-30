@@ -21,7 +21,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
-from app.core.timeutil import combine_local, utcnow
+from app.core.timeutil import combine_local, local_today, utcnow
 from app.models import (
     AcademicYear,
     AttendanceRecord,
@@ -111,12 +111,17 @@ async def world(session: AsyncSession) -> dict[str, object]:
     )
 
     # Bugungi dars — oyna OCHIQ (hozirdan bir soat oldin tugagan).
+    #
+    # `lesson_date` MAHALLIY sana (CLAUDE.md 3-qoida). `utcnow().date()`
+    # ishlatilsa Toshkent vaqti bilan 00:00–05:00 oraligʻida UTC hali
+    # kechagi kunda boʻladi va dars "bugungi" roʻyxatga tushmay qolardi.
     now = utcnow()
+    bugun = local_today()
     bugungi = Lesson(
         class_id=class_a.id,
         subject_id=math.id,
         teacher_id=teacher_a.id,
-        lesson_date=now.date(),
+        lesson_date=bugun,
         period=1,
         room="8-A",
         starts_at=now - timedelta(hours=2),
@@ -127,7 +132,7 @@ async def world(session: AsyncSession) -> dict[str, object]:
         class_id=class_a.id,
         subject_id=math.id,
         teacher_id=teacher_a.id,
-        lesson_date=(now - timedelta(days=2)).date(),
+        lesson_date=bugun - timedelta(days=2),
         period=2,
         room="8-A",
         starts_at=now - timedelta(hours=26),
@@ -500,6 +505,26 @@ async def test_ustoz_faqat_oz_darslarini_koradi(client: AsyncClient, world: dict
     token = await _token(client, "dav.ustoz_a")
     resp = await client.get("/api/v1/attendance/my-lessons", headers=_auth(token))
     assert resp.status_code == 200, resp.text
+
+    darslar = resp.json()
     # Bugungi dars — ustoz A niki. Eski dars boshqa kunda, begonasi ustoz B niki.
-    sinflar = {r["class_name"] for r in resp.json()}
-    assert sinflar <= {"8-A"}
+    assert len(darslar) == 1, "faqat bugungi oʻz darsi qaytishi kerak"
+    assert darslar[0]["id"] == str(world["bugungi"].id)
+    assert darslar[0]["class_name"] == "8-A"
+
+
+async def test_darslar_royxatida_sanoqlar_bor(client: AsyncClient, world: dict) -> None:
+    """Kartochkada "1/2 keldi" koʻrsatish uchun sanoqlar javobda keladi."""
+    token = await _token(client, "dav.ustoz_a")
+    await client.post(
+        f"/api/v1/attendance/lessons/{world['bugungi'].id}",
+        headers=_auth(token),
+        json={"rows": _rows((world["ali"], "present"), (world["aziz"], "absent"))},
+    )
+
+    resp = await client.get("/api/v1/attendance/my-lessons", headers=_auth(token))
+    assert resp.status_code == 200, resp.text
+    dars = next(r for r in resp.json() if r["id"] == str(world["bugungi"].id))
+    assert dars["student_count"] == 2
+    assert dars["present_count"] == 1
+    assert dars["marked"] is True

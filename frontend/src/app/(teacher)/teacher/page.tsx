@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { TeacherShell } from "@/components/teacher/TeacherShell";
 import { TodaySummary } from "@/components/teacher/TodaySummary";
 import { DEMO_DATE_LABEL } from "@/lib/teacher/data";
-import { getTodayLessons } from "@/lib/teacher/store";
+import { getTodayLessons } from "@/lib/teacher/attendance-api";
 import type { TeacherLesson } from "@/lib/teacher/types";
 
 /** Ustoz bosh sahifasi: bugungi darslar, qaysi sinf va qaysi xonada. */

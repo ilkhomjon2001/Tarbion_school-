@@ -301,7 +301,7 @@ Qoidalar:
 
 ---
 
-### [~] T-014 · Ustoz davomat ekrani  ← ISHDA (Ikrom, 31-avgust)
+### [x] T-014 · Ustoz davomat ekrani
 **TZ:** DAV-01
 **Kerak:** T-013
 **Frontend:** ✅ tayyor — `/teacher` — bugungi darslar va «Davomat belgilash». `/teacher/davomat/[lessonId]` — oʻquvchilar roʻyxati, sukut boʻyicha hammasi «keldi», bir bosishda saqlanadi. Mobil 360px da ishlaydi.
@@ -311,10 +311,13 @@ Davomat ekrani — o'quvchilar ro'yxati, har birida 4 ta holat tugmasi.
 Sukut bo'yicha hamma "keldi". Bir bosishda saqlanadi.
 
 **Tayyor:**
-- [ ] Mobilda (360px) barmoq bilan qulay ishlaydi, tugma ≥44px
-- [ ] Saqlanmagan o'zgarish bo'lsa, sahifadan chiqishda ogohlantiradi
-- [ ] Loading va error holatlari bor
-- [ ] 24 soat o'tgan dars faqat o'qish rejimida ochiladi, sababi ko'rsatiladi
+- [x] Mobilda (360px) barmoq bilan qulay ishlaydi, tugma ≥44px
+- [x] Saqlanmagan o'zgarish bo'lsa, sahifadan chiqishda ogohlantiradi
+- [x] Loading va error holatlari bor
+- [x] 24 soat o'tgan dars faqat o'qish rejimida ochiladi, sababi ko'rsatiladi
+      (`editable` maydoni backenddan keladi — frontend o'zi hisoblamaydi)
+- [x] Ekran BACKENDGA ulandi: `lib/teacher/attendance-api.ts` orqali
+      `my-lessons`, `lessons/{id}` va `POST lessons/{id}`. localStorage emas.
 
 ---
 

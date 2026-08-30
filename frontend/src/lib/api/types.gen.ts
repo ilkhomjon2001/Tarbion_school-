@@ -325,6 +325,42 @@ export type AssignIn = {
 };
 
 /**
+ * AttendanceMarkIn
+ *
+ * Butun sinf bitta soʻrovda.
+ */
+export type AttendanceMarkIn = {
+    /**
+     * Rows
+     */
+    rows: Array<AttendanceRowIn>;
+    /**
+     * Topic
+     */
+    topic?: string | null;
+};
+
+/**
+ * AttendanceMarkOut
+ *
+ * Nima oʻzgargani — ustozga "saqlandi" dan koʻra aniqroq javob.
+ */
+export type AttendanceMarkOut = {
+    /**
+     * Created
+     */
+    created: number;
+    /**
+     * Updated
+     */
+    updated: number;
+    /**
+     * Unchanged
+     */
+    unchanged: number;
+};
+
+/**
  * AttendancePoint
  */
 export type AttendancePoint = {
@@ -332,6 +368,54 @@ export type AttendancePoint = {
      * Date
      */
     date: string;
+    /**
+     * Percent
+     */
+    percent: number;
+};
+
+/**
+ * AttendanceRowIn
+ */
+export type AttendanceRowIn = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Status
+     */
+    status: 'present' | 'absent' | 'excused' | 'late';
+    /**
+     * Note
+     */
+    note?: string | null;
+};
+
+/**
+ * AttendanceStatOut
+ */
+export type AttendanceStatOut = {
+    /**
+     * Total
+     */
+    total: number;
+    /**
+     * Present
+     */
+    present: number;
+    /**
+     * Absent
+     */
+    absent: number;
+    /**
+     * Excused
+     */
+    excused: number;
+    /**
+     * Late
+     */
+    late: number;
     /**
      * Percent
      */
@@ -481,6 +565,64 @@ export type HealthOut = {
 };
 
 /**
+ * LessonAttendanceOut
+ */
+export type LessonAttendanceOut = {
+    /**
+     * Lesson Id
+     */
+    lesson_id: string;
+    /**
+     * Class Name
+     */
+    class_name: string;
+    /**
+     * Subject Name
+     */
+    subject_name: string;
+    /**
+     * Lesson Date
+     */
+    lesson_date: string;
+    /**
+     * Period
+     */
+    period: number;
+    /**
+     * Room
+     */
+    room: string | null;
+    /**
+     * Starts At
+     */
+    starts_at: string;
+    /**
+     * Ends At
+     */
+    ends_at: string;
+    /**
+     * Topic
+     */
+    topic: string | null;
+    /**
+     * Marked At
+     */
+    marked_at: string | null;
+    /**
+     * Editable
+     */
+    editable: boolean;
+    /**
+     * Edit Deadline
+     */
+    edit_deadline: string;
+    /**
+     * Students
+     */
+    students: Array<StudentRowOut>;
+};
+
+/**
  * LoginIn
  */
 export type LoginIn = {
@@ -528,6 +670,102 @@ export type ReadinessOut = {
  */
 export type StatusUpdateIn = {
     status: AppealStatus;
+};
+
+/**
+ * StudentRowOut
+ *
+ * Roʻyxatdagi bitta oʻquvchi va uning holati.
+ *
+ * Telefon, manzil va hujjat maydonlari ATAYLAB yoʻq (X-6): bu roʻyxat
+ * endpointi, shaxsiy maʼlumot faqat bitta oʻquvchi kartochkasida.
+ */
+export type StudentRowOut = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Status
+     */
+    status?: 'present' | 'absent' | 'excused' | 'late' | null;
+    /**
+     * Note
+     */
+    note?: string | null;
+};
+
+/**
+ * StudentStatOut
+ */
+export type StudentStatOut = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    stat: AttendanceStatOut;
+};
+
+/**
+ * TeacherLessonOut
+ */
+export type TeacherLessonOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Class Name
+     */
+    class_name: string;
+    /**
+     * Subject Name
+     */
+    subject_name: string;
+    /**
+     * Period
+     */
+    period: number;
+    /**
+     * Room
+     */
+    room: string | null;
+    /**
+     * Starts At
+     */
+    starts_at: string;
+    /**
+     * Ends At
+     */
+    ends_at: string;
+    /**
+     * Topic
+     */
+    topic: string | null;
+    /**
+     * Marked
+     */
+    marked: boolean;
+    /**
+     * Editable
+     */
+    editable: boolean;
+    /**
+     * Student Count
+     */
+    student_count: number;
+    /**
+     * Present Count
+     */
+    present_count: number;
 };
 
 /**
@@ -1109,6 +1347,191 @@ export type AppealsCreateNoteResponses = {
 };
 
 export type AppealsCreateNoteResponse = AppealsCreateNoteResponses[keyof AppealsCreateNoteResponses];
+
+export type AttendanceMyLessonsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Day
+         *
+         * Sukut boʻyicha bugun
+         */
+        day?: string | null;
+    };
+    url: '/api/v1/attendance/my-lessons';
+};
+
+export type AttendanceMyLessonsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AttendanceMyLessonsError = AttendanceMyLessonsErrors[keyof AttendanceMyLessonsErrors];
+
+export type AttendanceMyLessonsResponses = {
+    /**
+     * Response Attendance My Lessons
+     *
+     * Successful Response
+     */
+    200: Array<TeacherLessonOut>;
+};
+
+export type AttendanceMyLessonsResponse = AttendanceMyLessonsResponses[keyof AttendanceMyLessonsResponses];
+
+export type AttendanceLessonAttendanceData = {
+    body?: never;
+    path: {
+        /**
+         * Lesson Id
+         */
+        lesson_id: string;
+    };
+    query?: never;
+    url: '/api/v1/attendance/lessons/{lesson_id}';
+};
+
+export type AttendanceLessonAttendanceErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AttendanceLessonAttendanceError = AttendanceLessonAttendanceErrors[keyof AttendanceLessonAttendanceErrors];
+
+export type AttendanceLessonAttendanceResponses = {
+    /**
+     * Successful Response
+     */
+    200: LessonAttendanceOut;
+};
+
+export type AttendanceLessonAttendanceResponse = AttendanceLessonAttendanceResponses[keyof AttendanceLessonAttendanceResponses];
+
+export type AttendanceMarkData = {
+    body: AttendanceMarkIn;
+    path: {
+        /**
+         * Lesson Id
+         */
+        lesson_id: string;
+    };
+    query?: never;
+    url: '/api/v1/attendance/lessons/{lesson_id}';
+};
+
+export type AttendanceMarkErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AttendanceMarkError = AttendanceMarkErrors[keyof AttendanceMarkErrors];
+
+export type AttendanceMarkResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttendanceMarkOut;
+};
+
+export type AttendanceMarkResponse = AttendanceMarkResponses[keyof AttendanceMarkResponses];
+
+export type AttendanceStatsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Student Id
+         */
+        student_id?: string | null;
+        /**
+         * Class Id
+         */
+        class_id?: string | null;
+        /**
+         * Subject Id
+         */
+        subject_id?: string | null;
+        /**
+         * Teacher Id
+         */
+        teacher_id?: string | null;
+        /**
+         * Date From
+         */
+        date_from?: string | null;
+        /**
+         * Date To
+         */
+        date_to?: string | null;
+    };
+    url: '/api/v1/attendance/stats';
+};
+
+export type AttendanceStatsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AttendanceStatsError = AttendanceStatsErrors[keyof AttendanceStatsErrors];
+
+export type AttendanceStatsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttendanceStatOut;
+};
+
+export type AttendanceStatsResponse = AttendanceStatsResponses[keyof AttendanceStatsResponses];
+
+export type AttendanceClassStudentsData = {
+    body?: never;
+    path: {
+        /**
+         * Class Id
+         */
+        class_id: string;
+    };
+    query?: {
+        /**
+         * Date From
+         */
+        date_from?: string | null;
+        /**
+         * Date To
+         */
+        date_to?: string | null;
+    };
+    url: '/api/v1/attendance/classes/{class_id}/students';
+};
+
+export type AttendanceClassStudentsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AttendanceClassStudentsError = AttendanceClassStudentsErrors[keyof AttendanceClassStudentsErrors];
+
+export type AttendanceClassStudentsResponses = {
+    /**
+     * Response Attendance Class Students
+     *
+     * Successful Response
+     */
+    200: Array<StudentStatOut>;
+};
+
+export type AttendanceClassStudentsResponse = AttendanceClassStudentsResponses[keyof AttendanceClassStudentsResponses];
 
 export type ServiceHealthData = {
     body?: never;

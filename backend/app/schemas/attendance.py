@@ -78,6 +78,9 @@ class TeacherLessonOut(BaseModel):
     topic: str | None
     marked: bool
     editable: bool
+    #: "22/25 belgilandi" koʻrsatish uchun.
+    student_count: int
+    present_count: int
 
 
 class AttendanceStatOut(BaseModel):

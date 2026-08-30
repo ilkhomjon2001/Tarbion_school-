@@ -9,7 +9,8 @@ import { TopicField } from "@/components/teacher/TopicField";
 import { GradeBook } from "@/components/teacher/GradeBook";
 import { hasPlan, planFor } from "@/lib/teacher/plan";
 import { canGrade } from "@/lib/teacher/roles";
-import { conductedCount, getAttendance, saveAttendance } from "@/lib/teacher/store";
+import { getAttendance, saveAttendance } from "@/lib/teacher/attendance-api";
+import { conductedCount } from "@/lib/teacher/store";
 import {
   ATTENDANCE_LABELS,
   ATTENDANCE_ORDER,

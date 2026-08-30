@@ -387,6 +387,59 @@ async def class_student_stats(
     return natija
 
 
+@dataclass(frozen=True, slots=True)
+class LessonCounts:
+    """Dars kartochkasidagi "22/25 belgilandi" uchun."""
+
+    students: int
+    marked: int
+    present: int
+
+
+async def lesson_counts(
+    session: AsyncSession, lessons: list[Lesson]
+) -> dict[uuid.UUID, LessonCounts]:
+    """Bir necha dars uchun sanoqlarni IKKI soʻrovda yigʻadi.
+
+    Har dars uchun alohida soʻrov yuborilsa, 7 parali kunda 14 marta
+    bazaga borilardi (N+1). Sinf roʻyxati sinf boʻyicha, davomat esa
+    dars boʻyicha guruhlanadi.
+    """
+    if not lessons:
+        return {}
+
+    class_ids = {lesson.class_id for lesson in lessons}
+    roster_rows = await session.execute(
+        select(Student.class_id, func.count())
+        .where(Student.class_id.in_(class_ids), Student.is_archived.is_(False))
+        .group_by(Student.class_id)
+    )
+    roster = dict(roster_rows.all())
+
+    lesson_ids = [lesson.id for lesson in lessons]
+    mark_rows = await session.execute(
+        select(AttendanceRecord.lesson_id, AttendanceRecord.status, func.count())
+        .where(
+            AttendanceRecord.lesson_id.in_(lesson_ids),
+            AttendanceRecord.is_archived.is_(False),
+        )
+        .group_by(AttendanceRecord.lesson_id, AttendanceRecord.status)
+    )
+    yigilgan: dict[uuid.UUID, dict[str, int]] = {}
+    for lid, status, count in mark_rows.all():
+        yigilgan.setdefault(lid, {})[status] = count
+
+    natija = {}
+    for lesson in lessons:
+        h = yigilgan.get(lesson.id, {})
+        natija[lesson.id] = LessonCounts(
+            students=roster.get(lesson.class_id, 0),
+            marked=sum(h.values()),
+            present=sum(h.get(st, 0) for st in _PRESENT_LIKE),
+        )
+    return natija
+
+
 async def teacher_lessons(session: AsyncSession, user: CurrentUser, day: date) -> list[Lesson]:
     """Ustozning shu kundagi darslari (DAV-01 ekrani uchun).
 

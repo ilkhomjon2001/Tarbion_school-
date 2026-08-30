@@ -74,6 +74,7 @@ async def my_lessons(
     """
     kun = day or local_today()
     lessons = await attendance_service.teacher_lessons(session, user, kun)
+    counts = await attendance_service.lesson_counts(session, lessons)
     return [
         TeacherLessonOut(
             id=lesson.id,
@@ -86,6 +87,8 @@ async def my_lessons(
             topic=lesson.topic,
             marked=lesson.attendance_marked_at is not None,
             editable=attendance_service.can_teacher_edit(lesson),
+            student_count=counts[lesson.id].students,
+            present_count=counts[lesson.id].present,
         )
         for lesson in lessons
     ]
