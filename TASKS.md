@@ -301,7 +301,7 @@ Qoidalar:
 
 ---
 
-### [ ] T-014 · Ustoz davomat ekrani
+### [~] T-014 · Ustoz davomat ekrani  ← ISHDA (Ikrom, 31-avgust)
 **TZ:** DAV-01
 **Kerak:** T-013
 **Frontend:** ✅ tayyor — `/teacher` — bugungi darslar va «Davomat belgilash». `/teacher/davomat/[lessonId]` — oʻquvchilar roʻyxati, sukut boʻyicha hammasi «keldi», bir bosishda saqlanadi. Mobil 360px da ishlaydi.
