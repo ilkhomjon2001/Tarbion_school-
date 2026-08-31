@@ -743,3 +743,36 @@ async def test_grade_and_homework_count_in_their_own_sections(
         "/student/grades": 1,
         "/student/homework": 1,
     }
+
+
+async def test_order_is_stable_inside_one_transaction(
+    client: AsyncClient, world: dict
+) -> None:
+    """Bitta soʻrovda yaratilgan xabarlar ham aniq tartibda keladi.
+
+    `created_at` ni `func.now()` toʻldiradi, Postgres'da esa `now()` —
+    TRANZAKSIYA boshlanish vaqti. Ustoz butun sinfga baho qoʻyganda
+    yoki vazifa berilib darhol baholanganda hamma yozuv bir xil
+    `created_at` oladi va faqat shu ustun boʻyicha saralash tartibni
+    kafolatlamaydi — roʻyxat har soʻrovda boshqacha chiqardi.
+
+    Tenglikni `id` hal qiladi: u UUIDv7, vaqt boʻyicha oʻsadi.
+    """
+    hw = await _new_homework(client, world)
+    sub = await _submission_of(client, world, hw["id"])
+
+    token = await _token(client, "bild.ustoz")
+    await client.post(
+        f"/api/v1/journal/submissions/{sub['id']}/grade",
+        headers=_auth(token),
+        json={"score": 5},
+    )
+
+    # Bir necha marta soʻralganda tartib oʻzgarmasin.
+    oldingi = None
+    for _ in range(4):
+        kinds = [n["kind"] for n in await _list(client, "bild.oquvchi")]
+        assert kinds == ["homework_graded", "homework_new"], kinds
+        if oldingi is not None:
+            assert kinds == oldingi
+        oldingi = kinds

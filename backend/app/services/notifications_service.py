@@ -264,7 +264,14 @@ async def list_for(
     section: str | None = None,
     limit: int = DEFAULT_LIMIT,
 ) -> Sequence[Notification]:
-    stmt = _mine(user).order_by(Notification.created_at.desc())
+    # Tartib IKKI ustun boʻyicha. `created_at` ni `func.now()` toʻldiradi,
+    # Postgres'da esa `now()` — TRANZAKSIYA boshlanish vaqti: bitta
+    # soʻrovda yaratilgan barcha bildirishnomalar bir xil qiymat oladi.
+    # Faqat shu ustun boʻyicha saralasak, ustoz butun sinfga baho
+    # qoʻyganda yoki vazifa berilib darhol baholanganda ularning tartibi
+    # tasodifiy boʻlardi. `id` — UUIDv7, vaqt boʻyicha oʻsadi va
+    # tenglikni aniq hal qiladi.
+    stmt = _mine(user).order_by(Notification.created_at.desc(), Notification.id.desc())
     if only_unread:
         stmt = stmt.where(Notification.read_at.is_(None))
     if section:
