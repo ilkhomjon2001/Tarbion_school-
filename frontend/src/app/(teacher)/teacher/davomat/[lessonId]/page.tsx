@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { TeacherShell } from "@/components/teacher/TeacherShell";
 import { TopicField } from "@/components/teacher/TopicField";
-import { GradeBook } from "@/components/teacher/GradeBook";
+import { LessonGradeBook } from "@/components/teacher/LessonGradeBook";
 import { hasPlan, planFor } from "@/lib/teacher/plan";
 import { canGrade } from "@/lib/teacher/roles";
 import { getAttendance, saveAttendance } from "@/lib/teacher/attendance-api";
@@ -226,17 +226,6 @@ export default function AttendancePage() {
   useEffect(() => {
     rowRefs.current[activeIndex]?.scrollIntoView({ block: "nearest" });
   }, [activeIndex]);
-
-  /**
-   * Jurnal uchun davomat xaritasi. Jonli `rows` dan olinadi — ustoz
-   * belgini oʻzgartirsa baho katagi darhol qulflanadi/ochiladi,
-   * saqlashni kutmaydi.
-   */
-  const gradeAttendance = useMemo(() => {
-    const map: Record<string, AttendanceStatus> = {};
-    for (const r of rows ?? []) map[r.studentId] = r.status;
-    return map;
-  }, [rows]);
 
   // Saqlanmagan oʻzgarish bilan sahifadan chiqish — ogohlantirish.
   useEffect(() => {
@@ -541,14 +530,9 @@ export default function AttendancePage() {
                 </button>
               </div>
 
-              <GradeBook
-                className={lesson.className}
-                subject={lesson.subject}
-                students={rows}
-                editableDate={lesson.date}
-                showSummary={false}
-                attendance={gradeAttendance}
-              />
+              {/* Baho serverdan: kimga qoʻyish mumkinligi, muddat va
+                  oʻrtachaning koʻrinishi — hammasi `/api/v1/journal` da. */}
+              <LessonGradeBook lessonId={lesson.id} />
             </section>
           )}
         </>
