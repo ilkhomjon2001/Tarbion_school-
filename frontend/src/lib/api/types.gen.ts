@@ -1704,6 +1704,28 @@ export type ReadinessOut = {
 };
 
 /**
+ * RecoveryCodesIn
+ */
+export type RecoveryCodesIn = {
+    /**
+     * Password
+     */
+    password: string;
+};
+
+/**
+ * RecoveryCodesOut
+ *
+ * Kodlar BIR MARTA koʻrsatiladi — bazada faqat xeshi qoladi.
+ */
+export type RecoveryCodesOut = {
+    /**
+     * Codes
+     */
+    codes: Array<string>;
+};
+
+/**
  * ReturnSubmissionIn
  *
  * UYV-03: izoh majburiy — nima notoʻgʻri ekani aytilmasa vazifa foydasiz.
@@ -2672,6 +2694,101 @@ export type TokenOut = {
 };
 
 /**
+ * TwoFactorDisableIn
+ */
+export type TwoFactorDisableIn = {
+    /**
+     * Password
+     */
+    password: string;
+    /**
+     * Code
+     */
+    code: string;
+};
+
+/**
+ * TwoFactorEnableIn
+ */
+export type TwoFactorEnableIn = {
+    /**
+     * Code
+     */
+    code: string;
+};
+
+/**
+ * TwoFactorRequiredOut
+ *
+ * Parol toʻgʻri, lekin kod kerak.
+ *
+ * Access token BERILMAYDI: parolni bilgan, kodi yoʻq odam hech
+ * qanday token olmasin.
+ */
+export type TwoFactorRequiredOut = {
+    /**
+     * Two Factor Required
+     */
+    two_factor_required?: true;
+    /**
+     * Challenge Token
+     */
+    challenge_token: string;
+    /**
+     * Recovery Available
+     */
+    recovery_available: boolean;
+};
+
+/**
+ * TwoFactorSetupOut
+ *
+ * Sekret BIR MARTA qaytadi — keyin uni hech qayerdan olib boʻlmaydi.
+ */
+export type TwoFactorSetupOut = {
+    /**
+     * Secret
+     */
+    secret: string;
+    /**
+     * Uri
+     */
+    uri: string;
+};
+
+/**
+ * TwoFactorStatusOut
+ */
+export type TwoFactorStatusOut = {
+    /**
+     * Enabled
+     */
+    enabled: boolean;
+    /**
+     * Required
+     */
+    required: boolean;
+    /**
+     * Unused Recovery Codes
+     */
+    unused_recovery_codes: number;
+};
+
+/**
+ * TwoFactorVerifyIn
+ */
+export type TwoFactorVerifyIn = {
+    /**
+     * Challenge Token
+     */
+    challenge_token: string;
+    /**
+     * Code
+     */
+    code: string;
+};
+
+/**
  * UserAccessOut
  *
  * Foydalanuvchining toʻliq kirish holati.
@@ -2811,12 +2928,146 @@ export type AuthLoginError = AuthLoginErrors[keyof AuthLoginErrors];
 
 export type AuthLoginResponses = {
     /**
+     * Response Auth Login
+     *
+     * Successful Response
+     */
+    200: TokenOut | TwoFactorRequiredOut;
+};
+
+export type AuthLoginResponse = AuthLoginResponses[keyof AuthLoginResponses];
+
+export type AuthTwoFactorVerifyData = {
+    body: TwoFactorVerifyIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/2fa/verify';
+};
+
+export type AuthTwoFactorVerifyErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AuthTwoFactorVerifyError = AuthTwoFactorVerifyErrors[keyof AuthTwoFactorVerifyErrors];
+
+export type AuthTwoFactorVerifyResponses = {
+    /**
      * Successful Response
      */
     200: TokenOut;
 };
 
-export type AuthLoginResponse = AuthLoginResponses[keyof AuthLoginResponses];
+export type AuthTwoFactorVerifyResponse = AuthTwoFactorVerifyResponses[keyof AuthTwoFactorVerifyResponses];
+
+export type AuthTwoFactorStatusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/2fa';
+};
+
+export type AuthTwoFactorStatusResponses = {
+    /**
+     * Successful Response
+     */
+    200: TwoFactorStatusOut;
+};
+
+export type AuthTwoFactorStatusResponse = AuthTwoFactorStatusResponses[keyof AuthTwoFactorStatusResponses];
+
+export type AuthTwoFactorSetupData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/2fa/setup';
+};
+
+export type AuthTwoFactorSetupResponses = {
+    /**
+     * Successful Response
+     */
+    200: TwoFactorSetupOut;
+};
+
+export type AuthTwoFactorSetupResponse = AuthTwoFactorSetupResponses[keyof AuthTwoFactorSetupResponses];
+
+export type AuthTwoFactorEnableData = {
+    body: TwoFactorEnableIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/2fa/enable';
+};
+
+export type AuthTwoFactorEnableErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AuthTwoFactorEnableError = AuthTwoFactorEnableErrors[keyof AuthTwoFactorEnableErrors];
+
+export type AuthTwoFactorEnableResponses = {
+    /**
+     * Successful Response
+     */
+    200: RecoveryCodesOut;
+};
+
+export type AuthTwoFactorEnableResponse = AuthTwoFactorEnableResponses[keyof AuthTwoFactorEnableResponses];
+
+export type AuthTwoFactorDisableData = {
+    body: TwoFactorDisableIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/2fa/disable';
+};
+
+export type AuthTwoFactorDisableErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AuthTwoFactorDisableError = AuthTwoFactorDisableErrors[keyof AuthTwoFactorDisableErrors];
+
+export type AuthTwoFactorDisableResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AuthTwoFactorDisableResponse = AuthTwoFactorDisableResponses[keyof AuthTwoFactorDisableResponses];
+
+export type AuthTwoFactorRecoveryCodesData = {
+    body: RecoveryCodesIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/2fa/recovery-codes';
+};
+
+export type AuthTwoFactorRecoveryCodesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AuthTwoFactorRecoveryCodesError = AuthTwoFactorRecoveryCodesErrors[keyof AuthTwoFactorRecoveryCodesErrors];
+
+export type AuthTwoFactorRecoveryCodesResponses = {
+    /**
+     * Successful Response
+     */
+    200: RecoveryCodesOut;
+};
+
+export type AuthTwoFactorRecoveryCodesResponse = AuthTwoFactorRecoveryCodesResponses[keyof AuthTwoFactorRecoveryCodesResponses];
 
 export type AuthRefreshData = {
     body?: never;

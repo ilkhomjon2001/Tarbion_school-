@@ -4,6 +4,7 @@ Bu yerdagi har bir qatlam aniq bir hujumga qarshi turadi. Ularning
 hech biri yolgʻiz yetarli emas — himoya qatlamlarda quriladi.
 """
 
+import hashlib
 import ipaddress
 from collections.abc import Awaitable, Callable
 
@@ -13,6 +14,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 from app.core.config import settings
+from app.core.ratelimit import Limit, limiter
 
 #: Body oʻlchami chegarasi. Fayl R2 ga toʻgʻridan-toʻgʻri yuklanadi
 #: (presigned URL), shuning uchun API ga katta tana kelmaydi.
@@ -167,3 +169,93 @@ def _first_forwarded(headers: dict[bytes, bytes]) -> str | None:
     except ValueError:
         return None
     return birinchi
+
+
+# ─────────────────────────── Rate limiting ───────────────────────────
+
+#: Yozish amallari — oʻqishdan qatʼiy. Bitta odam daqiqada 60 marta
+#: baho qoʻymaydi; bunday tezlik yo skript, yo xato sikl demakdir.
+_YOZISH = Limit(requests=60, window=60)
+
+#: Umumiy chegara. Jurnal ekrani bitta ochilishda ~5 soʻrov yuboradi,
+#: shuning uchun keng qoʻyilgan: chegara ODDIY ishni toʻsmasligi kerak,
+#: aks holda uni oʻchirib qoʻyishadi va himoya butunlay yoʻqoladi.
+_UMUMIY = Limit(requests=300, window=60)
+
+#: Sezgir endpointlar — parol tiklash, hisob ochish, eksport. Ular
+#: sekin va qimmat; ularni ketma-ket chaqirish normal ish emas.
+_SEZGIR: dict[str, Limit] = {
+    # 20 — odam daqiqada bir necha marta kiradi, skript esa
+    # oʻnlab marta. Baza tomonidagi bloklash (login_attempts) undan
+    # qatʼiyroq va uzoq muddatli; bu esa arzon birinchi toʻsiq.
+    "/api/v1/auth/login": Limit(requests=20, window=60),
+    "/api/v1/auth/refresh": Limit(requests=30, window=60),
+    "/api/v1/auth/change-password": Limit(requests=5, window=300),
+}
+
+#: Yoʻl boʻlagi bilan boshlanadigan sezgir amallar (id oʻzgaruvchi
+#: boʻlgani uchun aniq moslik ishlamaydi).
+_SEZGIR_PREFIKS: tuple[tuple[str, Limit], ...] = (
+    ("/api/v1/school/staff", Limit(requests=20, window=60)),
+    ("/api/v1/access/", Limit(requests=30, window=60)),
+)
+
+_CHEKLANMAYDI = ("/health", "/health/ready", "/docs", "/openapi.json")
+
+
+def _limit_for(path: str, method: str) -> Limit:
+    aniq = _SEZGIR.get(path)
+    if aniq is not None:
+        return aniq
+    if method != "GET":
+        for prefiks, limit in _SEZGIR_PREFIKS:
+            if path.startswith(prefiks):
+                return limit
+        return _YOZISH
+    return _UMUMIY
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Soʻrovlar chastotasini cheklaydi.
+
+    Kalit — foydalanuvchi tokeni boʻlsa oʻsha, boʻlmasa IP. Nega token
+    afzal: bitta maktab bitta NAT ortidan chiqadi va faqat IP boʻyicha
+    cheklash butun maktabni bitta foydalanuvchi deb hisoblardi.
+
+    Token XESHLANADI: kalit xotirada qoladi va logga tushishi mumkin,
+    tokenning oʻzi esa hech qayerda saqlanmasligi kerak (X-10).
+    """
+
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        yol = request.url.path
+        if yol in _CHEKLANMAYDI:
+            return await call_next(request)
+
+        limit = _limit_for(yol, request.method)
+        kalit = f"{_identity(request)}:{yol if yol in _SEZGIR else request.method}"
+
+        ruxsat, kutish = limiter.check(kalit, limit)
+        if not ruxsat:
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "code": "juda_kop_sorov",
+                    "message": "Juda koʻp soʻrov yuborildi. Birozdan soʻng qayta urinib koʻring.",
+                },
+                headers={"Retry-After": str(kutish)},
+            )
+
+        return await call_next(request)
+
+
+def _identity(request: Request) -> str:
+    """Kim soʻrayapti: token egasi yoki IP."""
+    auth = request.headers.get("Authorization", "")
+    if auth.lower().startswith("bearer "):
+        token = auth[7:]
+        # Token oʻzi kalit boʻlmasin — xeshi yetarli va u logga
+        # tushsa ham zarar yoʻq.
+        return "t:" + hashlib.sha256(token.encode()).hexdigest()[:32]
+    return "ip:" + (request.client.host if request.client else "nomalum")

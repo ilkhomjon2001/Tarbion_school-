@@ -68,6 +68,17 @@ class PasswordChangeRequiredError(AppError):
     message = "Davom etish uchun boshlangʻich parolni almashtiring."
 
 
+class TwoFactorSetupRequiredError(AppError):
+    """X-14: majburiy roldagi foydalanuvchi 2FA ni yoqmagan.
+
+    Alohida kod: frontend buni koʻrib sozlash ekraniga oʻtkazadi.
+    """
+
+    status_code = status.HTTP_403_FORBIDDEN
+    code = "ikki_bosqich_kerak"
+    message = "Davom etish uchun ikki bosqichli tasdiqlashni yoqing."
+
+
 class PermissionDeniedError(AppError):
     """NFR-08 va 6-domen qoidasi."""
 

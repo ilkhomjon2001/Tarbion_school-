@@ -17,9 +17,11 @@ from app.core.exceptions import (
     AuthRequiredError,
     PasswordChangeRequiredError,
     PermissionDeniedError,
+    TwoFactorSetupRequiredError,
 )
 from app.core.security import decode_token
 from app.models import User
+from app.services import twofactor_service
 from app.services.access import CurrentUser
 
 #: Parol almashtirilmaguncha ochiq qoladigan yoʻllar. Roʻyxat qisqa
@@ -33,6 +35,15 @@ PASSWORD_CHANGE_ALLOWED = frozenset(
         "/api/v1/auth/refresh",
     }
 )
+
+#: 2FA yoqilmaguncha ochiq qoladigan yoʻllar (X-14). Sozlash oqimining
+#: oʻzi ochiq boʻlishi shart, aks holda foydalanuvchi 2FA ni yoqa
+#: olmasdan qulflanib qolardi.
+TWO_FACTOR_ALLOWED = PASSWORD_CHANGE_ALLOWED | {
+    "/api/v1/auth/2fa",
+    "/api/v1/auth/2fa/setup",
+    "/api/v1/auth/2fa/enable",
+}
 
 
 def _bearer(request: Request) -> str:
@@ -68,6 +79,17 @@ async def current_user(request: Request, session: SessionDep) -> CurrentUser:
     # va bitta topilgan parol butun sinf maʼlumotini ochib berardi.
     if user.must_change_password and request.url.path not in PASSWORD_CHANGE_ALLOWED:
         raise PasswordChangeRequiredError
+
+    # X-14: administrator, direktor va super administrator butun bazani
+    # koʻradi — ularning bitta paroli butun maktabni ochib beradi.
+    # Ixtiyoriy 2FA — deyarli hech kim yoqmaydigan 2FA, shuning uchun
+    # yoqilmaguncha API yopiq.
+    if (
+        twofactor_service.is_required(user)
+        and not user.two_factor_enabled
+        and request.url.path not in TWO_FACTOR_ALLOWED
+    ):
+        raise TwoFactorSetupRequiredError
 
     return CurrentUser.from_model(user)
 

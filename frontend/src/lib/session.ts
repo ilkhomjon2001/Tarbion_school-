@@ -14,7 +14,12 @@
  */
 
 import { client } from "@/lib/api/client.gen";
-import { authLogin, authLogout, authRefresh } from "@/lib/api/sdk.gen";
+import {
+  authLogin,
+  authLogout,
+  authRefresh,
+  authTwoFactorVerify,
+} from "@/lib/api/sdk.gen";
 import type { UserOut } from "@/lib/api/types.gen";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -56,9 +61,54 @@ export function isAuthenticated(): boolean {
   return accessToken !== null;
 }
 
-export async function login(login: string, password: string): Promise<UserOut> {
+/**
+ * Kirish natijasi.
+ *
+ * 2FA yoqilgan boʻlsa TOKEN BERILMAYDI — faqat `challenge` qaytadi va
+ * ikkinchi bosqich (`verifyTwoFactor`) kerak boʻladi. Parolni bilgan,
+ * kodi yoʻq odam hech qanday token olmaydi (X-14).
+ */
+export type LoginResult =
+  | { kind: "ok"; user: UserOut }
+  | { kind: "2fa"; challenge: string; recoveryAvailable: boolean };
+
+export async function login(login: string, password: string): Promise<LoginResult> {
   configure();
   const { data, error } = await authLogin({ body: { login, password } });
+  if (error || !data) {
+    throw new SessionError(messageOf(error), statusOf(error));
+  }
+
+  // Diskriminator maydonini tekshirib turni ajratamiz. `in` bilan
+  // toraytirish yetmaydi: OpenAPI'dan kelgan ikkala tip ham
+  // ixtiyoriy maydonlarga ega emas va TS ularni birlashtira olmaydi.
+  if ((data as { two_factor_required?: boolean }).two_factor_required) {
+    const challenge = data as unknown as {
+      challenge_token: string;
+      recovery_available: boolean;
+    };
+    return {
+      kind: "2fa",
+      challenge: challenge.challenge_token,
+      recoveryAvailable: challenge.recovery_available,
+    };
+  }
+
+  const token = data as unknown as { access_token: string; user: UserOut };
+  accessToken = token.access_token;
+  currentUser = token.user;
+  return { kind: "ok", user: token.user };
+}
+
+/** Kirishning ikkinchi bosqichi: TOTP kodi yoki tiklash kodi. */
+export async function verifyTwoFactor(
+  challenge: string,
+  code: string,
+): Promise<UserOut> {
+  configure();
+  const { data, error } = await authTwoFactorVerify({
+    body: { challenge_token: challenge, code },
+  });
   if (error || !data) {
     throw new SessionError(messageOf(error), statusOf(error));
   }

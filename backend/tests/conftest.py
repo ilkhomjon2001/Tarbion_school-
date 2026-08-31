@@ -16,7 +16,7 @@ Uch qoida:
 """
 
 import asyncio
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Iterator
 from pathlib import Path
 
 import pytest
@@ -29,6 +29,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from alembic import command
 from app.core.config import settings
 from app.core.db import get_session
+from app.core.ratelimit import limiter
 from app.main import app
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -114,8 +115,41 @@ async def client(session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     async def _override() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
+    # Rate limiter jarayon xotirasida — testlar orasida qoladi va
+    # keyingi test 429 olib qolardi.
+    limiter.reset()
+
     app.dependency_overrides[get_session] = _override
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
         yield c
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def _two_factor_not_required(request: pytest.FixtureRequest) -> Iterator[None]:
+    """Boshqa testlarda 2FA majburiyligi oʻchiriladi.
+
+    X-14 boʻyicha administrator, direktor va super administrator 2FA
+    yoqmaguncha API ga kira olmaydi. Bu toʻgʻri, lekin `test_school_api`
+    yoki `test_schedule_api` da u SHOVQIN: oʻsha fayllar maʼlumotnoma
+    va jadval mantiqini sinaydi, kirish oqimini emas.
+
+    Majburiylikning oʻzi `test_twofactor.py` da toʻliq tekshiriladi —
+    shu sababli u fayl bu fixture'dan chetda qoladi.
+
+    Muhim: bu yerda 2FA XUSUSIYATI emas, faqat MAJBURIYLIGI oʻchadi.
+    Yoqilgan 2FA bilan kirish oqimi hamma joyda ishlaydi.
+    """
+    if request.node.path.name == "test_twofactor.py":
+        yield
+        return
+
+    from app.services import twofactor_service
+
+    asl = twofactor_service.is_required
+    twofactor_service.is_required = lambda _user: False  # type: ignore[assignment]
+    try:
+        yield
+    finally:
+        twofactor_service.is_required = asl  # type: ignore[assignment]

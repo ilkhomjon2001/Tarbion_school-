@@ -1,6 +1,7 @@
 """Auth sxemalari (T-004). TZ: AUT-01, AUT-04."""
 
 import uuid
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -46,3 +47,59 @@ class ChangePasswordIn(BaseModel):
 
     current_password: str = Field(min_length=1, max_length=128)
     new_password: str = Field(min_length=8, max_length=128)
+
+
+# ─────────────────── Ikki bosqichli tasdiqlash (X-14) ───────────────────
+
+
+class TwoFactorRequiredOut(BaseModel):
+    """Parol toʻgʻri, lekin kod kerak.
+
+    Access token BERILMAYDI: parolni bilgan, kodi yoʻq odam hech
+    qanday token olmasin.
+    """
+
+    two_factor_required: Literal[True] = True
+    challenge_token: str
+    #: Tiklash kodi ham qabul qilinishini interfeys aytib tursin.
+    recovery_available: bool
+
+
+class TwoFactorVerifyIn(BaseModel):
+    challenge_token: str
+    #: TOTP kodi yoki tiklash kodi — ikkalasi bitta maydonda.
+    code: str = Field(min_length=6, max_length=16)
+
+
+class TwoFactorSetupOut(BaseModel):
+    """Sekret BIR MARTA qaytadi — keyin uni hech qayerdan olib boʻlmaydi."""
+
+    secret: str
+    #: `otpauth://` — QR ni frontend chizadi.
+    uri: str
+
+
+class TwoFactorEnableIn(BaseModel):
+    code: str = Field(min_length=6, max_length=6)
+
+
+class TwoFactorDisableIn(BaseModel):
+    password: str = Field(min_length=1)
+    code: str = Field(min_length=6, max_length=16)
+
+
+class RecoveryCodesIn(BaseModel):
+    password: str = Field(min_length=1)
+
+
+class RecoveryCodesOut(BaseModel):
+    """Kodlar BIR MARTA koʻrsatiladi — bazada faqat xeshi qoladi."""
+
+    codes: list[str]
+
+
+class TwoFactorStatusOut(BaseModel):
+    enabled: bool
+    #: Rol boʻyicha majburiymi (X-14).
+    required: bool
+    unused_recovery_codes: int

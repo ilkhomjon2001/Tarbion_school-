@@ -655,3 +655,45 @@ Bu ish bilan `components/admin/AdminNotifications.tsx` oʻchirildi — u
 `localStorage` dagi mock ombordan sanoq koʻrsatardi va yonida haqiqiy
 qoʻngʻiroq turishi chalgʻitardi. Ota-ona kabinetidagi eʼlonlar havolasi
 karnay belgichasiga oʻtdi (ikkita bir xil qoʻngʻiroq boʻlmasin).
+
+## 2026-08-31 — TOTP kutubxonasiz yoziladi
+
+`pyotp` oʻrniga standart kutubxona (`hmac`, `hashlib`, `base64`) bilan
+~40 qator. Sabab: har bogʻliqlik yangi hujum yuzasi (supply chain), va
+RFC 6238 kichik hamda oʻzgarmaydigan standart. RFC ning oʻz sinov
+vektorlari testda mahkamlangan — algoritm toʻgʻri yozilganini oʻsha
+isbotlaydi.
+
+## 2026-08-31 — 2FA sozlash ekranida QR kod YOʻQ
+
+QR chizish uchun kutubxona kerak (Reed-Solomon ~250 qator — oʻzi
+yozish oqilona emas). Oʻrniga `otpauth://` havolasi (telefonda ilovani
+ochadi) va qoʻlda kiritiladigan sekret. Ikkalasini ham barcha
+autentifikator ilovalari qoʻllaydi. QR kerak boʻlsa `qrcode` paketi
+qoʻshiladi — loyiha egasidan ruxsat soʻralsin.
+
+## 2026-08-31 — Rate limiting jarayon xotirasida, bazada emas
+
+Redis yoʻq (avvalgi qaror). Har soʻrovda bazaga `INSERT` + `COUNT`
+qilish 30-80 RPS da rate limit'ning oʻzini eng qimmat soʻrovga
+aylantirardi. Xotiradagi sirpanuvchi oyna tanlandi.
+
+Cheklovi ochiq: har worker oʻz hisobini yuritadi va qayta ishga
+tushganda nolga tushadi. Bu qabul qilingan — chegaralar keng va ular
+aniq hisob emas, birinchi toʻsiq. Uzoq muddatli hisob `login_attempts`
+jadvalida qoladi.
+
+## 2026-08-31 — Zaxira OCHIQ KALIT bilan shifrlanadi
+
+`age` ning ochiq kalitli rejimi: server faqat shifrlay oladi, ochish
+kaliti serverdan tashqarida. Parolli arxivda parol serverning oʻzida
+turardi va serverni buzib kirgan odam butun zaxira tarixini ochib
+olardi — ya'ni zaxira hujumchining ishini osonlashtirardi.
+
+## 2026-08-31 — IP boʻyicha bloklash TURLI LOGINLAR sonini sanaydi
+
+Xatolar sonini sanash butun maktabni bloklab qoʻyardi: hammasi bitta
+NAT ortidan chiqadi va oʻquv yili boshida 500 kishi parolini xato
+teradi. Oddiy foydalanuvchi oʻzining bitta loginida adashadi, hujumchi
+esa oʻnlab login boʻyicha urinadi — bu ikkisini ajratadigan yagona
+ishonchli belgi.

@@ -154,12 +154,24 @@ async def authenticate(
         ip=ip,
     )
 
+    await session.commit()
+    return user, *await issue_session(session, user, ip=ip, user_agent=user_agent)
+
+
+async def issue_session(
+    session: AsyncSession, user: User, *, ip: str | None, user_agent: str | None
+) -> tuple[str, str]:
+    """Access va refresh token beradi.
+
+    Alohida funksiya: 2FA yoqilgan boʻlsa tokenlar kirish paytida emas,
+    KOD TASDIQLANGANDAN keyin beriladi (`twofactor_service`).
+    """
     access, _ = create_token(user.id, "access", roles=user.role_names)
     refresh = await _issue_refresh(
         session, user_id=user.id, family_id=uuid.uuid4(), ip=ip, user_agent=user_agent
     )
     await session.commit()
-    return user, access, refresh
+    return access, refresh
 
 
 async def _issue_refresh(

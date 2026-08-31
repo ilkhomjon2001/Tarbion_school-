@@ -8,6 +8,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
+    BigInteger,
     DateTime,
     ForeignKey,
     Index,
@@ -82,6 +83,21 @@ class User(Entity):
     # va "istisno yoʻq" holatlari farqlanmasdi, va har sahifa yuklashda
     # qoʻshimcha JOIN kerak boʻlardi. Oʻzgarish tarixi `audit_log` da.
     section_overrides: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
+
+    # --- Ikki bosqichli tasdiqlash (X-14) ---
+    #
+    # Sekret PAROL EMAS, lekin unga teng qiymatga ega: uni bilgan odam
+    # istalgan kodni yasay oladi. Shu sababli u hech qachon javobda
+    # qaytmaydi — faqat sozlash paytida bir marta.
+    totp_secret: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    totp_enabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Oxirgi ishlatilgan qadam — bir kod ikki marta ishlatilmasin.
+    # Yelka ortidan koʻrgan odam oʻsha 30 soniyada kira olmasin.
+    totp_last_step: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+
+    @property
+    def two_factor_enabled(self) -> bool:
+        return self.totp_enabled_at is not None and self.totp_secret is not None
 
     roles: Mapped[list[Role]] = relationship(
         secondary="user_roles", lazy="selectin", order_by=Role.name
@@ -234,3 +250,26 @@ class UserPermission(Entity):
     granted_by_id: Mapped[uuid.UUID | None] = mapped_column(
         PgUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
+
+
+class TwoFactorRecoveryCode(Entity):
+    """Telefon yoʻqolganda kirish uchun bir martalik kod (X-14).
+
+    2FA ni majburiy qilib, tiklash yoʻlini bermaslik — administratorni
+    tizimdan butunlay chiqarib yuborish demakdir. Telefon sinadi,
+    yoʻqoladi va oʻgʻirlanadi.
+
+    Kod XESHLANGAN saqlanadi: baza sizib chiqsa u bilan kirib boʻlmasin.
+    Ishlatilgani oʻchirilmaydi — `used_at` qoʻyiladi, shunda "qachon
+    tiklash kodi ishlatildi" savoli javobsiz qolmaydi (1-qoida).
+    """
+
+    __tablename__ = "two_factor_recovery_codes"
+    __table_args__ = (Index("ix_2fa_recovery_user", "user_id", "used_at"),)
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    code_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    used_ip: Mapped[str | None] = mapped_column(INET)

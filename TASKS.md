@@ -481,7 +481,7 @@ Admin e'lon chop etadi → tegishli foydalanuvchilarga outbox orqali yuboriladi.
 
 ## Yopish
 
-### [ ] T-021 · Audit jurnali
+### [~] T-021 · Audit jurnali
 **TZ:** NFR-10, DAV-07
 **Kerak:** T-013
 **Frontend:** ✅ tayyor — `/admin/audit` — 16 turdagi amal, filtr (amal turi va matn boʻyicha), CSV eksport. Tahrirlash va oʻchirish tugmasi ATAYLAB yoʻq. Admin panelidagi har bir amal yozuv qoldiradi.
@@ -496,7 +496,7 @@ Admin uchun ko'rish sahifasi: filtr — obyekt turi, foydalanuvchi, sana.
 
 ---
 
-### [ ] T-022 · Zaxira nusxa va deploy
+### [~] T-022 · Zaxira nusxa va deploy
 **TZ:** NFR-07, NFR-09, NFR-12
 **Kerak:** T-001
 **Frontend:** ⬜ yoʻq — Deploy, HTTPS, zaxira nusxa — hech biri yoʻq.
@@ -505,10 +505,15 @@ VPS: Nginx + HTTPS (Let's Encrypt), systemd birliklari (api, worker, bot).
 Har kunlik `pg_dump` → siqish → R2 ga yuklash, 30 kun saqlash.
 Tiklash skripti va uni sinovdan o'tkazish yo'riqnomasi.
 
+**Zaxira qismi tayyor:** `scripts/backup.sh` (age ochiq kalit bilan
+shifrlash), `scripts/restore_check.sh` (tiklab tekshirish),
+`docs/ZAXIRA.md`. Deploy (HTTPS, systemd) hali yo'q.
+
 **Tayyor:**
 - [ ] HTTP → HTTPS yo'naltiriladi
 - [ ] Xizmatlar qayta ishga tushirilganda avtomatik ko'tariladi
-- [ ] Zaxiradan tiklash **amalda** sinovdan o'tkazilgan va hujjatlashtirilgan
+- [~] Zaxiradan tiklash sinovdan o'tkazilgan — quvur lokal bazada
+      tekshirildi (gpg bilan); serverda `age` bilan qayta sinash kerak
 
 ---
 

@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.middleware import MAX_BODY_BYTES, _first_forwarded, _in_networks, _parse_networks
+from app.core.ratelimit import limiter
 from app.core.security import hash_password, verify_password_constant_time
 from app.models import LoginAttempt, Role, RoleName, User
 
@@ -168,6 +169,8 @@ async def test_ip_boyicha_bloklash(client: AsyncClient, session: AsyncSession, u
     )
     assert len({u.login for u in urinishlar}) >= settings.login_max_logins_per_ip
 
+    limiter.reset()
+
     # Endi TOʻGʻRI parol bilan ham kirib boʻlmaydi: IP bloklangan.
     r = await client.post("/api/v1/auth/login", json={"login": "sec.ustoz", "password": PASSWORD})
     assert r.status_code == 423, r.text
@@ -180,6 +183,11 @@ async def test_bitta_login_boyicha_kop_xato_ipni_bloklamaydi(
     butun maktab (bitta NAT) bloklanib qolmasligi kerak."""
     for _ in range(settings.login_max_logins_per_ip + 5):
         await client.post("/api/v1/auth/login", json={"login": "boshqa.odam", "password": "xato"})
+
+    # Chastota chegarasini tushiramiz: bu test BAZA tomonidagi
+    # bloklashni sinaydi, xotiradagi rate limit'ni emas. Haqiqiy
+    # hayotda bu urinishlar vaqtga yoyilgan boʻlardi.
+    limiter.reset()
 
     # Bitta login boʻyicha xato — IP bloklanmaydi. `sec.ustoz` oʻzining
     # chegarasiga yetmagani uchun kira oladi.
@@ -299,3 +307,55 @@ def test_ishlab_chiqarishda_xavfli_sozlama_rad_etiladi() -> None:
     # ishlash HTTP orqali boʻladi va bu normal.
     lokal = Settings(**{**asos, "app_env": "development", "cookie_secure": False})  # type: ignore[arg-type]
     assert lokal.is_production is False
+
+
+# ─────────────────── Rate limiting ───────────────────
+
+
+async def test_sorovlar_chastotasi_cheklanadi(client: AsyncClient, user: User) -> None:
+    """Kirish endpointi arzon birinchi toʻsiq bilan himoyalangan.
+
+    Baza tomonidagi bloklash (`login_attempts`) qatʼiyroq va uzoq
+    muddatli, lekin u har urinishda bazaga boradi. Rate limit esa
+    xotirada ishlaydi va hujumni bazaga yetib kelishidan oldin toʻsadi.
+    """
+    from app.core.middleware import _SEZGIR
+
+    limit = _SEZGIR["/api/v1/auth/login"].requests
+    kodlar = []
+    for _ in range(limit + 3):
+        r = await client.post(
+            "/api/v1/auth/login", json={"login": "sec.ustoz", "password": "xato"}
+        )
+        kodlar.append(r.status_code)
+
+    assert 429 in kodlar, "chastota chegarasi ishlamadi"
+    oxirgi = await client.post(
+        "/api/v1/auth/login", json={"login": "sec.ustoz", "password": "xato"}
+    )
+    assert oxirgi.status_code == 429
+    assert "Retry-After" in oxirgi.headers
+
+
+async def test_salomatlik_tekshiruvi_cheklanmaydi(client: AsyncClient) -> None:
+    """Monitoring har 10 soniyada soʻraydi — u bloklanmasligi kerak."""
+    for _ in range(50):
+        r = await client.get("/health")
+        assert r.status_code == 200
+
+
+def test_sirpanuvchi_oyna_hisobi() -> None:
+    """Algoritmning oʻzi: N tadan keyin rad etadi."""
+    from app.core.ratelimit import Limit, SlidingWindowLimiter
+
+    lim = SlidingWindowLimiter()
+    chegara = Limit(requests=3, window=60)
+
+    assert [lim.check("a", chegara)[0] for _ in range(3)] == [True, True, True]
+
+    ruxsat, kutish = lim.check("a", chegara)
+    assert ruxsat is False
+    assert kutish > 0
+
+    # Boshqa kalit mustaqil — bir foydalanuvchi boshqasini bloklamaydi.
+    assert lim.check("b", chegara)[0] is True

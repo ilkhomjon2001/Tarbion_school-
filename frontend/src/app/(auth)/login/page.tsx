@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { signIn } from "@/lib/auth";
+import { completeTwoFactor, signIn } from "@/lib/auth";
 import { ROLE_HOME } from "@/lib/roles";
 import { SessionError } from "@/lib/session";
 
@@ -33,6 +33,42 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [remember, setRemember] = useState(false);
 
+  /** Ikkinchi bosqich uchun challenge — `null` boʻlsa parol formasi. */
+  const [challenge, setChallenge] = useState<string | null>(null);
+  const [recoveryAvailable, setRecoveryAvailable] = useState(false);
+  const [code, setCode] = useState("");
+
+  async function onVerify(event: React.FormEvent) {
+    event.preventDefault();
+    if (challenge === null) return;
+
+    setError(null);
+    setLoading(true);
+    try {
+      const { role, mustChangePassword } = await completeTwoFactor(
+        challenge,
+        code.trim(),
+        remember,
+      );
+      router.replace(mustChangePassword ? "/parol" : ROLE_HOME[role]);
+    } catch (err) {
+      setLoading(false);
+      setCode("");
+      // Challenge muddati 5 daqiqa. Tugagan boʻlsa parolni qaytadan
+      // soʻraymiz — aks holda odam nima boʻlganini tushunmaydi.
+      if (err instanceof SessionError && err.status === 401) {
+        setError(err.message);
+        if (err.message.includes("muddati")) setChallenge(null);
+        return;
+      }
+      setError(
+        err instanceof SessionError
+          ? err.message
+          : "Serverga ulanib boʻlmadi. Internetni tekshiring.",
+      );
+    }
+  }
+
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
@@ -49,13 +85,19 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      const { role, mustChangePassword } = await signIn(
-        userLogin.trim(),
-        password,
-        remember,
-      );
+      const natija = await signIn(userLogin.trim(), password, remember);
+
+      // 2FA yoqilgan — token hali berilmagan. Ikkinchi bosqichga
+      // oʻtamiz; parol formasi almashadi (X-14).
+      if (natija.needsTwoFactor) {
+        setLoading(false);
+        setChallenge(natija.challenge);
+        setRecoveryAvailable(natija.recoveryAvailable);
+        return;
+      }
+
       // Boshlangʻich 5 xonali parol doimiy qolib ketmasin.
-      router.replace(mustChangePassword ? "/parol" : ROLE_HOME[role]);
+      router.replace(natija.mustChangePassword ? "/parol" : ROLE_HOME[natija.role]);
     } catch (err) {
       setLoading(false);
       // 423 — AUT-05 boʻyicha hisob vaqtincha bloklangan.
@@ -89,12 +131,73 @@ export default function LoginPage() {
       {/* --- Oʻng: forma --- */}
       <div className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6">
         <div className="w-full max-w-[400px]">
-          <h1 className="text-h2 font-bold">Xush kelibsiz</h1>
+          <h1 className="text-h2 font-bold">
+            {challenge === null ? "Xush kelibsiz" : "Tasdiqlash kodi"}
+          </h1>
           <p className="mt-1 text-sm text-foreground-muted">
-            Hisobingizga kirish uchun maʼlumotlarni kiriting.
+            {challenge === null
+              ? "Hisobingizga kirish uchun maʼlumotlarni kiriting."
+              : "Ilovadagi 6 xonali kodni kiriting."}
           </p>
 
-          <form onSubmit={onSubmit} className="mt-7 space-y-4" noValidate>
+          {/* Ikkinchi bosqich: parol allaqachon tasdiqlangan, lekin
+              token hali berilmagan (X-14). */}
+          {challenge !== null && (
+            <form onSubmit={onVerify} className="mt-7 space-y-4" noValidate>
+              <div>
+                <label htmlFor="code" className="block text-sm font-medium">
+                  Kod
+                </label>
+                <input
+                  id="code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.slice(0, 16))}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  autoFocus
+                  placeholder="123456"
+                  className="num mt-1.5 h-11 w-full rounded-lg border border-border bg-surface px-3 text-center text-lg tracking-[0.3em] outline-none transition-colors focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
+                />
+                {recoveryAvailable && (
+                  <p className="mt-1.5 text-xs text-foreground-muted">
+                    Telefoningiz yoʻqmi? Tiklash kodini shu yerga kiriting.
+                  </p>
+                )}
+              </div>
+
+              {error && (
+                <p role="alert" className="rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || code.trim().length < 6}
+                className="focus-ring h-11 w-full rounded-lg bg-brand text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark disabled:opacity-50"
+              >
+                {loading ? "Tekshirilmoqda…" : "Tasdiqlash"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setChallenge(null);
+                  setCode("");
+                  setError(null);
+                }}
+                className="focus-ring h-9 w-full rounded-lg text-sm font-medium text-foreground-muted hover:underline"
+              >
+                Orqaga
+              </button>
+            </form>
+          )}
+
+          <form
+            onSubmit={onSubmit}
+            className={`mt-7 space-y-4 ${challenge !== null ? "hidden" : ""}`}
+            noValidate
+          >
             <div>
               <label htmlFor="login" className="block text-sm font-medium">
                 Login

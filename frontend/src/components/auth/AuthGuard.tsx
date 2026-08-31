@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { currentRole, restore } from "@/lib/auth";
 import { ROLE_CABINET, ROLE_HOME, type UserRole } from "@/lib/roles";
 import { getUser, isAuthenticated } from "@/lib/session";
+import { twoFactorStatus } from "@/lib/twofactor";
 
 /**
  * Kirish tekshiruvi.
@@ -53,6 +54,18 @@ export function AuthGuard({
       if (getUser()?.must_change_password && pathname !== "/parol") {
         router.replace("/parol");
         return;
+      }
+
+      // X-14: administrator, direktor va super administratorda 2FA
+      // majburiy. Server ham buni tekshiradi (`ikki_bosqich_kerak`) —
+      // bu yerdagi yoʻnaltirish faqat qulaylik: aks holda odam hamma
+      // joyda 403 koʻrib, sababini tushunmasdi.
+      if (pathname !== "/ikki-bosqich") {
+        const holat = await twoFactorStatus().catch(() => null);
+        if (holat && holat.required && !holat.enabled) {
+          router.replace("/ikki-bosqich");
+          return;
+        }
       }
 
       const actual = currentRole();

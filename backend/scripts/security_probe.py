@@ -22,6 +22,9 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent.parent))
+from app.core import totp  # noqa: E402
+
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
 
 BASE = "http://localhost:8000"
@@ -66,11 +69,49 @@ def sarlavha(matn: str) -> None:
     print(f"\n── {matn} " + "─" * max(0, 58 - len(matn)))
 
 
-def login(login_name: str, parol: str) -> str | None:
+def login(login_name: str, parol: str, *, secret: str | None = None) -> str | None:
+    """Kirish. 2FA yoqilgan boʻlsa ikkinchi bosqich ham oʻtiladi."""
     st, body, _ = call("POST", "/auth/login", body={"login": login_name, "password": parol})
-    if st != 200:
+    if st != 200 or not isinstance(body, dict):
         return None
-    return body["access_token"]  # type: ignore[index]
+
+    if body.get("two_factor_required"):
+        if secret is None:
+            return None
+        kod = totp._code_at(secret, totp.current_step() + 1)
+        st, body, _ = call(
+            "POST",
+            "/auth/2fa/verify",
+            body={"challenge_token": body["challenge_token"], "code": kod},
+        )
+        if st != 200 or not isinstance(body, dict):
+            return None
+
+    return body["access_token"]
+
+
+def ensure_2fa(token: str) -> str | None:
+    """Majburiy roldagi hisobda 2FA ni yoqadi va sekretni qaytaradi.
+
+    X-14 boʻyicha administrator 2FA yoqmaguncha API ga kira olmaydi —
+    tekshiruv shu qadamdan boshlanadi.
+    """
+    st, holat, _ = call("GET", "/auth/2fa", token)
+    if st != 200 or not isinstance(holat, dict):
+        return None
+    if holat["enabled"]:
+        # Sekret faqat sozlash paytida beriladi; allaqachon yoqilgan
+        # boʻlsa uni bu yerdan olib boʻlmaydi.
+        return None
+
+    st, sozlash, _ = call("POST", "/auth/2fa/setup", token)
+    if st != 200 or not isinstance(sozlash, dict):
+        return None
+    sekret = sozlash["secret"]
+
+    kod = totp._code_at(sekret, totp.current_step())
+    st, _, _ = call("POST", "/auth/2fa/enable", token, {"code": kod})
+    return sekret if st == 200 else None
 
 
 def reset(sa: str, user_id: str) -> tuple[str, str]:
@@ -99,10 +140,26 @@ def main() -> int:
         return 1
 
     sa_parol = input("Superadmin paroli: ").strip() if not sys.argv[1:] else sys.argv[1]
-    sa = login("bekmurodov.ikrom", sa_parol)
+    sa_sekret = sys.argv[2] if len(sys.argv) > 2 else None
+    sa = login("bekmurodov.ikrom", sa_parol, secret=sa_sekret)
     if sa is None:
         print("Superadmin bilan kirib boʻlmadi.")
+        print("2FA yoqilgan boʻlsa TOTP sekretini ikkinchi argument qilib bering.")
         return 1
+
+    # X-14: super administratorda 2FA majburiy. Yoqilmagan boʻlsa
+    # yoqamiz — aks holda hamma soʻrov `403` bilan qaytadi.
+    st, _, _ = call("GET", "/school/staff", sa)
+    if st == 403:
+        yangi_sekret = ensure_2fa(sa)
+        if yangi_sekret is None:
+            print("Super administratorda 2FA ni yoqib boʻlmadi.")
+            return 1
+        print(f"  super administratorga 2FA yoqildi | sekret: {yangi_sekret}")
+        sa = login("bekmurodov.ikrom", sa_parol, secret=yangi_sekret)
+        if sa is None:
+            print("2FA yoqilgach kirib boʻlmadi.")
+            return 1
 
     # ─────────────────── Ishtirokchilarni tayyorlash ───────────────────
 

@@ -417,14 +417,63 @@ uv run python scripts/security_probe.py <superadmin-paroli>   # ishlab turgan se
 ma'lumotini so'rash, boshqa ustozning jurnaliga kirish, test javoblarini
 oldindan olish, huquq oshirish, soxta ball yuborish. 45 ta tekshiruv.
 
+### Ikki bosqichli tasdiqlash (X-14)
+
+Administrator, direktor va super administrator butun bazani ko'radi —
+ularning bitta paroli butun maktabning ma'lumotini ochib beradi.
+Ular uchun 2FA **majburiy**: yoqilmaguncha API yopiq.
+
+| Qaror | Sabab |
+|---|---|
+| TOTP kutubxonasiz (RFC 6238) | har bog'liqlik yangi hujum yuzasi; RFC sinov vektorlari testda |
+| Kirish **ikki bosqichda** | parolni bilgan, kodi yo'q odam hech qanday token olmaydi |
+| Bir kod ikki marta ishlatilmaydi | yelka ortidan ko'rgan odam o'sha 30 soniyada kira olmasin |
+| Tiklash kodlari majburiy | telefon sinadi, yo'qoladi, o'g'irlanadi — kirish yo'lisiz 2FA administratorni tizimdan chiqarib yuboradi |
+| Majburiy rolda o'chirib bo'lmaydi | aks holda X-14 ni bir bosishda aylanib o'tish mumkin edi |
+| O'chirishda parol VA kod | biri yolg'iz yetarli bo'lmasin |
+
+### Audit jurnali o'zgartirilmaydi (T-021)
+
+Taqiq **bazada**, trigger orqali — ilovada emas. Audit jurnali aynan
+ilovaga ishonib bo'lmagan holat uchun kerak: xodim o'z izini yashirsa,
+hujumchi tarixni tozalasa yoki kimdir `psql` ochib `DELETE` yozsa.
+
+`UPDATE`, `DELETE` va **`TRUNCATE`** ham to'siladi. Uchinchisi alohida:
+`TRUNCATE` qator triggerini umuman chaqirmaydi va usiz butun jurnalni
+bir buyruq bilan o'chirib bo'lardi. `login_log` ham xuddi shunday.
+
+### So'rovlar chastotasi
+
+| Yo'l | Chegara | Sabab |
+|---|---|---|
+| `/auth/login` | 20 / daq | brute-force uchun arzon birinchi to'siq |
+| `/auth/change-password` | 5 / 5 daq | parol taxmin qilishga urinish |
+| yozish amallari | 60 / daq | bitta odam daqiqada 60 marta baho qo'ymaydi |
+| o'qish | 300 / daq | chegara **oddiy ishni to'smasligi** kerak |
+
+Kalit — token xeshi (bo'lsa), aks holda IP. Nega token afzal: bitta
+maktab bitta NAT ortidan chiqadi.
+
+Cheklovi ochiq: hisob jarayon xotirasida, ya'ni har worker o'zini
+yuritadi va qayta ishga tushganda nolga tushadi (DECISIONS.md).
+
+### Zaxira nusxa (X-12)
+
+Batafsil: [`ZAXIRA.md`](ZAXIRA.md).
+
+Qisqasi: `age` ning **ochiq kalitli** rejimi — server faqat shifrlay
+oladi, ochish kaliti serverdan tashqarida. Serverni buzib kirgan odam
+eski zaxiralarni ocha olmaydi.
+
+`restore_check.sh` zaxirani vaqtinchalik bazaga tiklab, jadval
+sanoqlarini va audit triggerlarini tekshiradi. Faqat "xatosiz
+tiklandi" yetarli emas — **bo'sh baza ham xatosiz tiklanadi**.
+
 ### Hali qilinmagan
 
-- **2FA** administrator va direktor uchun (X-14) — TZ'da yo'q, lekin majburiy.
-- **Umumiy rate limiting** — hozir faqat kirish cheklangan. Boshqa
-  endpointlar uchun autentifikatsiyadan keyingi cheklov kerak
-  (masalan bir foydalanuvchi daqiqada N so'rov).
-- **Audit jurnalini o'zgartirishdan to'sadigan trigger** (T-021).
-- **Zaxira nusxa shifrlash** (X-12, T-022).
+- **Zaxira olinmaganini aniqlash** — cron jimgina yiqilsa hech kim bilmaydi.
+- **Nuqtaviy tiklash (PITR)** — hozir eng ko'pi bir kunlik ma'lumot yo'qoladi.
+- **Deploy** — HTTPS, systemd birliklari (T-022 ning qolgan qismi).
 
 ---
 

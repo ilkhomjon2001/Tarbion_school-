@@ -29,6 +29,7 @@ from app.core.db import SessionDep, engine
 from app.core.exceptions import AppError, app_error_handler, unhandled_error_handler
 from app.core.middleware import (
     BodySizeLimitMiddleware,
+    RateLimitMiddleware,
     RealClientIPMiddleware,
     SecurityHeadersMiddleware,
 )
@@ -86,6 +87,7 @@ app.add_middleware(
     max_age=600,
 )
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(BodySizeLimitMiddleware)
 app.add_middleware(RealClientIPMiddleware)
 

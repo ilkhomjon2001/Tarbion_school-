@@ -26,14 +26,17 @@ const REMEMBER_KEY = "tarbion.auth.remember";
 const ROLE_HINT_KEY = "tarbion.auth.role";
 
 /** Kirish. Rol serverdan keladi — tanlanmaydi. */
-export async function signIn(
-  login: string,
-  password: string,
-  remember: boolean,
-): Promise<{ role: UserRole; mustChangePassword: boolean }> {
-  const user = await session.login(login, password);
-  const role = primaryRole(user.roles);
+/**
+ * Kirish natijasi.
+ *
+ * `needsTwoFactor` — parol toʻgʻri, lekin kod kerak (X-14). Bu holatda
+ * token BERILMAGAN va sahifa ikkinchi bosqichni koʻrsatishi kerak.
+ */
+export type SignInResult =
+  | { needsTwoFactor: false; role: UserRole; mustChangePassword: boolean }
+  | { needsTwoFactor: true; challenge: string; recoveryAvailable: boolean };
 
+function rememberRole(role: UserRole, remember: boolean): void {
   try {
     if (remember) localStorage.setItem(REMEMBER_KEY, "1");
     else localStorage.removeItem(REMEMBER_KEY);
@@ -42,7 +45,41 @@ export async function signIn(
   } catch {
     /* xotira bloklangan — kirish baribir ishlaydi */
   }
+}
 
+export async function signIn(
+  login: string,
+  password: string,
+  remember: boolean,
+): Promise<SignInResult> {
+  const natija = await session.login(login, password);
+
+  if (natija.kind === "2fa") {
+    return {
+      needsTwoFactor: true,
+      challenge: natija.challenge,
+      recoveryAvailable: natija.recoveryAvailable,
+    };
+  }
+
+  const role = primaryRole(natija.user.roles);
+  rememberRole(role, remember);
+  return {
+    needsTwoFactor: false,
+    role,
+    mustChangePassword: natija.user.must_change_password,
+  };
+}
+
+/** Kirishning ikkinchi bosqichi. */
+export async function completeTwoFactor(
+  challenge: string,
+  code: string,
+  remember: boolean,
+): Promise<{ role: UserRole; mustChangePassword: boolean }> {
+  const user = await session.verifyTwoFactor(challenge, code);
+  const role = primaryRole(user.roles);
+  rememberRole(role, remember);
   return { role, mustChangePassword: user.must_change_password };
 }
 
