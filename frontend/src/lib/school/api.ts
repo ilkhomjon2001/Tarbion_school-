@@ -24,6 +24,7 @@ import {
   schoolResetStaffPassword,
   schoolSetStaffSubjects,
   schoolStaff,
+  schoolStudents,
   schoolSubjects,
 } from "@/lib/api/sdk.gen";
 import type {
@@ -32,6 +33,7 @@ import type {
   ScheduleEntryOut,
   StaffCreatedOut,
   StaffOut,
+  StudentListRowOut,
   SubjectOut,
   TeacherLoadOut,
 } from "@/lib/api/types.gen";
@@ -43,6 +45,7 @@ export type {
   ScheduleEntryOut,
   StaffCreatedOut,
   StaffOut,
+  StudentListRowOut,
   SubjectOut,
   TeacherLoadOut,
 };
@@ -82,6 +85,22 @@ export async function fetchClasses(): Promise<ClassOut[]> {
 
 export async function fetchStaff(): Promise<StaffOut[]> {
   return withAuth<StaffOut[]>(() => schoolStaff());
+}
+
+/**
+ * Oʻquvchilar roʻyxati.
+ *
+ * Kesim SOʻROV darajasida serverda: ustoz oʻz sinfini, ota-ona faqat
+ * oʻz farzandini oladi (X-1). Roʻyxatda tugʻilgan sana va telefon YOʻQ
+ * — ular kartochkada (X-6).
+ */
+export async function fetchStudents(filter?: {
+  classId?: string;
+  query?: string;
+}): Promise<StudentListRowOut[]> {
+  return withAuth<StudentListRowOut[]>(() =>
+    schoolStudents({ query: { class_id: filter?.classId, q: filter?.query } }),
+  );
 }
 
 // ─────────────────────────── Xodimlar ───────────────────────────

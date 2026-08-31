@@ -31,7 +31,7 @@ class ClassSubjectOut(BaseModel):
     weekly_hours: int
 
 
-class StudentRowOut(BaseModel):
+class StudentListRowOut(BaseModel):
     """Roʻyxatdagi qator — shaxsiy maʼlumotsiz (X-6)."""
 
     id: uuid.UUID

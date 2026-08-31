@@ -4,12 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAccess } from "@/lib/access-api";
 import { BrandLogo } from "@/components/ui/BrandLogo";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { DEMO_LESSONS, DEMO_TEACHER } from "@/lib/teacher/data";
+import { getTodayLessons } from "@/lib/teacher/attendance-api";
+import { useTeacherMe } from "@/lib/teacher/me";
 import { classColor } from "@/lib/teacher/schedule";
-
-const TODAY_LESSONS = DEMO_LESSONS;
+import type { TeacherLesson } from "@/lib/teacher/types";
+import { logout } from "@/lib/auth";
 
 /**
  * Ustoz paneli qobigʻi — Stitch dizayni boʻyicha: chapda 260px doimiy
@@ -67,7 +68,20 @@ export function TeacherShell({
   // Menyu SERVERDAN kelgan boʻlimlar boʻyicha filtrlanadi (T-005).
   // Super administrator ustozdan boʻlimni olib qoʻysa, u shu yerda
   // yoʻqoladi. Bu HIMOYA EMAS — soʻrovni server baribir tekshiradi.
-  const { sections, loading: accessLoading } = useAccess();
+  const { sections } = useAccess();
+  const me = useTeacherMe();
+
+  // Sidebardagi «Bugungi jadval» — serverdan, mock emas.
+  const [today, setToday] = useState<TeacherLesson[]>([]);
+  useEffect(() => {
+    let alive = true;
+    getTodayLessons()
+      .then((rows) => alive && setToday(rows))
+      .catch(() => alive && setToday([]));
+    return () => {
+      alive = false;
+    };
+  }, []);
   const groups = useMemo(
     () =>
       NAV_GROUPS.map((g) => ({
@@ -144,7 +158,7 @@ export function TeacherShell({
               </div>
 
               <ul className="space-y-1 px-1">
-                {TODAY_LESSONS.map((lesson) => (
+                {today.map((lesson) => (
                   <li key={lesson.id}>
                     <Link
                       href={`/teacher/davomat/${lesson.id}`}
@@ -166,6 +180,11 @@ export function TeacherShell({
                     </Link>
                   </li>
                 ))}
+                {today.length === 0 && (
+                  <li className="px-3 py-1.5 text-[11px] text-foreground-muted">
+                    Bugun dars yoʻq
+                  </li>
+                )}
               </ul>
             </div>
           </nav>
@@ -173,22 +192,25 @@ export function TeacherShell({
           <div className="border-t border-border p-3">
             <div className="flex items-center gap-3 rounded-lg px-2 py-2">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-tint text-sm font-semibold text-brand-dark">
-                {DEMO_TEACHER.fullName.charAt(0)}
+                {me.fullName.charAt(0) || "?"}
               </span>
               <span className="min-w-0">
                 <span className="block truncate text-sm font-medium">
-                  {DEMO_TEACHER.shortName}
+                  {me.shortName || "…"}
                 </span>
-                <span className="block text-xs text-foreground-muted">Ustoz</span>
+                <span className="block text-xs text-foreground-muted">
+                  {me.isHomeroom ? "Sinf rahbari" : "Ustoz"}
+                </span>
               </span>
             </div>
-            <Link
-              href="/login"
-              className="mt-1 flex h-9 items-center gap-2 rounded-lg px-3 text-sm text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+            <button
+              type="button"
+              onClick={() => void logout()}
+              className="mt-1 flex h-9 w-full items-center gap-2 rounded-lg px-3 text-sm text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
             >
               <LogoutIcon />
               Chiqish
-            </Link>
+            </button>
           </div>
         </div>
       </aside>

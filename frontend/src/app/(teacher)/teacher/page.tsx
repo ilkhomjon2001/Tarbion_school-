@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { TeacherShell } from "@/components/teacher/TeacherShell";
 import { TodaySummary } from "@/components/teacher/TodaySummary";
-import { DEMO_DATE_LABEL } from "@/lib/teacher/data";
+import { todayLabel } from "@/lib/teacher/me";
 import { getTodayLessons } from "@/lib/teacher/attendance-api";
 import type { TeacherLesson } from "@/lib/teacher/types";
 
@@ -27,7 +27,7 @@ export default function TeacherTodayPage() {
   const total = lessons?.length ?? 0;
 
   return (
-    <TeacherShell title="Bugungi darslar" subtitle={DEMO_DATE_LABEL}>
+    <TeacherShell title="Bugungi darslar" subtitle={todayLabel()}>
       {/* Kutilayotgan ishlar — ustoz nima qilishi kerakligini darhol koʻrsin */}
       <TodaySummary lessons={lessons} />
 

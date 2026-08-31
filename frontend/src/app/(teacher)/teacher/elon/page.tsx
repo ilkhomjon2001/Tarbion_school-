@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { TeacherShell } from "@/components/teacher/TeacherShell";
-import { DEMO_LESSONS } from "@/lib/teacher/data";
+import { fetchClasses } from "@/lib/school/api";
+import { useMyTeaching } from "@/lib/teacher/me";
 import { classColor } from "@/lib/teacher/schedule";
 import { loadCollection, saveCollection } from "@/lib/teacher/store";
 import {
@@ -23,31 +24,47 @@ import {
  * qabul mezoni. Ustoz "21 kishiga ketadi" deb bilib turib bosadi.
  */
 
-/** Ustozning sinflari va fanlari — jadvaldan olinadi. */
-const MY_CLASSES = Array.from(new Set(DEMO_LESSONS.map((l) => l.className)));
-const MY_SUBJECTS = Array.from(new Set(DEMO_LESSONS.map((l) => l.subject)));
-
-/** Sinfdagi vasiylar soni (demo). Backendda `guardians` dan hisoblanadi. */
-const CLASS_RECIPIENTS: Record<string, number> = {
-  "11-A": 21,
-  "9-B": 18,
-  "10-A": 19,
-};
-
-function recipientsFor(kind: AudienceKind, target: string): number {
-  if (kind === "class") return CLASS_RECIPIENTS[target] ?? 0;
-  // Fan boʻyicha — shu fandan dars beradigan barcha sinflar
-  return DEMO_LESSONS.filter((l) => l.subject === target)
-    .map((l) => l.className)
-    .filter((c, i, arr) => arr.indexOf(c) === i)
-    .reduce((sum, c) => sum + (CLASS_RECIPIENTS[c] ?? 0), 0);
-}
+/**
+ * Sinf va fan roʻyxati ustozning OʻZ dars jadvalidan (`useMyTeaching`).
+ *
+ * Qabul qiluvchilar soni sinfdagi oʻquvchilar sonidan olinadi
+ * (`/school/classes`). Bu taxminiy: haqiqiy adresatlar `guardians`
+ * jadvalidan chiqadi va T-020 da serverda hisoblanadi — hozircha
+ * ustozga "taxminan nechta oilaga ketadi" degan tasavvur beradi.
+ */
 
 export default function AnnouncementsPage() {
+  const { classes, subjects, slots } = useMyTeaching();
+  const [sizes, setSizes] = useState<Record<string, number>>({});
+
+  const MY_CLASSES = classes.map((c) => c.name);
+  const MY_SUBJECTS = subjects.map((s) => s.name);
+
+  function recipientsFor(kind: AudienceKind, target: string): number {
+    if (kind === "class") return sizes[target] ?? 0;
+    const sinflar = new Set(
+      slots.filter((s) => s.subjectName === target).map((s) => s.className),
+    );
+    return [...sinflar].reduce((sum, c) => sum + (sizes[c] ?? 0), 0);
+  }
+
   const [items, setItems] = useState<Announcement[]>(DEMO_ANNOUNCEMENTS);
 
   useEffect(() => {
     setItems(loadCollection("announcements", DEMO_ANNOUNCEMENTS));
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    fetchClasses()
+      .then((rows) => {
+        if (!alive) return;
+        setSizes(Object.fromEntries(rows.map((c) => [c.name, c.student_count])));
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
   }, []);
   const [showForm, setShowForm] = useState(false);
 
@@ -75,7 +92,15 @@ export default function AnnouncementsPage() {
         </button>
       }
     >
-      {showForm && <AnnouncementForm onPublish={publish} onCancel={() => setShowForm(false)} />}
+      {showForm && (
+        <AnnouncementForm
+          classNames={MY_CLASSES}
+          subjectNames={MY_SUBJECTS}
+          recipientsFor={recipientsFor}
+          onPublish={publish}
+          onCancel={() => setShowForm(false)}
+        />
+      )}
 
       {items.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center">
@@ -137,26 +162,35 @@ export default function AnnouncementsPage() {
 
 /** ADM-12: auditoriya tanlanadi va qabul qiluvchilar soni oldindan koʻrsatiladi. */
 function AnnouncementForm({
+  classNames,
+  subjectNames,
+  recipientsFor,
   onPublish,
   onCancel,
 }: {
+  classNames: string[];
+  subjectNames: string[];
+  recipientsFor: (kind: AudienceKind, target: string) => number;
   onPublish: (a: Announcement) => void;
   onCancel: () => void;
 }) {
   const [kind, setKind] = useState<AudienceKind>("class");
-  const [target, setTarget] = useState(MY_CLASSES[0]);
+  const [target, setTarget] = useState(classNames[0] ?? "");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [important, setImportant] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
-  const options = kind === "class" ? MY_CLASSES : MY_SUBJECTS;
-  const recipients = useMemo(() => recipientsFor(kind, target), [kind, target]);
+  const options = kind === "class" ? classNames : subjectNames;
+  const recipients = useMemo(
+    () => recipientsFor(kind, target),
+    [kind, target, recipientsFor],
+  );
   const valid = title.trim().length > 2 && body.trim().length > 5;
 
   function switchKind(next: AudienceKind) {
     setKind(next);
-    setTarget(next === "class" ? MY_CLASSES[0] : MY_SUBJECTS[0]);
+    setTarget((next === "class" ? classNames[0] : subjectNames[0]) ?? "");
     setConfirming(false);
   }
 

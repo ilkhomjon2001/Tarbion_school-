@@ -11,23 +11,28 @@ import uuid
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 
 from app.api.v1.deps import CurrentUserDep
 from app.core.db import SessionDep
+from app.core.exceptions import ValidationError
 from app.core.timeutil import local_today
 from app.models import AttendanceRecord, Student
 from app.schemas.attendance import (
     AttendanceMarkIn,
     AttendanceMarkOut,
     AttendanceStatOut,
+    GenerationOut,
     LessonAttendanceOut,
     StudentRowOut,
     StudentStatOut,
     TeacherLessonOut,
 )
-from app.services import attendance_service
+from app.services import attendance_service, lesson_service
 from app.services.attendance_service import AttendanceStat, MarkRow
+
+#: Jadval ekranida eng uzuni — oy koʻrinishi. Undan uzun oraliq xato.
+MAX_RANGE_DAYS = 62
 
 router = APIRouter(prefix="/attendance", tags=["attendance"])
 
@@ -92,6 +97,99 @@ async def my_lessons(
         )
         for lesson in lessons
     ]
+
+
+@router.get("/my-lessons/range", response_model=list[TeacherLessonOut])
+async def my_lessons_range(
+    user: CurrentUserDep,
+    session: SessionDep,
+    date_from: Annotated[date, Query(description="Boshlanish sanasi (mahalliy)")],
+    date_to: Annotated[date, Query(description="Tugash sanasi (mahalliy)")],
+) -> list[TeacherLessonOut]:
+    """Ustozning oraliqdagi darslari — jadval ekrani uchun.
+
+    Oy koʻrinishida 31 kun kerak; kunma-kun soʻrash N+1 boʻlardi.
+    Sana MAHALLIY (Asia/Tashkent), `starts_at` esa UTC — frontend uni
+    koʻrsatishda qayta oʻgiradi (CLAUDE.md 3-qoida).
+    """
+    if date_to < date_from:
+        raise ValidationError("Tugash sanasi boshlanishidan keyin boʻlsin.")
+    if (date_to - date_from).days > MAX_RANGE_DAYS:
+        raise ValidationError(f"Oraliq {MAX_RANGE_DAYS} kundan oshmasin.")
+
+    lessons = await attendance_service.teacher_lessons_range(session, user, date_from, date_to)
+    counts = await attendance_service.lesson_counts(session, lessons)
+    return [
+        TeacherLessonOut(
+            id=lesson.id,
+            class_name=lesson.school_class.name,
+            subject_name=lesson.subject.name,
+            period=lesson.period,
+            room=lesson.room,
+            starts_at=lesson.starts_at,
+            ends_at=lesson.ends_at,
+            topic=lesson.topic,
+            marked=lesson.attendance_marked_at is not None,
+            editable=attendance_service.can_teacher_edit(lesson),
+            student_count=counts[lesson.id].students,
+            present_count=counts[lesson.id].present,
+        )
+        for lesson in lessons
+    ]
+
+
+@router.post("/generate", response_model=GenerationOut)
+async def generate_lessons(
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+    date_from: Annotated[date, Query()],
+    date_to: Annotated[date, Query()],
+) -> GenerationOut:
+    """Jadvaldan darslar yaratadi (T-012). Huquq: `schedule.manage`.
+
+    Idempotent: qayta ishga tushirilsa mavjud darslar oʻtkazib
+    yuboriladi va oʻzgartirilmaydi.
+    """
+    natija = await lesson_service.generate(
+        session,
+        actor=user,
+        date_from=date_from,
+        date_to=date_to,
+        ip=request.client.host if request.client else None,
+    )
+    return GenerationOut(
+        created=natija.created,
+        skipped_existing=natija.skipped_existing,
+        skipped_holidays=natija.skipped_holidays,
+        missing_bells=natija.missing_bells,
+        date_from=natija.date_from,
+        date_to=natija.date_to,
+    )
+
+
+@router.post("/generate/term/{term_id}", response_model=GenerationOut)
+async def generate_term_lessons(
+    term_id: uuid.UUID,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> GenerationOut:
+    """Butun chorak uchun darslar — T-012 ning asosiy stsenariysi."""
+    natija = await lesson_service.generate_term(
+        session,
+        actor=user,
+        term_id=term_id,
+        ip=request.client.host if request.client else None,
+    )
+    return GenerationOut(
+        created=natija.created,
+        skipped_existing=natija.skipped_existing,
+        skipped_holidays=natija.skipped_holidays,
+        missing_bells=natija.missing_bells,
+        date_from=natija.date_from,
+        date_to=natija.date_to,
+    )
 
 
 @router.get("/lessons/{lesson_id}", response_model=LessonAttendanceOut)

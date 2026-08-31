@@ -277,7 +277,7 @@ yuklamasi. **Frontend:** `/admin/baza` → «Dars jadvali» va `/rahbar/jadval`.
 
 ---
 
-### [~] T-012 · Darslarni generatsiya qilish
+### [x] T-012 · Darslarni generatsiya qilish
 **TZ:** ADM-08 (hosila)
 **Kerak:** T-011
 **Frontend:** 🟡 qisman — `lib/teacher/schedule.ts` mock darslar generatsiyasi — sana boʻyicha dars roʻyxati chiqadi. Idempotentlik va taʼtil kunlari backend ishi.
@@ -286,10 +286,15 @@ yuklamasi. **Frontend:** `/admin/baza` → «Dars jadvali» va `/rahbar/jadval`.
 sana, para). Davomat va baho **darsga** bog'lanadi, jadvalga emas.
 Chorak boshlanganda avtomatik generatsiya, ta'til kunlari o'tkazib yuboriladi.
 
+**Backend:** ✅ `POST /attendance/generate` (sana oralig'i) va
+`POST /attendance/generate/term/{id}` (butun chorak). Vaqt qo'ng'iroqlar
+jadvalidan, mahalliy → UTC. `GET /attendance/my-lessons/range` — ustoz
+jadvali ekrani uchun.
+
 **Tayyor:**
-- [ ] Chorak uchun darslar bir marta generatsiya qilinadi (idempotent)
-- [ ] Ta'til va dam olish kunlarida dars yaratilmaydi
-- [ ] Test: jadval o'zgarsa, o'tgan darslar o'zgarmaydi
+- [x] Chorak uchun darslar bir marta generatsiya qilinadi (idempotent)
+- [x] Ta'til va dam olish kunlarida dars yaratilmaydi
+- [x] Test: jadval o'zgarsa, o'tgan darslar o'zgarmaydi
 
 ---
 

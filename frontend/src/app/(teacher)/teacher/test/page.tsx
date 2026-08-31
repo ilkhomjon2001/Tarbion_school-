@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { TeacherShell } from "@/components/teacher/TeacherShell";
-import { DEMO_LESSONS } from "@/lib/teacher/data";
+import { useMyTeaching } from "@/lib/teacher/me";
 import { classColor } from "@/lib/teacher/schedule";
 import { loadCollection, saveCollection } from "@/lib/teacher/store";
 import {
@@ -24,8 +24,7 @@ import {
  * Ustoz faqat OʻZI oʻqitadigan fan va sinflarni koʻradi.
  */
 
-const MY_SUBJECTS = Array.from(new Set(DEMO_LESSONS.map((l) => l.subject)));
-const MY_CLASSES = Array.from(new Set(DEMO_LESSONS.map((l) => l.className)));
+
 
 const STATUS_TONE: Record<TestStatus, string> = {
   draft: "bg-surface-muted text-foreground-muted",
@@ -34,6 +33,8 @@ const STATUS_TONE: Record<TestStatus, string> = {
 };
 
 export default function TestsPage() {
+  // Sinf va fan roʻyxati ustozning OʻZ jadvalidan (mock emas).
+  const { classes, subjects } = useMyTeaching();
   const [tests, setTests] = useState<TestItem[]>(DEMO_TESTS);
 
   // Xotiradan tiklash — sahifa yangilansa testlar yoʻqolmasin.
@@ -82,7 +83,14 @@ export default function TestsPage() {
         </button>
       }
     >
-      {creating && <NewTestForm onCreate={addTest} onCancel={() => setCreating(false)} />}
+      {creating && (
+        <NewTestForm
+          subjectNames={subjects.map((s) => s.name)}
+          classNames={classes.map((c) => c.name)}
+          onCreate={addTest}
+          onCancel={() => setCreating(false)}
+        />
+      )}
 
       <ul className="space-y-3">
         {tests.map((test) => {
@@ -405,15 +413,19 @@ function NewQuestionForm({
 /* ---------- Yangi test (TST-03) ---------- */
 
 function NewTestForm({
+  subjectNames,
+  classNames,
   onCreate,
   onCancel,
 }: {
+  subjectNames: string[];
+  classNames: string[];
   onCreate: (t: TestItem) => void;
   onCancel: () => void;
 }) {
   const [title, setTitle] = useState("");
-  const [subject, setSubject] = useState(MY_SUBJECTS[0]);
-  const [className, setClassName] = useState(MY_CLASSES[0]);
+  const [subject, setSubject] = useState(subjectNames[0] ?? "");
+  const [className, setClassName] = useState(classNames[0] ?? "");
   const [duration, setDuration] = useState(30);
   const [attempts, setAttempts] = useState(1);
   const [shuffle, setShuffle] = useState(true);
@@ -465,7 +477,7 @@ function NewTestForm({
             onChange={(e) => setSubject(e.target.value)}
             className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
           >
-            {MY_SUBJECTS.map((s) => (
+            {subjectNames.map((s) => (
               <option key={s}>{s}</option>
             ))}
           </select>
@@ -479,7 +491,7 @@ function NewTestForm({
             onChange={(e) => setClassName(e.target.value)}
             className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
           >
-            {MY_CLASSES.map((c) => (
+            {classNames.map((c) => (
               <option key={c}>{c}</option>
             ))}
           </select>

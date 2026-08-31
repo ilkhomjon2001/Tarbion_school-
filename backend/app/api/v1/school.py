@@ -27,8 +27,8 @@ from app.schemas.school import (
     StudentArchiveIn,
     StudentCardOut,
     StudentCreateIn,
+    StudentListRowOut,
     StudentMoveIn,
-    StudentRowOut,
     SubjectOut,
 )
 from app.services import school_service, user_service
@@ -119,7 +119,7 @@ async def staff(user: CurrentUserDep, session: SessionDep) -> list[StaffOut]:
 # ─────────────────────────── Oʻquvchilar ───────────────────────────
 
 
-@router.get("/students", response_model=list[StudentRowOut])
+@router.get("/students", response_model=list[StudentListRowOut])
 async def students(
     user: CurrentUserDep,
     session: SessionDep,
@@ -127,7 +127,7 @@ async def students(
     q: str | None = Query(default=None, description="Ism yoki familiya"),
     archived: bool = False,
     limit: int = Query(default=200, le=500),
-) -> list[StudentRowOut]:
+) -> list[StudentListRowOut]:
     """Oʻquvchilar roʻyxati (ADM-05).
 
     Tugʻilgan sana, telefon va vasiy maʼlumoti QAYTMAYDI (X-6) — ular
@@ -137,7 +137,7 @@ async def students(
         session, user, class_id=class_id, query=q, archived=archived, limit=limit
     )
     return [
-        StudentRowOut(
+        StudentListRowOut(
             id=s.id,
             full_name=s.full_name,
             class_name=class_name,

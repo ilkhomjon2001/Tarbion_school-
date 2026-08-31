@@ -21,6 +21,7 @@ import {
   attendanceLessonAttendance,
   attendanceMark,
   attendanceMyLessons,
+  attendanceMyLessonsRange,
 } from "@/lib/api/sdk.gen";
 import type { LessonAttendanceOut, TeacherLessonOut } from "@/lib/api/types.gen";
 import { withAuth } from "@/lib/session";
@@ -68,6 +69,7 @@ function toLesson(row: TeacherLessonOut): TeacherLesson {
     subject: row.subject_name,
     room: row.room ?? "",
     studentCount: row.student_count,
+    topic: row.topic ?? "",
     // Belgilanmagan dars uchun `null` — «0 kishi keldi» degani EMAS.
     presentCount: row.marked ? row.present_count : null,
     editable: row.editable,
@@ -76,6 +78,27 @@ function toLesson(row: TeacherLessonOut): TeacherLesson {
 
 export async function getTodayLessons(): Promise<TeacherLesson[]> {
   const data = await withAuth<TeacherLessonOut[]>(() => attendanceMyLessons());
+  return data.map(toLesson);
+}
+
+/** Bugungi mahalliy sana — `YYYY-MM-DD`. */
+export function localToday(): string {
+  return DATE_FMT.format(new Date());
+}
+
+/**
+ * Oraliqdagi darslar — jadval ekrani uchun.
+ *
+ * Oy koʻrinishida 31 kun kerak; kunma-kun soʻrash 31 ta soʻrov boʻlardi.
+ * Backend oraliqni 62 kun bilan cheklaydi.
+ */
+export async function getLessonsInRange(
+  dateFrom: string,
+  dateTo: string,
+): Promise<TeacherLesson[]> {
+  const data = await withAuth<TeacherLessonOut[]>(() =>
+    attendanceMyLessonsRange({ query: { date_from: dateFrom, date_to: dateTo } }),
+  );
   return data.map(toLesson);
 }
 
@@ -113,6 +136,7 @@ export async function getAttendance(lessonId: string): Promise<{
     subject: data.subject_name,
     room: data.room ?? "",
     studentCount: data.students.length,
+    topic: data.topic ?? "",
     presentCount: data.marked_at
       ? data.students.filter((s) => s.status === "present" || s.status === "late").length
       : null,

@@ -449,6 +449,27 @@ async def lesson_counts(
     return natija
 
 
+async def teacher_lessons_range(
+    session: AsyncSession, user: CurrentUser, date_from: date, date_to: date
+) -> list[Lesson]:
+    """Ustozning oraliqdagi darslari — jadval ekrani uchun (MET-09).
+
+    `teacher_lessons` bitta kunni beradi; jadvalda oy koʻrinishi ham bor,
+    31 kunni 31 marta soʻrash N+1 boʻlardi.
+    """
+    rows = await session.execute(
+        select(Lesson)
+        .options(selectinload(Lesson.school_class), selectinload(Lesson.subject))
+        .where(
+            Lesson.teacher_id == user.id,
+            Lesson.lesson_date.between(date_from, date_to),
+            Lesson.is_archived.is_(False),
+        )
+        .order_by(Lesson.lesson_date, Lesson.period)
+    )
+    return list(rows.scalars())
+
+
 async def teacher_lessons(session: AsyncSession, user: CurrentUser, day: date) -> list[Lesson]:
     """Ustozning shu kundagi darslari (DAV-01 ekrani uchun).
 

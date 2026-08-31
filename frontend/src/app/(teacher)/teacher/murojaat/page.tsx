@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 
 import { TeacherShell } from "@/components/teacher/TeacherShell";
 import { AppealThread } from "@/components/shared/AppealThread";
-import { DEMO_TEACHER } from "@/lib/teacher/data";
+import { useTeacherMe } from "@/lib/teacher/me";
 import { appealsAssignedTo, isOpen, type Appeal, type AppealTarget } from "@/lib/school/appeals";
 
 type Filter = "all" | AppealTarget;
@@ -27,7 +27,11 @@ const FILTERS: { id: Filter; label: string }[] = [
  */
 export default function TeacherAppealsPage() {
   const [filter, setFilter] = useState<Filter>("all");
-  const mine = useMemo<Appeal[]>(() => appealsAssignedTo(DEMO_TEACHER.id), []);
+  const me = useTeacherMe();
+  const mine = useMemo<Appeal[]>(
+    () => (me.user ? appealsAssignedTo(me.user.id) : []),
+    [me.user],
+  );
 
   const shown = filter === "all" ? mine : mine.filter((a) => a.target === filter);
   const openCount = mine.filter(isOpen).length;
@@ -73,7 +77,7 @@ export default function TeacherAppealsPage() {
               <AppealThread
                 appeal={appeal}
                 viewer="staff"
-                viewerStaffId={DEMO_TEACHER.id}
+                viewerStaffId={me.user?.id ?? ""}
                 defaultOpen={appeal.status === "new"}
               />
             </li>

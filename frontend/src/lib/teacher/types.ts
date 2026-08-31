@@ -29,6 +29,8 @@ export interface TeacherLesson {
   subject: string;
   room: string;
   studentCount: number;
+  /** Dars mavzusi — ustoz davomat bilan birga kiritadi (DAV-06). */
+  topic: string;
   /** Davomat belgilangan boʻlsa — nechta "keldi" boʻlgani. */
   presentCount: number | null;
   /** DAV-03: dars tugaganidan 24 soat oʻtgan boʻlsa tahrirlab boʻlmaydi. */

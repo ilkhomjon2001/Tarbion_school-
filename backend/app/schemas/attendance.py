@@ -96,3 +96,15 @@ class StudentStatOut(BaseModel):
     student_id: uuid.UUID
     full_name: str
     stat: AttendanceStatOut
+
+
+class GenerationOut(BaseModel):
+    """Darslar generatsiyasi natijasi (T-012)."""
+
+    created: int
+    skipped_existing: int
+    skipped_holidays: int
+    #: Qoʻngʻiroqlar jadvalida parasi yoʻq — vaqtini hisoblab boʻlmadi.
+    missing_bells: list[int]
+    date_from: date
+    date_to: date

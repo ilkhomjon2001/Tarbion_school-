@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { TeacherShell } from "@/components/teacher/TeacherShell";
-import { DEMO_TEACHER } from "@/lib/teacher/data";
-import { isHomeroomOf, myClasses, mySubjectsIn } from "@/lib/teacher/roles";
+import { useMyTeaching, useTeacherMe } from "@/lib/teacher/me";
+import { fetchStudents } from "@/lib/school/api";
 import { HOMEROOM, staffById } from "@/lib/school/staff";
 import {
   authorRoleLabel,
@@ -22,25 +22,6 @@ const TONE_CLASSES: Record<WellbeingTone, string> = {
   attention: "border-l-warning bg-warning-tint/40",
 };
 
-/** DEMO: sinf → oʻquvchilar. Backendda `students` jadvalidan keladi. */
-const CLASS_STUDENTS: Record<string, { id: string; fullName: string }[]> = {
-  "11-A": [
-    { id: "c-1", fullName: "Abdullayev Alisher" },
-    { id: "st-11a-2", fullName: "Yoqubova Kamola" },
-    { id: "st-11a-3", fullName: "Zokirov Otabek" },
-  ],
-  "6-B": [
-    { id: "c-2", fullName: "Abdullayeva Zarina" },
-    { id: "st-6b-2", fullName: "Toshpulatov Diyorbek" },
-  ],
-  "9-B": [
-    { id: "st-9b-1", fullName: "Nazarova Madina" },
-    { id: "st-9b-2", fullName: "Rustamov Sherzod" },
-  ],
-  "10-A": [{ id: "st-10a-1", fullName: "Islomova Feruza" }],
-  "7-A": [{ id: "st-7a-1", fullName: "Sultonov Aziz" }],
-};
-
 /**
  * Tarbiyaviy izoh kiritish.
  *
@@ -51,19 +32,49 @@ const CLASS_STUDENTS: Record<string, { id: string; fullName: string }[]> = {
  * DEMO: yozuv faqat sahifa holatida saqlanadi.
  */
 export default function TeacherWellbeingPage() {
-  const classes = useMemo(() => myClasses(), []);
+  const me = useTeacherMe();
+  const teaching = useMyTeaching();
+  const classes = useMemo(() => teaching.classes.map((c) => c.name), [teaching.classes]);
   const [notes, setNotes] = useState<WellbeingNote[]>(
     WELLBEING_NOTES.filter((n) => n.kind === "behavior"),
   );
   const [className, setClassName] = useState(classes[0] ?? "");
-  const [studentId, setStudentId] = useState(CLASS_STUDENTS[classes[0] ?? ""]?.[0]?.id ?? "");
+  const [studentId, setStudentId] = useState("");
+  const [students, setStudents] = useState<{ id: string; fullName: string }[]>([]);
   const [tone, setTone] = useState<WellbeingTone>("neutral");
   const [subject, setSubject] = useState("");
   const [text, setText] = useState("");
 
-  const students = CLASS_STUDENTS[className] ?? [];
-  const subjects = mySubjectsIn(className);
-  const asHomeroom = isHomeroomOf(className);
+  const subjects = useMemo(
+    () =>
+      teaching.slots.filter((s) => s.className === className).map((s) => s.subjectName),
+    [teaching.slots, className],
+  );
+  const asHomeroom = me.isHomeroom;
+
+  // Sinf oʻquvchilari serverdan. Kesim SOʻROV darajasida: ustoz oʻz
+  // sinfidan boshqasini soʻrasa server boʻsh roʻyxat qaytaradi (X-1).
+  const classId = teaching.classes.find((c) => c.name === className)?.id;
+  useEffect(() => {
+    if (!classId) {
+      setStudents([]);
+      return;
+    }
+    let alive = true;
+    fetchStudents({ classId })
+      .then((rows) => {
+        if (!alive) return;
+        const list = rows.map((r) => ({ id: r.id, fullName: r.full_name }));
+        setStudents(list);
+        setStudentId((joriy) =>
+          list.some((s) => s.id === joriy) ? joriy : (list[0]?.id ?? ""),
+        );
+      })
+      .catch(() => alive && setStudents([]));
+    return () => {
+      alive = false;
+    };
+  }, [classId]);
   const studentNotes = notes.filter((n) => n.childId === studentId);
 
   function submit(event: React.FormEvent) {
@@ -74,7 +85,7 @@ export default function TeacherWellbeingPage() {
         id: `wb-new-${Date.now()}`,
         childId: studentId,
         kind: "behavior",
-        authorId: DEMO_TEACHER.id,
+        authorId: me.user?.id ?? "",
         subject: subject || undefined,
         tone,
         text: text.trim(),
@@ -100,7 +111,7 @@ export default function TeacherWellbeingPage() {
                 value={className}
                 onChange={(e) => {
                   setClassName(e.target.value);
-                  setStudentId(CLASS_STUDENTS[e.target.value]?.[0]?.id ?? "");
+                  setStudentId("");
                   setSubject("");
                 }}
                 className="h-10 w-full rounded-lg border border-border bg-surface px-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"

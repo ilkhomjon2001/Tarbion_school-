@@ -768,6 +768,38 @@ export type DirectorOverviewOut = {
 };
 
 /**
+ * GenerationOut
+ *
+ * Darslar generatsiyasi natijasi (T-012).
+ */
+export type GenerationOut = {
+    /**
+     * Created
+     */
+    created: number;
+    /**
+     * Skipped Existing
+     */
+    skipped_existing: number;
+    /**
+     * Skipped Holidays
+     */
+    skipped_holidays: number;
+    /**
+     * Missing Bells
+     */
+    missing_bells: Array<number>;
+    /**
+     * Date From
+     */
+    date_from: string;
+    /**
+     * Date To
+     */
+    date_to: string;
+};
+
+/**
  * GuardianOptionOut
  *
  * Oʻquvchining vasiy hisobi — yozishma kimga borishini tanlash uchun.
@@ -920,7 +952,7 @@ export type LessonAttendanceOut = {
     /**
      * Students
      */
-    students: Array<AppSchemasAttendanceStudentRowOut>;
+    students: Array<StudentRowOut>;
 };
 
 /**
@@ -1370,6 +1402,30 @@ export type StudentCreateIn = {
 };
 
 /**
+ * StudentListRowOut
+ *
+ * Roʻyxatdagi qator — shaxsiy maʼlumotsiz (X-6).
+ */
+export type StudentListRowOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Class Name
+     */
+    class_name: string | null;
+    /**
+     * Is Archived
+     */
+    is_archived: boolean;
+};
+
+/**
  * StudentMoveIn
  *
  * `class_id: null` — sinfdan chiqarish (hali biriktirilmagan).
@@ -1379,6 +1435,33 @@ export type StudentMoveIn = {
      * Class Id
      */
     class_id?: string | null;
+};
+
+/**
+ * StudentRowOut
+ *
+ * Roʻyxatdagi bitta oʻquvchi va uning holati.
+ *
+ * Telefon, manzil va hujjat maydonlari ATAYLAB yoʻq (X-6): bu roʻyxat
+ * endpointi, shaxsiy maʼlumot faqat bitta oʻquvchi kartochkasida.
+ */
+export type StudentRowOut = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Status
+     */
+    status?: 'present' | 'absent' | 'excused' | 'late' | null;
+    /**
+     * Note
+     */
+    note?: string | null;
 };
 
 /**
@@ -1757,57 +1840,6 @@ export type ValidationError = {
     ctx?: {
         [key: string]: unknown;
     };
-};
-
-/**
- * StudentRowOut
- *
- * Roʻyxatdagi bitta oʻquvchi va uning holati.
- *
- * Telefon, manzil va hujjat maydonlari ATAYLAB yoʻq (X-6): bu roʻyxat
- * endpointi, shaxsiy maʼlumot faqat bitta oʻquvchi kartochkasida.
- */
-export type AppSchemasAttendanceStudentRowOut = {
-    /**
-     * Student Id
-     */
-    student_id: string;
-    /**
-     * Full Name
-     */
-    full_name: string;
-    /**
-     * Status
-     */
-    status?: 'present' | 'absent' | 'excused' | 'late' | null;
-    /**
-     * Note
-     */
-    note?: string | null;
-};
-
-/**
- * StudentRowOut
- *
- * Roʻyxatdagi qator — shaxsiy maʼlumotsiz (X-6).
- */
-export type AppSchemasSchoolStudentRowOut = {
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Full Name
-     */
-    full_name: string;
-    /**
-     * Class Name
-     */
-    class_name: string | null;
-    /**
-     * Is Archived
-     */
-    is_archived: boolean;
 };
 
 export type AuthLoginData = {
@@ -2844,6 +2876,110 @@ export type AttendanceMyLessonsResponses = {
 
 export type AttendanceMyLessonsResponse = AttendanceMyLessonsResponses[keyof AttendanceMyLessonsResponses];
 
+export type AttendanceMyLessonsRangeData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Date From
+         *
+         * Boshlanish sanasi (mahalliy)
+         */
+        date_from: string;
+        /**
+         * Date To
+         *
+         * Tugash sanasi (mahalliy)
+         */
+        date_to: string;
+    };
+    url: '/api/v1/attendance/my-lessons/range';
+};
+
+export type AttendanceMyLessonsRangeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AttendanceMyLessonsRangeError = AttendanceMyLessonsRangeErrors[keyof AttendanceMyLessonsRangeErrors];
+
+export type AttendanceMyLessonsRangeResponses = {
+    /**
+     * Response Attendance My Lessons Range
+     *
+     * Successful Response
+     */
+    200: Array<TeacherLessonOut>;
+};
+
+export type AttendanceMyLessonsRangeResponse = AttendanceMyLessonsRangeResponses[keyof AttendanceMyLessonsRangeResponses];
+
+export type AttendanceGenerateLessonsData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Date From
+         */
+        date_from: string;
+        /**
+         * Date To
+         */
+        date_to: string;
+    };
+    url: '/api/v1/attendance/generate';
+};
+
+export type AttendanceGenerateLessonsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AttendanceGenerateLessonsError = AttendanceGenerateLessonsErrors[keyof AttendanceGenerateLessonsErrors];
+
+export type AttendanceGenerateLessonsResponses = {
+    /**
+     * Successful Response
+     */
+    200: GenerationOut;
+};
+
+export type AttendanceGenerateLessonsResponse = AttendanceGenerateLessonsResponses[keyof AttendanceGenerateLessonsResponses];
+
+export type AttendanceGenerateTermLessonsData = {
+    body?: never;
+    path: {
+        /**
+         * Term Id
+         */
+        term_id: string;
+    };
+    query?: never;
+    url: '/api/v1/attendance/generate/term/{term_id}';
+};
+
+export type AttendanceGenerateTermLessonsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AttendanceGenerateTermLessonsError = AttendanceGenerateTermLessonsErrors[keyof AttendanceGenerateTermLessonsErrors];
+
+export type AttendanceGenerateTermLessonsResponses = {
+    /**
+     * Successful Response
+     */
+    200: GenerationOut;
+};
+
+export type AttendanceGenerateTermLessonsResponse = AttendanceGenerateTermLessonsResponses[keyof AttendanceGenerateTermLessonsResponses];
+
 export type AttendanceLessonAttendanceData = {
     body?: never;
     path: {
@@ -3206,7 +3342,7 @@ export type SchoolStudentsResponses = {
      *
      * Successful Response
      */
-    200: Array<AppSchemasSchoolStudentRowOut>;
+    200: Array<StudentListRowOut>;
 };
 
 export type SchoolStudentsResponse = SchoolStudentsResponses[keyof SchoolStudentsResponses];
