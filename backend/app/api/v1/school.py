@@ -1,0 +1,226 @@
+"""Maʼlumotnoma endpointlari (T-008, T-009).
+
+TZ: ADM-02…ADM-06, ADM-11, AUT-03.
+
+Routerda rol darvozasi yoʻq: kim nimani koʻrishini `access.py`,
+kim nima qila olishini `Permission` hal qiladi. Ustoz oʻz sinfining
+oʻquvchilarini koʻradi, ota-ona faqat oʻz farzandini, administrator
+hammasini — bitta endpoint, kesim soʻrov darajasida (X-1).
+"""
+
+import uuid
+
+from fastapi import APIRouter, Query, Request
+
+from app.api.v1.deps import CurrentUserDep
+from app.core.db import SessionDep
+from app.schemas.school import (
+    ClassOut,
+    ClassSubjectOut,
+    GuardianOut,
+    StaffOut,
+    StudentArchiveIn,
+    StudentCardOut,
+    StudentCreateIn,
+    StudentMoveIn,
+    StudentRowOut,
+    SubjectOut,
+)
+from app.services import school_service
+
+router = APIRouter(prefix="/school", tags=["school"])
+
+
+def _client_ip(request: Request) -> str | None:
+    return request.client.host if request.client else None
+
+
+def _card_out(card: school_service.StudentCard) -> StudentCardOut:
+    s = card.student
+    return StudentCardOut(
+        id=s.id,
+        last_name=s.last_name,
+        first_name=s.first_name,
+        middle_name=s.middle_name,
+        full_name=s.full_name,
+        birth_date=s.birth_date,
+        class_id=s.class_id,
+        class_name=card.class_name,
+        is_archived=s.is_archived,
+        guardians=[
+            GuardianOut(
+                user_id=g.user_id,
+                full_name=g.full_name,
+                relation=g.relation,
+                phone=g.phone,
+            )
+            for g in card.guardians
+        ],
+    )
+
+
+# ─────────────────────────── Maʼlumotnomalar ───────────────────────────
+
+
+@router.get("/subjects", response_model=list[SubjectOut])
+async def subjects(user: CurrentUserDep, session: SessionDep) -> list[SubjectOut]:
+    rows = await school_service.list_subjects(session)
+    return [SubjectOut(id=s.id, name=s.name, short_name=s.short_name) for s in rows]
+
+
+@router.get("/classes", response_model=list[ClassOut])
+async def classes(user: CurrentUserDep, session: SessionDep) -> list[ClassOut]:
+    """Joriy oʻquv yilidagi sinflar (ADM-02)."""
+    rows = await school_service.list_classes(session)
+    return [
+        ClassOut(
+            id=c.id,
+            name=c.name,
+            academic_year=c.academic_year,
+            homeroom_teacher=c.homeroom_teacher,
+            student_count=c.student_count,
+        )
+        for c in rows
+    ]
+
+
+@router.get("/classes/{class_id}/subjects", response_model=list[ClassSubjectOut])
+async def subjects_of_class(
+    class_id: uuid.UUID, user: CurrentUserDep, session: SessionDep
+) -> list[ClassSubjectOut]:
+    """Sinfda oʻqitiladigan fanlar va haftalik soati (ADM-03)."""
+    rows = await school_service.class_subjects(session, class_id)
+    return [ClassSubjectOut(subject_id=s.id, subject_name=s.name, weekly_hours=h) for s, h in rows]
+
+
+@router.get("/staff", response_model=list[StaffOut])
+async def staff(user: CurrentUserDep, session: SessionDep) -> list[StaffOut]:
+    """Xodimlar — ustoz, administrator, rahbariyat (ADM-04)."""
+    rows = await school_service.list_staff(session, user)
+    return [
+        StaffOut(
+            user_id=r.user_id,
+            login=r.login,
+            full_name=r.full_name,
+            roles=r.roles,
+            subjects=r.subjects,
+            is_active=r.is_active,
+        )
+        for r in rows
+    ]
+
+
+# ─────────────────────────── Oʻquvchilar ───────────────────────────
+
+
+@router.get("/students", response_model=list[StudentRowOut])
+async def students(
+    user: CurrentUserDep,
+    session: SessionDep,
+    class_id: uuid.UUID | None = None,
+    q: str | None = Query(default=None, description="Ism yoki familiya"),
+    archived: bool = False,
+    limit: int = Query(default=200, le=500),
+) -> list[StudentRowOut]:
+    """Oʻquvchilar roʻyxati (ADM-05).
+
+    Tugʻilgan sana, telefon va vasiy maʼlumoti QAYTMAYDI (X-6) — ular
+    kartochkada. Ota-ona bu endpointdan faqat oʻz farzandini oladi.
+    """
+    rows = await school_service.list_students(
+        session, user, class_id=class_id, query=q, archived=archived, limit=limit
+    )
+    return [
+        StudentRowOut(
+            id=s.id,
+            full_name=s.full_name,
+            class_name=class_name,
+            is_archived=s.is_archived,
+        )
+        for s, class_name in rows
+    ]
+
+
+@router.get("/students/{student_id}", response_model=StudentCardOut)
+async def student_card(
+    student_id: uuid.UUID, user: CurrentUserDep, session: SessionDep
+) -> StudentCardOut:
+    """Bitta oʻquvchi — vasiylari bilan.
+
+    Ruxsat yoʻq boʻlsa `403` (X-3: `404` obyekt mavjudligini oshkor
+    qilardi).
+    """
+    return _card_out(await school_service.student_card(session, user, student_id))
+
+
+@router.post("/students", response_model=StudentCardOut, status_code=201)
+async def create_student(
+    payload: StudentCreateIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> StudentCardOut:
+    """Yangi oʻquvchi. Huquq: `students.manage`."""
+    student = await school_service.create_student(
+        session,
+        actor=user,
+        last_name=payload.last_name,
+        first_name=payload.first_name,
+        middle_name=payload.middle_name,
+        birth_date=payload.birth_date,
+        class_id=payload.class_id,
+        ip=_client_ip(request),
+    )
+    return _card_out(await school_service.student_card(session, user, student.id))
+
+
+@router.put("/students/{student_id}/class", response_model=StudentCardOut)
+async def move_student(
+    student_id: uuid.UUID,
+    payload: StudentMoveIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> StudentCardOut:
+    """Boshqa sinfga koʻchirish (ADM-06)."""
+    await school_service.move_student(
+        session,
+        actor=user,
+        student_id=student_id,
+        class_id=payload.class_id,
+        ip=_client_ip(request),
+    )
+    return _card_out(await school_service.student_card(session, user, student_id))
+
+
+@router.post("/students/{student_id}/archive", response_model=StudentCardOut)
+async def archive_student(
+    student_id: uuid.UUID,
+    payload: StudentArchiveIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> StudentCardOut:
+    """Arxivlaydi. Oʻchirish YOʻQ (CLAUDE.md 1-qoida). Sabab majburiy."""
+    await school_service.archive_student(
+        session,
+        actor=user,
+        student_id=student_id,
+        reason=payload.reason,
+        ip=_client_ip(request),
+    )
+    return _card_out(await school_service.student_card(session, user, student_id))
+
+
+@router.post("/students/{student_id}/restore", response_model=StudentCardOut)
+async def restore_student(
+    student_id: uuid.UUID,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> StudentCardOut:
+    """Arxivdan qaytaradi — xato bilan arxivlangan boʻlsa."""
+    await school_service.restore_student(
+        session, actor=user, student_id=student_id, ip=_client_ip(request)
+    )
+    return _card_out(await school_service.student_card(session, user, student_id))
