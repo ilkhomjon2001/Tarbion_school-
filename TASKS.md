@@ -576,13 +576,13 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
 
 # 3-BOSQICH — Testlar, to'lov, analitika (11–14 hafta)
 
-- [ ] T-041 · Savollar banki va savol turlari — TST-01, TST-02
+- [x] T-041 · Savollar banki va savol turlari — TST-01, TST-02 · backend + ustoz ekrani
   - Frontend: 🟡 qisman — `/teacher/test` da savol qoʻshish bor, savollar banki yoʻq
-- [ ] T-042 · Test yaratish va parametrlar — TST-03
+- [x] T-042 · Test yaratish va parametrlar — TST-03 · backend + ustoz ekrani
   - Frontend: ✅ tayyor — `/teacher/test`
-- [ ] T-043 · Test ishlash va avtomatik tekshiruv — TST-04
+- [~] T-043 · Test ishlash va avtomatik tekshiruv — TST-04 · backend tayyor; o'quvchi ekrani T-034 (hisob) ni kutadi
   - Frontend: ✅ tayyor — `/student/tests/[id]`
-- [ ] T-044 · Test natijalari tahlili — TST-05
+- [~] T-044 · Test natijalari tahlili — TST-05 · ustoz uchun natijalar jadvali tayyor
   - Frontend: 🟡 qisman — natija koʻrsatiladi, tahlil kesimlari yoʻq
 - [ ] T-045 · Savollarni Excel'dan import — TST-06
   - Frontend: ⬜ yoʻq

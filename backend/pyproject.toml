@@ -36,6 +36,10 @@ pythonpath = ["."]
 # har test yangi hodisa siklida ishlaydi va ulanish qayta ishlatilmaydi.
 asyncio_default_fixture_loop_scope = "session"
 asyncio_default_test_loop_scope = "session"
+# Testlar faqat funksiya ko'rinishida yoziladi. Bo'sh ro'yxat kerak:
+# `app/models/tests.py` dagi `Test`, `TestQuestion` modellarini pytest
+# test klassi deb o'ylab, ogohlantirish chiqaradi.
+python_classes = []
 
 [tool.ruff]
 line-length = 100

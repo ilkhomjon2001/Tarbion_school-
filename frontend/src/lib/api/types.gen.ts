@@ -71,6 +71,20 @@ export type AcademicYearUpdateIn = {
 };
 
 /**
+ * AnswerIn
+ */
+export type AnswerIn = {
+    /**
+     * Question Id
+     */
+    question_id: string;
+    /**
+     * Selected
+     */
+    selected?: Array<string>;
+};
+
+/**
  * AppealAssigneeOut
  *
  * Ota-ona murojaat yozayotganda tanlaydigan fan oʻqituvchisi.
@@ -400,6 +414,88 @@ export type AssignIn = {
      * Assignee Id
      */
     assignee_id: string;
+};
+
+/**
+ * AttemptOut
+ */
+export type AttemptOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Test Id
+     */
+    test_id: string;
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Attempt No
+     */
+    attempt_no: number;
+    /**
+     * Started At
+     */
+    started_at: string;
+    /**
+     * Submitted At
+     */
+    submitted_at: string | null;
+    /**
+     * Score
+     */
+    score: number | null;
+    /**
+     * Max Score
+     */
+    max_score: number;
+    /**
+     * Percent
+     */
+    percent: number | null;
+};
+
+/**
+ * AttemptStartOut
+ *
+ * Urinish boshlanganda savollar bilan qaytadi — toʻgʻri javobsiz.
+ */
+export type AttemptStartOut = {
+    /**
+     * Attempt Id
+     */
+    attempt_id: string;
+    /**
+     * Attempt No
+     */
+    attempt_no: number;
+    /**
+     * Attempts Allowed
+     */
+    attempts_allowed: number;
+    /**
+     * Started At
+     */
+    started_at: string;
+    /**
+     * Duration Minutes
+     */
+    duration_minutes: number;
+    /**
+     * Closes At
+     */
+    closes_at: string;
+    /**
+     * Questions
+     */
+    questions: Array<QuestionForStudentOut>;
 };
 
 /**
@@ -1423,6 +1519,56 @@ export type NotificationOut = {
 };
 
 /**
+ * OptionForStudentOut
+ *
+ * Oʻquvchi koʻrinishi — `is_correct` maydoni YOʻQ.
+ */
+export type OptionForStudentOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Text
+     */
+    text: string;
+};
+
+/**
+ * OptionIn
+ */
+export type OptionIn = {
+    /**
+     * Text
+     */
+    text: string;
+    /**
+     * Is Correct
+     */
+    is_correct?: boolean;
+};
+
+/**
+ * OptionOut
+ *
+ * Ustoz koʻrinishi — toʻgʻri javob bilan.
+ */
+export type OptionOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Text
+     */
+    text: string;
+    /**
+     * Is Correct
+     */
+    is_correct: boolean;
+};
+
+/**
  * PasswordResetOut
  */
 export type PasswordResetOut = {
@@ -1454,6 +1600,88 @@ export type PermissionOut = {
      * Group
      */
     group: string;
+};
+
+/**
+ * QuestionForStudentOut
+ */
+export type QuestionForStudentOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Position
+     */
+    position: number;
+    /**
+     * Text
+     */
+    text: string;
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Points
+     */
+    points: number;
+    /**
+     * Options
+     */
+    options: Array<OptionForStudentOut>;
+};
+
+/**
+ * QuestionIn
+ */
+export type QuestionIn = {
+    /**
+     * Text
+     */
+    text: string;
+    /**
+     * Kind
+     */
+    kind?: string;
+    /**
+     * Points
+     */
+    points?: number;
+    /**
+     * Options
+     */
+    options: Array<OptionIn>;
+};
+
+/**
+ * QuestionOut
+ */
+export type QuestionOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Position
+     */
+    position: number;
+    /**
+     * Text
+     */
+    text: string;
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Points
+     */
+    points: number;
+    /**
+     * Options
+     */
+    options: Array<OptionOut>;
 };
 
 /**
@@ -2095,6 +2323,16 @@ export type SubmissionOut = {
 };
 
 /**
+ * SubmitAttemptIn
+ */
+export type SubmitAttemptIn = {
+    /**
+     * Answers
+     */
+    answers: Array<AnswerIn>;
+};
+
+/**
  * SubmitIn
  */
 export type SubmitIn = {
@@ -2284,6 +2522,136 @@ export type TermsIn = {
      * Terms
      */
     terms: Array<TermIn>;
+};
+
+/**
+ * TestCreateIn
+ */
+export type TestCreateIn = {
+    /**
+     * Class Id
+     */
+    class_id: string;
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Description
+     */
+    description?: string;
+    /**
+     * Duration Minutes
+     */
+    duration_minutes?: number;
+    /**
+     * Attempts Allowed
+     */
+    attempts_allowed?: number;
+    /**
+     * Shuffle
+     */
+    shuffle?: boolean;
+    /**
+     * Opens At
+     */
+    opens_at: string;
+    /**
+     * Closes At
+     */
+    closes_at: string;
+};
+
+/**
+ * TestOut
+ */
+export type TestOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Class Id
+     */
+    class_id: string;
+    /**
+     * Class Name
+     */
+    class_name: string;
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Subject Name
+     */
+    subject_name: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Duration Minutes
+     */
+    duration_minutes: number;
+    /**
+     * Attempts Allowed
+     */
+    attempts_allowed: number;
+    /**
+     * Shuffle
+     */
+    shuffle: boolean;
+    /**
+     * Opens At
+     */
+    opens_at: string;
+    /**
+     * Closes At
+     */
+    closes_at: string;
+    /**
+     * Question Count
+     */
+    question_count: number;
+    /**
+     * Max Score
+     */
+    max_score: number;
+    /**
+     * Submitted Count
+     */
+    submitted_count: number;
+    /**
+     * Total Students
+     */
+    total_students: number;
+    /**
+     * Average Percent
+     */
+    average_percent: number | null;
+};
+
+/**
+ * TestStatusIn
+ */
+export type TestStatusIn = {
+    /**
+     * Status
+     */
+    status: string;
 };
 
 /**
@@ -4835,6 +5203,375 @@ export type NotificationsMarkAllReadResponses = {
 };
 
 export type NotificationsMarkAllReadResponse = NotificationsMarkAllReadResponses[keyof NotificationsMarkAllReadResponses];
+
+export type TestsMyTestsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Class Id
+         */
+        class_id?: string | null;
+    };
+    url: '/api/v1/tests';
+};
+
+export type TestsMyTestsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TestsMyTestsError = TestsMyTestsErrors[keyof TestsMyTestsErrors];
+
+export type TestsMyTestsResponses = {
+    /**
+     * Response Tests My Tests
+     *
+     * Successful Response
+     */
+    200: Array<TestOut>;
+};
+
+export type TestsMyTestsResponse = TestsMyTestsResponses[keyof TestsMyTestsResponses];
+
+export type TestsCreateTestData = {
+    body: TestCreateIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/tests';
+};
+
+export type TestsCreateTestErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TestsCreateTestError = TestsCreateTestErrors[keyof TestsCreateTestErrors];
+
+export type TestsCreateTestResponses = {
+    /**
+     * Successful Response
+     */
+    201: TestOut;
+};
+
+export type TestsCreateTestResponse = TestsCreateTestResponses[keyof TestsCreateTestResponses];
+
+export type TestsSetStatusData = {
+    body: TestStatusIn;
+    path: {
+        /**
+         * Test Id
+         */
+        test_id: string;
+    };
+    query?: never;
+    url: '/api/v1/tests/{test_id}/status';
+};
+
+export type TestsSetStatusErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TestsSetStatusError = TestsSetStatusErrors[keyof TestsSetStatusErrors];
+
+export type TestsSetStatusResponses = {
+    /**
+     * Successful Response
+     */
+    200: TestOut;
+};
+
+export type TestsSetStatusResponse = TestsSetStatusResponses[keyof TestsSetStatusResponses];
+
+export type TestsArchiveTestData = {
+    body?: never;
+    path: {
+        /**
+         * Test Id
+         */
+        test_id: string;
+    };
+    query?: never;
+    url: '/api/v1/tests/{test_id}/archive';
+};
+
+export type TestsArchiveTestErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TestsArchiveTestError = TestsArchiveTestErrors[keyof TestsArchiveTestErrors];
+
+export type TestsArchiveTestResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type TestsArchiveTestResponse = TestsArchiveTestResponses[keyof TestsArchiveTestResponses];
+
+export type TestsQuestionsData = {
+    body?: never;
+    path: {
+        /**
+         * Test Id
+         */
+        test_id: string;
+    };
+    query?: never;
+    url: '/api/v1/tests/{test_id}/questions';
+};
+
+export type TestsQuestionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TestsQuestionsError = TestsQuestionsErrors[keyof TestsQuestionsErrors];
+
+export type TestsQuestionsResponses = {
+    /**
+     * Response Tests Questions
+     *
+     * Successful Response
+     */
+    200: Array<QuestionOut>;
+};
+
+export type TestsQuestionsResponse = TestsQuestionsResponses[keyof TestsQuestionsResponses];
+
+export type TestsAddQuestionData = {
+    body: QuestionIn;
+    path: {
+        /**
+         * Test Id
+         */
+        test_id: string;
+    };
+    query?: never;
+    url: '/api/v1/tests/{test_id}/questions';
+};
+
+export type TestsAddQuestionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TestsAddQuestionError = TestsAddQuestionErrors[keyof TestsAddQuestionErrors];
+
+export type TestsAddQuestionResponses = {
+    /**
+     * Successful Response
+     */
+    201: QuestionOut;
+};
+
+export type TestsAddQuestionResponse = TestsAddQuestionResponses[keyof TestsAddQuestionResponses];
+
+export type TestsArchiveQuestionData = {
+    body?: never;
+    path: {
+        /**
+         * Question Id
+         */
+        question_id: string;
+    };
+    query?: never;
+    url: '/api/v1/tests/questions/{question_id}/archive';
+};
+
+export type TestsArchiveQuestionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TestsArchiveQuestionError = TestsArchiveQuestionErrors[keyof TestsArchiveQuestionErrors];
+
+export type TestsArchiveQuestionResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type TestsArchiveQuestionResponse = TestsArchiveQuestionResponses[keyof TestsArchiveQuestionResponses];
+
+export type TestsResultsData = {
+    body?: never;
+    path: {
+        /**
+         * Test Id
+         */
+        test_id: string;
+    };
+    query?: never;
+    url: '/api/v1/tests/{test_id}/results';
+};
+
+export type TestsResultsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TestsResultsError = TestsResultsErrors[keyof TestsResultsErrors];
+
+export type TestsResultsResponses = {
+    /**
+     * Response Tests Results
+     *
+     * Successful Response
+     */
+    200: Array<AttemptOut>;
+};
+
+export type TestsResultsResponse = TestsResultsResponses[keyof TestsResultsResponses];
+
+export type TestsAvailableData = {
+    body?: never;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: never;
+    url: '/api/v1/tests/students/{student_id}/available';
+};
+
+export type TestsAvailableErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TestsAvailableError = TestsAvailableErrors[keyof TestsAvailableErrors];
+
+export type TestsAvailableResponses = {
+    /**
+     * Response Tests Available
+     *
+     * Successful Response
+     */
+    200: Array<TestOut>;
+};
+
+export type TestsAvailableResponse = TestsAvailableResponses[keyof TestsAvailableResponses];
+
+export type TestsStartData = {
+    body?: never;
+    path: {
+        /**
+         * Test Id
+         */
+        test_id: string;
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: never;
+    url: '/api/v1/tests/{test_id}/students/{student_id}/start';
+};
+
+export type TestsStartErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TestsStartError = TestsStartErrors[keyof TestsStartErrors];
+
+export type TestsStartResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttemptStartOut;
+};
+
+export type TestsStartResponse = TestsStartResponses[keyof TestsStartResponses];
+
+export type TestsSubmitData = {
+    body: SubmitAttemptIn;
+    path: {
+        /**
+         * Attempt Id
+         */
+        attempt_id: string;
+    };
+    query?: never;
+    url: '/api/v1/tests/attempts/{attempt_id}/submit';
+};
+
+export type TestsSubmitErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TestsSubmitError = TestsSubmitErrors[keyof TestsSubmitErrors];
+
+export type TestsSubmitResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttemptOut;
+};
+
+export type TestsSubmitResponse = TestsSubmitResponses[keyof TestsSubmitResponses];
+
+export type TestsStudentAttemptsData = {
+    body?: never;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: never;
+    url: '/api/v1/tests/students/{student_id}/attempts';
+};
+
+export type TestsStudentAttemptsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TestsStudentAttemptsError = TestsStudentAttemptsErrors[keyof TestsStudentAttemptsErrors];
+
+export type TestsStudentAttemptsResponses = {
+    /**
+     * Response Tests Student Attempts
+     *
+     * Successful Response
+     */
+    200: Array<AttemptOut>;
+};
+
+export type TestsStudentAttemptsResponse = TestsStudentAttemptsResponses[keyof TestsStudentAttemptsResponses];
 
 export type ServiceHealthData = {
     body?: never;

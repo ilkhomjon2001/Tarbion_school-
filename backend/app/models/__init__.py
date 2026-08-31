@@ -55,6 +55,17 @@ from app.models.school import (
     Subject,
     TeacherSubject,
 )
+from app.models.tests import (
+    QUESTION_KIND_LABELS_UZ,
+    TEST_STATUS_LABELS_UZ,
+    QuestionKind,
+    Test,
+    TestAnswer,
+    TestAttempt,
+    TestOption,
+    TestQuestion,
+    TestStatus,
+)
 
 __all__ = [
     "AcademicYear",
@@ -103,6 +114,15 @@ __all__ = [
     "SUBMISSION_LABELS_UZ",
     "SubmissionStatus",
     "TeacherSubject",
+    "Test",
+    "TestAnswer",
+    "TestAttempt",
+    "TestOption",
+    "TestQuestion",
+    "TEST_STATUS_LABELS_UZ",
+    "TestStatus",
+    "QUESTION_KIND_LABELS_UZ",
+    "QuestionKind",
     "Term",
     "User",
     "UserPermission",
