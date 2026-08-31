@@ -180,7 +180,7 @@ yuboriladi. Bot ulanmagan bo'lsa — administrator qo'lda tiklaydi.
 
 ## Ma'muriy yadro
 
-### [ ] T-007 · O'quv yili, choraklar, qo'ng'iroqlar jadvali
+### [~] T-007 · O'quv yili, choraklar, qo'ng'iroqlar jadvali
 **TZ:** ADM-01, ADM-07
 **Kerak:** T-005
 **Frontend:** ✅ tayyor — `/admin/baza` → «Oʻquv yili»: chorak sanalarini tahrirlash (`from < to` validatsiyasi, haftalar avtomatik qayta hisoblanadi), dars kunlari va dars vaqtlari roʻyxati. Bir nechta oʻquv yili va bayramlar yoʻq.
@@ -189,10 +189,14 @@ yuboriladi. Bot ulanmagan bo'lsa — administrator qo'lda tiklaydi.
 `holidays`, `bell_schedule` (para raqami, boshlanish, tugash vaqti).
 Admin CRUD + frontend sahifasi.
 
+**Backend:** ✅ `/api/v1/academic` — yillar, choraklar (yaxlit `PUT`),
+ta'tillar, qo'ng'iroqlar jadvali (yaxlit `PUT`). Yozish `schedule.manage`
+huquqini talab qiladi, o'qish kirgan har kimga ochiq. 20 ta test.
+
 **Tayyor:**
-- [ ] Choraklar sanasi bir-birini qoplamaydi (validatsiya)
-- [ ] Faqat bitta o'quv yili "joriy" bo'la oladi
-- [ ] Admin sahifasida CRUD ishlaydi
+- [x] Choraklar sanasi bir-birini qoplamaydi (validatsiya) — `409`
+- [x] Faqat bitta o'quv yili "joriy" bo'la oladi
+- [ ] Admin sahifasida CRUD ishlaydi — frontend hali mock'da
 
 ---
 
