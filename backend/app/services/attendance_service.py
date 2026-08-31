@@ -30,12 +30,15 @@ from app.models import (
     AttendanceRecord,
     AttendanceStatus,
     AuditAction,
+    Guardian,
     Lesson,
+    NotificationKind,
     Permission,
     SchoolClass,
     Student,
+    Subject,
 )
-from app.services import audit_service
+from app.services import audit_service, notifications_service
 from app.services.access import CurrentUser, accessible_student_ids, load_lesson_for_teacher
 from app.services.permissions import has_permission
 
@@ -43,6 +46,9 @@ _VALID = {s.value for s in AttendanceStatus}
 #: Davomat foizida "kelgan" deb hisoblanadigan holatlar. Kechikkan
 #: oʻquvchi darsda boʻlgan — uni kelmaganga qoʻshish notoʻgʻri boʻlardi.
 _PRESENT_LIKE = (AttendanceStatus.PRESENT.value, AttendanceStatus.LATE.value)
+#: Oilaga xabar yuboriladigan holatlar. «Sababli» bu roʻyxatda yoʻq —
+#: uni oila oʻzi maʼlum qilgan, qaytarib xabar berish ortiqcha.
+_NOTIFY_STATUSES = (AttendanceStatus.ABSENT.value, AttendanceStatus.LATE.value)
 
 
 @dataclass(frozen=True, slots=True)
@@ -176,6 +182,11 @@ async def mark_attendance(
 
     now = utcnow()
     created = updated = unchanged = 0
+    #: Kim haqida oilaga xabar beriladi. Faqat HOLATI OʻZGARGAN va
+    #: yangi holati «kelmadi»/«kechikdi» boʻlgan oʻquvchilar. Ustoz
+    #: jurnalni qayta saqlaganda takror xabar ketmasligi uchun shart
+    #: aynan oʻzgarishga bogʻlangan.
+    xabar_uchun: list[tuple[uuid.UUID, str]] = []
 
     for row in rows:
         eski = mavjud.get(row.student_id)
@@ -202,6 +213,8 @@ async def mark_attendance(
                 actor_id=user.id,
                 ip=ip,
             )
+            if row.status in _NOTIFY_STATUSES:
+                xabar_uchun.append((row.student_id, row.status))
             continue
 
         if eski.status == row.status and eski.note == note and not eski.is_archived:
@@ -220,6 +233,11 @@ async def mark_attendance(
             actor_id=user.id,
             ip=ip,
         )
+        # Xabar faqat HOLAT oʻzgarganda. Ustoz izohni tuzatgan boʻlsa
+        # oilaga «Ali kelmadi» deb ikkinchi marta xabar bermaymiz.
+        if eski.status != row.status and row.status in _NOTIFY_STATUSES:
+            xabar_uchun.append((row.student_id, row.status))
+
         eski.status = row.status
         eski.note = note
         eski.marked_by_id = user.id
@@ -246,9 +264,90 @@ async def mark_attendance(
             lesson.topic = yangi_mavzu
 
     lesson.attendance_marked_at = now
+    await _notify_family(session, user, lesson, xabar_uchun)
     await session.commit()
 
     return MarkResult(created=created, updated=updated, unchanged=unchanged)
+
+
+async def _notify_family(
+    session: AsyncSession,
+    user: CurrentUser,
+    lesson: Lesson,
+    changes: list[tuple[uuid.UUID, str]],
+) -> None:
+    """Kelmagan va kechikkan oʻquvchilar boʻyicha oilaga xabar.
+
+    Xabar davomat bilan BIR tranzaksiyada yaratiladi: davomat saqlanmasa
+    bildirishnoma ham qolmaydi. Aks holda ota-onaga «kelmadi» deb xabar
+    ketib, jurnalda hech narsa boʻlmasligi mumkin edi.
+
+    Vasiylar bitta soʻrovda olinadi — 25 kishilik sinfda har bola uchun
+    alohida soʻrov yuborilsa N+1 boʻlardi.
+    """
+    if not changes:
+        return
+
+    student_ids = [sid for sid, _ in changes]
+
+    rows = await session.execute(
+        select(Guardian.student_id, Guardian.user_id).where(
+            Guardian.student_id.in_(student_ids),
+            Guardian.is_archived.is_(False),
+        )
+    )
+    vasiylar: dict[uuid.UUID, list[uuid.UUID]] = {}
+    for student_id, guardian_user_id in rows.all():
+        vasiylar.setdefault(student_id, []).append(guardian_user_id)
+
+    # Oʻquvchining oʻz hisobi ham xabar oladi — 1-bosqichda hammada
+    # boʻlmasligi mumkin, shuning uchun `None` tashlab yuboriladi.
+    own_rows = await session.execute(
+        select(Student.id, Student.user_id, Student.last_name, Student.first_name).where(
+            Student.id.in_(student_ids)
+        )
+    )
+    oquvchi = {r[0]: r for r in own_rows.all()}
+
+    # Fan nomi ATAYLAB alohida soʻrov bilan. `lesson.subject` ga
+    # murojaat qilish `MissingGreenlet` beradi: `load_lesson_for_teacher`
+    # dan kelgan obyekt identity map dan chiqishi mumkin va bogʻliqlik
+    # yuklanmagan boʻladi (`get_lesson_attendance` dagi izohga qarang).
+    fan = await session.scalar(select(Subject.name).where(Subject.id == lesson.subject_id))
+    kun = lesson.lesson_date.strftime("%d.%m.%Y")
+
+    for student_id, status in changes:
+        row = oquvchi.get(student_id)
+        if row is None:
+            continue
+        ism = f"{row[2]} {row[3]}"
+
+        if status == AttendanceStatus.ABSENT.value:
+            kind = NotificationKind.ATTENDANCE_ABSENT
+            sarlavha = f"{ism} darsga kelmadi"
+        else:
+            kind = NotificationKind.ATTENDANCE_LATE
+            sarlavha = f"{ism} darsga kechikdi"
+
+        recipients = [
+            notifications_service.Recipient(user_id=uid, student_id=student_id)
+            for uid in vasiylar.get(student_id, [])
+        ]
+        if row[1] is not None:
+            recipients.append(
+                notifications_service.Recipient(user_id=row[1], student_id=student_id)
+            )
+
+        await notifications_service.notify(
+            session,
+            recipients=recipients,
+            kind=kind,
+            title=sarlavha,
+            body=f"{kun} · {fan or 'dars'} · {lesson.period}-dars",
+            object_type="attendance",
+            object_id=lesson.id,
+            actor_id=user.id,
+        )
 
 
 # ─────────────────────────── DAV-06: foizlar ───────────────────────────

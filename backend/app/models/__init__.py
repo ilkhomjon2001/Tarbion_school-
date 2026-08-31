@@ -40,6 +40,11 @@ from app.models.identity import (
     UserPermission,
     UserRole,
 )
+from app.models.notifications import (
+    NOTIFICATION_KIND_LABELS_UZ,
+    Notification,
+    NotificationKind,
+)
 from app.models.scheduling import Lesson, ScheduleEntry
 from app.models.school import (
     ClassSubject,
@@ -83,6 +88,9 @@ __all__ = [
     "Lesson",
     "LoginAttempt",
     "LoginLog",
+    "NOTIFICATION_KIND_LABELS_UZ",
+    "Notification",
+    "NotificationKind",
     "Permission",
     "RefreshToken",
     "Role",

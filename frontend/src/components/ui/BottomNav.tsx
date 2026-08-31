@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+
+import { NavBadge } from "@/components/shared/NavBadge";
 import { usePathname } from "next/navigation";
 import {
   BellIcon,
@@ -54,6 +56,7 @@ export function BottomNav() {
                   className={`h-5 w-5 transition-transform ${isActive ? "scale-110" : ""}`}
                 />
                 <span className="text-center leading-tight">{label}</span>
+                <NavBadge section={href} floating />
               </Link>
             </li>
           );

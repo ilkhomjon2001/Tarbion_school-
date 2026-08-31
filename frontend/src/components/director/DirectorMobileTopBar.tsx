@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
+import { NotificationBell } from "@/components/shared/NotificationBell";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import {
   BarChartIcon,
-  BellIcon,
   CalendarIcon,
   GraduationCapIcon,
   GridIcon,
@@ -53,14 +53,7 @@ export function DirectorMobileTopBar({ searchIndex }: { searchIndex: SearchIndex
       />
 
       <div className="flex shrink-0 items-center gap-1">
-        <button
-          type="button"
-          aria-label="Bildirishnomalar"
-          className="relative flex h-9 w-9 items-center justify-center rounded-full text-foreground-muted hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
-        >
-          <BellIcon className="h-5 w-5" />
-          <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-danger" />
-        </button>
+        <NotificationBell />
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-semibold text-brand-foreground">
           {initials(DEMO_DIRECTOR.fullName)}
         </span>

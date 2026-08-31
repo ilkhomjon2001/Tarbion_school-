@@ -435,6 +435,24 @@ export type AttendanceStatOut = {
 };
 
 /**
+ * BadgeOut
+ *
+ * Yon menyu uchun: qaysi boʻlimda nechta oʻqilmagan xabar bor.
+ */
+export type BadgeOut = {
+    /**
+     * Total
+     */
+    total: number;
+    /**
+     * Sections
+     */
+    sections: {
+        [key: string]: number;
+    };
+};
+
+/**
  * ChangePasswordIn
  *
  * Parolni almashtirish (AUT-08).
@@ -746,6 +764,36 @@ export type LoginIn = {
 };
 
 /**
+ * MarkAllReadIn
+ */
+export type MarkAllReadIn = {
+    /**
+     * Section
+     */
+    section?: string | null;
+};
+
+/**
+ * MarkReadIn
+ */
+export type MarkReadIn = {
+    /**
+     * Ids
+     */
+    ids: Array<string>;
+};
+
+/**
+ * MarkReadOut
+ */
+export type MarkReadOut = {
+    /**
+     * Updated
+     */
+    updated: number;
+};
+
+/**
  * MessageCreateIn
  */
 export type MessageCreateIn = {
@@ -753,6 +801,64 @@ export type MessageCreateIn = {
      * Body
      */
     body: string;
+};
+
+/**
+ * NotificationKind
+ *
+ * Nima yuz berdi.
+ *
+ * Tur — bu SABAB, boʻlim emas. Boʻlim (`section`) qabul qiluvchining
+ * kabinetiga qarab hisoblanadi: bitta «kelmadi» hodisasi ota-onada
+ * «Davomat», oʻquvchida «Bosh sahifa» boʻlimida koʻrinadi.
+ */
+export type NotificationKind = 'attendance_absent' | 'attendance_late' | 'appeal_new' | 'appeal_message' | 'appeal_assigned' | 'appeal_closed';
+
+/**
+ * NotificationOut
+ */
+export type NotificationOut = {
+    /**
+     * Id
+     */
+    id: string;
+    kind: NotificationKind;
+    /**
+     * Kind Label
+     */
+    kind_label: string;
+    /**
+     * Section
+     */
+    section: string;
+    /**
+     * Link
+     */
+    link: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Body
+     */
+    body: string;
+    /**
+     * Student Id
+     */
+    student_id: string | null;
+    /**
+     * Student Name
+     */
+    student_name: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Read At
+     */
+    read_at: string | null;
 };
 
 /**
@@ -2058,6 +2164,112 @@ export type ParentChildAttendanceResponses = {
 };
 
 export type ParentChildAttendanceResponse = ParentChildAttendanceResponses[keyof ParentChildAttendanceResponses];
+
+export type NotificationsListNotificationsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Only Unread
+         */
+        only_unread?: boolean;
+        /**
+         * Section
+         */
+        section?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/notifications';
+};
+
+export type NotificationsListNotificationsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type NotificationsListNotificationsError = NotificationsListNotificationsErrors[keyof NotificationsListNotificationsErrors];
+
+export type NotificationsListNotificationsResponses = {
+    /**
+     * Response Notifications List Notifications
+     *
+     * Successful Response
+     */
+    200: Array<NotificationOut>;
+};
+
+export type NotificationsListNotificationsResponse = NotificationsListNotificationsResponses[keyof NotificationsListNotificationsResponses];
+
+export type NotificationsBadgesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/notifications/badges';
+};
+
+export type NotificationsBadgesResponses = {
+    /**
+     * Successful Response
+     */
+    200: BadgeOut;
+};
+
+export type NotificationsBadgesResponse = NotificationsBadgesResponses[keyof NotificationsBadgesResponses];
+
+export type NotificationsMarkReadData = {
+    body: MarkReadIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/notifications/read';
+};
+
+export type NotificationsMarkReadErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type NotificationsMarkReadError = NotificationsMarkReadErrors[keyof NotificationsMarkReadErrors];
+
+export type NotificationsMarkReadResponses = {
+    /**
+     * Successful Response
+     */
+    200: MarkReadOut;
+};
+
+export type NotificationsMarkReadResponse = NotificationsMarkReadResponses[keyof NotificationsMarkReadResponses];
+
+export type NotificationsMarkAllReadData = {
+    body: MarkAllReadIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/notifications/read-all';
+};
+
+export type NotificationsMarkAllReadErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type NotificationsMarkAllReadError = NotificationsMarkAllReadErrors[keyof NotificationsMarkAllReadErrors];
+
+export type NotificationsMarkAllReadResponses = {
+    /**
+     * Successful Response
+     */
+    200: MarkReadOut;
+};
+
+export type NotificationsMarkAllReadResponse = NotificationsMarkAllReadResponses[keyof NotificationsMarkAllReadResponses];
 
 export type ServiceHealthData = {
     body?: never;

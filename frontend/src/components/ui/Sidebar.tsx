@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMemo } from "react";
 
+import { NavBadge } from "@/components/shared/NavBadge";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { useAccess } from "@/lib/access-api";
 import { logout } from "@/lib/auth";
@@ -74,6 +75,7 @@ export function Sidebar({ student }: { student: Student }) {
                   )}
                   <ItemIcon className="h-5 w-5 shrink-0" />
                   <span className="truncate">{label}</span>
+                  <NavBadge section={href} />
                 </Link>
               </li>
             );

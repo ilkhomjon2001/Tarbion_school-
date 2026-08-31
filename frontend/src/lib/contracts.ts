@@ -270,3 +270,39 @@ export const CONTACT_KIND_LABELS: Record<ContactKind, string> = {
   in_person: "Yuzma-yuz",
   online: "Onlayn",
 };
+
+// ───────────────────────── Bildirishnomalar ─────────────────────────
+
+/**
+ * Bildirishnoma SABABI (`backend/app/models/notifications.py`).
+ *
+ * Bu turkum — nima yuz bergani, qaysi boʻlimda koʻrinishi emas. Boʻlim
+ * qabul qiluvchining kabinetiga qarab serverda hisoblanadi: bitta
+ * «kelmadi» ota-onada «Davomat», oʻquvchida «Bosh sahifa» boʻlimida
+ * sanaladi.
+ */
+export type NotificationKind =
+  | "attendance_absent"
+  | "attendance_late"
+  | "appeal_new"
+  | "appeal_message"
+  | "appeal_assigned"
+  | "appeal_closed";
+
+export const NOTIFICATION_KINDS: NotificationKind[] = [
+  "attendance_absent",
+  "attendance_late",
+  "appeal_new",
+  "appeal_message",
+  "appeal_assigned",
+  "appeal_closed",
+];
+
+export const NOTIFICATION_KIND_LABELS: Record<NotificationKind, string> = {
+  attendance_absent: "Darsga kelmadi",
+  attendance_late: "Darsga kechikdi",
+  appeal_new: "Yangi murojaat",
+  appeal_message: "Yangi xabar",
+  appeal_assigned: "Murojaat biriktirildi",
+  appeal_closed: "Murojaat yopildi",
+};

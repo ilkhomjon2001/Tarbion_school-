@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { NavBadge } from "@/components/shared/NavBadge";
+import { NotificationBell } from "@/components/shared/NotificationBell";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { useAccess } from "@/lib/access-api";
 import { logout } from "@/lib/auth";
@@ -107,6 +109,7 @@ export function ParentShell({
                   >
                     <Icon />
                     {label}
+                    <NavBadge section={href} />
                   </Link>
                 </li>
               );
@@ -145,7 +148,11 @@ export function ParentShell({
               {title}
             </h1>
 
-            {/* Eʼlonlar — telefonda shu yerdan kiriladi (pastki menyuda joy yoʻq) */}
+            <NotificationBell className="shrink-0" />
+
+            {/* Eʼlonlar — telefonda shu yerdan kiriladi (pastki menyuda joy yoʻq).
+                Belgichasi karnay: yonida bildirishnoma qoʻngʻirogʻi turibdi va
+                ikkita bir xil qoʻngʻiroq chalgʻitardi. */}
             <Link
               href="/ota-ona/elonlar"
               aria-label={
@@ -153,7 +160,7 @@ export function ParentShell({
               }
               className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand lg:hidden"
             >
-              <BellIcon />
+              <MegaphoneIcon />
               {unread > 0 && (
                 <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-brand-foreground">
                   {unread > 9 ? "9+" : unread}
@@ -218,12 +225,13 @@ export function ParentShell({
                 <Link
                   href={href}
                   aria-current={active ? "page" : undefined}
-                  className={`flex flex-col items-center gap-1 px-1 py-2.5 text-[11px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand ${
+                  className={`relative flex flex-col items-center gap-1 px-1 py-2.5 text-[11px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand ${
                     active ? "text-brand-dark" : "text-foreground-muted"
                   }`}
                 >
                   <Icon />
                   <span className="truncate">{label}</span>
+                  <NavBadge section={href} floating />
                 </Link>
               </li>
             );
@@ -284,6 +292,18 @@ function BellIcon() {
     <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
       <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+    </svg>
+  );
+}
+
+/** Eʼlonlar — maktab hammaga aytadigan xabar. Shaxsiy bildirishnoma
+    qoʻngʻirogʻidan ataylab boshqa belgicha. */
+function MegaphoneIcon() {
+  return (
+    <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m3 11 15-6v14L3 13Z" />
+      <path d="M3 11v2a2 2 0 0 0 2 2h1v4h3v-4" />
+      <path d="M21 10v4" />
     </svg>
   );
 }

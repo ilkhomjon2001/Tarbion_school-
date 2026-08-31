@@ -5,9 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { LogoutIcon, MenuIcon, UserIcon, XIcon } from "@/components/ui/icons";
-import { AdminNotifications } from "@/components/admin/AdminNotifications";
 import { AdminSearch } from "@/components/admin/AdminSearch";
 import { ADMIN_NAV, isNavActive } from "@/components/admin/nav";
+import { NavBadge } from "@/components/shared/NavBadge";
+import { NotificationBell } from "@/components/shared/NotificationBell";
 import { useAdmin, useVisibleSections } from "@/lib/admin/store";
 import { currentRole, logout } from "@/lib/auth";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
@@ -67,6 +68,7 @@ export function AdminSidebar() {
                   )}
                   <ItemIcon className="h-5 w-5 shrink-0" />
                   <span className="truncate">{label}</span>
+                  <NavBadge section={href} />
                 </Link>
               </li>
             );
@@ -115,7 +117,7 @@ export function AdminTopbar() {
     <header className="sticky top-0 z-20 hidden items-center gap-4 border-b border-border bg-surface/95 px-6 py-3 backdrop-blur md:flex">
       <AdminSearch className="w-full max-w-xs" />
       <div className="ml-auto flex items-center gap-3">
-        <AdminNotifications />
+        <NotificationBell />
         <Link
           href="/admin/profil"
           aria-label="Profil"
@@ -149,7 +151,7 @@ export function AdminMobileTopBar() {
 
       <AdminSearch className="min-w-0 flex-1" compact />
 
-      <AdminNotifications />
+      <NotificationBell />
 
       {open && (
         <div className="fixed inset-0 z-40 md:hidden">
@@ -190,6 +192,7 @@ export function AdminMobileTopBar() {
                       >
                         <ItemIcon className="h-5 w-5 shrink-0" />
                         {label}
+                        <NavBadge section={href} />
                       </Link>
                     </li>
                   );
