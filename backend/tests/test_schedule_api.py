@@ -260,9 +260,7 @@ async def test_ustozni_almashtirish(client: AsyncClient, world: dict) -> None:
     assert resp.json()["teacher_name"] == "Valiyev Sinov"
 
 
-async def test_almashtirishda_ham_toqnashuv_tekshiriladi(
-    client: AsyncClient, world: dict
-) -> None:
+async def test_almashtirishda_ham_toqnashuv_tekshiriladi(client: AsyncClient, world: dict) -> None:
     token = await _token(client, "sd.admin")
     await client.post("/api/v1/schedule/entries", headers=_auth(token), json=_dars(world))
     ikkinchi = await client.post(
@@ -296,9 +294,7 @@ async def test_jadvaldan_chiqarilgan_yozuv_arxivlanadi(
         await client.post("/api/v1/schedule/entries", headers=_auth(token), json=_dars(world))
     ).json()["id"]
 
-    resp = await client.post(
-        f"/api/v1/schedule/entries/{entry_id}/archive", headers=_auth(token)
-    )
+    resp = await client.post(f"/api/v1/schedule/entries/{entry_id}/archive", headers=_auth(token))
     assert resp.status_code == 204
 
     barchasi = (await session.execute(select(ScheduleEntry))).scalars().all()
@@ -468,9 +464,7 @@ async def test_parol_tiklanadi(client: AsyncClient, world: dict) -> None:
     assert resp.status_code == 200, resp.text
     yangi = resp.json()["new_password"]
 
-    resp = await client.post(
-        "/api/v1/auth/login", json={"login": "sd.ustoz_a", "password": yangi}
-    )
+    resp = await client.post("/api/v1/auth/login", json={"login": "sd.ustoz_a", "password": yangi})
     assert resp.status_code == 200, resp.text
 
 

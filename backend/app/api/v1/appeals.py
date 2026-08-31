@@ -149,9 +149,7 @@ async def search_students(
 
 
 @router.get("/{appeal_id}", response_model=AppealOut)
-async def get_appeal(
-    appeal_id: uuid.UUID, session: SessionDep, user: CurrentUserDep
-) -> AppealOut:
+async def get_appeal(appeal_id: uuid.UUID, session: SessionDep, user: CurrentUserDep) -> AppealOut:
     """Bitta murojaat — yozishmasi bilan.
 
     Ichki qaydlar (`AppealNote`) bu javobda YOʻQ: ular alohida endpointda

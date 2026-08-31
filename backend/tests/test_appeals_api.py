@@ -857,9 +857,7 @@ async def test_student_search_matches_anywhere_in_the_name(
     assert sorted(r["full_name"] for r in rows) == ["Aliyev Ali", "Valiyev Vali"]
 
 
-async def test_student_search_carries_no_contact_details(
-    client: AsyncClient, world: dict
-) -> None:
+async def test_student_search_carries_no_contact_details(client: AsyncClient, world: dict) -> None:
     """X-6: roʻyxatda telefon, manzil va hujjat raqami boʻlmaydi."""
     admin = await _token(client, "sinov.admin")
     resp = await client.get(

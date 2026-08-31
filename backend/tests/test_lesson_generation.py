@@ -172,9 +172,7 @@ async def test_tatil_kunida_dars_yaratilmaydi(
     client: AsyncClient, world: dict, session: AsyncSession
 ) -> None:
     """T-012 qabul mezoni."""
-    session.add(
-        Holiday(academic_year_id=world["year"].id, day=DUSHANBA, title="Mustaqillik kuni")
-    )
+    session.add(Holiday(academic_year_id=world["year"].id, day=DUSHANBA, title="Mustaqillik kuni"))
     await session.flush()
 
     token = await _token(client, "gen.ustoz")
@@ -275,9 +273,7 @@ async def test_chorak_uchun_generatsiya(client: AsyncClient, world: dict) -> Non
     assert resp.status_code == 200, resp.text
     term_id = resp.json()[0]["id"]
 
-    resp = await client.post(
-        f"/api/v1/attendance/generate/term/{term_id}", headers=_auth(token)
-    )
+    resp = await client.post(f"/api/v1/attendance/generate/term/{term_id}", headers=_auth(token))
     assert resp.status_code == 200, resp.text
     assert resp.json()["created"] == 2
 

@@ -515,15 +515,15 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
   - Frontend: ⬜ yoʻq
 - [ ] T-028 · Ustoz kabineti: yuklama va sinflar — MET-09
   - Frontend: ✅ tayyor — `/rahbar/ustozlar/[id]` → «Sinflari» va «Statistika»
-- [ ] T-029 · Baholar jurnali: model va API — JUR-01, JUR-02, JUR-03
+- [x] T-029 · Baholar jurnali: model va API — JUR-01, JUR-02, JUR-03 · backend tayyor (`/api/v1/journal`)
   - Frontend: ⬜ yoʻq — backend ishi
 - [ ] T-030 · Jurnal ekrani (sinf × fan × sana) — JUR-01
   - Frontend: ✅ tayyor — `/teacher/jurnal`
 - [ ] T-031 · Chorak bahosini hisoblash va qo'lda tuzatish — JUR-04
   - Frontend: 🟡 qisman — `GradeBook.tsx` da chorak ustuni bor, qoʻlda tuzatish yoʻq
-- [~] T-032 · Uy vazifasi: berish va topshirish — UYV-01, UYV-02
+- [x] T-032 · Uy vazifasi: berish va topshirish — UYV-01, UYV-02 · backend tayyor
   - Frontend: ✅ tayyor — `/teacher/vazifa`, `/student/homework`
-- [~] T-033 · Uy vazifasini tekshirish va qaytarish — UYV-03, UYV-06
+- [x] T-033 · Uy vazifasini tekshirish va qaytarish — UYV-03, UYV-06 · backend tayyor
   - Frontend: ✅ tayyor — `/teacher/vazifa/[id]`
 - [ ] T-034 · O'quvchi kabineti — jadval, vazifalar, natijalar
   - Frontend: ✅ tayyor — `/student/*` — 12 sahifa
