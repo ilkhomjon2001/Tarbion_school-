@@ -593,11 +593,13 @@ async def seed_appeals(
             note_rows += 1
 
     await session.commit()
-    print(f"  murojaatlar: {len(by_ref)} · xabarlar: {message_rows} · ichki qayd: {note_rows}")
+    print(
+        f"  murojaatlar: {len(by_ref)} · xabarlar: {message_rows} · ichki qayd: {note_rows}"
+    )
 
 
 def parse_moment(value: str) -> datetime:
-    """ "2026-08-27 09:20" yoki "2026-08-27" → UTC datetime.
+    """"2026-08-27 09:20" yoki "2026-08-27" → UTC datetime.
 
     Mock'dagi vaqt MAHALLIY (Asia/Tashkent). To'g'ridan-to'g'ri UTC deb
     saqlansa yozishma besh soat oldinga surilib ketardi.
@@ -609,6 +611,7 @@ def parse_moment(value: str) -> datetime:
     else:
         day_part, hour, minute = value, 9, 0
     return combine_local(date.fromisoformat(day_part), time(hour, minute))
+
 
 
 async def main() -> None:

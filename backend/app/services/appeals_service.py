@@ -91,7 +91,9 @@ async def _scope(session: AsyncSession, user: CurrentUser):
             ).scalars()
         )
         if child_ids:
-            terms.append(and_(Appeal.author_id == user.id, Appeal.student_id.in_(child_ids)))
+            terms.append(
+                and_(Appeal.author_id == user.id, Appeal.student_id.in_(child_ids))
+            )
 
     if user.is_teacher:
         # Oʻziga biriktirilgani.
@@ -171,9 +173,9 @@ async def visible_appeals(
     if target:
         query = query.where(Appeal.target == target)
 
-    query = query.order_by(func.coalesce(Appeal.last_message_at, Appeal.created_at).desc()).limit(
-        limit
-    )
+    query = query.order_by(
+        func.coalesce(Appeal.last_message_at, Appeal.created_at).desc()
+    ).limit(limit)
     return (await session.execute(query)).all()
 
 
@@ -247,7 +249,7 @@ async def resolve_assignee(
             .where(
                 Student.id == student_id,
                 Lesson.teacher_id == requested_id,
-                *([Lesson.subject_id == subject_id] if subject_id else []),
+                *( [Lesson.subject_id == subject_id] if subject_id else [] ),
             )
         )
         if not ok:
