@@ -59,7 +59,14 @@ export default function RootLayout({
       lang="uz"
       className={`h-full antialiased ${inter.variable} ${onest.variable}`}
     >
-      <body className="min-h-full font-sans">{children}</body>
+      {/* Brauzer kengaytmalari (ColorZilla, Grammarly va h.k.) sahifa
+          yuklanganda `body` ga oʻz atributlarini qoʻshadi — React esa buni
+          server HTML'idan farq deb hisoblaydi. Ogohlantirish faqat shu
+          elementning atributlariga tegishli, ichkaridagi haqiqiy
+          nomuvofiqliklar baribir koʻrinadi. */}
+      <body suppressHydrationWarning className="min-h-full font-sans">
+        {children}
+      </body>
     </html>
   );
 }
