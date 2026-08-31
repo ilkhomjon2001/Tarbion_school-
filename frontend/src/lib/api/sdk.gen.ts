@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AccessPermissionRegistryData, AccessPermissionRegistryResponses, AccessSectionsData, AccessSectionsResponses, AccessSetPermissionsData, AccessSetPermissionsErrors, AccessSetPermissionsResponses, AccessSetSectionsData, AccessSetSectionsErrors, AccessSetSectionsResponses, AccessUserAccessData, AccessUserAccessErrors, AccessUserAccessResponses, AccessUsersData, AccessUsersErrors, AccessUsersResponses, AppealsAddMessageData, AppealsAddMessageErrors, AppealsAddMessageResponses, AppealsAppealsSummaryData, AppealsAppealsSummaryResponses, AppealsComposeOptionsData, AppealsComposeOptionsResponses, AppealsCreateAppealData, AppealsCreateAppealErrors, AppealsCreateAppealResponses, AppealsCreateNoteData, AppealsCreateNoteErrors, AppealsCreateNoteResponses, AppealsGetAppealData, AppealsGetAppealErrors, AppealsGetAppealResponses, AppealsListAppealsData, AppealsListAppealsErrors, AppealsListAppealsResponses, AppealsListNotesData, AppealsListNotesErrors, AppealsListNotesResponses, AppealsSearchStudentsData, AppealsSearchStudentsErrors, AppealsSearchStudentsResponses, AppealsStatsClassesData, AppealsStatsClassesResponses, AppealsUpdateAssigneeData, AppealsUpdateAssigneeErrors, AppealsUpdateAssigneeResponses, AppealsUpdateStatusData, AppealsUpdateStatusErrors, AppealsUpdateStatusResponses, AttendanceClassStudentsData, AttendanceClassStudentsErrors, AttendanceClassStudentsResponses, AttendanceLessonAttendanceData, AttendanceLessonAttendanceErrors, AttendanceLessonAttendanceResponses, AttendanceMarkData, AttendanceMarkErrors, AttendanceMarkResponses, AttendanceMyLessonsData, AttendanceMyLessonsErrors, AttendanceMyLessonsResponses, AttendanceStatsData, AttendanceStatsErrors, AttendanceStatsResponses, AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRefreshData, AuthRefreshResponses, DirectorClassesData, DirectorClassesResponses, DirectorOverviewData, DirectorOverviewErrors, DirectorOverviewResponses, DirectorTeachersData, DirectorTeachersResponses, ParentChildAttendanceData, ParentChildAttendanceErrors, ParentChildAttendanceResponses, ParentMyChildrenData, ParentMyChildrenResponses, SchoolArchiveStudentData, SchoolArchiveStudentErrors, SchoolArchiveStudentResponses, SchoolClassesData, SchoolClassesResponses, SchoolCreateStudentData, SchoolCreateStudentErrors, SchoolCreateStudentResponses, SchoolMoveStudentData, SchoolMoveStudentErrors, SchoolMoveStudentResponses, SchoolRestoreStudentData, SchoolRestoreStudentErrors, SchoolRestoreStudentResponses, SchoolStaffData, SchoolStaffResponses, SchoolStudentCardData, SchoolStudentCardErrors, SchoolStudentCardResponses, SchoolStudentsData, SchoolStudentsErrors, SchoolStudentsResponses, SchoolSubjectsData, SchoolSubjectsOfClassData, SchoolSubjectsOfClassErrors, SchoolSubjectsOfClassResponses, SchoolSubjectsResponses, ServiceHealthData, ServiceHealthResponses, ServiceReadinessData, ServiceReadinessResponses } from './types.gen';
+import type { AcademicAddHolidayData, AcademicAddHolidayErrors, AcademicAddHolidayResponses, AcademicArchiveHolidayData, AcademicArchiveHolidayErrors, AcademicArchiveHolidayResponses, AcademicBellsData, AcademicBellsErrors, AcademicBellsResponses, AcademicCreateYearData, AcademicCreateYearErrors, AcademicCreateYearResponses, AcademicCurrentYearData, AcademicCurrentYearResponses, AcademicHolidaysData, AcademicHolidaysErrors, AcademicHolidaysResponses, AcademicMakeCurrentData, AcademicMakeCurrentErrors, AcademicMakeCurrentResponses, AcademicSetBellsData, AcademicSetBellsErrors, AcademicSetBellsResponses, AcademicSetTermsData, AcademicSetTermsErrors, AcademicSetTermsResponses, AcademicTermsData, AcademicTermsErrors, AcademicTermsResponses, AcademicUpdateYearData, AcademicUpdateYearErrors, AcademicUpdateYearResponses, AcademicYearsData, AcademicYearsResponses, AccessPermissionRegistryData, AccessPermissionRegistryResponses, AccessSectionsData, AccessSectionsResponses, AccessSetPermissionsData, AccessSetPermissionsErrors, AccessSetPermissionsResponses, AccessSetSectionsData, AccessSetSectionsErrors, AccessSetSectionsResponses, AccessUserAccessData, AccessUserAccessErrors, AccessUserAccessResponses, AccessUsersData, AccessUsersErrors, AccessUsersResponses, AppealsAddMessageData, AppealsAddMessageErrors, AppealsAddMessageResponses, AppealsAppealsSummaryData, AppealsAppealsSummaryResponses, AppealsComposeOptionsData, AppealsComposeOptionsResponses, AppealsCreateAppealData, AppealsCreateAppealErrors, AppealsCreateAppealResponses, AppealsCreateNoteData, AppealsCreateNoteErrors, AppealsCreateNoteResponses, AppealsGetAppealData, AppealsGetAppealErrors, AppealsGetAppealResponses, AppealsListAppealsData, AppealsListAppealsErrors, AppealsListAppealsResponses, AppealsListNotesData, AppealsListNotesErrors, AppealsListNotesResponses, AppealsSearchStudentsData, AppealsSearchStudentsErrors, AppealsSearchStudentsResponses, AppealsStatsClassesData, AppealsStatsClassesResponses, AppealsUpdateAssigneeData, AppealsUpdateAssigneeErrors, AppealsUpdateAssigneeResponses, AppealsUpdateStatusData, AppealsUpdateStatusErrors, AppealsUpdateStatusResponses, AttendanceClassStudentsData, AttendanceClassStudentsErrors, AttendanceClassStudentsResponses, AttendanceLessonAttendanceData, AttendanceLessonAttendanceErrors, AttendanceLessonAttendanceResponses, AttendanceMarkData, AttendanceMarkErrors, AttendanceMarkResponses, AttendanceMyLessonsData, AttendanceMyLessonsErrors, AttendanceMyLessonsResponses, AttendanceStatsData, AttendanceStatsErrors, AttendanceStatsResponses, AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRefreshData, AuthRefreshResponses, DirectorClassesData, DirectorClassesResponses, DirectorOverviewData, DirectorOverviewErrors, DirectorOverviewResponses, DirectorTeachersData, DirectorTeachersResponses, ParentChildAttendanceData, ParentChildAttendanceErrors, ParentChildAttendanceResponses, ParentMyChildrenData, ParentMyChildrenResponses, SchoolArchiveStudentData, SchoolArchiveStudentErrors, SchoolArchiveStudentResponses, SchoolClassesData, SchoolClassesResponses, SchoolCreateStudentData, SchoolCreateStudentErrors, SchoolCreateStudentResponses, SchoolMoveStudentData, SchoolMoveStudentErrors, SchoolMoveStudentResponses, SchoolRestoreStudentData, SchoolRestoreStudentErrors, SchoolRestoreStudentResponses, SchoolStaffData, SchoolStaffResponses, SchoolStudentCardData, SchoolStudentCardErrors, SchoolStudentCardResponses, SchoolStudentsData, SchoolStudentsErrors, SchoolStudentsResponses, SchoolSubjectsData, SchoolSubjectsOfClassData, SchoolSubjectsOfClassErrors, SchoolSubjectsOfClassResponses, SchoolSubjectsResponses, ServiceHealthData, ServiceHealthResponses, ServiceReadinessData, ServiceReadinessResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -124,6 +124,117 @@ export const accessSetSections = <ThrowOnError extends boolean = false>(options:
  */
 export const accessSetPermissions = <ThrowOnError extends boolean = false>(options: Options<AccessSetPermissionsData, ThrowOnError>): RequestResult<AccessSetPermissionsResponses, AccessSetPermissionsErrors, ThrowOnError> => (options.client ?? client).put<AccessSetPermissionsResponses, AccessSetPermissionsErrors, ThrowOnError>({
     url: '/api/v1/access/users/{user_id}/permissions',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Years
+ */
+export const academicYears = <ThrowOnError extends boolean = false>(options?: Options<AcademicYearsData, ThrowOnError>): RequestResult<AcademicYearsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AcademicYearsResponses, unknown, ThrowOnError>({ url: '/api/v1/academic/years', ...options });
+
+/**
+ * Create Year
+ *
+ * Yangi oʻquv yili (ADM-01). Huquq: `schedule.manage`.
+ */
+export const academicCreateYear = <ThrowOnError extends boolean = false>(options: Options<AcademicCreateYearData, ThrowOnError>): RequestResult<AcademicCreateYearResponses, AcademicCreateYearErrors, ThrowOnError> => (options.client ?? client).post<AcademicCreateYearResponses, AcademicCreateYearErrors, ThrowOnError>({
+    url: '/api/v1/academic/years',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Current Year
+ *
+ * Joriy oʻquv yili. Belgilanmagan boʻlsa `404` — bu sozlama xatosi.
+ */
+export const academicCurrentYear = <ThrowOnError extends boolean = false>(options?: Options<AcademicCurrentYearData, ThrowOnError>): RequestResult<AcademicCurrentYearResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AcademicCurrentYearResponses, unknown, ThrowOnError>({ url: '/api/v1/academic/years/current', ...options });
+
+/**
+ * Update Year
+ */
+export const academicUpdateYear = <ThrowOnError extends boolean = false>(options: Options<AcademicUpdateYearData, ThrowOnError>): RequestResult<AcademicUpdateYearResponses, AcademicUpdateYearErrors, ThrowOnError> => (options.client ?? client).patch<AcademicUpdateYearResponses, AcademicUpdateYearErrors, ThrowOnError>({
+    url: '/api/v1/academic/years/{year_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Make Current
+ *
+ * Joriy yilni almashtiradi — bir vaqtda faqat bittasi joriy.
+ */
+export const academicMakeCurrent = <ThrowOnError extends boolean = false>(options: Options<AcademicMakeCurrentData, ThrowOnError>): RequestResult<AcademicMakeCurrentResponses, AcademicMakeCurrentErrors, ThrowOnError> => (options.client ?? client).post<AcademicMakeCurrentResponses, AcademicMakeCurrentErrors, ThrowOnError>({ url: '/api/v1/academic/years/{year_id}/current', ...options });
+
+/**
+ * Terms
+ */
+export const academicTerms = <ThrowOnError extends boolean = false>(options: Options<AcademicTermsData, ThrowOnError>): RequestResult<AcademicTermsResponses, AcademicTermsErrors, ThrowOnError> => (options.client ?? client).get<AcademicTermsResponses, AcademicTermsErrors, ThrowOnError>({ url: '/api/v1/academic/years/{year_id}/terms', ...options });
+
+/**
+ * Set Terms
+ *
+ * Choraklarni yaxlit yozadi. Qoplanish → `409`.
+ */
+export const academicSetTerms = <ThrowOnError extends boolean = false>(options: Options<AcademicSetTermsData, ThrowOnError>): RequestResult<AcademicSetTermsResponses, AcademicSetTermsErrors, ThrowOnError> => (options.client ?? client).put<AcademicSetTermsResponses, AcademicSetTermsErrors, ThrowOnError>({
+    url: '/api/v1/academic/years/{year_id}/terms',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Holidays
+ */
+export const academicHolidays = <ThrowOnError extends boolean = false>(options: Options<AcademicHolidaysData, ThrowOnError>): RequestResult<AcademicHolidaysResponses, AcademicHolidaysErrors, ThrowOnError> => (options.client ?? client).get<AcademicHolidaysResponses, AcademicHolidaysErrors, ThrowOnError>({ url: '/api/v1/academic/years/{year_id}/holidays', ...options });
+
+/**
+ * Add Holiday
+ *
+ * Taʼtil kuni — bu kunga dars generatsiya qilinmaydi (T-012).
+ */
+export const academicAddHoliday = <ThrowOnError extends boolean = false>(options: Options<AcademicAddHolidayData, ThrowOnError>): RequestResult<AcademicAddHolidayResponses, AcademicAddHolidayErrors, ThrowOnError> => (options.client ?? client).post<AcademicAddHolidayResponses, AcademicAddHolidayErrors, ThrowOnError>({
+    url: '/api/v1/academic/years/{year_id}/holidays',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Archive Holiday
+ *
+ * Roʻyxatdan chiqaradi. Oʻchirish YOʻQ (CLAUDE.md 1-qoida).
+ */
+export const academicArchiveHoliday = <ThrowOnError extends boolean = false>(options: Options<AcademicArchiveHolidayData, ThrowOnError>): RequestResult<AcademicArchiveHolidayResponses, AcademicArchiveHolidayErrors, ThrowOnError> => (options.client ?? client).post<AcademicArchiveHolidayResponses, AcademicArchiveHolidayErrors, ThrowOnError>({ url: '/api/v1/academic/holidays/{holiday_id}/archive', ...options });
+
+/**
+ * Bells
+ *
+ * Dars vaqtlari (ADM-07). Vaqt mahalliy — Asia/Tashkent.
+ */
+export const academicBells = <ThrowOnError extends boolean = false>(options: Options<AcademicBellsData, ThrowOnError>): RequestResult<AcademicBellsResponses, AcademicBellsErrors, ThrowOnError> => (options.client ?? client).get<AcademicBellsResponses, AcademicBellsErrors, ThrowOnError>({ url: '/api/v1/academic/years/{year_id}/bells', ...options });
+
+/**
+ * Set Bells
+ *
+ * Qoʻngʻiroqlar jadvalini yaxlit yozadi. Vaqt qoplanishi → `409`.
+ */
+export const academicSetBells = <ThrowOnError extends boolean = false>(options: Options<AcademicSetBellsData, ThrowOnError>): RequestResult<AcademicSetBellsResponses, AcademicSetBellsErrors, ThrowOnError> => (options.client ?? client).put<AcademicSetBellsResponses, AcademicSetBellsErrors, ThrowOnError>({
+    url: '/api/v1/academic/years/{year_id}/bells',
     ...options,
     headers: {
         'Content-Type': 'application/json',

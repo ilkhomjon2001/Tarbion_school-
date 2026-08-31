@@ -5,6 +5,72 @@ export type ClientOptions = {
 };
 
 /**
+ * AcademicYearCreateIn
+ */
+export type AcademicYearCreateIn = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Starts On
+     */
+    starts_on: string;
+    /**
+     * Ends On
+     */
+    ends_on: string;
+    /**
+     * Make Current
+     */
+    make_current?: boolean;
+};
+
+/**
+ * AcademicYearOut
+ */
+export type AcademicYearOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Starts On
+     */
+    starts_on: string;
+    /**
+     * Ends On
+     */
+    ends_on: string;
+    /**
+     * Is Current
+     */
+    is_current: boolean;
+};
+
+/**
+ * AcademicYearUpdateIn
+ */
+export type AcademicYearUpdateIn = {
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Starts On
+     */
+    starts_on?: string | null;
+    /**
+     * Ends On
+     */
+    ends_on?: string | null;
+};
+
+/**
  * AppealAssigneeOut
  *
  * Ota-ona murojaat yozayotganda tanlaydigan fan oʻqituvchisi.
@@ -435,6 +501,56 @@ export type AttendanceStatOut = {
 };
 
 /**
+ * BellIn
+ */
+export type BellIn = {
+    /**
+     * Period
+     */
+    period: number;
+    /**
+     * Starts At
+     */
+    starts_at: string;
+    /**
+     * Ends At
+     */
+    ends_at: string;
+};
+
+/**
+ * BellOut
+ */
+export type BellOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Period
+     */
+    period: number;
+    /**
+     * Starts At
+     */
+    starts_at: string;
+    /**
+     * Ends At
+     */
+    ends_at: string;
+};
+
+/**
+ * BellsIn
+ */
+export type BellsIn = {
+    /**
+     * Bells
+     */
+    bells: Array<BellIn>;
+};
+
+/**
  * ChangePasswordIn
  *
  * Parolni almashtirish (AUT-08).
@@ -715,6 +831,38 @@ export type HealthOut = {
      * Status
      */
     status: 'ok';
+};
+
+/**
+ * HolidayIn
+ */
+export type HolidayIn = {
+    /**
+     * Day
+     */
+    day: string;
+    /**
+     * Title
+     */
+    title: string;
+};
+
+/**
+ * HolidayOut
+ */
+export type HolidayOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Day
+     */
+    day: string;
+    /**
+     * Title
+     */
+    title: string;
 };
 
 /**
@@ -1201,6 +1349,66 @@ export type TeacherRowOut = {
 };
 
 /**
+ * TermIn
+ */
+export type TermIn = {
+    /**
+     * Index
+     */
+    index: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Starts On
+     */
+    starts_on: string;
+    /**
+     * Ends On
+     */
+    ends_on: string;
+};
+
+/**
+ * TermOut
+ */
+export type TermOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Index
+     */
+    index: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Starts On
+     */
+    starts_on: string;
+    /**
+     * Ends On
+     */
+    ends_on: string;
+};
+
+/**
+ * TermsIn
+ *
+ * Roʻyxatdan chiqib qolgan chorak arxivlanadi (CLAUDE.md 1-qoida).
+ */
+export type TermsIn = {
+    /**
+     * Terms
+     */
+    terms: Array<TermIn>;
+};
+
+/**
  * TokenOut
  *
  * Refresh token javob tanasida QAYTMAYDI — httpOnly cookie'da ketadi.
@@ -1651,6 +1859,345 @@ export type AccessSetPermissionsResponses = {
 };
 
 export type AccessSetPermissionsResponse = AccessSetPermissionsResponses[keyof AccessSetPermissionsResponses];
+
+export type AcademicYearsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/academic/years';
+};
+
+export type AcademicYearsResponses = {
+    /**
+     * Response Academic Years
+     *
+     * Successful Response
+     */
+    200: Array<AcademicYearOut>;
+};
+
+export type AcademicYearsResponse = AcademicYearsResponses[keyof AcademicYearsResponses];
+
+export type AcademicCreateYearData = {
+    body: AcademicYearCreateIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/academic/years';
+};
+
+export type AcademicCreateYearErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AcademicCreateYearError = AcademicCreateYearErrors[keyof AcademicCreateYearErrors];
+
+export type AcademicCreateYearResponses = {
+    /**
+     * Successful Response
+     */
+    201: AcademicYearOut;
+};
+
+export type AcademicCreateYearResponse = AcademicCreateYearResponses[keyof AcademicCreateYearResponses];
+
+export type AcademicCurrentYearData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/academic/years/current';
+};
+
+export type AcademicCurrentYearResponses = {
+    /**
+     * Successful Response
+     */
+    200: AcademicYearOut;
+};
+
+export type AcademicCurrentYearResponse = AcademicCurrentYearResponses[keyof AcademicCurrentYearResponses];
+
+export type AcademicUpdateYearData = {
+    body: AcademicYearUpdateIn;
+    path: {
+        /**
+         * Year Id
+         */
+        year_id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic/years/{year_id}';
+};
+
+export type AcademicUpdateYearErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AcademicUpdateYearError = AcademicUpdateYearErrors[keyof AcademicUpdateYearErrors];
+
+export type AcademicUpdateYearResponses = {
+    /**
+     * Successful Response
+     */
+    200: AcademicYearOut;
+};
+
+export type AcademicUpdateYearResponse = AcademicUpdateYearResponses[keyof AcademicUpdateYearResponses];
+
+export type AcademicMakeCurrentData = {
+    body?: never;
+    path: {
+        /**
+         * Year Id
+         */
+        year_id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic/years/{year_id}/current';
+};
+
+export type AcademicMakeCurrentErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AcademicMakeCurrentError = AcademicMakeCurrentErrors[keyof AcademicMakeCurrentErrors];
+
+export type AcademicMakeCurrentResponses = {
+    /**
+     * Successful Response
+     */
+    200: AcademicYearOut;
+};
+
+export type AcademicMakeCurrentResponse = AcademicMakeCurrentResponses[keyof AcademicMakeCurrentResponses];
+
+export type AcademicTermsData = {
+    body?: never;
+    path: {
+        /**
+         * Year Id
+         */
+        year_id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic/years/{year_id}/terms';
+};
+
+export type AcademicTermsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AcademicTermsError = AcademicTermsErrors[keyof AcademicTermsErrors];
+
+export type AcademicTermsResponses = {
+    /**
+     * Response Academic Terms
+     *
+     * Successful Response
+     */
+    200: Array<TermOut>;
+};
+
+export type AcademicTermsResponse = AcademicTermsResponses[keyof AcademicTermsResponses];
+
+export type AcademicSetTermsData = {
+    body: TermsIn;
+    path: {
+        /**
+         * Year Id
+         */
+        year_id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic/years/{year_id}/terms';
+};
+
+export type AcademicSetTermsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AcademicSetTermsError = AcademicSetTermsErrors[keyof AcademicSetTermsErrors];
+
+export type AcademicSetTermsResponses = {
+    /**
+     * Response Academic Set Terms
+     *
+     * Successful Response
+     */
+    200: Array<TermOut>;
+};
+
+export type AcademicSetTermsResponse = AcademicSetTermsResponses[keyof AcademicSetTermsResponses];
+
+export type AcademicHolidaysData = {
+    body?: never;
+    path: {
+        /**
+         * Year Id
+         */
+        year_id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic/years/{year_id}/holidays';
+};
+
+export type AcademicHolidaysErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AcademicHolidaysError = AcademicHolidaysErrors[keyof AcademicHolidaysErrors];
+
+export type AcademicHolidaysResponses = {
+    /**
+     * Response Academic Holidays
+     *
+     * Successful Response
+     */
+    200: Array<HolidayOut>;
+};
+
+export type AcademicHolidaysResponse = AcademicHolidaysResponses[keyof AcademicHolidaysResponses];
+
+export type AcademicAddHolidayData = {
+    body: HolidayIn;
+    path: {
+        /**
+         * Year Id
+         */
+        year_id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic/years/{year_id}/holidays';
+};
+
+export type AcademicAddHolidayErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AcademicAddHolidayError = AcademicAddHolidayErrors[keyof AcademicAddHolidayErrors];
+
+export type AcademicAddHolidayResponses = {
+    /**
+     * Successful Response
+     */
+    201: HolidayOut;
+};
+
+export type AcademicAddHolidayResponse = AcademicAddHolidayResponses[keyof AcademicAddHolidayResponses];
+
+export type AcademicArchiveHolidayData = {
+    body?: never;
+    path: {
+        /**
+         * Holiday Id
+         */
+        holiday_id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic/holidays/{holiday_id}/archive';
+};
+
+export type AcademicArchiveHolidayErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AcademicArchiveHolidayError = AcademicArchiveHolidayErrors[keyof AcademicArchiveHolidayErrors];
+
+export type AcademicArchiveHolidayResponses = {
+    /**
+     * Successful Response
+     */
+    200: HolidayOut;
+};
+
+export type AcademicArchiveHolidayResponse = AcademicArchiveHolidayResponses[keyof AcademicArchiveHolidayResponses];
+
+export type AcademicBellsData = {
+    body?: never;
+    path: {
+        /**
+         * Year Id
+         */
+        year_id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic/years/{year_id}/bells';
+};
+
+export type AcademicBellsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AcademicBellsError = AcademicBellsErrors[keyof AcademicBellsErrors];
+
+export type AcademicBellsResponses = {
+    /**
+     * Response Academic Bells
+     *
+     * Successful Response
+     */
+    200: Array<BellOut>;
+};
+
+export type AcademicBellsResponse = AcademicBellsResponses[keyof AcademicBellsResponses];
+
+export type AcademicSetBellsData = {
+    body: BellsIn;
+    path: {
+        /**
+         * Year Id
+         */
+        year_id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic/years/{year_id}/bells';
+};
+
+export type AcademicSetBellsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AcademicSetBellsError = AcademicSetBellsErrors[keyof AcademicSetBellsErrors];
+
+export type AcademicSetBellsResponses = {
+    /**
+     * Response Academic Set Bells
+     *
+     * Successful Response
+     */
+    200: Array<BellOut>;
+};
+
+export type AcademicSetBellsResponse = AcademicSetBellsResponses[keyof AcademicSetBellsResponses];
 
 export type DirectorOverviewData = {
     body?: never;
