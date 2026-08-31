@@ -14,7 +14,7 @@ Va oqimning oʻzi: davomat belgilandi → oilada xabar, murojaatga javob
 yozildi → narigi tomonda xabar, oʻqildi → sanoq kamaydi.
 """
 
-from datetime import date, time
+from datetime import date, time, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -30,6 +30,7 @@ from app.models import (
     Notification,
     Role,
     RoleName,
+    ScheduleEntry,
     SchoolClass,
     Student,
     Subject,
@@ -129,6 +130,20 @@ async def world(session: AsyncSession) -> dict[str, object]:
         ends_at=combine_local(today, time(9, 15)),
     )
     session.add(lesson)
+
+    # Uy vazifasi berish uchun jadvalda yozuv boʻlishi shart
+    # (`assert_teaches_class_subject` manbasi — jadval, `teacher_subjects`
+    # emas). Bahoga kerak emas: dars ustozniki.
+    session.add(
+        ScheduleEntry(
+            academic_year_id=year.id,
+            class_id=school_class.id,
+            subject_id=math.id,
+            teacher_id=teacher.id,
+            weekday=1,
+            period=1,
+        )
+    )
     await session.flush()
 
     return {
@@ -142,6 +157,7 @@ async def world(session: AsyncSession) -> dict[str, object]:
         "vali": vali,
         "lesson": lesson,
         "class": school_class,
+        "math": math,
     }
 
 
@@ -525,3 +541,205 @@ async def test_notification_is_never_deleted(
     rows = (await session.execute(select(Notification))).scalars().all()
     assert len(rows) == 2  # ota-ona va oʻquvchi
     assert all(not r.is_archived for r in rows)
+
+
+# ───────────────────── Baho va uy vazifasi ─────────────────────
+
+
+async def _grade(client: AsyncClient, world: dict, *pairs: tuple[str, int | None]) -> dict:
+    """Darsga baho qoʻyadi. Baho uchun avval davomat kerak (JUR qoidasi)."""
+    token = await _token(client, "bild.ustoz")
+    resp = await client.post(
+        f"/api/v1/journal/lessons/{world['lesson'].id}",
+        headers=_auth(token),
+        json={"rows": [{"student_id": str(world[k].id), "value": v} for k, v in pairs]},
+    )
+    assert resp.status_code == 200, resp.text
+    return resp.json()
+
+
+async def _new_homework(client: AsyncClient, world: dict, title: str = "3-mashq") -> dict:
+    token = await _token(client, "bild.ustoz")
+    resp = await client.post(
+        "/api/v1/journal/homework",
+        headers=_auth(token),
+        json={
+            "class_id": str(world["class"].id),
+            "subject_id": str(world["math"].id),
+            "title": title,
+            "description": "Daftarda bajarilsin.",
+            "due_at": (utcnow() + timedelta(days=3)).isoformat(),
+        },
+    )
+    assert resp.status_code == 201, resp.text
+    return resp.json()
+
+
+async def _submission_of(client: AsyncClient, world: dict, homework_id: str) -> dict:
+    token = await _token(client, "bild.ustoz")
+    resp = await client.get(
+        f"/api/v1/journal/homework/{homework_id}/submissions", headers=_auth(token)
+    )
+    assert resp.status_code == 200, resp.text
+    rows = resp.json()["rows"]
+    return next(s for s in rows if s["student_id"] == str(world["ali"].id))
+
+
+async def test_new_grade_notifies_guardian_and_student(
+    client: AsyncClient, world: dict
+) -> None:
+    """Baho qoʻyilsa ota-ona ham, oʻquvchi ham xabar oladi."""
+    await _mark(client, world, ("ali", "present"))
+    await _grade(client, world, ("ali", 5))
+
+    ota = await _list(client, "bild.otaona_a")
+    assert [n["kind"] for n in ota] == ["grade_new"]
+    assert ota[0]["title"] == "Aliyev Ali — Matematika fanidan 5 baho"
+    assert ota[0]["body"].endswith("5/5")
+    assert ota[0]["section"] == "/ota-ona/baholar"
+
+    oquvchi = await _list(client, "bild.oquvchi")
+    assert oquvchi[0]["section"] == "/student/grades"
+
+
+async def test_grade_notification_repeats_only_when_value_changes(
+    client: AsyncClient, world: dict
+) -> None:
+    """Ustoz jurnalni qayta saqlasa takror xabar ketmaydi.
+
+    Baho oʻzgarsa — yangi xabar: bu oila bilishi kerak boʻlgan yangilik.
+    """
+    await _mark(client, world, ("ali", "present"))
+    await _grade(client, world, ("ali", 4))
+    await _grade(client, world, ("ali", 4))
+    assert len(await _list(client, "bild.otaona_a")) == 1
+
+    await _grade(client, world, ("ali", 5))
+    ota = await _list(client, "bild.otaona_a")
+    assert len(ota) == 2
+    assert ota[0]["title"].endswith("5 baho")
+
+
+async def test_removing_a_grade_sends_nothing(client: AsyncClient, world: dict) -> None:
+    """Xato baho olib tashlansa yangi xabar chiqmaydi."""
+    await _mark(client, world, ("ali", "present"))
+    await _grade(client, world, ("ali", 3))
+    await _grade(client, world, ("ali", None))
+    assert len(await _list(client, "bild.otaona_a")) == 1
+
+
+async def test_teacher_gets_no_notification_from_own_grade(
+    client: AsyncClient, world: dict
+) -> None:
+    await _mark(client, world, ("ali", "present"))
+    await _grade(client, world, ("ali", 5))
+    assert await _list(client, "bild.ustoz") == []
+
+
+async def test_other_family_sees_no_grade(client: AsyncClient, world: dict) -> None:
+    """X-1: Ali ning bahosi Vali ning oilasiga koʻrinmaydi."""
+    await _mark(client, world, ("ali", "present"), ("vali", "present"))
+    await _grade(client, world, ("ali", 5))
+    assert await _list(client, "bild.otaona_b") == []
+
+
+async def test_new_homework_notifies_students_only(client: AsyncClient, world: dict) -> None:
+    """Uy vazifasi OʻQUVCHIGA boradi, ota-onaga emas.
+
+    Kuniga olti-yetti dars boʻladi; har biriga vazifa xabari ota-onaning
+    qoʻngʻirogʻini toʻldirib, «kelmadi» kabi muhim xabarni koʻmib
+    yuborardi.
+    """
+    await _new_homework(client, world)
+
+    oquvchi = await _list(client, "bild.oquvchi")
+    assert [n["kind"] for n in oquvchi] == ["homework_new"]
+    assert oquvchi[0]["title"] == "Matematika: 3-mashq"
+    assert oquvchi[0]["section"] == "/student/homework"
+
+    assert await _list(client, "bild.otaona_a") == []
+    assert await _list(client, "bild.otaona_b") == []
+
+
+async def test_graded_homework_notifies_the_family(client: AsyncClient, world: dict) -> None:
+    """Vazifa bahosi — baho, shuning uchun ota-ona ham koʻradi."""
+    hw = await _new_homework(client, world)
+    sub = await _submission_of(client, world, hw["id"])
+
+    token = await _token(client, "bild.ustoz")
+    resp = await client.post(
+        f"/api/v1/journal/submissions/{sub['id']}/grade",
+        headers=_auth(token),
+        json={"score": 4, "comment": "Yaxshi."},
+    )
+    assert resp.status_code == 200, resp.text
+
+    ota = await _list(client, "bild.otaona_a")
+    assert [n["kind"] for n in ota] == ["homework_graded"]
+    assert "4/5 ball" in ota[0]["title"]
+    assert ota[0]["section"] == "/ota-ona/baholar"
+
+    # Oʻquvchida: vazifa berilgani + baholangani, yangisi birinchi.
+    oquvchi = await _list(client, "bild.oquvchi")
+    assert [n["kind"] for n in oquvchi] == ["homework_graded", "homework_new"]
+
+
+async def test_graded_homework_sends_one_notification_not_two(
+    client: AsyncClient, world: dict
+) -> None:
+    """Vazifa bahosi jurnalga ham tushadi, lekin xabar BITTA.
+
+    `grade_submission` `Grade` yozuvini oʻzi yaratadi va
+    `set_lesson_grades` dan oʻtmaydi — ikkilanish shu sabab yoʻq.
+    """
+    hw = await _new_homework(client, world)
+    sub = await _submission_of(client, world, hw["id"])
+
+    token = await _token(client, "bild.ustoz")
+    await client.post(
+        f"/api/v1/journal/submissions/{sub['id']}/grade",
+        headers=_auth(token),
+        json={"score": 5},
+    )
+
+    ota = await _list(client, "bild.otaona_a")
+    assert len(ota) == 1
+    assert ota[0]["kind"] == "homework_graded"
+
+
+async def test_returned_homework_notifies_the_student_only(
+    client: AsyncClient, world: dict
+) -> None:
+    """Qaytarilgan ish oʻquvchidan AMAL talab qiladi — ota-onaga bormaydi."""
+    hw = await _new_homework(client, world)
+    sub = await _submission_of(client, world, hw["id"])
+
+    token = await _token(client, "bild.ustoz")
+    resp = await client.post(
+        f"/api/v1/journal/submissions/{sub['id']}/return",
+        headers=_auth(token),
+        json={"comment": "2-masala notoʻgʻri."},
+    )
+    assert resp.status_code == 200, resp.text
+
+    oquvchi = await _list(client, "bild.oquvchi")
+    assert oquvchi[0]["kind"] == "homework_returned"
+    assert oquvchi[0]["body"] == "2-masala notoʻgʻri."
+    assert oquvchi[0]["section"] == "/student/homework"
+
+    assert await _list(client, "bild.otaona_a") == []
+
+
+async def test_grade_and_homework_count_in_their_own_sections(
+    client: AsyncClient, world: dict
+) -> None:
+    """Yon menyudagi sanoq turkumga emas, BOʻLIMGA bogʻlangan."""
+    await _mark(client, world, ("ali", "present"))
+    await _grade(client, world, ("ali", 5))
+    await _new_homework(client, world)
+
+    assert (await _badges(client, "bild.otaona_a"))["sections"] == {"/ota-ona/baholar": 1}
+    assert (await _badges(client, "bild.oquvchi"))["sections"] == {
+        "/student/grades": 1,
+        "/student/homework": 1,
+    }

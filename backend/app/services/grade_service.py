@@ -45,12 +45,13 @@ from app.models import (
     GradeKind,
     GradingScale,
     Lesson,
+    NotificationKind,
     Permission,
     ScheduleEntry,
     Student,
     Subject,
 )
-from app.services import attendance_service, audit_service
+from app.services import attendance_service, audit_service, notifications_service
 from app.services.access import (
     CurrentUser,
     accessible_student_ids,
@@ -335,6 +336,11 @@ async def set_lesson_grades(
         ).scalars()
     }
 
+    #: Kim haqida oilaga xabar beriladi: (oʻquvchi, baho).
+    #: Faqat YANGI baho va QIYMATI oʻzgargani. Izoh tuzatilgani yoki
+    #: vazn oʻzgargani oilaga xabar boʻlmaydi — ular baho emas.
+    xabar_uchun: list[tuple[uuid.UUID, int]] = []
+
     for row in rows:
         if row.student_id not in sinf_oquvchilari:
             raise ValidationError("Oʻquvchi bu sinfga tegishli emas.")
@@ -391,6 +397,7 @@ async def set_lesson_grades(
                 actor_id=user.id,
                 ip=ip,
             )
+            xabar_uchun.append((row.student_id, row.value))
             continue
 
         before = {"value": eski.value, "kind": eski.kind, "comment": eski.comment}
@@ -398,6 +405,11 @@ async def set_lesson_grades(
         old_diff, new_diff = audit_service.diff(before, after)
         if not new_diff:
             continue
+
+        # Xabar faqat BAHO oʻzgarganda. Ustoz izohni tuzatgan boʻlsa
+        # oilaga «yangi baho» deb ikkinchi marta xabar bermaymiz.
+        if eski.value != row.value:
+            xabar_uchun.append((row.student_id, row.value))
 
         eski.value = row.value
         eski.kind = kind
@@ -415,8 +427,52 @@ async def set_lesson_grades(
             ip=ip,
         )
 
+    await _notify_family(session, user, lesson, max_value, xabar_uchun)
     await session.commit()
     return await lesson_journal(session, user, lesson_id)
+
+
+async def _notify_family(
+    session: AsyncSession,
+    user: CurrentUser,
+    lesson: Lesson,
+    max_value: int,
+    changes: list[tuple[uuid.UUID, int]],
+) -> None:
+    """Yangi baho boʻyicha oilaga xabar (ota-ona va oʻquvchining oʻzi).
+
+    Xabar baho bilan BIR tranzaksiyada yaratiladi: jurnal saqlanmasa
+    bildirishnoma ham qolmaydi.
+
+    Ustozning oʻziga xabar ketmaydi — buni `notify()` hal qiladi
+    (`actor_id`).
+    """
+    if not changes:
+        return
+
+    student_ids = [sid for sid, _ in changes]
+    oila = await notifications_service.family_recipients(session, student_ids)
+    nomlar = await notifications_service.student_names(session, student_ids)
+
+    # Fan nomi alohida soʻrov bilan — `lesson.subject` ga murojaat
+    # `MissingGreenlet` beradi (`attendance_service` dagi izohga qarang).
+    fan = await session.scalar(select(Subject.name).where(Subject.id == lesson.subject_id))
+    kun = lesson.lesson_date.strftime("%d.%m.%Y")
+
+    for student_id, value in changes:
+        ism = nomlar.get(student_id)
+        if ism is None:
+            continue
+        await notifications_service.notify(
+            session,
+            recipients=oila.get(student_id, []),
+            kind=NotificationKind.GRADE_NEW,
+            title=f"{ism} — {fan or 'fan'} fanidan {value} baho",
+            body=f"{kun} · {value}/{max_value}",
+            object_type="grade",
+            object_id=lesson.id,
+            actor_id=user.id,
+        )
 
 
 # ─────────────────────── Sinf jurnali (kesim) ───────────────────────

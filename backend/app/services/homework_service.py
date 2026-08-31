@@ -35,12 +35,13 @@ from app.models import (
     Homework,
     HomeworkSubmission,
     Lesson,
+    NotificationKind,
     SchoolClass,
     Student,
     Subject,
     SubmissionStatus,
 )
-from app.services import audit_service
+from app.services import audit_service, notifications_service
 from app.services.access import (
     CurrentUser,
     accessible_student_ids,
@@ -164,6 +165,41 @@ async def teacher_homework(
     ]
 
 
+async def _notify_family(
+    session: AsyncSession,
+    user: CurrentUser,
+    student_id: uuid.UUID,
+    *,
+    kind: NotificationKind,
+    title_suffix: str,
+    body: str,
+    object_id: uuid.UUID,
+) -> None:
+    """Bitta oʻquvchi boʻyicha xabar.
+
+    Kim koʻrishi `notifications_service._SECTION` da hal qilinadi:
+    baholangan ish ota-onaga ham, qaytarilgan ish faqat oʻquvchiga
+    boradi. Shu sabab bu yerda roʻyxat filtrlanmaydi — ikki joyda ikki
+    xil qoida paydo boʻlmasin.
+    """
+    oila = await notifications_service.family_recipients(session, [student_id])
+    nomlar = await notifications_service.student_names(session, [student_id])
+    ism = nomlar.get(student_id)
+    if ism is None:
+        return
+
+    await notifications_service.notify(
+        session,
+        recipients=oila.get(student_id, []),
+        kind=kind,
+        title=f"{ism} — {title_suffix}",
+        body=body[:400],
+        object_type="homework",
+        object_id=object_id,
+        actor_id=user.id,
+    )
+
+
 async def create_homework(
     session: AsyncSession,
     user: CurrentUser,
@@ -245,6 +281,26 @@ async def create_homework(
         actor_id=user.id,
         ip=ip,
     )
+
+    # Vazifa haqida faqat OʻQUVCHILARGA xabar beriladi. Ota-onaga ham
+    # yuborilsa kuniga olti-yetti xabar borardi (har darsga bitta) va
+    # muhim xabar — «kelmadi», murojaat — shovqin ichida yoʻqolardi.
+    # Yoʻnalish `notifications_service._SECTION` da qatʼiy: ota-ona
+    # kabineti bu turkum uchun roʻyxatda yoʻq.
+    oila = await notifications_service.family_recipients(session, students)
+    muddat = due_at.strftime("%d.%m.%Y")
+    for student_id in students:
+        await notifications_service.notify(
+            session,
+            recipients=oila.get(student_id, []),
+            kind=NotificationKind.HOMEWORK_NEW,
+            title=f"{subject.name}: {homework.title}",
+            body=f"Topshirish muddati — {muddat}",
+            object_type="homework",
+            object_id=homework.id,
+            actor_id=user.id,
+        )
+
     await session.commit()
 
     return _row(homework, cls.name, subject.name, (len(students), 0, 0))
@@ -373,6 +429,20 @@ async def grade_submission(
         actor_id=user.id,
         ip=ip,
     )
+
+    # Vazifa bahosi jurnalga ham tushadi (yuqorida), lekin bildirishnoma
+    # BITTA: `set_lesson_grades` bu yoʻldan oʻtmaydi, shuning uchun
+    # ikkilanish yoʻq. Bu — baho, shuning uchun ota-ona ham koʻradi.
+    await _notify_family(
+        session,
+        user,
+        submission.student_id,
+        kind=NotificationKind.HOMEWORK_GRADED,
+        title_suffix=f"{homework.title} — {score}/{homework.max_score} ball",
+        body=izoh or "Uy vazifasi baholandi.",
+        object_id=homework.id,
+    )
+
     await session.commit()
 
     await session.refresh(submission, attribute_names=["student"])
@@ -409,7 +479,7 @@ async def return_submission(
     if submission is None or submission.is_archived:
         raise NotFoundError("Topshiriq topilmadi.")
 
-    await load_homework_for_teacher(session, user, submission.homework_id)
+    homework = await load_homework_for_teacher(session, user, submission.homework_id)
 
     before = {"status": submission.status}
     submission.status = SubmissionStatus.RETURNED.value
@@ -427,6 +497,20 @@ async def return_submission(
         actor_id=user.id,
         ip=ip,
     )
+
+    # Qaytarilgan ish oʻquvchidan AMAL talab qiladi — u koʻrmasa vazifa
+    # qayta ishlanmaydi. Ota-onaga bormaydi (`_SECTION` da yoʻq): bu
+    # baho emas, ish jarayoni.
+    await _notify_family(
+        session,
+        user,
+        submission.student_id,
+        kind=NotificationKind.HOMEWORK_RETURNED,
+        title_suffix=f"{homework.title} — qayta ishlash kerak",
+        body=comment.strip(),
+        object_id=homework.id,
+    )
+
     await session.commit()
 
     await session.refresh(submission, attribute_names=["student"])

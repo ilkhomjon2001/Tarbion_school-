@@ -422,7 +422,7 @@ Alohida worker sikli yuboradi, xatoda 3 marta qayta uriniladi (backoff bilan).
 
 ### [x] T-018a · Kabinet ichidagi bildirishnomalar
 **TZ:** DAV-05, MUR-03 (kabinet qismi)
-**Kerak:** T-013, T-036
+**Kerak:** T-013, T-029, T-032, T-036
 **Frontend:** ✅ tayyor — qoʻngʻiroq va yon menyudagi sanoq oltita kabinetda.
 
 TASKS.md da alohida task yoʻq edi. T-018/T-019/T-020 dan ATAYLAB ajratilgan:
@@ -435,14 +435,21 @@ Yozuv HODISA emas, QABUL QILUVCHI boʻyicha — «oʻqildi» har odamda oʻzinik
 va kirish nazorati bitta shartga tushadi (`WHERE user_id = :men`).
 
 Hodisalar: darsga kelmadi, darsga kechikdi, yangi murojaat, yangi xabar,
-murojaat biriktirildi, murojaat yopildi.
+murojaat biriktirildi, murojaat yopildi, yangi baho, yangi uy vazifasi,
+vazifa baholandi, vazifa qaytarildi.
+
+Kim nimani oladi bitta jadvalda (`notifications_service._SECTION`):
+uy vazifasi va qaytarilgan ish faqat OʻQUVCHIGA (kuniga 6-7 dars boʻladi,
+ota-onaning qoʻngʻirogʻi shovqin bilan toʻlardi), baho va davomat esa
+oilaga — ota-ona va oʻquvchiga.
 
 **Tayyor:**
 - [x] Oʻquvchi kelmasa/kechiksa ota-ona va oʻquvchi xabar oladi
 - [x] Murojaatdagi har xabar narigi tomonga boradi
+- [x] Baho qoʻyilsa oila, uy vazifasi berilsa oʻquvchi xabar oladi
 - [x] Yon menyuda boʻlim boʻyicha oʻqilmaganlar soni koʻrinadi
 - [x] Oʻz amalidan xabar kelmaydi, takror saqlashda takror xabar yoʻq
-- [x] Begona bildirishnomani oʻqib ham, belgilab ham boʻlmaydi (24 test)
+- [x] Begona bildirishnomani oʻqib ham, belgilab ham boʻlmaydi (34 test)
 
 ---
 

@@ -1469,7 +1469,7 @@ export type MessageCreateIn = {
  * kabinetiga qarab hisoblanadi: bitta «kelmadi» hodisasi ota-onada
  * «Davomat», oʻquvchida «Bosh sahifa» boʻlimida koʻrinadi.
  */
-export type NotificationKind = 'attendance_absent' | 'attendance_late' | 'appeal_new' | 'appeal_message' | 'appeal_assigned' | 'appeal_closed';
+export type NotificationKind = 'attendance_absent' | 'attendance_late' | 'appeal_new' | 'appeal_message' | 'appeal_assigned' | 'appeal_closed' | 'grade_new' | 'homework_new' | 'homework_graded' | 'homework_returned';
 
 /**
  * NotificationOut
