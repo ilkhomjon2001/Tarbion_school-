@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AccessPermissionRegistryData, AccessPermissionRegistryResponses, AccessSectionsData, AccessSectionsResponses, AccessSetPermissionsData, AccessSetPermissionsErrors, AccessSetPermissionsResponses, AccessSetSectionsData, AccessSetSectionsErrors, AccessSetSectionsResponses, AccessUserAccessData, AccessUserAccessErrors, AccessUserAccessResponses, AccessUsersData, AccessUsersErrors, AccessUsersResponses, AppealsAddMessageData, AppealsAddMessageErrors, AppealsAddMessageResponses, AppealsAppealsSummaryData, AppealsAppealsSummaryResponses, AppealsComposeOptionsData, AppealsComposeOptionsResponses, AppealsCreateAppealData, AppealsCreateAppealErrors, AppealsCreateAppealResponses, AppealsCreateNoteData, AppealsCreateNoteErrors, AppealsCreateNoteResponses, AppealsGetAppealData, AppealsGetAppealErrors, AppealsGetAppealResponses, AppealsListAppealsData, AppealsListAppealsErrors, AppealsListAppealsResponses, AppealsListNotesData, AppealsListNotesErrors, AppealsListNotesResponses, AppealsSearchStudentsData, AppealsSearchStudentsErrors, AppealsSearchStudentsResponses, AppealsStatsClassesData, AppealsStatsClassesResponses, AppealsUpdateAssigneeData, AppealsUpdateAssigneeErrors, AppealsUpdateAssigneeResponses, AppealsUpdateStatusData, AppealsUpdateStatusErrors, AppealsUpdateStatusResponses, AttendanceClassStudentsData, AttendanceClassStudentsErrors, AttendanceClassStudentsResponses, AttendanceLessonAttendanceData, AttendanceLessonAttendanceErrors, AttendanceLessonAttendanceResponses, AttendanceMarkData, AttendanceMarkErrors, AttendanceMarkResponses, AttendanceMyLessonsData, AttendanceMyLessonsErrors, AttendanceMyLessonsResponses, AttendanceStatsData, AttendanceStatsErrors, AttendanceStatsResponses, AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRefreshData, AuthRefreshResponses, DirectorClassesData, DirectorClassesResponses, DirectorOverviewData, DirectorOverviewErrors, DirectorOverviewResponses, DirectorTeachersData, DirectorTeachersResponses, ParentChildAttendanceData, ParentChildAttendanceErrors, ParentChildAttendanceResponses, ParentMyChildrenData, ParentMyChildrenResponses, ServiceHealthData, ServiceHealthResponses, ServiceReadinessData, ServiceReadinessResponses } from './types.gen';
+import type { AccessPermissionRegistryData, AccessPermissionRegistryResponses, AccessSectionsData, AccessSectionsResponses, AccessSetPermissionsData, AccessSetPermissionsErrors, AccessSetPermissionsResponses, AccessSetSectionsData, AccessSetSectionsErrors, AccessSetSectionsResponses, AccessUserAccessData, AccessUserAccessErrors, AccessUserAccessResponses, AccessUsersData, AccessUsersErrors, AccessUsersResponses, AppealsAddMessageData, AppealsAddMessageErrors, AppealsAddMessageResponses, AppealsAppealsSummaryData, AppealsAppealsSummaryResponses, AppealsComposeOptionsData, AppealsComposeOptionsResponses, AppealsCreateAppealData, AppealsCreateAppealErrors, AppealsCreateAppealResponses, AppealsCreateNoteData, AppealsCreateNoteErrors, AppealsCreateNoteResponses, AppealsGetAppealData, AppealsGetAppealErrors, AppealsGetAppealResponses, AppealsListAppealsData, AppealsListAppealsErrors, AppealsListAppealsResponses, AppealsListNotesData, AppealsListNotesErrors, AppealsListNotesResponses, AppealsSearchStudentsData, AppealsSearchStudentsErrors, AppealsSearchStudentsResponses, AppealsStatsClassesData, AppealsStatsClassesResponses, AppealsUpdateAssigneeData, AppealsUpdateAssigneeErrors, AppealsUpdateAssigneeResponses, AppealsUpdateStatusData, AppealsUpdateStatusErrors, AppealsUpdateStatusResponses, AttendanceClassStudentsData, AttendanceClassStudentsErrors, AttendanceClassStudentsResponses, AttendanceLessonAttendanceData, AttendanceLessonAttendanceErrors, AttendanceLessonAttendanceResponses, AttendanceMarkData, AttendanceMarkErrors, AttendanceMarkResponses, AttendanceMyLessonsData, AttendanceMyLessonsErrors, AttendanceMyLessonsResponses, AttendanceStatsData, AttendanceStatsErrors, AttendanceStatsResponses, AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRefreshData, AuthRefreshResponses, DirectorClassesData, DirectorClassesResponses, DirectorOverviewData, DirectorOverviewErrors, DirectorOverviewResponses, DirectorTeachersData, DirectorTeachersResponses, ParentChildAttendanceData, ParentChildAttendanceErrors, ParentChildAttendanceResponses, ParentMyChildrenData, ParentMyChildrenResponses, SchoolArchiveStudentData, SchoolArchiveStudentErrors, SchoolArchiveStudentResponses, SchoolClassesData, SchoolClassesResponses, SchoolCreateStudentData, SchoolCreateStudentErrors, SchoolCreateStudentResponses, SchoolMoveStudentData, SchoolMoveStudentErrors, SchoolMoveStudentResponses, SchoolRestoreStudentData, SchoolRestoreStudentErrors, SchoolRestoreStudentResponses, SchoolStaffData, SchoolStaffResponses, SchoolStudentCardData, SchoolStudentCardErrors, SchoolStudentCardResponses, SchoolStudentsData, SchoolStudentsErrors, SchoolStudentsResponses, SchoolSubjectsData, SchoolSubjectsOfClassData, SchoolSubjectsOfClassErrors, SchoolSubjectsOfClassResponses, SchoolSubjectsResponses, ServiceHealthData, ServiceHealthResponses, ServiceReadinessData, ServiceReadinessResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -368,6 +368,101 @@ export const parentMyChildren = <ThrowOnError extends boolean = false>(options?:
  * mavjudligini oshkor qilardi).
  */
 export const parentChildAttendance = <ThrowOnError extends boolean = false>(options: Options<ParentChildAttendanceData, ThrowOnError>): RequestResult<ParentChildAttendanceResponses, ParentChildAttendanceErrors, ThrowOnError> => (options.client ?? client).get<ParentChildAttendanceResponses, ParentChildAttendanceErrors, ThrowOnError>({ url: '/api/v1/parent/children/{student_id}/attendance', ...options });
+
+/**
+ * Subjects
+ */
+export const schoolSubjects = <ThrowOnError extends boolean = false>(options?: Options<SchoolSubjectsData, ThrowOnError>): RequestResult<SchoolSubjectsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<SchoolSubjectsResponses, unknown, ThrowOnError>({ url: '/api/v1/school/subjects', ...options });
+
+/**
+ * Classes
+ *
+ * Joriy oʻquv yilidagi sinflar (ADM-02).
+ */
+export const schoolClasses = <ThrowOnError extends boolean = false>(options?: Options<SchoolClassesData, ThrowOnError>): RequestResult<SchoolClassesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<SchoolClassesResponses, unknown, ThrowOnError>({ url: '/api/v1/school/classes', ...options });
+
+/**
+ * Subjects Of Class
+ *
+ * Sinfda oʻqitiladigan fanlar va haftalik soati (ADM-03).
+ */
+export const schoolSubjectsOfClass = <ThrowOnError extends boolean = false>(options: Options<SchoolSubjectsOfClassData, ThrowOnError>): RequestResult<SchoolSubjectsOfClassResponses, SchoolSubjectsOfClassErrors, ThrowOnError> => (options.client ?? client).get<SchoolSubjectsOfClassResponses, SchoolSubjectsOfClassErrors, ThrowOnError>({ url: '/api/v1/school/classes/{class_id}/subjects', ...options });
+
+/**
+ * Staff
+ *
+ * Xodimlar — ustoz, administrator, rahbariyat (ADM-04).
+ */
+export const schoolStaff = <ThrowOnError extends boolean = false>(options?: Options<SchoolStaffData, ThrowOnError>): RequestResult<SchoolStaffResponses, unknown, ThrowOnError> => (options?.client ?? client).get<SchoolStaffResponses, unknown, ThrowOnError>({ url: '/api/v1/school/staff', ...options });
+
+/**
+ * Students
+ *
+ * Oʻquvchilar roʻyxati (ADM-05).
+ *
+ * Tugʻilgan sana, telefon va vasiy maʼlumoti QAYTMAYDI (X-6) — ular
+ * kartochkada. Ota-ona bu endpointdan faqat oʻz farzandini oladi.
+ */
+export const schoolStudents = <ThrowOnError extends boolean = false>(options?: Options<SchoolStudentsData, ThrowOnError>): RequestResult<SchoolStudentsResponses, SchoolStudentsErrors, ThrowOnError> => (options?.client ?? client).get<SchoolStudentsResponses, SchoolStudentsErrors, ThrowOnError>({ url: '/api/v1/school/students', ...options });
+
+/**
+ * Create Student
+ *
+ * Yangi oʻquvchi. Huquq: `students.manage`.
+ */
+export const schoolCreateStudent = <ThrowOnError extends boolean = false>(options: Options<SchoolCreateStudentData, ThrowOnError>): RequestResult<SchoolCreateStudentResponses, SchoolCreateStudentErrors, ThrowOnError> => (options.client ?? client).post<SchoolCreateStudentResponses, SchoolCreateStudentErrors, ThrowOnError>({
+    url: '/api/v1/school/students',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Student Card
+ *
+ * Bitta oʻquvchi — vasiylari bilan.
+ *
+ * Ruxsat yoʻq boʻlsa `403` (X-3: `404` obyekt mavjudligini oshkor
+ * qilardi).
+ */
+export const schoolStudentCard = <ThrowOnError extends boolean = false>(options: Options<SchoolStudentCardData, ThrowOnError>): RequestResult<SchoolStudentCardResponses, SchoolStudentCardErrors, ThrowOnError> => (options.client ?? client).get<SchoolStudentCardResponses, SchoolStudentCardErrors, ThrowOnError>({ url: '/api/v1/school/students/{student_id}', ...options });
+
+/**
+ * Move Student
+ *
+ * Boshqa sinfga koʻchirish (ADM-06).
+ */
+export const schoolMoveStudent = <ThrowOnError extends boolean = false>(options: Options<SchoolMoveStudentData, ThrowOnError>): RequestResult<SchoolMoveStudentResponses, SchoolMoveStudentErrors, ThrowOnError> => (options.client ?? client).put<SchoolMoveStudentResponses, SchoolMoveStudentErrors, ThrowOnError>({
+    url: '/api/v1/school/students/{student_id}/class',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Archive Student
+ *
+ * Arxivlaydi. Oʻchirish YOʻQ (CLAUDE.md 1-qoida). Sabab majburiy.
+ */
+export const schoolArchiveStudent = <ThrowOnError extends boolean = false>(options: Options<SchoolArchiveStudentData, ThrowOnError>): RequestResult<SchoolArchiveStudentResponses, SchoolArchiveStudentErrors, ThrowOnError> => (options.client ?? client).post<SchoolArchiveStudentResponses, SchoolArchiveStudentErrors, ThrowOnError>({
+    url: '/api/v1/school/students/{student_id}/archive',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Restore Student
+ *
+ * Arxivdan qaytaradi — xato bilan arxivlangan boʻlsa.
+ */
+export const schoolRestoreStudent = <ThrowOnError extends boolean = false>(options: Options<SchoolRestoreStudentData, ThrowOnError>): RequestResult<SchoolRestoreStudentResponses, SchoolRestoreStudentErrors, ThrowOnError> => (options.client ?? client).post<SchoolRestoreStudentResponses, SchoolRestoreStudentErrors, ThrowOnError>({ url: '/api/v1/school/students/{student_id}/restore', ...options });
 
 /**
  * Health

@@ -517,6 +517,32 @@ export type ClassAppealStatOut = {
 };
 
 /**
+ * ClassOut
+ */
+export type ClassOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Academic Year
+     */
+    academic_year: string;
+    /**
+     * Homeroom Teacher
+     */
+    homeroom_teacher: string | null;
+    /**
+     * Student Count
+     */
+    student_count: number;
+};
+
+/**
  * ClassRowOut
  */
 export type ClassRowOut = {
@@ -544,6 +570,24 @@ export type ClassRowOut = {
      * Average Grade
      */
     average_grade: number;
+};
+
+/**
+ * ClassSubjectOut
+ */
+export type ClassSubjectOut = {
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Subject Name
+     */
+    subject_name: string;
+    /**
+     * Weekly Hours
+     */
+    weekly_hours: number;
 };
 
 /**
@@ -632,6 +676,28 @@ export type GuardianOptionOut = {
 };
 
 /**
+ * GuardianOut
+ */
+export type GuardianOut = {
+    /**
+     * User Id
+     */
+    user_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Relation
+     */
+    relation: string;
+    /**
+     * Phone
+     */
+    phone: string | null;
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -706,7 +772,7 @@ export type LessonAttendanceOut = {
     /**
      * Students
      */
-    students: Array<StudentRowOut>;
+    students: Array<AppSchemasAttendanceStudentRowOut>;
 };
 
 /**
@@ -847,6 +913,36 @@ export type SetSectionsIn = {
 };
 
 /**
+ * StaffOut
+ */
+export type StaffOut = {
+    /**
+     * User Id
+     */
+    user_id: string;
+    /**
+     * Login
+     */
+    login: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Roles
+     */
+    roles: Array<string>;
+    /**
+     * Subjects
+     */
+    subjects: Array<string>;
+    /**
+     * Is Active
+     */
+    is_active: boolean;
+};
+
+/**
  * StatusUpdateIn
  */
 export type StatusUpdateIn = {
@@ -854,30 +950,101 @@ export type StatusUpdateIn = {
 };
 
 /**
- * StudentRowOut
+ * StudentArchiveIn
  *
- * Roʻyxatdagi bitta oʻquvchi va uning holati.
- *
- * Telefon, manzil va hujjat maydonlari ATAYLAB yoʻq (X-6): bu roʻyxat
- * endpointi, shaxsiy maʼlumot faqat bitta oʻquvchi kartochkasida.
+ * Sabab majburiy: "nega ketdi" hisoboti shundan chiqadi.
  */
-export type StudentRowOut = {
+export type StudentArchiveIn = {
     /**
-     * Student Id
+     * Reason
      */
-    student_id: string;
+    reason: string;
+};
+
+/**
+ * StudentCardOut
+ *
+ * Bitta oʻquvchi — shaxsiy maʼlumot SHU YERDA.
+ */
+export type StudentCardOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Last Name
+     */
+    last_name: string;
+    /**
+     * First Name
+     */
+    first_name: string;
+    /**
+     * Middle Name
+     */
+    middle_name: string | null;
     /**
      * Full Name
      */
     full_name: string;
     /**
-     * Status
+     * Birth Date
      */
-    status?: 'present' | 'absent' | 'excused' | 'late' | null;
+    birth_date: string | null;
     /**
-     * Note
+     * Class Id
      */
-    note?: string | null;
+    class_id: string | null;
+    /**
+     * Class Name
+     */
+    class_name: string | null;
+    /**
+     * Is Archived
+     */
+    is_archived: boolean;
+    /**
+     * Guardians
+     */
+    guardians: Array<GuardianOut>;
+};
+
+/**
+ * StudentCreateIn
+ */
+export type StudentCreateIn = {
+    /**
+     * Last Name
+     */
+    last_name: string;
+    /**
+     * First Name
+     */
+    first_name: string;
+    /**
+     * Middle Name
+     */
+    middle_name?: string | null;
+    /**
+     * Birth Date
+     */
+    birth_date?: string | null;
+    /**
+     * Class Id
+     */
+    class_id?: string | null;
+};
+
+/**
+ * StudentMoveIn
+ *
+ * `class_id: null` — sinfdan chiqarish (hali biriktirilmagan).
+ */
+export type StudentMoveIn = {
+    /**
+     * Class Id
+     */
+    class_id?: string | null;
 };
 
 /**
@@ -917,6 +1084,24 @@ export type StudentStatOut = {
      */
     full_name: string;
     stat: AttendanceStatOut;
+};
+
+/**
+ * SubjectOut
+ */
+export type SubjectOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Short Name
+     */
+    short_name: string;
 };
 
 /**
@@ -1152,6 +1337,57 @@ export type ValidationError = {
     ctx?: {
         [key: string]: unknown;
     };
+};
+
+/**
+ * StudentRowOut
+ *
+ * Roʻyxatdagi bitta oʻquvchi va uning holati.
+ *
+ * Telefon, manzil va hujjat maydonlari ATAYLAB yoʻq (X-6): bu roʻyxat
+ * endpointi, shaxsiy maʼlumot faqat bitta oʻquvchi kartochkasida.
+ */
+export type AppSchemasAttendanceStudentRowOut = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Status
+     */
+    status?: 'present' | 'absent' | 'excused' | 'late' | null;
+    /**
+     * Note
+     */
+    note?: string | null;
+};
+
+/**
+ * StudentRowOut
+ *
+ * Roʻyxatdagi qator — shaxsiy maʼlumotsiz (X-6).
+ */
+export type AppSchemasSchoolStudentRowOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Class Name
+     */
+    class_name: string | null;
+    /**
+     * Is Archived
+     */
+    is_archived: boolean;
 };
 
 export type AuthLoginData = {
@@ -2058,6 +2294,283 @@ export type ParentChildAttendanceResponses = {
 };
 
 export type ParentChildAttendanceResponse = ParentChildAttendanceResponses[keyof ParentChildAttendanceResponses];
+
+export type SchoolSubjectsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/school/subjects';
+};
+
+export type SchoolSubjectsResponses = {
+    /**
+     * Response School Subjects
+     *
+     * Successful Response
+     */
+    200: Array<SubjectOut>;
+};
+
+export type SchoolSubjectsResponse = SchoolSubjectsResponses[keyof SchoolSubjectsResponses];
+
+export type SchoolClassesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/school/classes';
+};
+
+export type SchoolClassesResponses = {
+    /**
+     * Response School Classes
+     *
+     * Successful Response
+     */
+    200: Array<ClassOut>;
+};
+
+export type SchoolClassesResponse = SchoolClassesResponses[keyof SchoolClassesResponses];
+
+export type SchoolSubjectsOfClassData = {
+    body?: never;
+    path: {
+        /**
+         * Class Id
+         */
+        class_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/classes/{class_id}/subjects';
+};
+
+export type SchoolSubjectsOfClassErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolSubjectsOfClassError = SchoolSubjectsOfClassErrors[keyof SchoolSubjectsOfClassErrors];
+
+export type SchoolSubjectsOfClassResponses = {
+    /**
+     * Response School Subjects Of Class
+     *
+     * Successful Response
+     */
+    200: Array<ClassSubjectOut>;
+};
+
+export type SchoolSubjectsOfClassResponse = SchoolSubjectsOfClassResponses[keyof SchoolSubjectsOfClassResponses];
+
+export type SchoolStaffData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/school/staff';
+};
+
+export type SchoolStaffResponses = {
+    /**
+     * Response School Staff
+     *
+     * Successful Response
+     */
+    200: Array<StaffOut>;
+};
+
+export type SchoolStaffResponse = SchoolStaffResponses[keyof SchoolStaffResponses];
+
+export type SchoolStudentsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Class Id
+         */
+        class_id?: string | null;
+        /**
+         * Q
+         *
+         * Ism yoki familiya
+         */
+        q?: string | null;
+        /**
+         * Archived
+         */
+        archived?: boolean;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/school/students';
+};
+
+export type SchoolStudentsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolStudentsError = SchoolStudentsErrors[keyof SchoolStudentsErrors];
+
+export type SchoolStudentsResponses = {
+    /**
+     * Response School Students
+     *
+     * Successful Response
+     */
+    200: Array<AppSchemasSchoolStudentRowOut>;
+};
+
+export type SchoolStudentsResponse = SchoolStudentsResponses[keyof SchoolStudentsResponses];
+
+export type SchoolCreateStudentData = {
+    body: StudentCreateIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/school/students';
+};
+
+export type SchoolCreateStudentErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolCreateStudentError = SchoolCreateStudentErrors[keyof SchoolCreateStudentErrors];
+
+export type SchoolCreateStudentResponses = {
+    /**
+     * Successful Response
+     */
+    201: StudentCardOut;
+};
+
+export type SchoolCreateStudentResponse = SchoolCreateStudentResponses[keyof SchoolCreateStudentResponses];
+
+export type SchoolStudentCardData = {
+    body?: never;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/students/{student_id}';
+};
+
+export type SchoolStudentCardErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolStudentCardError = SchoolStudentCardErrors[keyof SchoolStudentCardErrors];
+
+export type SchoolStudentCardResponses = {
+    /**
+     * Successful Response
+     */
+    200: StudentCardOut;
+};
+
+export type SchoolStudentCardResponse = SchoolStudentCardResponses[keyof SchoolStudentCardResponses];
+
+export type SchoolMoveStudentData = {
+    body: StudentMoveIn;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/students/{student_id}/class';
+};
+
+export type SchoolMoveStudentErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolMoveStudentError = SchoolMoveStudentErrors[keyof SchoolMoveStudentErrors];
+
+export type SchoolMoveStudentResponses = {
+    /**
+     * Successful Response
+     */
+    200: StudentCardOut;
+};
+
+export type SchoolMoveStudentResponse = SchoolMoveStudentResponses[keyof SchoolMoveStudentResponses];
+
+export type SchoolArchiveStudentData = {
+    body: StudentArchiveIn;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/students/{student_id}/archive';
+};
+
+export type SchoolArchiveStudentErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolArchiveStudentError = SchoolArchiveStudentErrors[keyof SchoolArchiveStudentErrors];
+
+export type SchoolArchiveStudentResponses = {
+    /**
+     * Successful Response
+     */
+    200: StudentCardOut;
+};
+
+export type SchoolArchiveStudentResponse = SchoolArchiveStudentResponses[keyof SchoolArchiveStudentResponses];
+
+export type SchoolRestoreStudentData = {
+    body?: never;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/students/{student_id}/restore';
+};
+
+export type SchoolRestoreStudentErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolRestoreStudentError = SchoolRestoreStudentErrors[keyof SchoolRestoreStudentErrors];
+
+export type SchoolRestoreStudentResponses = {
+    /**
+     * Successful Response
+     */
+    200: StudentCardOut;
+};
+
+export type SchoolRestoreStudentResponse = SchoolRestoreStudentResponses[keyof SchoolRestoreStudentResponses];
 
 export type ServiceHealthData = {
     body?: never;
