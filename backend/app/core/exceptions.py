@@ -31,7 +31,7 @@ class NotFoundError(AppError):
 class InvalidCredentialsError(AppError):
     status_code = status.HTTP_401_UNAUTHORIZED
     code = "notogri_malumot"
-    message = "Telefon raqami yoki parol notoʻgʻri."
+    message = "Login yoki parol notoʻgʻri."
 
 
 class AuthRequiredError(AppError):
@@ -54,6 +54,18 @@ class AccountInactiveError(AppError):
     status_code = status.HTTP_403_FORBIDDEN
     code = "hisob_faol_emas"
     message = "Hisobingiz faol emas. Maktab administratoriga murojaat qiling."
+
+
+class PasswordChangeRequiredError(AppError):
+    """Boshlangʻich parol almashtirilmagan.
+
+    `403` emas, alohida kod: frontend buni koʻrib parol almashtirish
+    ekraniga oʻtkazadi, "ruxsatingiz yoʻq" deb koʻrsatmaydi.
+    """
+
+    status_code = status.HTTP_403_FORBIDDEN
+    code = "parol_almashtirilsin"
+    message = "Davom etish uchun boshlangʻich parolni almashtiring."
 
 
 class PermissionDeniedError(AppError):

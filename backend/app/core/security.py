@@ -29,6 +29,31 @@ def hash_password(password: str) -> str:
     return _hasher.hash(password)
 
 
+#: Foydalanuvchi topilmaganda solishtiriladigan soxta xesh.
+#:
+#: Modul yuklanganda BIR MARTA hisoblanadi. Maqsad — javob vaqtini
+#: tenglashtirish: mavjud login uchun argon2 ~80 ms ishlaydi, mavjud
+#: boʻlmagani uchun esa hech narsa ishlamasa javob ~1 ms da qaytardi va
+#: hujumchi shu farqdan qaysi loginlar borligini aniqlab olardi
+#: (user enumeration).
+_DUMMY_HASH = _hasher.hash(secrets.token_urlsafe(32))
+
+
+def verify_password_constant_time(password: str, password_hash: str | None) -> bool:
+    """Parolni tekshiradi; xesh yoʻq boʻlsa ham argon2 ishlaydi.
+
+    `password_hash=None` — bunday login yoʻq. Shunda soxta xesh bilan
+    solishtiriladi: natija har doim `False`, lekin sarflangan vaqt
+    haqiqiy tekshiruvnikiga teng.
+    """
+    if password_hash is None:
+        # Natija ataylab tashlab yuboriladi — bizga faqat sarflangan
+        # vaqt kerak.
+        verify_password(password, _DUMMY_HASH)
+        return False
+    return verify_password(password, password_hash)
+
+
 def verify_password(password: str, password_hash: str) -> bool:
     try:
         _hasher.verify(password_hash, password)

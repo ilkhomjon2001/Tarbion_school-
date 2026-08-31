@@ -13,10 +13,26 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.core.db import SessionDep
-from app.core.exceptions import AuthRequiredError, PermissionDeniedError
+from app.core.exceptions import (
+    AuthRequiredError,
+    PasswordChangeRequiredError,
+    PermissionDeniedError,
+)
 from app.core.security import decode_token
 from app.models import User
 from app.services.access import CurrentUser
+
+#: Parol almashtirilmaguncha ochiq qoladigan yoʻllar. Roʻyxat qisqa
+#: boʻlishi shart: har qoʻshilgan yoʻl zaif parol bilan ishlatiladigan
+#: yuza demakdir.
+PASSWORD_CHANGE_ALLOWED = frozenset(
+    {
+        "/api/v1/auth/me",
+        "/api/v1/auth/change-password",
+        "/api/v1/auth/logout",
+        "/api/v1/auth/refresh",
+    }
+)
 
 
 def _bearer(request: Request) -> str:
@@ -45,6 +61,13 @@ async def current_user(request: Request, session: SessionDep) -> CurrentUser:
     )
     if user is None or not user.is_active or user.is_archived:
         raise AuthRequiredError("Hisob faol emas")
+
+    # Boshlangʻich parol — 5 xonali raqam, atigi 100 000 variant. U
+    # FAQAT birinchi kirish uchun. Almashtirilmaguncha API yopiq:
+    # aks holda ustoz oʻsha zaif parol bilan butun yil ishlab yurardi
+    # va bitta topilgan parol butun sinf maʼlumotini ochib berardi.
+    if user.must_change_password and request.url.path not in PASSWORD_CHANGE_ALLOWED:
+        raise PasswordChangeRequiredError
 
     return CurrentUser.from_model(user)
 

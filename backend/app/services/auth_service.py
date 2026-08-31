@@ -20,6 +20,7 @@ from app.core.security import (
     hash_token,
     needs_rehash,
     verify_password,
+    verify_password_constant_time,
 )
 from app.core.timeutil import utcnow
 from app.models import AuditAction, LoginAttempt, LoginLog, RefreshToken, Role, User
@@ -37,6 +38,35 @@ def normalize_login(raw: str) -> str:
     if not login:
         raise ValidationError("Login kiritilmadi.")
     return login
+
+
+async def _ip_is_locked(session: AsyncSession, ip: str | None) -> bool:
+    """Bitta IP dan koʻp TURLI login boʻyicha xato — parol purkash.
+
+    Login boʻyicha bloklash yolgʻiz yetarli emas: hujumchi bitta
+    ommabop parolni ("12345") 500 ta login boʻyicha sinasa, hech bir
+    hisob 5 ta chegaraga yetmaydi va hech kim bloklanmaydi.
+
+    Lekin XATOLAR SONINI sanash ham notoʻgʻri boʻlardi: butun maktab
+    bitta NAT ortidan chiqadi va oʻquv yili boshida 500 kishi parolini
+    xato terib, barchani bloklab qoʻyardi.
+
+    Shu sababli TURLI loginlar soni sanaladi. Oddiy foydalanuvchi
+    oʻzining bitta loginida adashadi; hujumchi esa oʻnlab login boʻyicha
+    urinadi. Bu ikkisini ajratadigan yagona ishonchli belgi.
+    """
+    if not ip:
+        return False
+
+    window_start = utcnow() - timedelta(minutes=settings.login_attempt_window_minutes)
+    turli_loginlar = await session.scalar(
+        select(func.count(func.distinct(LoginAttempt.login))).where(
+            LoginAttempt.ip_address == ip,
+            LoginAttempt.successful.is_(False),
+            LoginAttempt.created_at >= window_start,
+        )
+    )
+    return (turli_loginlar or 0) >= settings.login_max_logins_per_ip
 
 
 async def _is_locked(session: AsyncSession, login: str) -> bool:
@@ -78,19 +108,23 @@ async def authenticate(
     """Kirish. (user, access_token, refresh_token) qaytaradi."""
     login = normalize_login(login_raw)
 
-    if await _is_locked(session, login):
+    if await _is_locked(session, login) or await _ip_is_locked(session, ip):
+        # Xabar ikkala holatda bir xil: qaysi biri ishlaganini aytish
+        # hujumchiga login mavjudligini bildirardi (X-3 ruhida).
         raise AccountLockedError(
-            f"Hisob {settings.login_lockout_minutes} daqiqaga bloklandi. "
-            "Keyinroq qayta urinib koʻring."
+            f"Juda koʻp urinish. {settings.login_lockout_minutes} daqiqadan soʻng "
+            "qayta urinib koʻring."
         )
 
     user = await session.scalar(
         select(User).options(selectinload(User.roles)).where(User.login == login)
     )
 
-    # Parolni foydalanuvchi topilmasa ham tekshirmaymiz, lekin javob vaqti
-    # bir xil boʻlishi uchun xesh solishtiriladi (user enumeration'ga qarshi).
-    ok = bool(user) and verify_password(password, user.password_hash)  # type: ignore[union-attr]
+    # Foydalanuvchi topilmasa ham argon2 ISHLAYDI — soxta xesh bilan.
+    # Aks holda mavjud login ~80 ms, mavjud boʻlmagani ~1 ms da javob
+    # qaytarardi va hujumchi shu farqdan loginlar roʻyxatini yigʻib
+    # olardi (user enumeration).
+    ok = verify_password_constant_time(password, user.password_hash if user else None)
     if not ok:
         session.add(LoginAttempt(login=login, successful=False, ip_address=ip))
         await session.commit()

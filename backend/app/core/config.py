@@ -3,8 +3,19 @@
 from functools import lru_cache
 from typing import Annotated
 
-from pydantic import Field, PostgresDsn, field_validator
+from pydantic import Field, PostgresDsn, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+
+#: `.env.example` va hujjatlarda uchraydigan qiymatlar. Ular ishlab
+#: chiqarishga oʻtib ketmasin.
+_KNOWN_WEAK_SECRETS = frozenset(
+    {
+        "change-me",
+        "secret",
+        "changeme-32-characters-minimum-length",
+        "dev-secret-key-change-in-production-32",
+    }
+)
 
 
 class Settings(BaseSettings):
@@ -39,6 +50,12 @@ class Settings(BaseSettings):
     login_max_attempts: int = 5
     login_lockout_minutes: int = 15
     login_attempt_window_minutes: int = 15
+    # Parol purkashga qarshi: bitta IP dan oynada nechta TURLI login
+    # boʻyicha xato boʻlgani. Xatolar SONI emas, aynan turli loginlar
+    # soni — butun maktab bitta NAT ortidan chiqadi va oddiy xatolar
+    # hammani bloklab qoʻymasligi kerak. Bitta odam 15 ta boshqa
+    # odamning loginini terib koʻrmaydi.
+    login_max_logins_per_ip: int = 15
 
     # --- Cookie ---
     refresh_cookie_name: str = "tarbion_rt"
@@ -53,6 +70,13 @@ class Settings(BaseSettings):
     # NoDecode bilan xom qator validatorga yetib keladi.
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
 
+    # --- Proksi ---
+    # Caddy/nginx ortida turganda `X-Forwarded-For` FAQAT shu manzillardan
+    # oʻqiladi. Boʻsh boʻlsa sarlavha butunlay eʼtiborga olinmaydi —
+    # aks holda har kim oʻzini boshqa IP deb koʻrsatib, bloklashni
+    # aylanib oʻtardi.
+    trusted_proxies: Annotated[list[str], NoDecode] = []
+
     # --- Domen qoidalari ---
     # DAV-03: davomat dars TUGAGANIDAN keyin 24 soat ustoz uchun ochiq.
     attendance_edit_window_hours: int = 24
@@ -64,9 +88,48 @@ class Settings(BaseSettings):
             return [o.strip() for o in v.split(",") if o.strip()]
         return v
 
+    @field_validator("trusted_proxies", mode="before")
+    @classmethod
+    def _split_proxies(cls, v: object) -> object:
+        if isinstance(v, str):
+            return [o.strip() for o in v.split(",") if o.strip()]
+        return v
+
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"
+
+    @model_validator(mode="after")
+    def _assert_production_safe(self) -> "Settings":
+        """Ishlab chiqarishda xavfli sozlama bilan ishga tushmaydi.
+
+        Sozlama xatosi eng koʻp uchraydigan zaiflik manbai: kimdir
+        `.env` ni nusxalaydi va `COOKIE_SECURE=false` yoki sinov
+        `JWT_SECRET` i ishlab chiqarishga oʻtib ketadi. Bunday holatda
+        jimgina ishlashdan koʻra ishga tushmagani xavfsizroq.
+        """
+        if not self.is_production:
+            return self
+
+        xatolar: list[str] = []
+
+        if not self.cookie_secure:
+            xatolar.append("COOKIE_SECURE=false — refresh cookie HTTP orqali ketadi")
+        if self.debug:
+            xatolar.append("DEBUG=true — xato tafsilotlari tashqariga chiqadi")
+        if any(o.startswith("http://") for o in self.cors_origins):
+            xatolar.append("CORS_ORIGINS da http:// manzil bor")
+        if "*" in self.cors_origins:
+            xatolar.append("CORS_ORIGINS = '*' — cookie bilan birga xavfli")
+        if self.jwt_secret in _KNOWN_WEAK_SECRETS:
+            xatolar.append("JWT_SECRET namunadagi qiymat — almashtiring")
+        if len(set(self.jwt_secret)) < 8:
+            xatolar.append("JWT_SECRET juda oddiy")
+
+        if xatolar:
+            ro_yxat = "; ".join(xatolar)
+            raise ValueError(f"Ishlab chiqarish sozlamasi xavfli: {ro_yxat}")
+        return self
 
 
 @lru_cache

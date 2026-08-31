@@ -345,6 +345,87 @@ Xavfsizlik keyin qoʻshiladigan narsa emas. Tartib:
 - [ ] Log da token va PII yoʻq
 - [ ] Migratsiya yozilgan (model oʻzgargan boʻlsa)
 
+
+---
+
+## Amalga oshirilgan himoya qatlamlari
+
+Quyidagilar kodda bor va `tests/test_security_hardening.py` bilan
+qulflangan. Testlar yiqilsa — kimdir himoyani bilmasdan olib tashlagan.
+
+### Autentifikatsiya
+
+| Himoya | Nimadan saqlaydi | Qayerda |
+|---|---|---|
+| argon2id (64 MiB, t=3) | baza o'g'irlansa parollarni ochish | `core/security.py` |
+| Doimiy vaqtli tekshiruv | **foydalanuvchi enumeration** — mavjud login ~80 ms, mavjud bo'lmagani ~1 ms da javob qaytarardi | `verify_password_constant_time` |
+| Login bo'yicha blok (5 → 15 daq) | bitta hisobga brute-force | `auth_service._is_locked` |
+| IP bo'yicha blok (15 ta **turli** login) | **parol purkash** — bitta parolni 500 login bo'yicha sinash | `auth_service._ip_is_locked` |
+| Umumiy xato matni | qaysi login mavjudligini bildirish | `InvalidCredentialsError` |
+| Refresh rotatsiya + qayta ishlatishni aniqlash | o'g'irlangan refresh token | `auth_service.rotate_refresh` |
+| `must_change_password` majburlash | 5 xonali boshlang'ich parol bilan butun yil ishlash | `api/v1/deps.py` |
+
+**Nega IP bo'yicha «turli loginlar», xatolar soni emas:** butun maktab
+bitta NAT ortidan chiqadi. O'quv yili boshida 500 kishi parolini xato
+tersa, xatolar sonini sanaydigan qoida hammani bloklab qo'yardi. Oddiy
+foydalanuvchi **o'zining bitta loginida** adashadi; hujumchi o'nlab
+login bo'yicha urinadi — bu ikkisini ajratadigan yagona ishonchli belgi.
+
+### Ruxsat
+
+| Himoya | Nimadan saqlaydi |
+|---|---|
+| `access.py` — kesim **so'rov darajasida** | BOLA (OWASP API #1): URL dagi `student_id` ni almashtirish |
+| Ruxsat yo'qligida `403`, umumiy xabar | obyekt mavjudligini oshkor qilish |
+| Rol tokendan emas, **bazadan** o'qiladi | rol olib qo'yilgach eski token bilan ishlash |
+| Kirish va chiqish sxemalari alohida | mass assignment (`{"role": "admin"}`) |
+| Ro'yxatda PII yo'q (X-6) | ommaviy sizib chiqish |
+| Test javoblarida `is_correct` **so'ralmaydi** | javoblarni oldindan olish |
+
+### Tarmoq va transport
+
+| Sarlavha | Nimadan saqlaydi |
+|---|---|
+| `X-Content-Type-Options: nosniff` | MIME sniffing orqali XSS |
+| `X-Frame-Options: DENY` | clickjacking |
+| `Content-Security-Policy: default-src 'none'` | API javobida hech narsa yuklanmasin |
+| `Referrer-Policy` | id larni begona saytga uzatish |
+| `Strict-Transport-Security` (ishlab chiqarishda) | SSL stripping |
+| `Server: tarbion` | versiya bo'yicha CVE tanlash |
+
+Bundan tashqari:
+
+- **So'rov tanasi 1 MB bilan cheklangan** — parse qilishdan OLDIN.
+  Bitta katta JSON bilan xotirani to'ldirish eng arzon DoS.
+- **`X-Forwarded-For` faqat `TRUSTED_PROXIES` dan o'qiladi.** Sarlavhaga
+  ko'r-ko'rona ishonish bloklashni butunlay aylanib o'tish yo'li: hujumchi
+  har so'rovda yangi IP yozib qo'yaverardi.
+- **Ishlab chiqarish sozlamasi ishga tushishda tekshiriladi.** Sozlama
+  xatosi eng ko'p uchraydigan zaiflik manbai: kimdir `.env` ni nusxalaydi
+  va `COOKIE_SECURE=false` yoki sinov `JWT_SECRET` i ishlab chiqarishga
+  o'tib ketadi. Bunday holatda ilova **ishga tushmaydi**.
+
+### Tekshirish
+
+```bash
+cd backend
+uv run pytest tests/test_security_hardening.py -q   # izolyatsiyalangan baza
+uv run python scripts/security_probe.py <superadmin-paroli>   # ishlab turgan server
+```
+
+`security_probe.py` hujumchi nima qilishini takrorlaydi: begona bolaning
+ma'lumotini so'rash, boshqa ustozning jurnaliga kirish, test javoblarini
+oldindan olish, huquq oshirish, soxta ball yuborish. 45 ta tekshiruv.
+
+### Hali qilinmagan
+
+- **2FA** administrator va direktor uchun (X-14) — TZ'da yo'q, lekin majburiy.
+- **Umumiy rate limiting** — hozir faqat kirish cheklangan. Boshqa
+  endpointlar uchun autentifikatsiyadan keyingi cheklov kerak
+  (masalan bir foydalanuvchi daqiqada N so'rov).
+- **Audit jurnalini o'zgartirishdan to'sadigan trigger** (T-021).
+- **Zaxira nusxa shifrlash** (X-12, T-022).
+
 ---
 
 ## Manbalar

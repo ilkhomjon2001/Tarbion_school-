@@ -27,6 +27,11 @@ from app.api.v1 import tests as tests_router
 from app.core.config import settings
 from app.core.db import SessionDep, engine
 from app.core.exceptions import AppError, app_error_handler, unhandled_error_handler
+from app.core.middleware import (
+    BodySizeLimitMiddleware,
+    RealClientIPMiddleware,
+    SecurityHeadersMiddleware,
+)
 from app.schemas.common import HealthOut, ReadinessOut
 
 
@@ -66,6 +71,10 @@ app = FastAPI(
     generate_unique_id_function=operation_id,
 )
 
+# Middleware TARTIBI teskari ishlaydi: oxirgi qoʻshilgani soʻrovni
+# birinchi koʻradi. Shuning uchun eng tashqi qatlam — haqiqiy IP ni
+# aniqlash, chunki qolgan hamma qatlam (bloklash, audit) unga tayanadi.
+#
 # Cookie bilan ishlaymiz (X-4), shuning uchun `allow_credentials=True` va
 # manzillar aniq roʻyxat — "*" bilan birga ishlamaydi va xavfli ham.
 app.add_middleware(
@@ -74,7 +83,11 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
+    max_age=600,
 )
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(BodySizeLimitMiddleware)
+app.add_middleware(RealClientIPMiddleware)
 
 app.add_exception_handler(AppError, app_error_handler)
 app.add_exception_handler(Exception, unhandled_error_handler)
