@@ -43,10 +43,13 @@ import {
   fetchTeacherOptions,
   fetchSummary,
   formatMoment,
+  searchStudents,
   sendMessage,
   setStatus,
+  startConversation,
   type AppealNoteOut,
   type ComposeChild,
+  type StudentMatch,
   type AppealSummaryOut,
   type ClassAppealStatOut,
 } from "@/lib/appeals/api";
@@ -178,6 +181,26 @@ function Board({ viewer }: { viewer: "parent" | "staff" }) {
           </button>
           {composing && (
             <ComposeForm
+              onDone={async () => {
+                setComposing(false);
+                await load();
+              }}
+            />
+          )}
+        </div>
+      )}
+
+      {viewer === "staff" && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setComposing((v) => !v)}
+            className="focus-ring h-10 rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-dark"
+          >
+            {composing ? "Formani yopish" : "Ota-onaga yozish"}
+          </button>
+          {composing && (
+            <StartConversationForm
               onDone={async () => {
                 setComposing(false);
                 await load();
@@ -335,6 +358,11 @@ function Row({
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1">
         <Badge tone={STATUS_TONE[appeal.status]}>{APPEAL_STATUS_LABELS[appeal.status]}</Badge>
+        {/* Yozishmani maktab boshlagan boʻlsa buni yashirmaymiz — ota-ona
+            oʻzi yozmagan xatni koʻrib chalgʻimasin. */}
+        {appeal.openedByName && (
+          <span className="text-[11px] font-medium text-brand">Maktab boshladi</span>
+        )}
         <span className="text-[11px] text-foreground-muted">{appeal.createdAt}</span>
       </div>
     </button>
@@ -732,6 +760,205 @@ function ComposeForm({ onDone }: { onDone: () => void }) {
         className="focus-ring h-10 rounded-lg bg-brand text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
       >
         {busy ? "Yuborilmoqda…" : "Murojaatni yuborish"}
+      </button>
+    </form>
+  );
+}
+
+/**
+ * ADM-16: maktab ota-ona bilan yozishmani boshlaydi.
+ *
+ * Ota-ona alohida roʻyxatdan tanlanmaydi — OʻQUVCHI qidiriladi, vasiy
+ * hisobi shu yerdan chiqadi. Sabab: bir familiyali bir necha oila boʻladi
+ * va roʻyxatdan tanlashda notoʻgʻri odamga yozib yuborish oson.
+ *
+ * Server ham shu qoidani tekshiradi: tanlangan hisob shu oʻquvchining
+ * vasiysi boʻlmasa soʻrov rad etiladi.
+ */
+function StartConversationForm({ onDone }: { onDone: () => void }) {
+  const [query, setQuery] = useState("");
+  const [matches, setMatches] = useState<StudentMatch[]>([]);
+  const [chosen, setChosen] = useState<StudentMatch | null>(null);
+  const [guardianId, setGuardianId] = useState("");
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  // Har harfda soʻrov yubormaymiz — yozish tugagach qidiriladi.
+  useEffect(() => {
+    const text = query.trim();
+    if (chosen || text.length < 2) {
+      setMatches([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      void (async () => {
+        try {
+          const rows = await searchStudents(text);
+          if (!cancelled) setMatches(rows);
+        } catch (err) {
+          if (!cancelled) setError(messageOf(err));
+        }
+      })();
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [query, chosen]);
+
+  function pick(match: StudentMatch) {
+    setChosen(match);
+    setGuardianId(match.guardians[0]?.id ?? "");
+    setMatches([]);
+  }
+
+  const canSubmit = Boolean(chosen && guardianId && title.trim() && body.trim());
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!chosen || !canSubmit) return;
+    setBusy(true);
+    setError("");
+    try {
+      await startConversation({
+        studentId: chosen.studentId,
+        guardianId,
+        title: title.trim(),
+        body: body.trim(),
+      });
+      setChosen(null);
+      setQuery("");
+      setTitle("");
+      setBody("");
+      onDone();
+    } catch (err) {
+      setError(messageOf(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      className="mt-3 flex flex-col gap-3 rounded-xl border border-border bg-surface p-4"
+    >
+      <p className="text-xs text-foreground-muted">
+        Yozishma ota-ona kabinetida koʻrinadi va audit jurnaliga tushadi.
+      </p>
+
+      {chosen ? (
+        <div className="flex items-start justify-between gap-2 rounded-lg bg-brand-tint px-3 py-2.5">
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-semibold text-brand-dark">
+              {chosen.fullName}
+            </span>
+            <span className="block truncate text-xs text-foreground-muted">
+              {chosen.className ?? "sinfsiz"}
+            </span>
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setChosen(null);
+              setGuardianId("");
+            }}
+            className="focus-ring shrink-0 rounded text-xs font-medium text-foreground-muted hover:text-danger"
+          >
+            Boshqasini tanlash
+          </button>
+        </div>
+      ) : (
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium text-foreground">Oʻquvchi</span>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Familiya yoki ism — kamida 2 harf"
+            className="focus-ring h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm"
+          />
+        </label>
+      )}
+
+      {matches.length > 0 && (
+        <ul className="flex flex-col gap-1 rounded-lg border border-border p-1">
+          {matches.map((match) => (
+            <li key={match.studentId}>
+              <button
+                type="button"
+                onClick={() => pick(match)}
+                className="focus-ring flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-2 text-left text-sm transition-colors hover:bg-surface-muted"
+              >
+                <span className="truncate text-foreground">{match.fullName}</span>
+                <span className="shrink-0 text-xs text-foreground-muted">
+                  {match.className ?? "—"}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {chosen && chosen.guardians.length === 0 && (
+        <p className="rounded-lg bg-warning-tint px-3 py-2 text-xs text-warning">
+          Bu oʻquvchiga vasiy hisobi biriktirilmagan — avval hisob oching.
+        </p>
+      )}
+
+      {chosen && chosen.guardians.length > 1 && (
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium text-foreground">Kimga</span>
+          <select
+            value={guardianId}
+            onChange={(e) => setGuardianId(e.target.value)}
+            className="focus-ring h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm"
+          >
+            {chosen.guardians.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.fullName}
+                {g.isPrimary ? " — asosiy vasiy" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium text-foreground">Mavzu</span>
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Qisqacha sarlavha"
+          className="focus-ring h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm"
+        />
+      </label>
+
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium text-foreground">Xabar</span>
+        <textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          rows={3}
+          placeholder="Ota-onaga yoziladigan matn"
+          className="focus-ring w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+        />
+      </label>
+
+      {error && (
+        <p role="alert" className="rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">
+          {error}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={busy || !canSubmit}
+        className="focus-ring h-10 rounded-lg bg-brand text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {busy ? "Yuborilmoqda…" : "Yozishmani boshlash"}
       </button>
     </form>
   );

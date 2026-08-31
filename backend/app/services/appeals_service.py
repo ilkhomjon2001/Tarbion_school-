@@ -128,6 +128,7 @@ def _detail_query() -> Select:
     """
     author = User.__table__.alias("author")
     assignee = User.__table__.alias("assignee")
+    opener = User.__table__.alias("opener")
     return (
         select(
             Appeal,
@@ -139,6 +140,8 @@ def _detail_query() -> Select:
             assignee.c.last_name,
             assignee.c.first_name,
             Subject.name,
+            opener.c.last_name,
+            opener.c.first_name,
         )
         .select_from(Appeal)
         .join(Student, Student.id == Appeal.student_id)
@@ -146,6 +149,7 @@ def _detail_query() -> Select:
         .join(author, author.c.id == Appeal.author_id)
         .outerjoin(assignee, assignee.c.id == Appeal.assignee_id)
         .outerjoin(Subject, Subject.id == Appeal.subject_id)
+        .outerjoin(opener, opener.c.id == Appeal.created_by_id)
     )
 
 
@@ -257,6 +261,26 @@ async def resolve_assignee(
     return None
 
 
+async def guardians_of(session: AsyncSession, student_id: uuid.UUID) -> list[tuple]:
+    """Oʻquvchining vasiy hisoblari — xodim yozishma boshlaganda kerak.
+
+    Maktab yozishmani KIMGA yozishini tanlamaydi: u oʻquvchini tanlaydi,
+    vasiy shu yerdan olinadi. Shunda notoʻgʻri oilaga yozib yuborish
+    ehtimoli yoʻqoladi.
+    """
+    rows = await session.execute(
+        select(User.id, User.last_name, User.first_name, Guardian.relation, Guardian.is_primary)
+        .join(Guardian, Guardian.user_id == User.id)
+        .where(
+            Guardian.student_id == student_id,
+            Guardian.is_archived.is_(False),
+            User.is_archived.is_(False),
+        )
+        .order_by(Guardian.is_primary.desc(), User.last_name)
+    )
+    return rows.all()
+
+
 async def create_appeal(
     session: AsyncSession,
     user: CurrentUser,
@@ -267,58 +291,107 @@ async def create_appeal(
     body: str,
     subject_id: uuid.UUID | None = None,
     assignee_id: uuid.UUID | None = None,
+    author_id: uuid.UUID | None = None,
 ) -> Appeal:
-    """MUR-01: ota-ona murojaat yozadi.
+    """Yozishma ochish. Ikki yoʻl bor va ikkalasi ham shu yerdan oʻtadi.
 
-    Faqat ota-ona yozadi — bu ataylab. Xodimlar bir-biriga murojaat
-    yozmaydi, ular ichki qayd (`AppealNote`) qoldiradi.
+    MUR-01 — ota-ona oʻzi yozadi. `author_id` eʼtiborga olinmaydi:
+    ota-ona uni yuborib boshqa oila nomidan yozib yuborardi.
+
+    ADM-16 — maktab birinchi boʻlib yozadi (administrator/rahbariyat).
+    Bunda `author_id` — yozishma tegishli boʻlgan VASIY hisobi, va u
+    shu oʻquvchining vasiysi ekani tekshiriladi. Berilmasa asosiy vasiy
+    olinadi.
+
+    Ustoz bu yoʻldan foydalana olmaydi: ustoz ota-onaga yozmoqchi boʻlsa
+    sinf rahbari yoki administrator orqali boradi — aks holda har bir
+    ustoz istagan oilaga toʻgʻridan-toʻgʻri yozardi va bu nazoratsiz
+    kanal boʻlib qolardi.
     """
-    if not user.has(RoleName.PARENT.value):
-        raise PermissionDeniedError("Murojaatni faqat ota-ona yoza oladi.")
+    school_initiated = not user.has(RoleName.PARENT.value)
 
-    # Bola haqiqatan shu ota-onaning farzandimi — soʻrov darajasida.
-    is_child = await session.scalar(
-        select(func.count())
-        .select_from(Guardian)
-        .where(
-            Guardian.user_id == user.id,
-            Guardian.student_id == student_id,
-            Guardian.is_archived.is_(False),
+    if school_initiated:
+        if not can_see_all(user):
+            raise PermissionDeniedError("Yozishmani ota-ona yoki administrator boshlaydi.")
+
+        family = await guardians_of(session, student_id)
+        if not family:
+            raise ValidationError("Bu oʻquvchiga vasiy hisobi biriktirilmagan.")
+
+        allowed = {row[0] for row in family}
+        if author_id is None:
+            author_id = family[0][0]  # asosiy vasiy — `guardians_of` tartibi
+        elif author_id not in allowed:
+            raise ValidationError("Tanlangan hisob bu oʻquvchining vasiysi emas.")
+    else:
+        # Bola haqiqatan shu ota-onaning farzandimi — soʻrov darajasida.
+        is_child = await session.scalar(
+            select(func.count())
+            .select_from(Guardian)
+            .where(
+                Guardian.user_id == user.id,
+                Guardian.student_id == student_id,
+                Guardian.is_archived.is_(False),
+            )
         )
-    )
-    if not is_child:
-        raise PermissionDeniedError("Bu oʻquvchi boʻyicha murojaat yoza olmaysiz.")
+        if not is_child:
+            raise PermissionDeniedError("Bu oʻquvchi boʻyicha murojaat yoza olmaysiz.")
+        author_id = user.id
 
-    resolved = await resolve_assignee(
-        session,
-        target=target,
-        student_id=student_id,
-        subject_id=subject_id,
-        requested_id=assignee_id,
-    )
+    if school_initiated:
+        # Maktab boshlagan yozishma har doim `management`, masʼul esa uni
+        # boshlagan xodim. Yoʻnaltirish qoidalari (sinf rahbari, fan
+        # oʻqituvchisi) bu yerda qoʻllanmaydi: ular ota-ona «kimga
+        # yozaman» deb tanlashi uchun. Oila tomonidan qaralganda esa
+        # yozgan tomon bitta — «Rahbariyat».
+        target = AppealTarget.MANAGEMENT.value
+        subject_id = None
+        resolved = user.id
+    else:
+        resolved = await resolve_assignee(
+            session,
+            target=target,
+            student_id=student_id,
+            subject_id=subject_id,
+            requested_id=assignee_id,
+        )
 
     now = utcnow()
     appeal = Appeal(
         student_id=student_id,
-        author_id=user.id,
+        author_id=author_id,
+        # Ota-ona oʻzi ochsa `NULL` — «kim ochgan» savoli tugʻilmaydi.
+        created_by_id=user.id if school_initiated else None,
         target=target,
         assignee_id=resolved,
         subject_id=subject_id if target == AppealTarget.SUBJECT_TEACHER.value else None,
         title=title.strip(),
-        status=AppealStatus.NEW.value,
-        due_at=now + timedelta(days=RESPONSE_DAYS),
+        # Maktab boshlagan yozishma «yangi murojaat» emas — javob kutayotgan
+        # tomon OTA-ONA. Uni `new` qoldirish administrator ekranidagi
+        # «javob berilmagan» sanogʻini yolgʻon oshirardi.
+        status=AppealStatus.IN_REVIEW.value if school_initiated else AppealStatus.NEW.value,
+        # Maktabning oʻz savoliga javob berish muddati boʻlmaydi.
+        due_at=None if school_initiated else now + timedelta(days=RESPONSE_DAYS),
         last_message_at=now,
     )
     session.add(appeal)
     await session.flush()
 
+    # Birinchi xabar muallifi — kim yozgan boʻlsa oʻsha. Maktab boshlagan
+    # yozishmada bu xodim: ota-onaning ogʻziga soʻz solinmaydi.
     session.add(AppealMessage(appeal_id=appeal.id, author_id=user.id, body=body.strip()))
     audit_service.record(
         session,
         object_type="appeal",
         object_id=appeal.id,
         action="create",
-        new={"target": target, "title": appeal.title, "student_id": student_id},
+        new={
+            "target": target,
+            "title": appeal.title,
+            "student_id": student_id,
+            "author_id": author_id,
+            "created_by_id": appeal.created_by_id,
+        },
         actor_id=user.id,
     )
     await session.flush()
@@ -349,6 +422,11 @@ async def add_message(
         # Ota-ona qayta yozdi → javob kutilmoqda.
         if appeal.status == AppealStatus.ANSWERED.value:
             appeal.status = AppealStatus.IN_REVIEW.value
+        # Maktab boshlagan yozishmada muddat yoʻq edi. Ota-ona savol
+        # berdi — endi javob berish navbati maktabda, MUR-04 muddati
+        # shu paytdan sanaladi.
+        if appeal.due_at is None:
+            appeal.due_at = utcnow() + timedelta(days=RESPONSE_DAYS)
     else:
         appeal.status = AppealStatus.ANSWERED.value
 
@@ -641,3 +719,51 @@ async def message_counts(session: AsyncSession, appeal_ids: list[uuid.UUID]) -> 
         .group_by(AppealMessage.appeal_id)
     )
     return dict(rows.all())
+
+
+async def search_students(
+    session: AsyncSession, user: CurrentUser, query: str, limit: int = 10
+) -> list[dict]:
+    """Xodim yozishma boshlaganda oʻquvchi qidiruvi.
+
+    X-6: bu roʻyxatda telefon, manzil va hujjat raqami YOʻQ — faqat ism,
+    sinf va vasiy ismi. Ular yozishmani kimga yozayotganini tasdiqlash
+    uchun yetarli.
+    """
+    if not can_see_all(user):
+        raise PermissionDeniedError("Oʻquvchi qidiruvi administrator uchun.")
+
+    needle = f"%{query.strip().lower()}%"
+    rows = (
+        await session.execute(
+            select(Student.id, Student.last_name, Student.first_name, SchoolClass.name)
+            .outerjoin(SchoolClass, SchoolClass.id == Student.class_id)
+            .where(
+                Student.is_archived.is_(False),
+                func.lower(Student.last_name + " " + Student.first_name).like(needle),
+            )
+            .order_by(Student.last_name, Student.first_name)
+            .limit(limit)
+        )
+    ).all()
+
+    out: list[dict] = []
+    for student_id, last, first, class_name in rows:
+        family = await guardians_of(session, student_id)
+        out.append(
+            {
+                "student_id": student_id,
+                "full_name": f"{last} {first}",
+                "class_name": class_name,
+                "guardians": [
+                    {
+                        "id": g_id,
+                        "full_name": f"{g_last} {g_first}",
+                        "relation": relation,
+                        "is_primary": is_primary,
+                    }
+                    for g_id, g_last, g_first, relation, is_primary in family
+                ],
+            }
+        )
+    return out

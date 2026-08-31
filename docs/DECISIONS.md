@@ -555,3 +555,42 @@ soʻrardi. Integratsiya funksiya yoʻqotish boʻlmasligi uchun
 `appeal_notes` ga `about_teacher_id`, `teacher_rating`, `teacher_comment`
 qoʻshildi. Chegara (1..5) bazada ham — bu qiymat keyinchalik ustozlar
 faoliyati hisobotiga tushadi.
+
+
+## 2026-08-31 — Maktab ham yozishmani boshlay oladi (ADM-16)
+
+Loyiha egasi tasdiqladi: administrator ota-ona bilan yozishmani birinchi
+boʻlib boshlay oladi (telefon suhbatini qayd qilish, soʻrovnoma).
+
+**`author_id` va `created_by_id` ajratildi.** Yozishma OILAGA tegishli —
+`author_id` har doim vasiy hisobi, shuning uchun ota-ona uni oʻz kabinetida
+koʻradi va javob yozadi. Kim ochgani `created_by_id` da. Ikkisi
+aralashtirilsa bazada «maktab ota-ona nomidan gapirdi» degan yozuv paydo
+boʻlardi; ota-ona kabinetida esa oʻzi yozmagan xat oʻz xati boʻlib turardi.
+Interfeysda «Maktab boshladi» deb koʻrsatiladi — yashirilmaydi.
+
+**Birinchi xabar muallifi — xodim.** Ota-onaning ogʻziga soʻz solinmaydi.
+
+**Holat `in_review`, muddat yoʻq.** Maktab boshlagan yozishmada javob
+kutayotgan tomon — ota-ona. Uni `new` qoldirish administrator ekranidagi
+«javob berilmagan murojaat» sanogʻini yolgʻon oshirardi, MUR-04 muddati
+qoʻyish esa maktabni oʻz savoliga javob berishga majburlardi. Muddat
+ota-ona javob yozgan paytda qoʻyiladi — navbat shunda maktabga oʻtadi.
+
+**Maktab boshlagan yozishma har doim `management`.** Yoʻnaltirish qoidalari
+(sinf rahbari, fan oʻqituvchisi) ota-ona «kimga yozaman» deb tanlashi
+uchun. Oila tomonidan qaralganda yozgan tomon bitta — maktab.
+
+**Ustoz bu yoʻldan foydalana olmaydi.** Faqat administrator, rahbariyat va
+superadmin. Aks holda har bir ustoz istagan oilaga toʻgʻridan-toʻgʻri,
+nazoratsiz kanal ochardi. Ustoz ota-onaga yozmoqchi boʻlsa sinf rahbari
+yoki administrator orqali boradi.
+
+**Vasiy oʻquvchi orqali topiladi**, ota-onalar roʻyxatidan tanlanmaydi:
+bir familiyali bir necha oila boʻladi. Server ham tekshiradi — tanlangan
+hisob shu oʻquvchining vasiysi boʻlmasa `422`. Qidiruv javobida telefon,
+manzil va hujjat raqami yoʻq (X-6).
+
+Bu ish bilan `components/admin/ConversationsBoard.tsx` va
+`components/director/AppealsBoard.tsx` oʻchirildi — ikkalasining
+funksiyasi `LiveAppeals` da bazadan ishlaydi.

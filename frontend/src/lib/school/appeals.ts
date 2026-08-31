@@ -50,6 +50,11 @@ export interface Appeal {
   assigneeId: string;
   /** Backenddan kelgan masʼul ismi — `STAFF` da topilmaganda ishlatiladi. */
   assigneeName?: string;
+  /**
+   * Yozishmani MAKTAB boshlagan boʻlsa — kim boshlagani. Ota-ona oʻzi
+   * yozgan murojaatda boʻsh: «kim ochgan» savoli tugʻilmaydi.
+   */
+  openedByName?: string;
   /** Faqat `subject_teacher` uchun. */
   subject?: string;
   className: string;

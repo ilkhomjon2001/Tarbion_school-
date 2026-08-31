@@ -29,6 +29,7 @@ from app.schemas.appeals import (
     ClassAppealStatOut,
     MessageCreateIn,
     StatusUpdateIn,
+    StudentSearchOut,
 )
 from app.services import appeals_service
 
@@ -52,6 +53,8 @@ def _to_out(row: tuple, message_count: int = 0) -> AppealOut:
         as_last,
         as_first,
         subject_name,
+        op_last,
+        op_first,
     ) = row
     appeal: Appeal
     return AppealOut(
@@ -72,6 +75,8 @@ def _to_out(row: tuple, message_count: int = 0) -> AppealOut:
         closed_at=appeal.closed_at,
         last_message_at=appeal.last_message_at,
         message_count=message_count,
+        created_by_id=appeal.created_by_id,
+        created_by_name=f"{op_last} {op_first}" if op_last else None,
     )
 
 
@@ -128,6 +133,21 @@ async def compose_options(session: SessionDep, user: CurrentUserDep) -> AppealOp
     return AppealOptionsOut(children=await appeals_service.compose_options(session, user))
 
 
+@router.get("/students", response_model=list[StudentSearchOut])
+async def search_students(
+    session: SessionDep,
+    user: CurrentUserDep,
+    q: Annotated[str, Query(min_length=2, max_length=80, description="Ism yoki familiya")],
+) -> list[StudentSearchOut]:
+    """ADM-16: yozishma boshlash uchun oʻquvchi qidiruvi (administrator).
+
+    Vasiy oʻquvchi orqali topiladi — administrator ota-onani roʻyxatdan
+    tanlamaydi. Shunda notoʻgʻri oilaga yozib yuborish ehtimoli yoʻqoladi.
+    """
+    rows = await appeals_service.search_students(session, user, q)
+    return [StudentSearchOut(**row) for row in rows]
+
+
 @router.get("/{appeal_id}", response_model=AppealOut)
 async def get_appeal(
     appeal_id: uuid.UUID, session: SessionDep, user: CurrentUserDep
@@ -157,7 +177,15 @@ async def get_appeal(
 async def create_appeal(
     payload: AppealCreateIn, session: SessionDep, user: CurrentUserDep
 ) -> AppealOut:
-    """MUR-01: ota-ona yangi murojaat yozadi."""
+    """Yangi yozishma.
+
+    MUR-01 — ota-ona murojaat yozadi.
+    ADM-16 — administrator/rahbariyat ota-ona bilan yozishmani boshlaydi
+    (telefon suhbatini qayd qilish yoki savol berish).
+
+    Qaysi yoʻl ekanini SERVER aniqlaydi — chaqiruvchining rolidan, soʻrov
+    maydonidan emas.
+    """
     appeal = await appeals_service.create_appeal(
         session,
         user,
@@ -167,6 +195,7 @@ async def create_appeal(
         body=payload.body,
         subject_id=payload.subject_id,
         assignee_id=payload.assignee_id,
+        author_id=payload.author_id,
     )
     await session.commit()
     return await get_appeal(appeal.id, session, user)

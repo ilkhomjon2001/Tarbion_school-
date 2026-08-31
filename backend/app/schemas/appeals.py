@@ -49,6 +49,12 @@ class AppealOut(BaseModel):
     assignee_name: str | None
     subject_name: str | None
 
+    # Yozishmani kim ochgan. `None` — ota-ona oʻzi. Toʻldirilgan boʻlsa
+    # maktab boshlagan (ADM-16) va bu ota-onaga ham koʻrsatiladi: kim
+    # yozganini yashirish yozishmani tushunarsiz qilardi.
+    created_by_id: uuid.UUID | None = None
+    created_by_name: str | None = None
+
     created_at: datetime
     due_at: datetime | None
     closed_at: datetime | None
@@ -67,6 +73,10 @@ class AppealCreateIn(BaseModel):
     # Ota-ona tanlagan fan oʻqituvchisi. Server buni TEKSHIRADI — tanlangan
     # xodim shu bolaga dars bermasa soʻrov rad etiladi.
     assignee_id: uuid.UUID | None = None
+    # ADM-16: maktab yozishmani boshlaganda — yozishma tegishli vasiy
+    # hisobi. Ota-ona yuborsa EʼTIBORGA OLINMAYDI, aks holda u boshqa
+    # oila nomidan yozishma ochib yuborardi.
+    author_id: uuid.UUID | None = None
 
 
 class MessageCreateIn(BaseModel):
@@ -161,3 +171,21 @@ class AppealOptionsOut(BaseModel):
     """
 
     children: list[AppealChildOut] = Field(default_factory=list)
+
+
+class GuardianOptionOut(BaseModel):
+    """Oʻquvchining vasiy hisobi — yozishma kimga borishini tanlash uchun."""
+
+    id: uuid.UUID
+    full_name: str
+    relation: str
+    is_primary: bool
+
+
+class StudentSearchOut(BaseModel):
+    """ADM-16 qidiruvi. X-6: telefon, manzil va hujjat raqami yoʻq."""
+
+    student_id: uuid.UUID
+    full_name: str
+    class_name: str | None
+    guardians: list[GuardianOptionOut] = Field(default_factory=list)
