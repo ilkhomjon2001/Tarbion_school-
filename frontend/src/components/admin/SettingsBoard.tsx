@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { CheckIcon, SearchIcon } from "@/components/ui/icons";
 import { AccessCenter } from "@/components/admin/AccessCenter";
+import { StaffBoard } from "@/components/admin/StaffBoard";
 import { useAdmin, useAdminDispatch } from "@/lib/admin/store";
 import type { SchoolSettings, UserAccount } from "@/lib/admin/types";
 import {
@@ -16,10 +17,11 @@ import {
 } from "@/lib/access";
 import { ROLE_CABINET, ROLE_LABELS, ROLES, type UserRole } from "@/lib/roles";
 
-type Tab = "users" | "roles" | "school";
+type Tab = "staff" | "users" | "roles" | "school";
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "users", label: "Foydalanuvchilar" },
+  { id: "staff", label: "Xodimlar" },
+  { id: "users", label: "Kirish huquqlari" },
   { id: "roles", label: "Rollar va huquqlar" },
   { id: "school", label: "Maktab" },
 ];
@@ -32,14 +34,14 @@ const TABS: { id: Tab; label: string }[] = [
  * har bir endpoint huquqni serverda tekshiradi (CLAUDE.md 7-qoida).
  */
 export function SettingsBoard() {
-  const [tab, setTab] = useState<Tab>("users");
+  const [tab, setTab] = useState<Tab>("staff");
 
   return (
     <div className="flex flex-col gap-4 p-4 md:p-6">
       <div>
         <h1 className="text-h2 font-bold text-foreground">Sozlamalar</h1>
         <p className="text-sm text-foreground-muted">
-          Foydalanuvchilar, rollar boʻyicha huquqlar va maktabning umumiy parametrlari
+          Xodim hisoblari, kirish huquqlari va maktabning umumiy parametrlari
         </p>
       </div>
 
@@ -68,6 +70,8 @@ export function SettingsBoard() {
 
       {/* Foydalanuvchilar bandi HAQIQIY API bilan ishlaydi (T-005).
           Qolgan bandlar hali mock ustida. */}
+      {tab === "staff" && <StaffBoard />}
+
       {tab === "users" && <AccessCenter />}
       {tab === "roles" && <RolesTab />}
       {tab === "school" && <SchoolTab />}

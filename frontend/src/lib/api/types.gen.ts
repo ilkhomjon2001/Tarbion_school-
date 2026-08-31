@@ -970,6 +970,20 @@ export type MessageCreateIn = {
 };
 
 /**
+ * PasswordResetOut
+ */
+export type PasswordResetOut = {
+    /**
+     * Login
+     */
+    login: string;
+    /**
+     * New Password
+     */
+    new_password: string;
+};
+
+/**
  * PermissionOut
  *
  * Huquq va uning oʻzbekcha izohi.
@@ -1006,6 +1020,98 @@ export type ReadinessOut = {
      * Database
      */
     database: boolean;
+};
+
+/**
+ * ScheduleEntryIn
+ */
+export type ScheduleEntryIn = {
+    /**
+     * Class Id
+     */
+    class_id: string;
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Teacher Id
+     */
+    teacher_id: string;
+    /**
+     * Weekday
+     */
+    weekday: number;
+    /**
+     * Period
+     */
+    period: number;
+    /**
+     * Room
+     */
+    room?: string | null;
+};
+
+/**
+ * ScheduleEntryOut
+ */
+export type ScheduleEntryOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Class Id
+     */
+    class_id: string;
+    /**
+     * Class Name
+     */
+    class_name: string;
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Subject Name
+     */
+    subject_name: string;
+    /**
+     * Teacher Id
+     */
+    teacher_id: string;
+    /**
+     * Teacher Name
+     */
+    teacher_name: string;
+    /**
+     * Weekday
+     */
+    weekday: number;
+    /**
+     * Period
+     */
+    period: number;
+    /**
+     * Room
+     */
+    room: string | null;
+};
+
+/**
+ * ScheduleEntryUpdateIn
+ *
+ * Faqat ustoz va xona. Sinf, fan yoki vaqt oʻzgarsa — bu boshqa dars.
+ */
+export type ScheduleEntryUpdateIn = {
+    /**
+     * Teacher Id
+     */
+    teacher_id?: string | null;
+    /**
+     * Room
+     */
+    room?: string | null;
 };
 
 /**
@@ -1061,7 +1167,71 @@ export type SetSectionsIn = {
 };
 
 /**
+ * StaffCreateIn
+ */
+export type StaffCreateIn = {
+    /**
+     * Last Name
+     */
+    last_name: string;
+    /**
+     * First Name
+     */
+    first_name: string;
+    /**
+     * Middle Name
+     */
+    middle_name?: string | null;
+    /**
+     * Roles
+     */
+    roles: Array<string>;
+    /**
+     * Phone
+     */
+    phone?: string | null;
+    /**
+     * Email
+     */
+    email?: string | null;
+    /**
+     * Subject Ids
+     */
+    subject_ids?: Array<string>;
+};
+
+/**
+ * StaffCreatedOut
+ *
+ * Login va boshlangʻich parol BIR MARTA qaytadi.
+ *
+ * Bazada faqat xesh saqlanadi — parolni keyin tiklab boʻlmaydi, faqat
+ * yangisini berish mumkin. Shu sabab administrator uni oʻsha zahoti
+ * egasiga yetkazadi.
+ */
+export type StaffCreatedOut = {
+    /**
+     * User Id
+     */
+    user_id: string;
+    /**
+     * Login
+     */
+    login: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Initial Password
+     */
+    initial_password: string;
+};
+
+/**
  * StaffOut
+ *
+ * Xodim qatori. Telefon va manzil YOʻQ (X-6).
  */
 export type StaffOut = {
     /**
@@ -1085,9 +1255,25 @@ export type StaffOut = {
      */
     subjects: Array<string>;
     /**
+     * Subject Ids
+     */
+    subject_ids: Array<string>;
+    /**
      * Is Active
      */
     is_active: boolean;
+};
+
+/**
+ * StaffSubjectsIn
+ *
+ * Toʻliq roʻyxat — qoʻshish/olib tashlash emas.
+ */
+export type StaffSubjectsIn = {
+    /**
+     * Subject Ids
+     */
+    subject_ids: Array<string>;
 };
 
 /**
@@ -1304,6 +1490,32 @@ export type TeacherLessonOut = {
      * Present Count
      */
     present_count: number;
+};
+
+/**
+ * TeacherLoadOut
+ */
+export type TeacherLoadOut = {
+    /**
+     * Teacher Id
+     */
+    teacher_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Subjects
+     */
+    subjects: Array<string>;
+    /**
+     * Weekly Hours
+     */
+    weekly_hours: number;
+    /**
+     * Classes
+     */
+    classes: Array<string>;
 };
 
 /**
@@ -2928,6 +3140,31 @@ export type SchoolStaffResponses = {
 
 export type SchoolStaffResponse = SchoolStaffResponses[keyof SchoolStaffResponses];
 
+export type SchoolCreateStaffData = {
+    body: StaffCreateIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/school/staff';
+};
+
+export type SchoolCreateStaffErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolCreateStaffError = SchoolCreateStaffErrors[keyof SchoolCreateStaffErrors];
+
+export type SchoolCreateStaffResponses = {
+    /**
+     * Successful Response
+     */
+    201: StaffCreatedOut;
+};
+
+export type SchoolCreateStaffResponse = SchoolCreateStaffResponses[keyof SchoolCreateStaffResponses];
+
 export type SchoolStudentsData = {
     body?: never;
     path?: never;
@@ -3118,6 +3355,235 @@ export type SchoolRestoreStudentResponses = {
 };
 
 export type SchoolRestoreStudentResponse = SchoolRestoreStudentResponses[keyof SchoolRestoreStudentResponses];
+
+export type SchoolSetStaffSubjectsData = {
+    body: StaffSubjectsIn;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/staff/{user_id}/subjects';
+};
+
+export type SchoolSetStaffSubjectsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolSetStaffSubjectsError = SchoolSetStaffSubjectsErrors[keyof SchoolSetStaffSubjectsErrors];
+
+export type SchoolSetStaffSubjectsResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type SchoolSetStaffSubjectsResponse = SchoolSetStaffSubjectsResponses[keyof SchoolSetStaffSubjectsResponses];
+
+export type SchoolResetStaffPasswordData = {
+    body?: never;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/staff/{user_id}/reset-password';
+};
+
+export type SchoolResetStaffPasswordErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolResetStaffPasswordError = SchoolResetStaffPasswordErrors[keyof SchoolResetStaffPasswordErrors];
+
+export type SchoolResetStaffPasswordResponses = {
+    /**
+     * Successful Response
+     */
+    200: PasswordResetOut;
+};
+
+export type SchoolResetStaffPasswordResponse = SchoolResetStaffPasswordResponses[keyof SchoolResetStaffPasswordResponses];
+
+export type SchoolArchiveStaffData = {
+    body?: never;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/staff/{user_id}/archive';
+};
+
+export type SchoolArchiveStaffErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolArchiveStaffError = SchoolArchiveStaffErrors[keyof SchoolArchiveStaffErrors];
+
+export type SchoolArchiveStaffResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type SchoolArchiveStaffResponse = SchoolArchiveStaffResponses[keyof SchoolArchiveStaffResponses];
+
+export type ScheduleEntriesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Class Id
+         */
+        class_id?: string | null;
+        /**
+         * Teacher Id
+         */
+        teacher_id?: string | null;
+    };
+    url: '/api/v1/schedule/entries';
+};
+
+export type ScheduleEntriesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ScheduleEntriesError = ScheduleEntriesErrors[keyof ScheduleEntriesErrors];
+
+export type ScheduleEntriesResponses = {
+    /**
+     * Response Schedule Entries
+     *
+     * Successful Response
+     */
+    200: Array<ScheduleEntryOut>;
+};
+
+export type ScheduleEntriesResponse = ScheduleEntriesResponses[keyof ScheduleEntriesResponses];
+
+export type ScheduleAddEntryData = {
+    body: ScheduleEntryIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/schedule/entries';
+};
+
+export type ScheduleAddEntryErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ScheduleAddEntryError = ScheduleAddEntryErrors[keyof ScheduleAddEntryErrors];
+
+export type ScheduleAddEntryResponses = {
+    /**
+     * Successful Response
+     */
+    201: ScheduleEntryOut;
+};
+
+export type ScheduleAddEntryResponse = ScheduleAddEntryResponses[keyof ScheduleAddEntryResponses];
+
+export type ScheduleUpdateEntryData = {
+    body: ScheduleEntryUpdateIn;
+    path: {
+        /**
+         * Entry Id
+         */
+        entry_id: string;
+    };
+    query?: never;
+    url: '/api/v1/schedule/entries/{entry_id}';
+};
+
+export type ScheduleUpdateEntryErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ScheduleUpdateEntryError = ScheduleUpdateEntryErrors[keyof ScheduleUpdateEntryErrors];
+
+export type ScheduleUpdateEntryResponses = {
+    /**
+     * Successful Response
+     */
+    200: ScheduleEntryOut;
+};
+
+export type ScheduleUpdateEntryResponse = ScheduleUpdateEntryResponses[keyof ScheduleUpdateEntryResponses];
+
+export type ScheduleArchiveEntryData = {
+    body?: never;
+    path: {
+        /**
+         * Entry Id
+         */
+        entry_id: string;
+    };
+    query?: never;
+    url: '/api/v1/schedule/entries/{entry_id}/archive';
+};
+
+export type ScheduleArchiveEntryErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ScheduleArchiveEntryError = ScheduleArchiveEntryErrors[keyof ScheduleArchiveEntryErrors];
+
+export type ScheduleArchiveEntryResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type ScheduleArchiveEntryResponse = ScheduleArchiveEntryResponses[keyof ScheduleArchiveEntryResponses];
+
+export type ScheduleTeacherLoadData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/schedule/load';
+};
+
+export type ScheduleTeacherLoadResponses = {
+    /**
+     * Response Schedule Teacher Load
+     *
+     * Successful Response
+     */
+    200: Array<TeacherLoadOut>;
+};
+
+export type ScheduleTeacherLoadResponse = ScheduleTeacherLoadResponses[keyof ScheduleTeacherLoadResponses];
 
 export type ServiceHealthData = {
     body?: never;

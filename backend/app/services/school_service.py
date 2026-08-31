@@ -39,7 +39,7 @@ from app.models import (
     TeacherSubject,
     User,
 )
-from app.services import audit_service
+from app.services import audit_service, user_service
 from app.services.access import CurrentUser, accessible_student_ids
 from app.services.permissions import assert_permission
 
@@ -416,6 +416,7 @@ class StaffRow:
     full_name: str
     roles: list[str]
     subjects: list[str]
+    subject_ids: list[uuid.UUID]
     is_active: bool
 
 
@@ -443,13 +444,15 @@ async def list_staff(session: AsyncSession, user: CurrentUser) -> list[StaffRow]
 
     # Fanlar bitta soʻrovda — har xodim uchun alohida soʻralsa N+1.
     fan_rows = await session.execute(
-        select(TeacherSubject.teacher_id, Subject.name)
+        select(TeacherSubject.teacher_id, Subject.id, Subject.name)
         .join(Subject, Subject.id == TeacherSubject.subject_id)
         .where(TeacherSubject.is_archived.is_(False))
     )
     fanlar: dict[uuid.UUID, list[str]] = {}
-    for tid, name in fan_rows.all():
+    fan_idlari: dict[uuid.UUID, list[uuid.UUID]] = {}
+    for tid, sid, name in fan_rows.all():
         fanlar.setdefault(tid, []).append(name)
+        fan_idlari.setdefault(tid, []).append(sid)
 
     return [
         StaffRow(
@@ -458,7 +461,144 @@ async def list_staff(session: AsyncSession, user: CurrentUser) -> list[StaffRow]
             full_name=u.full_name,
             roles=sorted(u.role_names),
             subjects=sorted(fanlar.get(u.id, [])),
+            subject_ids=fan_idlari.get(u.id, []),
             is_active=u.is_active,
         )
         for u in users
     ]
+
+
+async def create_staff(
+    session: AsyncSession,
+    *,
+    actor: CurrentUser,
+    last_name: str,
+    first_name: str,
+    middle_name: str | None = None,
+    roles: list[str],
+    phone: str | None = None,
+    email: str | None = None,
+    subject_ids: list[uuid.UUID] | None = None,
+    ip: str | None = None,
+) -> user_service.CreatedUser:
+    """Yangi xodim hisobi + fanlarini biriktirish (ADM-04).
+
+    Login administrator tanlamaydi — `familiya.ism` shaklida tizim
+    yasaydi. Boshlangʻich parol javobda BIR MARTA qaytadi va bazada
+    faqat xeshi qoladi; administrator uni oʻsha zahoti egasiga
+    yetkazadi.
+
+    Huquq tekshiruvi `user_service.create_user` ichida (`users.create`).
+    """
+    xodim_rollari = {
+        RoleName.TEACHER.value,
+        RoleName.HOMEROOM_TEACHER.value,
+        RoleName.ACADEMIC.value,
+        RoleName.ADMIN.value,
+        RoleName.DIRECTOR.value,
+        RoleName.SUPERADMIN.value,
+    }
+    notogri = set(roles) - xodim_rollari
+    if notogri:
+        raise ValidationError(
+            f"Bu roʻyxat xodimlar uchun. Mos kelmaydigan rol: {', '.join(sorted(notogri))}"
+        )
+
+    yaratildi = await user_service.create_user(
+        session,
+        actor=actor,
+        last_name=last_name,
+        first_name=first_name,
+        middle_name=middle_name,
+        roles=roles,
+        phone=phone,
+        email=email,
+        ip=ip,
+    )
+
+    if subject_ids:
+        await _apply_subjects(
+            session, actor=actor, teacher_id=yaratildi.user.id, subject_ids=subject_ids, ip=ip
+        )
+
+    await session.commit()
+    return yaratildi
+
+
+async def _apply_subjects(
+    session: AsyncSession,
+    *,
+    actor: CurrentUser,
+    teacher_id: uuid.UUID,
+    subject_ids: list[uuid.UUID],
+    ip: str | None,
+) -> None:
+    """Fanlarni YAXLIT yozadi — commit chaqiruvchida.
+
+    Roʻyxatdan chiqqan biriktirish arxivlanadi, oʻchirilmaydi: oʻtgan
+    yilgi baho va davomat oʻsha ustoz-fan juftiga bogʻlangan
+    (CLAUDE.md 1-qoida).
+    """
+    kelgan = set(subject_ids)
+
+    if kelgan:
+        mavjud_fanlar = set(
+            (
+                await session.execute(
+                    select(Subject.id).where(Subject.id.in_(kelgan), Subject.is_archived.is_(False))
+                )
+            ).scalars()
+        )
+        if mavjud_fanlar != kelgan:
+            raise NotFoundError("Fan topilmadi.")
+
+    rows = await session.execute(
+        select(TeacherSubject).where(TeacherSubject.teacher_id == teacher_id)
+    )
+    mavjud = {r.subject_id: r for r in rows.scalars()}
+
+    for subject_id in kelgan:
+        row = mavjud.get(subject_id)
+        if row is None:
+            session.add(TeacherSubject(teacher_id=teacher_id, subject_id=subject_id))
+        elif row.is_archived:
+            row.is_archived = False
+            row.archived_at = None
+
+    for subject_id, row in mavjud.items():
+        if subject_id in kelgan or row.is_archived:
+            continue
+        row.is_archived = True
+        row.archived_at = utcnow()
+
+    audit_service.record(
+        session,
+        object_type="teacher_subjects",
+        object_id=teacher_id,
+        action=AuditAction.UPDATE,
+        old={"subject_ids": sorted(str(s) for s, r in mavjud.items() if not r.is_archived)},
+        new={"subject_ids": sorted(str(s) for s in kelgan)},
+        actor_id=actor.id,
+        ip=ip,
+    )
+
+
+async def set_teacher_subjects(
+    session: AsyncSession,
+    *,
+    actor: CurrentUser,
+    teacher_id: uuid.UUID,
+    subject_ids: list[uuid.UUID],
+    ip: str | None = None,
+) -> None:
+    """Ustozga fan biriktiradi (ADM-04). Huquq: `users.manage`."""
+    await assert_permission(session, actor, Permission.USERS_MANAGE)
+
+    teacher = await session.get(User, teacher_id)
+    if teacher is None or teacher.is_archived:
+        raise NotFoundError("Xodim topilmadi.")
+
+    await _apply_subjects(
+        session, actor=actor, teacher_id=teacher_id, subject_ids=subject_ids, ip=ip
+    )
+    await session.commit()

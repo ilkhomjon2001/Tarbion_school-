@@ -10,15 +10,20 @@ hammasini — bitta endpoint, kesim soʻrov darajasida (X-1).
 
 import uuid
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Query, Request, Response
 
 from app.api.v1.deps import CurrentUserDep
 from app.core.db import SessionDep
+from app.models import User
 from app.schemas.school import (
     ClassOut,
     ClassSubjectOut,
     GuardianOut,
+    PasswordResetOut,
+    StaffCreatedOut,
+    StaffCreateIn,
     StaffOut,
+    StaffSubjectsIn,
     StudentArchiveIn,
     StudentCardOut,
     StudentCreateIn,
@@ -26,7 +31,7 @@ from app.schemas.school import (
     StudentRowOut,
     SubjectOut,
 )
-from app.services import school_service
+from app.services import school_service, user_service
 
 router = APIRouter(prefix="/school", tags=["school"])
 
@@ -104,6 +109,7 @@ async def staff(user: CurrentUserDep, session: SessionDep) -> list[StaffOut]:
             full_name=r.full_name,
             roles=r.roles,
             subjects=r.subjects,
+            subject_ids=r.subject_ids,
             is_active=r.is_active,
         )
         for r in rows
@@ -224,3 +230,90 @@ async def restore_student(
         session, actor=user, student_id=student_id, ip=_client_ip(request)
     )
     return _card_out(await school_service.student_card(session, user, student_id))
+
+
+@router.post("/staff", response_model=StaffCreatedOut, status_code=201)
+async def create_staff(
+    payload: StaffCreateIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> StaffCreatedOut:
+    """Yangi xodim hisobi (ADM-04). Huquq: `users.create`.
+
+    Login `familiya.ism` shaklida tizim tomonidan yasaladi. Boshlangʻich
+    parol javobda BIR MARTA qaytadi — keyin tiklab boʻlmaydi.
+    """
+    yaratildi = await school_service.create_staff(
+        session,
+        actor=user,
+        last_name=payload.last_name,
+        first_name=payload.first_name,
+        middle_name=payload.middle_name,
+        roles=payload.roles,
+        phone=payload.phone,
+        email=payload.email,
+        subject_ids=payload.subject_ids,
+        ip=_client_ip(request),
+    )
+    return StaffCreatedOut(
+        user_id=yaratildi.user.id,
+        login=yaratildi.user.login,
+        full_name=yaratildi.user.full_name,
+        initial_password=yaratildi.initial_password,
+    )
+
+
+@router.put("/staff/{user_id}/subjects", status_code=204)
+async def set_staff_subjects(
+    user_id: uuid.UUID,
+    payload: StaffSubjectsIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> Response:
+    """Ustozga fan biriktiradi (ADM-04). Huquq: `users.manage`.
+
+    Roʻyxatdan chiqqan biriktirish arxivlanadi — oʻtgan baho va davomat
+    oʻsha ustoz-fan juftiga bogʻlangan.
+    """
+    await school_service.set_teacher_subjects(
+        session,
+        actor=user,
+        teacher_id=user_id,
+        subject_ids=payload.subject_ids,
+        ip=_client_ip(request),
+    )
+    return Response(status_code=204)
+
+
+@router.post("/staff/{user_id}/reset-password", response_model=PasswordResetOut)
+async def reset_staff_password(
+    user_id: uuid.UUID,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> PasswordResetOut:
+    """Yangi boshlangʻich parol. Huquq: `users.reset_password`.
+
+    Xodim keyingi kirishda uni almashtirishga majbur boʻladi.
+    """
+    parol = await user_service.reset_password(
+        session, actor=user, user_id=user_id, ip=_client_ip(request)
+    )
+    xodim = await session.get(User, user_id)
+    await session.commit()
+    return PasswordResetOut(login=xodim.login if xodim else "", new_password=parol)
+
+
+@router.post("/staff/{user_id}/archive", status_code=204)
+async def archive_staff(
+    user_id: uuid.UUID,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> Response:
+    """Xodimni arxivlaydi. Oʻchirish YOʻQ (CLAUDE.md 1-qoida)."""
+    await user_service.archive_user(session, actor=user, user_id=user_id, ip=_client_ip(request))
+    await session.commit()
+    return Response(status_code=204)

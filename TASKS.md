@@ -209,10 +209,14 @@ huquqini talab qiladi, o'qish kirgan har kimga ochiq. 20 ta test.
 `class_subjects` (sinf + fan + haftalik soat), `teacher_subjects`.
 Xodim yaratilganda `users` yozuvi va tegishli rol beriladi.
 
+**Backend:** ✅ Xodim hisobi ochish (`POST /school/staff` — login `familiya.ism`
+avtomatik, boshlang'ich parol bir marta qaytadi), fan biriktirish, parol tiklash,
+arxivlash. **Frontend:** `/admin/sozlamalar` → «Xodimlar».
+
 **Tayyor:**
 - [ ] Sinf rahbari biriktirilganda unga `homeroom_teacher` roli qo'shiladi
-- [ ] Bir sinfda bir fan bir marta (unique constraint)
-- [ ] Admin sahifalarida CRUD ishlaydi
+- [x] Bir sinfda bir fan bir marta (unique constraint)
+- [x] Xodim yaratish va fan biriktirish ishlaydi
 
 ---
 
@@ -251,7 +255,7 @@ tasdiqlash va yozish. Qisman import qilinmaydi — hammasi yoki hech nima.
 
 ---
 
-### [~] T-011 · Dars jadvali
+### [x] T-011 · Dars jadvali
 **TZ:** ADM-08, ADM-09
 **Kerak:** T-008
 **Frontend:** ✅ tayyor — `/rahbar/jadval` — oy/hafta/kun koʻrinishlari, sinf va ustoz kesimida. `/teacher/jadval`, `/student/schedule`, `/rahbar/ustozlar/[id]` → «Dars jadvali». Toʻqnashuv nazorati backendda qoladi.
@@ -262,10 +266,14 @@ olmaydi — saqlashda tekshiriladi va aniq xato matni qaytariladi.
 
 Frontend: haftalik grid ko'rinish, sinf yoki ustoz bo'yicha filtr.
 
+**Backend:** ✅ `/api/v1/schedule` — jadval (sinf/ustoz kesimida), qo'shish
+(409 to'qnashuv nazorati bilan), ustoz/xona almashtirish, arxivlash, ustozlar
+yuklamasi. **Frontend:** `/admin/baza` → «Dars jadvali» va `/rahbar/jadval`.
+
 **Tayyor:**
-- [ ] Test: band ustozni qo'shishga urinish → `409` va qaysi sinf bilan to'qnashgani
-- [ ] Jadval sinf va ustoz kesimida ko'rinadi
-- [ ] Mobil ekranda jadval o'qish mumkin (gorizontal scroll yoki kun bo'yicha)
+- [x] Test: band ustozni qo'shishga urinish → `409` va qaysi sinf bilan to'qnashgani
+- [x] Jadval sinf va ustoz kesimida ko'rinadi
+- [x] Mobil ekranda jadval o'qish mumkin (gorizontal scroll)
 
 ---
 

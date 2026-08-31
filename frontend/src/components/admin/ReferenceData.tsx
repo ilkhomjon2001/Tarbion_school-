@@ -2,19 +2,21 @@
 
 import { useMemo, useState } from "react";
 import { AcademicCalendarTab } from "@/components/admin/AcademicCalendarTab";
+import { ScheduleBoard } from "@/components/admin/ScheduleBoard";
 import { Badge } from "@/components/ui/Badge";
 import { PlusIcon } from "@/components/ui/icons";
 import { formatSom } from "@/lib/format";
 import { useAdmin, useAdminDispatch } from "@/lib/admin/store";
 import { allTeachers, staffById } from "@/lib/school/staff";
 
-type Tab = "classes" | "subjects" | "rooms" | "calendar";
+type Tab = "classes" | "subjects" | "rooms" | "calendar" | "schedule";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "classes", label: "Sinflar" },
   { id: "subjects", label: "Fanlar" },
   { id: "rooms", label: "Xonalar" },
   { id: "calendar", label: "Oʻquv yili" },
+  { id: "schedule", label: "Dars jadvali" },
 ];
 
 /**
@@ -65,6 +67,8 @@ export function ReferenceData() {
       {tab === "rooms" && <RoomsTab />}
 
       {tab === "calendar" && <AcademicCalendarTab />}
+
+      {tab === "schedule" && <ScheduleBoard />}
 
       <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-foreground-muted">
         Jami:{" "}

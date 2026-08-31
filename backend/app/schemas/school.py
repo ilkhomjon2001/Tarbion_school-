@@ -83,9 +83,48 @@ class StudentArchiveIn(BaseModel):
 
 
 class StaffOut(BaseModel):
+    """Xodim qatori. Telefon va manzil YOʻQ (X-6)."""
+
     user_id: uuid.UUID
     login: str
     full_name: str
     roles: list[str]
     subjects: list[str]
+    subject_ids: list[uuid.UUID]
     is_active: bool
+
+
+class StaffCreateIn(BaseModel):
+    last_name: str = Field(min_length=1, max_length=80)
+    first_name: str = Field(min_length=1, max_length=80)
+    middle_name: str | None = Field(default=None, max_length=80)
+    #: `teacher`, `homeroom_teacher`, `academic`, `admin`, `director`.
+    roles: list[str] = Field(min_length=1)
+    phone: str | None = Field(default=None, max_length=20)
+    email: str | None = Field(default=None, max_length=120)
+    subject_ids: list[uuid.UUID] = Field(default_factory=list)
+
+
+class StaffCreatedOut(BaseModel):
+    """Login va boshlangʻich parol BIR MARTA qaytadi.
+
+    Bazada faqat xesh saqlanadi — parolni keyin tiklab boʻlmaydi, faqat
+    yangisini berish mumkin. Shu sabab administrator uni oʻsha zahoti
+    egasiga yetkazadi.
+    """
+
+    user_id: uuid.UUID
+    login: str
+    full_name: str
+    initial_password: str
+
+
+class StaffSubjectsIn(BaseModel):
+    """Toʻliq roʻyxat — qoʻshish/olib tashlash emas."""
+
+    subject_ids: list[uuid.UUID]
+
+
+class PasswordResetOut(BaseModel):
+    login: str
+    new_password: str
