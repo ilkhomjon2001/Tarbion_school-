@@ -80,10 +80,10 @@ async def current_user(request: Request, session: SessionDep) -> CurrentUser:
     if user.must_change_password and request.url.path not in PASSWORD_CHANGE_ALLOWED:
         raise PasswordChangeRequiredError
 
-    # X-14: administrator, direktor va super administrator butun bazani
-    # koʻradi — ularning bitta paroli butun maktabni ochib beradi.
-    # Ixtiyoriy 2FA — deyarli hech kim yoqmaydigan 2FA, shuning uchun
-    # yoqilmaguncha API yopiq.
+    # X-14: administrator va direktor butun bazani koʻradi — ularning
+    # bitta paroli butun maktabni ochib beradi. Ixtiyoriy 2FA — deyarli
+    # hech kim yoqmaydigan 2FA, shuning uchun yoqilmaguncha API yopiq.
+    # Qolgan rollarda funksiya ochiq, lekin majburiy emas.
     if (
         twofactor_service.is_required(user)
         and not user.two_factor_enabled

@@ -419,9 +419,15 @@ oldindan olish, huquq oshirish, soxta ball yuborish. 45 ta tekshiruv.
 
 ### Ikki bosqichli tasdiqlash (X-14)
 
-Administrator, direktor va super administrator butun bazani ko'radi —
-ularning bitta paroli butun maktabning ma'lumotini ochib beradi.
-Ular uchun 2FA **majburiy**: yoqilmaguncha API yopiq.
+Administrator va direktor butun bazani ko'radi — ularning bitta paroli
+butun maktabning ma'lumotini ochib beradi. Ular uchun 2FA **majburiy**:
+yoqilmaguncha API yopiq.
+
+Super administrator ataylab bu ro'yxatda yo'q. X-14 aynan administrator
+va direktorni nomlaydi: ular kundalik ishlaydigan, tez-tez kiradigan
+hisoblar. Super administrator esa loyiha egasining texnik hisobi —
+kamdan-kam ishlatiladi va uni majburlash ish jarayonini to'sadi.
+Funksiya unga ham ochiq, lekin ixtiyoriy.
 
 | Qaror | Sabab |
 |---|---|

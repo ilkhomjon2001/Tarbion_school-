@@ -423,3 +423,33 @@ def test_soat_chetlashishiga_yol_qoyiladi() -> None:
     assert totp.verify(sekret, totp._code_at(sekret, hozir + 1)) == hozir + 1
     # Undan uzoqrogʻi qabul qilinmaydi.
     assert totp.verify(sekret, totp._code_at(sekret, hozir + 5)) is None
+
+
+async def test_superadmin_uchun_majburiy_emas(client: AsyncClient, session: AsyncSession) -> None:
+    """X-14 aynan administrator va direktorni nomlaydi.
+
+    Super administrator — loyiha egasining texnik hisobi: kamdan-kam
+    ishlatiladi va uni majburlash ish jarayonini toʻsadi. Funksiya
+    unga ham ochiq, lekin majburiy emas.
+    """
+    sa = await _user(session, [RoleName.SUPERADMIN.value], "tf.sa")
+    assert sa is not None
+
+    token = (await _login(client, "tf.sa"))["access_token"]
+
+    # 2FA yoqilmagan holda ham API ochiq.
+    r = await client.get("/api/v1/school/students", headers=_auth(token))
+    assert r.status_code == 200, r.text
+
+    r = await client.get("/api/v1/auth/2fa", headers=_auth(token))
+    assert r.json()["required"] is False
+
+    # Istasa yoqa oladi — va keyin oʻchira ham oladi.
+    sekret, _ = await _enable_2fa(client, token)
+    kod = totp._code_at(sekret, totp.current_step() + 1)
+    r = await client.post(
+        "/api/v1/auth/2fa/disable",
+        headers=_auth(token),
+        json={"password": PASSWORD, "code": kod},
+    )
+    assert r.status_code == 204, r.text

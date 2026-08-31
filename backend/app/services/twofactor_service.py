@@ -1,9 +1,10 @@
 """Ikki bosqichli tasdiqlash (X-14).
 
-Administrator, direktor va super administrator butun bazani koʻradi —
-ularning bitta paroli butun maktabning maʼlumotini ochib beradi. Parol
-sizib chiqishi esa eng oddiy hodisa: qayta ishlatilgan parol, fishing,
-yozib qoʻyilgan qogʻoz.
+Administrator va direktor butun bazani koʻradi — ularning bitta paroli
+butun maktabning maʼlumotini ochib beradi. Parol sizib chiqishi esa eng
+oddiy hodisa: qayta ishlatilgan parol, fishing, yozib qoʻyilgan qogʻoz.
+
+Funksiya HAMMA uchun ochiq; majburiyligi esa faqat shu ikki rolda.
 
 Uchta qaror:
 
@@ -39,10 +40,18 @@ from app.core.timeutil import utcnow
 from app.models import AuditAction, RoleName, TwoFactorRecoveryCode, User
 from app.services import audit_service
 
-#: 2FA MAJBURIY boʻlgan rollar. Ular butun bazani koʻradi.
+#: 2FA MAJBURIY boʻlgan rollar (X-14).
+#:
+#: Super administrator ataylab YOʻQ. X-14 aynan administrator va
+#: direktorni nomlaydi: ular kundalik ishlaydigan, koʻp va tez-tez
+#: kiradigan hisoblar. Super administrator esa loyiha egasining
+#: texnik hisobi — u kamdan-kam ishlatiladi va uni majburlash amalda
+#: ish jarayonini toʻsadi.
+#:
+#: U 2FA ni ISTASA yoqadi (`/auth/2fa/setup`) va istagan paytda
+#: oʻchiradi — funksiya oʻzi hamma uchun ochiq.
 REQUIRED_ROLES = frozenset(
     {
-        RoleName.SUPERADMIN.value,
         RoleName.ADMIN.value,
         RoleName.DIRECTOR.value,
     }

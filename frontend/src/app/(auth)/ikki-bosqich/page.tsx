@@ -3,10 +3,12 @@
 /**
  * Ikki bosqichli tasdiqlashni sozlash (X-14).
  *
- * Administrator, direktor va super administrator butun bazani koʻradi —
- * ularning bitta paroli butun maktabning maʼlumotini ochib beradi. Shu
- * sababli ular uchun 2FA MAJBURIY: yoqilmaguncha server boshqa hech
- * qanday soʻrovni qabul qilmaydi (`ikki_bosqich_kerak`).
+ * Administrator va direktor butun bazani koʻradi — ularning bitta
+ * paroli butun maktabning maʼlumotini ochib beradi. Shu sababli ular
+ * uchun 2FA MAJBURIY: yoqilmaguncha server boshqa hech qanday soʻrovni
+ * qabul qilmaydi (`ikki_bosqich_kerak`).
+ *
+ * Qolganlar — ustoz, ota-ona, super administrator — istasa yoqadi.
  *
  * Uch qadam: sekret → ilovaga qoʻshish → kod bilan tasdiqlash. Oxirida
  * tiklash kodlari BIR MARTA koʻrsatiladi.
