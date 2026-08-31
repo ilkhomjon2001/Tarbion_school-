@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 
 import { useAccess } from "@/lib/access-api";
+import { NavBadge } from "@/components/shared/NavBadge";
+import { NotificationBell } from "@/components/shared/NotificationBell";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import {
   BarChartIcon,
@@ -79,6 +81,7 @@ export function AcademicSidebar() {
                   )}
                   <ItemIcon className="h-5 w-5 shrink-0" />
                   <span className="truncate">{label}</span>
+                  <NavBadge section={href} />
                 </Link>
               </li>
             );
@@ -136,6 +139,8 @@ export function AcademicMobileTopBar() {
 
       <BrandLogo variant="wordmark" className="h-5 w-auto" subtitle={SUBTITLE} />
 
+      <NotificationBell className="ml-auto" />
+
       {open && (
         <div className="fixed inset-0 z-40 md:hidden">
           <button
@@ -175,6 +180,7 @@ export function AcademicMobileTopBar() {
                       >
                         <ItemIcon className="h-5 w-5 shrink-0" />
                         {label}
+                        <NavBadge section={href} />
                       </Link>
                     </li>
                   );

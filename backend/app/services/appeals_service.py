@@ -30,13 +30,14 @@ from app.models import (
     AppealStatus,
     AppealTarget,
     Guardian,
+    NotificationKind,
     RoleName,
     SchoolClass,
     Student,
     Subject,
     User,
 )
-from app.services import audit_service
+from app.services import audit_service, notifications_service
 from app.services.access import CurrentUser, homeroom_class_ids
 
 # MUR-04: javob berish muddati. Uch kun — maktab ish ritmi: dushanba kelgan
@@ -281,6 +282,37 @@ async def guardians_of(session: AsyncSession, student_id: uuid.UUID) -> list[tup
     return rows.all()
 
 
+async def _recipients(
+    session: AsyncSession, appeal: Appeal, *, to_family: bool
+) -> list[notifications_service.Recipient]:
+    """Yozishma boʻyicha xabar kimga boradi.
+
+    Oilaga — har doim `author_id`, chunki yozishma OILAGA tegishli
+    (maktab boshlagan boʻlsa ham).
+
+    Maktabga — masʼul xodimga. Masʼul tayinlanmagan boʻlsa (rahbariyatga
+    kelgan yangi murojaat) administrator va rahbariyatga: aks holda
+    murojaat hech kimga koʻrinmay turib, MUR-04 muddati oʻtib ketardi.
+    """
+    student_id = appeal.student_id
+
+    if to_family:
+        return [
+            notifications_service.Recipient(user_id=appeal.author_id, student_id=student_id)
+        ]
+
+    if appeal.assignee_id is not None:
+        return [
+            notifications_service.Recipient(user_id=appeal.assignee_id, student_id=student_id)
+        ]
+
+    xodimlar = await notifications_service.staff_recipients(session, APPEAL_WIDE_ROLES)
+    return [
+        notifications_service.Recipient(user_id=uid, student_id=student_id)
+        for uid in xodimlar
+    ]
+
+
 async def create_appeal(
     session: AsyncSession,
     user: CurrentUser,
@@ -394,6 +426,22 @@ async def create_appeal(
         },
         actor_id=user.id,
     )
+
+    # Maktab boshlagan yozishmada xabar OILAGA boradi, ota-ona
+    # boshlaganida — maktabga. Yoʻnalish `school_initiated` ga bogʻliq,
+    # `author_id` ga emas: maktab boshlagan yozishmada ham muallif
+    # ota-ona boʻlib qoladi.
+    await notifications_service.notify(
+        session,
+        recipients=await _recipients(session, appeal, to_family=school_initiated),
+        kind=NotificationKind.APPEAL_NEW,
+        title="Maktabdan xabar" if school_initiated else f"Yangi murojaat: {appeal.title}",
+        body=body.strip()[:400],
+        object_type="appeal",
+        object_id=appeal.id,
+        actor_id=user.id,
+    )
+
     await session.flush()
     return appeal
 
@@ -442,6 +490,20 @@ async def add_message(
             new={"status": appeal.status},
             actor_id=user.id,
         )
+
+    # Xabar NARIGI tomonga boradi. Ota-ona yozgan boʻlsa — maktabga,
+    # xodim yozgan boʻlsa — oilaga.
+    await notifications_service.notify(
+        session,
+        recipients=await _recipients(session, appeal, to_family=not is_parent),
+        kind=NotificationKind.APPEAL_MESSAGE,
+        title=f"Yangi xabar: {appeal.title}",
+        body=message.body[:400],
+        object_type="appeal",
+        object_id=appeal.id,
+        actor_id=user.id,
+    )
+
     await session.flush()
     return message
 
@@ -477,6 +539,22 @@ async def set_status(
         new={"status": status},
         actor_id=user.id,
     )
+
+    # Oilaga faqat yopilgani haqida xabar beriladi. «Koʻrib chiqilmoqda»
+    # kabi oraliq holatlar ota-onaga qiziq emas va qoʻngʻiroqni
+    # keraksiz toʻldirardi.
+    if status == AppealStatus.CLOSED.value:
+        await notifications_service.notify(
+            session,
+            recipients=await _recipients(session, appeal, to_family=True),
+            kind=NotificationKind.APPEAL_CLOSED,
+            title=f"Murojaat yopildi: {appeal.title}",
+            body="Murojaatingiz koʻrib chiqildi va yopildi.",
+            object_type="appeal",
+            object_id=appeal.id,
+            actor_id=user.id,
+        )
+
     await session.flush()
     return appeal
 
@@ -510,6 +588,24 @@ async def assign(
         new={"assignee_id": assignee_id},
         actor_id=user.id,
     )
+
+    # Masʼul oʻzgardi — yangi masʼul buni bilishi kerak, aks holda
+    # murojaat unga tayinlanib turib, u xabarsiz qolardi.
+    await notifications_service.notify(
+        session,
+        recipients=[
+            notifications_service.Recipient(
+                user_id=assignee_id, student_id=appeal.student_id
+            )
+        ],
+        kind=NotificationKind.APPEAL_ASSIGNED,
+        title=f"Sizga murojaat biriktirildi: {appeal.title}",
+        body=f"Biriktirdi: {user.short_name}",
+        object_type="appeal",
+        object_id=appeal.id,
+        actor_id=user.id,
+    )
+
     await session.flush()
     return appeal
 

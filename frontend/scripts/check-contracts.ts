@@ -22,6 +22,8 @@ import {
   CONTACT_KIND_LABELS,
   CONTACT_KINDS,
   GRADE_KINDS,
+  NOTIFICATION_KIND_LABELS,
+  NOTIFICATION_KINDS,
   SCALE_MAX,
   SUBMISSION_LABELS,
   SUBMISSION_STATUSES,
@@ -97,6 +99,7 @@ const attendance = read("attendance.py");
 const homework = read("homework.py");
 const identity = read("identity.py");
 const appeals = read("appeals.py");
+const notifications = read("notifications.py");
 
 const beAttendance = enumValues(attendance, "AttendanceStatus");
 ok(
@@ -137,6 +140,13 @@ ok(
 
 const beContact = enumValues(appeals, "ContactKind");
 ok("ContactKind", same(beContact, CONTACT_KINDS), show(beContact, CONTACT_KINDS));
+
+const beNotifKind = enumValues(notifications, "NotificationKind");
+ok(
+  "NotificationKind",
+  same(beNotifKind, NOTIFICATION_KINDS),
+  show(beNotifKind, NOTIFICATION_KINDS),
+);
 
 console.log("── Oʻzbekcha yorliqlar ──");
 
@@ -203,6 +213,13 @@ checkLabels(
   "ContactKind",
   "CONTACT_KIND_LABELS_UZ",
   CONTACT_KIND_LABELS,
+);
+checkLabels(
+  "NOTIFICATION_KIND_LABELS_UZ",
+  notifications,
+  "NotificationKind",
+  "NOTIFICATION_KIND_LABELS_UZ",
+  NOTIFICATION_KIND_LABELS,
 );
 
 console.log("── SCALE_MAX qiymatlari ──");

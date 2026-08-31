@@ -420,10 +420,37 @@ Alohida worker sikli yuboradi, xatoda 3 marta qayta uriniladi (backoff bilan).
 
 ---
 
+### [x] T-018a · Kabinet ichidagi bildirishnomalar
+**TZ:** DAV-05, MUR-03 (kabinet qismi)
+**Kerak:** T-013, T-036
+**Frontend:** ✅ tayyor — qoʻngʻiroq va yon menyudagi sanoq oltita kabinetda.
+
+TASKS.md da alohida task yoʻq edi. T-018/T-019/T-020 dan ATAYLAB ajratilgan:
+ular xabarni TASHQARIGA (Telegram, SMS) yuborish haqida va outbox'ga bogʻliq.
+Bu esa kabinetning ICHIDA — odam tizimga kirganda koʻradigan xabar. Outbox
+yozilganda u shu jadvaldan oziqlanadi, qaytadan yozilmaydi.
+
+`notifications` jadvali: qabul qiluvchi, turi, boʻlim, havola, matn, `read_at`.
+Yozuv HODISA emas, QABUL QILUVCHI boʻyicha — «oʻqildi» har odamda oʻziniki
+va kirish nazorati bitta shartga tushadi (`WHERE user_id = :men`).
+
+Hodisalar: darsga kelmadi, darsga kechikdi, yangi murojaat, yangi xabar,
+murojaat biriktirildi, murojaat yopildi.
+
+**Tayyor:**
+- [x] Oʻquvchi kelmasa/kechiksa ota-ona va oʻquvchi xabar oladi
+- [x] Murojaatdagi har xabar narigi tomonga boradi
+- [x] Yon menyuda boʻlim boʻyicha oʻqilmaganlar soni koʻrinadi
+- [x] Oʻz amalidan xabar kelmaydi, takror saqlashda takror xabar yoʻq
+- [x] Begona bildirishnomani oʻqib ham, belgilab ham boʻlmaydi (24 test)
+
+---
+
 ### [ ] T-019 · Davomat xabarnomalari
 **TZ:** DAV-05, Ilova B (1-bosqich qatorlari)
-**Kerak:** T-018, T-013
-**Frontend:** ⬜ yoʻq — Xabarnoma shablonlari va yuborish yoʻq.
+**Kerak:** T-018, T-013, T-018a
+**Frontend:** 🟡 qisman — Kabinet ichida xabar bor (T-018a). Telegram/SMS
+shablonlari va yuborish yoʻq.
 
 - "Farzand darsga kelmadi" — davomat belgilangach 30 daqiqada (vaqt sozlanadi)
 - "Kunlik davomat xulosasi" — darslar tugagach

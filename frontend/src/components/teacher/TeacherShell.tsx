@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAccess } from "@/lib/access-api";
+import { NavBadge } from "@/components/shared/NavBadge";
+import { NotificationBell } from "@/components/shared/NotificationBell";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { useEffect, useMemo, useState } from "react";
 
@@ -134,6 +136,7 @@ export function TeacherShell({
                           />
                           <Icon />
                           {label}
+                          <NavBadge section={href} />
                         </Link>
                       </li>
                     );
@@ -243,6 +246,8 @@ export function TeacherShell({
               <p className="truncate text-xs text-foreground-muted sm:text-sm">{subtitle}</p>
             )}
           </div>
+
+          <NotificationBell className="shrink-0" />
 
           {actions && <div className="flex items-center gap-2">{actions}</div>}
         </header>

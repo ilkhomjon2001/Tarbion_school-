@@ -594,3 +594,64 @@ manzil va hujjat raqami yoʻq (X-6).
 Bu ish bilan `components/admin/ConversationsBoard.tsx` va
 `components/director/AppealsBoard.tsx` oʻchirildi — ikkalasining
 funksiyasi `LiveAppeals` da bazadan ishlaydi.
+
+
+## 2026-08-31 — Kabinet ichidagi bildirishnomalar (T-018a)
+
+Bildirishnoma yozuvi HODISA emas, **QABUL QILUVCHI** boʻyicha saqlanadi:
+bitta «darsga kelmadi» ota-onaga ham, oʻquvchiga ham alohida qator boʻlib
+tushadi.
+
+Sabab uchta. «Oʻqildi» belgisi har odamda oʻziniki — bitta qatorda
+saqlansa ota-ona oʻqigach oʻquvchida ham oʻqilgan boʻlib qolardi. Kirish
+nazorati bitta shartga tushadi (`WHERE user_id = :men`): kim koʻrishi
+mumkinligi yozuv yaratilayotgandayoq hal qilingan, oʻqishda qayta
+hisoblanmaydi. Va yon menyudagi sanoq bitta `GROUP BY section` bilan
+chiqadi.
+
+**Boʻlim qabul qiluvchining KABINETI boʻyicha hisoblanadi.** Bitta
+«kelmadi» ota-onada «Davomat», oʻquvchida «Bosh sahifa» boʻlimida
+sanaladi — oʻquvchi kabinetida davomat boʻlimi yoʻq. Kabinet
+`_SECTION` jadvalida boʻlmasa bildirishnoma umuman yaratilmaydi; oʻquv
+boʻlimi murojaat xabarini shu sabab olmaydi (`APPEAL_WIDE_ROLES` dagi
+qoidaning aynan aksi).
+
+**Boʻlim kaliti — manzilning oʻzi** (`core/sections.py` dagi id). Shu
+sabab menyuga yangi band qoʻshilganda frontendda hech narsa
+yozilmaydi: son avtomatik paydo boʻladi.
+
+**Oʻz amalidan xabar kelmaydi.** Ustoz davomatni oʻzi belgilagan — unga
+«Ali kelmadi» deb qaytarish qoʻngʻiroqni foydasiz toʻldirardi. Tekshiruv
+`notify()` ichida, chaqiruvchi servisda emas: aks holda har chaqiruv
+joyida takrorlanardi va biri unutilardi.
+
+**Takror xabar sharti — HOLAT oʻzgarishi**, yozuvning mavjudligi emas.
+Ustoz jurnalni qayta saqlaganda yoki izohni tuzatganda ota-onaga
+ikkinchi marta bir xil xabar bormaydi.
+
+**«Sababli» xabar bermaydi.** Uni oila oʻzi maʼlum qilgan; qaytarib
+xabar berish maʼnosiz.
+
+**Bildirishnoma davomat bilan BIR tranzaksiyada yaratiladi.** Davomat
+saqlanmasa bildirishnoma ham qolmaydi — aks holda ota-onaga «kelmadi»
+deb xabar ketib, jurnalda hech narsa boʻlmasligi mumkin edi.
+
+**Begona id yuborilsa `403` emas, `updated: 0`.** Xato qaytarish
+«bunday bildirishnoma bor» degan maʼlumotni oshkor qilardi (X-3
+mantigʻi). Tekshiruv soʻrov darajasida. Shu sababdan
+`GET /notifications/{id}` endpointi ataylab yozilmagan.
+
+**T-018 (outbox) dan ALOHIDA.** T-018/T-019/T-020 xabarni tashqariga —
+Telegramga, SMS ga — yuborish haqida. Bu esa kabinetning ichida.
+Outbox yozilganda u shu jadvaldan oziqlanadi, qaytadan yozilmaydi.
+
+**Frontendda holat modul darajasida bitta.** Qoʻngʻiroq va yon menyudagi
+sanoq bir vaqtda koʻrsatiladi; har biri oʻzi soʻrov yuborsa trafik ikki
+barobar boʻlardi va bittasi oʻqilgandan keyin ikkinchisi eski sonni
+koʻrsatib turardi. `useSyncExternalStore` ataylab: holat React'dan
+tashqarida, lekin React uni toʻgʻri kuzatadi.
+
+Bu ish bilan `components/admin/AdminNotifications.tsx` oʻchirildi — u
+`localStorage` dagi mock ombordan sanoq koʻrsatardi va yonida haqiqiy
+qoʻngʻiroq turishi chalgʻitardi. Ota-ona kabinetidagi eʼlonlar havolasi
+karnay belgichasiga oʻtdi (ikkita bir xil qoʻngʻiroq boʻlmasin).

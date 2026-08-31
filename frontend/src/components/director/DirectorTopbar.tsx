@@ -1,4 +1,4 @@
-import { BellIcon } from "@/components/ui/icons";
+import { NotificationBell } from "@/components/shared/NotificationBell";
 import { GlobalSearch } from "@/components/ui/GlobalSearch";
 import { DEMO_DIRECTOR } from "@/lib/director/data";
 import type { SearchIndexItem } from "@/lib/search";
@@ -13,14 +13,7 @@ export function DirectorTopbar({ searchIndex }: { searchIndex: SearchIndexItem[]
       />
 
       <div className="ml-auto flex items-center gap-3">
-        <button
-          type="button"
-          aria-label="Bildirishnomalar"
-          className="relative flex h-9 w-9 items-center justify-center rounded-full text-foreground-muted hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
-        >
-          <BellIcon className="h-5 w-5" />
-          <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-danger" />
-        </button>
+        <NotificationBell />
         <div className="flex items-center gap-2.5">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-semibold text-brand-foreground">
             {initials(DEMO_DIRECTOR.fullName)}

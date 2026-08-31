@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { NavBadge } from "@/components/shared/NavBadge";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import {
   BarChartIcon,
@@ -60,6 +61,7 @@ export function DirectorSidebar() {
                   )}
                   <ItemIcon className="h-5 w-5 shrink-0" />
                   <span className="truncate">{label}</span>
+                  <NavBadge section={href} />
                 </Link>
               </li>
             );

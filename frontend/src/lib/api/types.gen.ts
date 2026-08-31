@@ -501,6 +501,24 @@ export type AttendanceStatOut = {
 };
 
 /**
+ * BadgeOut
+ *
+ * Yon menyu uchun: qaysi boʻlimda nechta oʻqilmagan xabar bor.
+ */
+export type BadgeOut = {
+    /**
+     * Total
+     */
+    total: number;
+    /**
+     * Sections
+     */
+    sections: {
+        [key: string]: number;
+    };
+};
+
+/**
  * BellIn
  */
 export type BellIn = {
@@ -630,6 +648,56 @@ export type ClassAppealStatOut = {
      * Overdue
      */
     overdue: number;
+};
+
+/**
+ * ClassJournalOut
+ */
+export type ClassJournalOut = {
+    /**
+     * Class Id
+     */
+    class_id: string;
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Dates
+     */
+    dates: Array<string>;
+    /**
+     * Rows
+     */
+    rows: Array<ClassJournalRowOut>;
+    /**
+     * Shows Average
+     */
+    shows_average: boolean;
+};
+
+/**
+ * ClassJournalRowOut
+ */
+export type ClassJournalRowOut = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Grades
+     */
+    grades: {
+        [key: string]: number;
+    };
+    /**
+     * Average
+     */
+    average: number | null;
 };
 
 /**
@@ -800,6 +868,80 @@ export type GenerationOut = {
 };
 
 /**
+ * GradeIn
+ */
+export type GradeIn = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Value
+     */
+    value?: number | null;
+    /**
+     * Comment
+     */
+    comment?: string | null;
+};
+
+/**
+ * GradeOut
+ */
+export type GradeOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Value
+     */
+    value: number;
+    /**
+     * Max Value
+     */
+    max_value: number;
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Weight
+     */
+    weight: number;
+    /**
+     * Comment
+     */
+    comment: string | null;
+    /**
+     * Lesson Id
+     */
+    lesson_id: string | null;
+    /**
+     * Lesson Date
+     */
+    lesson_date: string | null;
+};
+
+/**
+ * GradeSubmissionIn
+ */
+export type GradeSubmissionIn = {
+    /**
+     * Score
+     */
+    score: number;
+    /**
+     * Comment
+     */
+    comment?: string | null;
+};
+
+/**
  * GuardianOptionOut
  *
  * Oʻquvchining vasiy hisobi — yozishma kimga borishini tanlash uchun.
@@ -898,6 +1040,137 @@ export type HolidayOut = {
 };
 
 /**
+ * HomeworkCreateIn
+ */
+export type HomeworkCreateIn = {
+    /**
+     * Class Id
+     */
+    class_id: string;
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Description
+     */
+    description?: string;
+    /**
+     * Due At
+     */
+    due_at: string;
+    /**
+     * Lesson Id
+     */
+    lesson_id?: string | null;
+    /**
+     * Allow Late
+     */
+    allow_late?: boolean;
+    /**
+     * Max Score
+     */
+    max_score?: number;
+    /**
+     * Weight
+     */
+    weight?: number;
+};
+
+/**
+ * HomeworkOut
+ */
+export type HomeworkOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Class Id
+     */
+    class_id: string;
+    /**
+     * Class Name
+     */
+    class_name: string;
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Subject Name
+     */
+    subject_name: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Due At
+     */
+    due_at: string;
+    /**
+     * Allow Late
+     */
+    allow_late: boolean;
+    /**
+     * Max Score
+     */
+    max_score: number;
+    /**
+     * Weight
+     */
+    weight: number;
+    /**
+     * Total Count
+     */
+    total_count: number;
+    /**
+     * Submitted Count
+     */
+    submitted_count: number;
+    /**
+     * Graded Count
+     */
+    graded_count: number;
+};
+
+/**
+ * JournalStudentOut
+ */
+export type JournalStudentOut = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Attendance
+     */
+    attendance: string | null;
+    /**
+     * Gradable
+     */
+    gradable: boolean;
+    /**
+     * Block Reason
+     */
+    block_reason: string | null;
+    grade: GradeOut | null;
+};
+
+/**
  * LessonAttendanceOut
  */
 export type LessonAttendanceOut = {
@@ -956,6 +1229,66 @@ export type LessonAttendanceOut = {
 };
 
 /**
+ * LessonGradesIn
+ */
+export type LessonGradesIn = {
+    /**
+     * Rows
+     */
+    rows: Array<GradeIn>;
+    /**
+     * Kind
+     */
+    kind?: string;
+    /**
+     * Weight
+     */
+    weight?: number;
+};
+
+/**
+ * LessonJournalOut
+ */
+export type LessonJournalOut = {
+    /**
+     * Lesson Id
+     */
+    lesson_id: string;
+    /**
+     * Class Name
+     */
+    class_name: string;
+    /**
+     * Subject Name
+     */
+    subject_name: string;
+    /**
+     * Lesson Date
+     */
+    lesson_date: string;
+    /**
+     * Period
+     */
+    period: number;
+    /**
+     * Topic
+     */
+    topic: string | null;
+    /**
+     * Editable
+     */
+    editable: boolean;
+    /**
+     * Max Value
+     */
+    max_value: number;
+    /**
+     * Students
+     */
+    students: Array<JournalStudentOut>;
+};
+
+/**
  * LessonStatusOut
  */
 export type LessonStatusOut = {
@@ -992,6 +1325,36 @@ export type LoginIn = {
 };
 
 /**
+ * MarkAllReadIn
+ */
+export type MarkAllReadIn = {
+    /**
+     * Section
+     */
+    section?: string | null;
+};
+
+/**
+ * MarkReadIn
+ */
+export type MarkReadIn = {
+    /**
+     * Ids
+     */
+    ids: Array<string>;
+};
+
+/**
+ * MarkReadOut
+ */
+export type MarkReadOut = {
+    /**
+     * Updated
+     */
+    updated: number;
+};
+
+/**
  * MessageCreateIn
  */
 export type MessageCreateIn = {
@@ -999,6 +1362,64 @@ export type MessageCreateIn = {
      * Body
      */
     body: string;
+};
+
+/**
+ * NotificationKind
+ *
+ * Nima yuz berdi.
+ *
+ * Tur — bu SABAB, boʻlim emas. Boʻlim (`section`) qabul qiluvchining
+ * kabinetiga qarab hisoblanadi: bitta «kelmadi» hodisasi ota-onada
+ * «Davomat», oʻquvchida «Bosh sahifa» boʻlimida koʻrinadi.
+ */
+export type NotificationKind = 'attendance_absent' | 'attendance_late' | 'appeal_new' | 'appeal_message' | 'appeal_assigned' | 'appeal_closed';
+
+/**
+ * NotificationOut
+ */
+export type NotificationOut = {
+    /**
+     * Id
+     */
+    id: string;
+    kind: NotificationKind;
+    /**
+     * Kind Label
+     */
+    kind_label: string;
+    /**
+     * Section
+     */
+    section: string;
+    /**
+     * Link
+     */
+    link: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Body
+     */
+    body: string;
+    /**
+     * Student Id
+     */
+    student_id: string | null;
+    /**
+     * Student Name
+     */
+    student_name: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Read At
+     */
+    read_at: string | null;
 };
 
 /**
@@ -1052,6 +1473,18 @@ export type ReadinessOut = {
      * Database
      */
     database: boolean;
+};
+
+/**
+ * ReturnSubmissionIn
+ *
+ * UYV-03: izoh majburiy — nima notoʻgʻri ekani aytilmasa vazifa foydasiz.
+ */
+export type ReturnSubmissionIn = {
+    /**
+     * Comment
+     */
+    comment: string;
 };
 
 /**
@@ -1402,6 +1835,56 @@ export type StudentCreateIn = {
 };
 
 /**
+ * StudentHomeworkOut
+ */
+export type StudentHomeworkOut = {
+    /**
+     * Submission Id
+     */
+    submission_id: string;
+    /**
+     * Homework Id
+     */
+    homework_id: string;
+    /**
+     * Subject Name
+     */
+    subject_name: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Due At
+     */
+    due_at: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Submitted At
+     */
+    submitted_at: string | null;
+    /**
+     * Score
+     */
+    score: number | null;
+    /**
+     * Max Score
+     */
+    max_score: number;
+    /**
+     * Teacher Comment
+     */
+    teacher_comment: string | null;
+};
+
+/**
  * StudentListRowOut
  *
  * Roʻyxatdagi qator — shaxsiy maʼlumotsiz (X-6).
@@ -1504,6 +1987,28 @@ export type StudentStatOut = {
 };
 
 /**
+ * StudentSubjectGradesOut
+ */
+export type StudentSubjectGradesOut = {
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Subject Name
+     */
+    subject_name: string;
+    /**
+     * Grades
+     */
+    grades: Array<GradeOut>;
+    /**
+     * Average
+     */
+    average: number | null;
+};
+
+/**
  * SubjectOut
  */
 export type SubjectOut = {
@@ -1519,6 +2024,84 @@ export type SubjectOut = {
      * Short Name
      */
     short_name: string;
+};
+
+/**
+ * SubmissionListOut
+ */
+export type SubmissionListOut = {
+    /**
+     * Homework Id
+     */
+    homework_id: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Max Score
+     */
+    max_score: number;
+    /**
+     * Due At
+     */
+    due_at: string;
+    /**
+     * Rows
+     */
+    rows: Array<SubmissionOut>;
+};
+
+/**
+ * SubmissionOut
+ */
+export type SubmissionOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Submitted At
+     */
+    submitted_at: string | null;
+    /**
+     * Answer Text
+     */
+    answer_text: string | null;
+    /**
+     * Attachment Name
+     */
+    attachment_name: string | null;
+    /**
+     * Score
+     */
+    score: number | null;
+    /**
+     * Teacher Comment
+     */
+    teacher_comment: string | null;
+};
+
+/**
+ * SubmitIn
+ */
+export type SubmitIn = {
+    /**
+     * Answer Text
+     */
+    answer_text?: string | null;
 };
 
 /**
@@ -3190,6 +3773,432 @@ export type ParentChildAttendanceResponses = {
 
 export type ParentChildAttendanceResponse = ParentChildAttendanceResponses[keyof ParentChildAttendanceResponses];
 
+export type JournalLessonJournalData = {
+    body?: never;
+    path: {
+        /**
+         * Lesson Id
+         */
+        lesson_id: string;
+    };
+    query?: never;
+    url: '/api/v1/journal/lessons/{lesson_id}';
+};
+
+export type JournalLessonJournalErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type JournalLessonJournalError = JournalLessonJournalErrors[keyof JournalLessonJournalErrors];
+
+export type JournalLessonJournalResponses = {
+    /**
+     * Successful Response
+     */
+    200: LessonJournalOut;
+};
+
+export type JournalLessonJournalResponse = JournalLessonJournalResponses[keyof JournalLessonJournalResponses];
+
+export type JournalSetGradesData = {
+    body: LessonGradesIn;
+    path: {
+        /**
+         * Lesson Id
+         */
+        lesson_id: string;
+    };
+    query?: never;
+    url: '/api/v1/journal/lessons/{lesson_id}';
+};
+
+export type JournalSetGradesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type JournalSetGradesError = JournalSetGradesErrors[keyof JournalSetGradesErrors];
+
+export type JournalSetGradesResponses = {
+    /**
+     * Successful Response
+     */
+    200: LessonJournalOut;
+};
+
+export type JournalSetGradesResponse = JournalSetGradesResponses[keyof JournalSetGradesResponses];
+
+export type JournalClassJournalData = {
+    body?: never;
+    path: {
+        /**
+         * Class Id
+         */
+        class_id: string;
+    };
+    query: {
+        /**
+         * Subject Id
+         */
+        subject_id: string;
+        /**
+         * Date From
+         */
+        date_from: string;
+        /**
+         * Date To
+         */
+        date_to: string;
+    };
+    url: '/api/v1/journal/classes/{class_id}';
+};
+
+export type JournalClassJournalErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type JournalClassJournalError = JournalClassJournalErrors[keyof JournalClassJournalErrors];
+
+export type JournalClassJournalResponses = {
+    /**
+     * Successful Response
+     */
+    200: ClassJournalOut;
+};
+
+export type JournalClassJournalResponse = JournalClassJournalResponses[keyof JournalClassJournalResponses];
+
+export type JournalStudentGradesData = {
+    body?: never;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: {
+        /**
+         * Date From
+         */
+        date_from?: string | null;
+        /**
+         * Date To
+         */
+        date_to?: string | null;
+    };
+    url: '/api/v1/journal/students/{student_id}/grades';
+};
+
+export type JournalStudentGradesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type JournalStudentGradesError = JournalStudentGradesErrors[keyof JournalStudentGradesErrors];
+
+export type JournalStudentGradesResponses = {
+    /**
+     * Response Journal Student Grades
+     *
+     * Successful Response
+     */
+    200: Array<StudentSubjectGradesOut>;
+};
+
+export type JournalStudentGradesResponse = JournalStudentGradesResponses[keyof JournalStudentGradesResponses];
+
+export type JournalClassAveragesData = {
+    body?: never;
+    path: {
+        /**
+         * Class Id
+         */
+        class_id: string;
+    };
+    query?: never;
+    url: '/api/v1/journal/classes/{class_id}/averages';
+};
+
+export type JournalClassAveragesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type JournalClassAveragesError = JournalClassAveragesErrors[keyof JournalClassAveragesErrors];
+
+export type JournalClassAveragesResponses = {
+    /**
+     * Response Journal Class Averages
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: number;
+    };
+};
+
+export type JournalClassAveragesResponse = JournalClassAveragesResponses[keyof JournalClassAveragesResponses];
+
+export type JournalMyHomeworkData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Class Id
+         */
+        class_id?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/journal/homework';
+};
+
+export type JournalMyHomeworkErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type JournalMyHomeworkError = JournalMyHomeworkErrors[keyof JournalMyHomeworkErrors];
+
+export type JournalMyHomeworkResponses = {
+    /**
+     * Response Journal My Homework
+     *
+     * Successful Response
+     */
+    200: Array<HomeworkOut>;
+};
+
+export type JournalMyHomeworkResponse = JournalMyHomeworkResponses[keyof JournalMyHomeworkResponses];
+
+export type JournalCreateHomeworkData = {
+    body: HomeworkCreateIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/journal/homework';
+};
+
+export type JournalCreateHomeworkErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type JournalCreateHomeworkError = JournalCreateHomeworkErrors[keyof JournalCreateHomeworkErrors];
+
+export type JournalCreateHomeworkResponses = {
+    /**
+     * Successful Response
+     */
+    201: HomeworkOut;
+};
+
+export type JournalCreateHomeworkResponse = JournalCreateHomeworkResponses[keyof JournalCreateHomeworkResponses];
+
+export type JournalArchiveHomeworkData = {
+    body?: never;
+    path: {
+        /**
+         * Homework Id
+         */
+        homework_id: string;
+    };
+    query?: never;
+    url: '/api/v1/journal/homework/{homework_id}/archive';
+};
+
+export type JournalArchiveHomeworkErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type JournalArchiveHomeworkError = JournalArchiveHomeworkErrors[keyof JournalArchiveHomeworkErrors];
+
+export type JournalArchiveHomeworkResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type JournalArchiveHomeworkResponse = JournalArchiveHomeworkResponses[keyof JournalArchiveHomeworkResponses];
+
+export type JournalSubmissionsData = {
+    body?: never;
+    path: {
+        /**
+         * Homework Id
+         */
+        homework_id: string;
+    };
+    query?: never;
+    url: '/api/v1/journal/homework/{homework_id}/submissions';
+};
+
+export type JournalSubmissionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type JournalSubmissionsError = JournalSubmissionsErrors[keyof JournalSubmissionsErrors];
+
+export type JournalSubmissionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: SubmissionListOut;
+};
+
+export type JournalSubmissionsResponse = JournalSubmissionsResponses[keyof JournalSubmissionsResponses];
+
+export type JournalGradeSubmissionData = {
+    body: GradeSubmissionIn;
+    path: {
+        /**
+         * Submission Id
+         */
+        submission_id: string;
+    };
+    query?: never;
+    url: '/api/v1/journal/submissions/{submission_id}/grade';
+};
+
+export type JournalGradeSubmissionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type JournalGradeSubmissionError = JournalGradeSubmissionErrors[keyof JournalGradeSubmissionErrors];
+
+export type JournalGradeSubmissionResponses = {
+    /**
+     * Successful Response
+     */
+    200: SubmissionOut;
+};
+
+export type JournalGradeSubmissionResponse = JournalGradeSubmissionResponses[keyof JournalGradeSubmissionResponses];
+
+export type JournalReturnSubmissionData = {
+    body: ReturnSubmissionIn;
+    path: {
+        /**
+         * Submission Id
+         */
+        submission_id: string;
+    };
+    query?: never;
+    url: '/api/v1/journal/submissions/{submission_id}/return';
+};
+
+export type JournalReturnSubmissionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type JournalReturnSubmissionError = JournalReturnSubmissionErrors[keyof JournalReturnSubmissionErrors];
+
+export type JournalReturnSubmissionResponses = {
+    /**
+     * Successful Response
+     */
+    200: SubmissionOut;
+};
+
+export type JournalReturnSubmissionResponse = JournalReturnSubmissionResponses[keyof JournalReturnSubmissionResponses];
+
+export type JournalStudentHomeworkData = {
+    body?: never;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: {
+        /**
+         * Only Open
+         */
+        only_open?: boolean;
+    };
+    url: '/api/v1/journal/students/{student_id}/homework';
+};
+
+export type JournalStudentHomeworkErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type JournalStudentHomeworkError = JournalStudentHomeworkErrors[keyof JournalStudentHomeworkErrors];
+
+export type JournalStudentHomeworkResponses = {
+    /**
+     * Response Journal Student Homework
+     *
+     * Successful Response
+     */
+    200: Array<StudentHomeworkOut>;
+};
+
+export type JournalStudentHomeworkResponse = JournalStudentHomeworkResponses[keyof JournalStudentHomeworkResponses];
+
+export type JournalSubmitData = {
+    body: SubmitIn;
+    path: {
+        /**
+         * Submission Id
+         */
+        submission_id: string;
+    };
+    query?: never;
+    url: '/api/v1/journal/submissions/{submission_id}/submit';
+};
+
+export type JournalSubmitErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type JournalSubmitError = JournalSubmitErrors[keyof JournalSubmitErrors];
+
+export type JournalSubmitResponses = {
+    /**
+     * Successful Response
+     */
+    200: StudentHomeworkOut;
+};
+
+export type JournalSubmitResponse = JournalSubmitResponses[keyof JournalSubmitResponses];
+
 export type SchoolSubjectsData = {
     body?: never;
     path?: never;
@@ -3720,6 +4729,112 @@ export type ScheduleTeacherLoadResponses = {
 };
 
 export type ScheduleTeacherLoadResponse = ScheduleTeacherLoadResponses[keyof ScheduleTeacherLoadResponses];
+
+export type NotificationsListNotificationsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Only Unread
+         */
+        only_unread?: boolean;
+        /**
+         * Section
+         */
+        section?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/notifications';
+};
+
+export type NotificationsListNotificationsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type NotificationsListNotificationsError = NotificationsListNotificationsErrors[keyof NotificationsListNotificationsErrors];
+
+export type NotificationsListNotificationsResponses = {
+    /**
+     * Response Notifications List Notifications
+     *
+     * Successful Response
+     */
+    200: Array<NotificationOut>;
+};
+
+export type NotificationsListNotificationsResponse = NotificationsListNotificationsResponses[keyof NotificationsListNotificationsResponses];
+
+export type NotificationsBadgesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/notifications/badges';
+};
+
+export type NotificationsBadgesResponses = {
+    /**
+     * Successful Response
+     */
+    200: BadgeOut;
+};
+
+export type NotificationsBadgesResponse = NotificationsBadgesResponses[keyof NotificationsBadgesResponses];
+
+export type NotificationsMarkReadData = {
+    body: MarkReadIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/notifications/read';
+};
+
+export type NotificationsMarkReadErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type NotificationsMarkReadError = NotificationsMarkReadErrors[keyof NotificationsMarkReadErrors];
+
+export type NotificationsMarkReadResponses = {
+    /**
+     * Successful Response
+     */
+    200: MarkReadOut;
+};
+
+export type NotificationsMarkReadResponse = NotificationsMarkReadResponses[keyof NotificationsMarkReadResponses];
+
+export type NotificationsMarkAllReadData = {
+    body: MarkAllReadIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/notifications/read-all';
+};
+
+export type NotificationsMarkAllReadErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type NotificationsMarkAllReadError = NotificationsMarkAllReadErrors[keyof NotificationsMarkAllReadErrors];
+
+export type NotificationsMarkAllReadResponses = {
+    /**
+     * Successful Response
+     */
+    200: MarkReadOut;
+};
+
+export type NotificationsMarkAllReadResponse = NotificationsMarkAllReadResponses[keyof NotificationsMarkAllReadResponses];
 
 export type ServiceHealthData = {
     body?: never;
