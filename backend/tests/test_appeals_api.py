@@ -631,3 +631,250 @@ async def test_rating_out_of_range_is_rejected(
         headers=_auth(admin),
     )
     assert resp.status_code == 422
+
+
+# ─────────────── Maktab boshlagan yozishma (ADM-16) ───────────────
+
+
+async def test_admin_opens_conversation_with_parent(client: AsyncClient, world: dict) -> None:
+    """Administrator ota-ona bilan yozishmani boshlaydi.
+
+    Yozishma OILAGA tegishli (`author_id` — vasiy), lekin kim ochgani
+    yozuvda qoladi (`created_by_id`). Ikkisi aralashtirilsa «maktab
+    ota-ona nomidan gapirdi» degan yozuv paydo boʻlardi.
+    """
+    admin = await _token(client, "sinov.admin")
+    resp = await client.post(
+        "/api/v1/appeals",
+        json={
+            "student_id": str(world["student_a"].id),
+            "target": "management",
+            "title": "Ustozlar faoliyati boʻyicha soʻrov",
+            "body": "Assalomu alaykum. Bir necha daqiqa vaqt ajrata olasizmi?",
+        },
+        headers=_auth(admin),
+    )
+    assert resp.status_code == 201, resp.text
+    body = resp.json()
+
+    assert body["author_id"] == str(world["parent_a"].id)
+    assert body["created_by_id"] == str(world["admin"].id)
+    assert body["created_by_name"] == "Adminov Sinov"
+    # Javob kutayotgan tomon — ota-ona, shuning uchun «yangi murojaat» emas.
+    assert body["status"] == "in_review"
+    # Maktabning oʻz savoliga javob berish muddati boʻlmaydi.
+    assert body["due_at"] is None
+    # Birinchi xabar muallifi — xodim, ota-onaning ogʻziga soʻz solinmaydi.
+    assert body["messages"][0]["author_name"] == "Adminov Sinov"
+
+
+async def test_parent_sees_and_answers_school_initiated_thread(
+    client: AsyncClient, world: dict
+) -> None:
+    """Ota-ona maktab boshlagan yozishmani oʻz kabinetida koʻradi."""
+    admin = await _token(client, "sinov.admin")
+    created = await client.post(
+        "/api/v1/appeals",
+        json={
+            "student_id": str(world["student_a"].id),
+            "target": "management",
+            "title": "Soʻrovnoma",
+            "body": "Fikringizni bilmoqchi edik.",
+        },
+        headers=_auth(admin),
+    )
+    appeal_id = created.json()["id"]
+
+    parent = await _token(client, "sinov.otaona_a")
+    listed = (await client.get("/api/v1/appeals", headers=_auth(parent))).json()
+    assert [a["id"] for a in listed] == [appeal_id]
+
+    answered = await client.post(
+        f"/api/v1/appeals/{appeal_id}/messages",
+        json={"body": "Albatta, ertaga qoʻngʻiroq qiling."},
+        headers=_auth(parent),
+    )
+    assert answered.status_code == 201
+
+    detail = (await client.get(f"/api/v1/appeals/{appeal_id}", headers=_auth(parent))).json()
+    # Ota-ona javob yozdi → endi navbat maktabda, MUR-04 muddati qoʻyiladi.
+    assert detail["due_at"] is not None
+
+
+async def test_school_thread_ignores_requested_routing(client: AsyncClient, world: dict) -> None:
+    """Maktab boshlagan yozishma har doim `management`.
+
+    Yoʻnaltirish qoidalari ota-ona «kimga yozaman» deb tanlashi uchun;
+    oila tomonidan qaralganda yozgan tomon bitta — maktab.
+    """
+    admin = await _token(client, "sinov.admin")
+    resp = await client.post(
+        "/api/v1/appeals",
+        json={
+            "student_id": str(world["student_a"].id),
+            "target": "subject_teacher",
+            "subject_id": str(world["math"].id),
+            "assignee_id": str(world["teacher_a"].id),
+            "title": "Sinov",
+            "body": "Matn.",
+        },
+        headers=_auth(admin),
+    )
+    assert resp.status_code == 201
+    assert resp.json()["target"] == "management"
+    assert resp.json()["subject_name"] is None
+    # Masʼul — yozishmani boshlagan xodim.
+    assert resp.json()["assignee_id"] == str(world["admin"].id)
+
+
+async def test_teacher_cannot_open_conversation_with_parent(
+    client: AsyncClient, world: dict
+) -> None:
+    """Ustoz ota-onaga toʻgʻridan-toʻgʻri yozishma ocha olmaydi.
+
+    Aks holda har bir ustoz istagan oilaga nazoratsiz kanal ochardi.
+    """
+    token = await _token(client, "sinov.ustoz_a")
+    resp = await client.post(
+        "/api/v1/appeals",
+        json={
+            "student_id": str(world["student_a"].id),
+            "target": "management",
+            "title": "Ustozdan xabar",
+            "body": "Bu yoʻl yopiq.",
+        },
+        headers=_auth(token),
+    )
+    assert resp.status_code == 403
+
+
+async def test_admin_cannot_attach_thread_to_unrelated_account(
+    client: AsyncClient, world: dict
+) -> None:
+    """Tanlangan hisob shu oʻquvchining vasiysi boʻlishi shart.
+
+    Aks holda yozishma begona oilaning kabinetida paydo boʻlardi.
+    """
+    admin = await _token(client, "sinov.admin")
+    resp = await client.post(
+        "/api/v1/appeals",
+        json={
+            "student_id": str(world["student_a"].id),
+            "author_id": str(world["parent_b"].id),  # boshqa oilaning vasiysi
+            "target": "management",
+            "title": "Notoʻgʻri oila",
+            "body": "Bu oʻtmasligi kerak.",
+        },
+        headers=_auth(admin),
+    )
+    assert resp.status_code == 422
+    assert "vasiysi emas" in resp.json()["message"]
+
+
+async def test_parent_cannot_forge_author(client: AsyncClient, world: dict) -> None:
+    """Ota-ona `author_id` yuborib boshqa oila nomidan yoza olmaydi.
+
+    Maydon mavjud (maktab uni ishlatadi), lekin ota-ona uchun eʼtiborga
+    olinmaydi — X-5 dagi mass assignment holati.
+    """
+    token = await _token(client, "sinov.otaona_a")
+    resp = await client.post(
+        "/api/v1/appeals",
+        json={
+            "student_id": str(world["student_a"].id),
+            "author_id": str(world["parent_b"].id),
+            "target": "homeroom",
+            "title": "Muallifni almashtirish",
+            "body": "Bu oʻtmasligi kerak.",
+        },
+        headers=_auth(token),
+    )
+    assert resp.status_code == 201
+    # Muallif — soʻrovdagi emas, kirgan foydalanuvchi.
+    assert resp.json()["author_id"] == str(world["parent_a"].id)
+    assert resp.json()["created_by_id"] is None
+
+
+async def test_school_initiated_thread_is_audited(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Kim kimga yozishma ochgani auditda qoladi (X-13 mantigʻi)."""
+    admin = await _token(client, "sinov.admin")
+    await client.post(
+        "/api/v1/appeals",
+        json={
+            "student_id": str(world["student_a"].id),
+            "target": "management",
+            "title": "Audit sinovi",
+            "body": "Matn.",
+        },
+        headers=_auth(admin),
+    )
+    row = (
+        (
+            await session.execute(
+                select(AuditLog).where(
+                    AuditLog.object_type == "appeal", AuditLog.action == "create"
+                )
+            )
+        )
+        .scalars()
+        .one()
+    )
+    assert row.actor_id == world["admin"].id
+    assert row.new_value["created_by_id"] == str(world["admin"].id)
+    assert row.new_value["author_id"] == str(world["parent_a"].id)
+
+
+# ─────────────── Oʻquvchi qidiruvi ───────────────
+
+
+async def test_student_search_returns_guardians(client: AsyncClient, world: dict) -> None:
+    admin = await _token(client, "sinov.admin")
+    rows = (
+        await client.get(
+            "/api/v1/appeals/students", params={"q": "aliyev ali"}, headers=_auth(admin)
+        )
+    ).json()
+    assert len(rows) == 1
+    assert rows[0]["full_name"] == "Aliyev Ali"
+    assert rows[0]["class_name"] == "8-A"
+    assert [g["full_name"] for g in rows[0]["guardians"]] == ["Aliyev Sinov"]
+
+
+async def test_student_search_matches_anywhere_in_the_name(
+    client: AsyncClient, world: dict
+) -> None:
+    """Qidiruv soʻz boshiga bogʻlanmagan: «aliyev» «Valiyev»ni ham topadi.
+
+    Administrator uchun bu ataylab — familiyani toʻliq eslay olmasa ham
+    roʻyxatdan tanlab oladi. Aniqlashtirish uchun ism ham yoziladi.
+    """
+    admin = await _token(client, "sinov.admin")
+    rows = (
+        await client.get("/api/v1/appeals/students", params={"q": "aliyev"}, headers=_auth(admin))
+    ).json()
+    assert sorted(r["full_name"] for r in rows) == ["Aliyev Ali", "Valiyev Vali"]
+
+
+async def test_student_search_carries_no_contact_details(
+    client: AsyncClient, world: dict
+) -> None:
+    """X-6: roʻyxatda telefon, manzil va hujjat raqami boʻlmaydi."""
+    admin = await _token(client, "sinov.admin")
+    resp = await client.get(
+        "/api/v1/appeals/students", params={"q": "aliyev"}, headers=_auth(admin)
+    )
+    assert "phone" not in resp.text
+    assert "login" not in resp.text
+
+
+@pytest.mark.parametrize("login", ["sinov.otaona_a", "sinov.ustoz_a", "sinov.oquvbolim"])
+async def test_student_search_is_closed_to_others(
+    client: AsyncClient, world: dict, login: str
+) -> None:
+    token = await _token(client, login)
+    resp = await client.get(
+        "/api/v1/appeals/students", params={"q": "aliyev"}, headers=_auth(token)
+    )
+    assert resp.status_code == 403

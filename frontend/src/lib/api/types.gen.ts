@@ -85,6 +85,10 @@ export type AppealCreateIn = {
      * Assignee Id
      */
     assignee_id?: string | null;
+    /**
+     * Author Id
+     */
+    author_id?: string | null;
 };
 
 /**
@@ -252,6 +256,14 @@ export type AppealOut = {
      * Subject Name
      */
     subject_name: string | null;
+    /**
+     * Created By Id
+     */
+    created_by_id?: string | null;
+    /**
+     * Created By Name
+     */
+    created_by_name?: string | null;
     /**
      * Created At
      */
@@ -596,6 +608,30 @@ export type DirectorOverviewOut = {
 };
 
 /**
+ * GuardianOptionOut
+ *
+ * Oʻquvchining vasiy hisobi — yozishma kimga borishini tanlash uchun.
+ */
+export type GuardianOptionOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Relation
+     */
+    relation: string;
+    /**
+     * Is Primary
+     */
+    is_primary: boolean;
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -842,6 +878,30 @@ export type StudentRowOut = {
      * Note
      */
     note?: string | null;
+};
+
+/**
+ * StudentSearchOut
+ *
+ * ADM-16 qidiruvi. X-6: telefon, manzil va hujjat raqami yoʻq.
+ */
+export type StudentSearchOut = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Class Name
+     */
+    class_name: string | null;
+    /**
+     * Guardians
+     */
+    guardians?: Array<GuardianOptionOut>;
 };
 
 /**
@@ -1538,6 +1598,40 @@ export type AppealsComposeOptionsResponses = {
 };
 
 export type AppealsComposeOptionsResponse = AppealsComposeOptionsResponses[keyof AppealsComposeOptionsResponses];
+
+export type AppealsSearchStudentsData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Q
+         *
+         * Ism yoki familiya
+         */
+        q: string;
+    };
+    url: '/api/v1/appeals/students';
+};
+
+export type AppealsSearchStudentsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AppealsSearchStudentsError = AppealsSearchStudentsErrors[keyof AppealsSearchStudentsErrors];
+
+export type AppealsSearchStudentsResponses = {
+    /**
+     * Response Appeals Search Students
+     *
+     * Successful Response
+     */
+    200: Array<StudentSearchOut>;
+};
+
+export type AppealsSearchStudentsResponse = AppealsSearchStudentsResponses[keyof AppealsSearchStudentsResponses];
 
 export type AppealsGetAppealData = {
     body?: never;

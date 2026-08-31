@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AccessPermissionRegistryData, AccessPermissionRegistryResponses, AccessSectionsData, AccessSectionsResponses, AccessSetPermissionsData, AccessSetPermissionsErrors, AccessSetPermissionsResponses, AccessSetSectionsData, AccessSetSectionsErrors, AccessSetSectionsResponses, AccessUserAccessData, AccessUserAccessErrors, AccessUserAccessResponses, AccessUsersData, AccessUsersErrors, AccessUsersResponses, AppealsAddMessageData, AppealsAddMessageErrors, AppealsAddMessageResponses, AppealsAppealsSummaryData, AppealsAppealsSummaryResponses, AppealsComposeOptionsData, AppealsComposeOptionsResponses, AppealsCreateAppealData, AppealsCreateAppealErrors, AppealsCreateAppealResponses, AppealsCreateNoteData, AppealsCreateNoteErrors, AppealsCreateNoteResponses, AppealsGetAppealData, AppealsGetAppealErrors, AppealsGetAppealResponses, AppealsListAppealsData, AppealsListAppealsErrors, AppealsListAppealsResponses, AppealsListNotesData, AppealsListNotesErrors, AppealsListNotesResponses, AppealsStatsClassesData, AppealsStatsClassesResponses, AppealsUpdateAssigneeData, AppealsUpdateAssigneeErrors, AppealsUpdateAssigneeResponses, AppealsUpdateStatusData, AppealsUpdateStatusErrors, AppealsUpdateStatusResponses, AttendanceClassStudentsData, AttendanceClassStudentsErrors, AttendanceClassStudentsResponses, AttendanceLessonAttendanceData, AttendanceLessonAttendanceErrors, AttendanceLessonAttendanceResponses, AttendanceMarkData, AttendanceMarkErrors, AttendanceMarkResponses, AttendanceMyLessonsData, AttendanceMyLessonsErrors, AttendanceMyLessonsResponses, AttendanceStatsData, AttendanceStatsErrors, AttendanceStatsResponses, AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRefreshData, AuthRefreshResponses, DirectorClassesData, DirectorClassesResponses, DirectorOverviewData, DirectorOverviewErrors, DirectorOverviewResponses, DirectorTeachersData, DirectorTeachersResponses, ParentChildAttendanceData, ParentChildAttendanceErrors, ParentChildAttendanceResponses, ParentMyChildrenData, ParentMyChildrenResponses, ServiceHealthData, ServiceHealthResponses, ServiceReadinessData, ServiceReadinessResponses } from './types.gen';
+import type { AccessPermissionRegistryData, AccessPermissionRegistryResponses, AccessSectionsData, AccessSectionsResponses, AccessSetPermissionsData, AccessSetPermissionsErrors, AccessSetPermissionsResponses, AccessSetSectionsData, AccessSetSectionsErrors, AccessSetSectionsResponses, AccessUserAccessData, AccessUserAccessErrors, AccessUserAccessResponses, AccessUsersData, AccessUsersErrors, AccessUsersResponses, AppealsAddMessageData, AppealsAddMessageErrors, AppealsAddMessageResponses, AppealsAppealsSummaryData, AppealsAppealsSummaryResponses, AppealsComposeOptionsData, AppealsComposeOptionsResponses, AppealsCreateAppealData, AppealsCreateAppealErrors, AppealsCreateAppealResponses, AppealsCreateNoteData, AppealsCreateNoteErrors, AppealsCreateNoteResponses, AppealsGetAppealData, AppealsGetAppealErrors, AppealsGetAppealResponses, AppealsListAppealsData, AppealsListAppealsErrors, AppealsListAppealsResponses, AppealsListNotesData, AppealsListNotesErrors, AppealsListNotesResponses, AppealsSearchStudentsData, AppealsSearchStudentsErrors, AppealsSearchStudentsResponses, AppealsStatsClassesData, AppealsStatsClassesResponses, AppealsUpdateAssigneeData, AppealsUpdateAssigneeErrors, AppealsUpdateAssigneeResponses, AppealsUpdateStatusData, AppealsUpdateStatusErrors, AppealsUpdateStatusResponses, AttendanceClassStudentsData, AttendanceClassStudentsErrors, AttendanceClassStudentsResponses, AttendanceLessonAttendanceData, AttendanceLessonAttendanceErrors, AttendanceLessonAttendanceResponses, AttendanceMarkData, AttendanceMarkErrors, AttendanceMarkResponses, AttendanceMyLessonsData, AttendanceMyLessonsErrors, AttendanceMyLessonsResponses, AttendanceStatsData, AttendanceStatsErrors, AttendanceStatsResponses, AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRefreshData, AuthRefreshResponses, DirectorClassesData, DirectorClassesResponses, DirectorOverviewData, DirectorOverviewErrors, DirectorOverviewResponses, DirectorTeachersData, DirectorTeachersResponses, ParentChildAttendanceData, ParentChildAttendanceErrors, ParentChildAttendanceResponses, ParentMyChildrenData, ParentMyChildrenResponses, ServiceHealthData, ServiceHealthResponses, ServiceReadinessData, ServiceReadinessResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -169,7 +169,14 @@ export const appealsListAppeals = <ThrowOnError extends boolean = false>(options
 /**
  * Create Appeal
  *
- * MUR-01: ota-ona yangi murojaat yozadi.
+ * Yangi yozishma.
+ *
+ * MUR-01 — ota-ona murojaat yozadi.
+ * ADM-16 — administrator/rahbariyat ota-ona bilan yozishmani boshlaydi
+ * (telefon suhbatini qayd qilish yoki savol berish).
+ *
+ * Qaysi yoʻl ekanini SERVER aniqlaydi — chaqiruvchining rolidan, soʻrov
+ * maydonidan emas.
  */
 export const appealsCreateAppeal = <ThrowOnError extends boolean = false>(options: Options<AppealsCreateAppealData, ThrowOnError>): RequestResult<AppealsCreateAppealResponses, AppealsCreateAppealErrors, ThrowOnError> => (options.client ?? client).post<AppealsCreateAppealResponses, AppealsCreateAppealErrors, ThrowOnError>({
     url: '/api/v1/appeals',
@@ -200,6 +207,16 @@ export const appealsStatsClasses = <ThrowOnError extends boolean = false>(option
  * MUR-01 formasi uchun: farzandlar va ularga dars beradigan xodimlar.
  */
 export const appealsComposeOptions = <ThrowOnError extends boolean = false>(options?: Options<AppealsComposeOptionsData, ThrowOnError>): RequestResult<AppealsComposeOptionsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AppealsComposeOptionsResponses, unknown, ThrowOnError>({ url: '/api/v1/appeals/options', ...options });
+
+/**
+ * Search Students
+ *
+ * ADM-16: yozishma boshlash uchun oʻquvchi qidiruvi (administrator).
+ *
+ * Vasiy oʻquvchi orqali topiladi — administrator ota-onani roʻyxatdan
+ * tanlamaydi. Shunda notoʻgʻri oilaga yozib yuborish ehtimoli yoʻqoladi.
+ */
+export const appealsSearchStudents = <ThrowOnError extends boolean = false>(options: Options<AppealsSearchStudentsData, ThrowOnError>): RequestResult<AppealsSearchStudentsResponses, AppealsSearchStudentsErrors, ThrowOnError> => (options.client ?? client).get<AppealsSearchStudentsResponses, AppealsSearchStudentsErrors, ThrowOnError>({ url: '/api/v1/appeals/students', ...options });
 
 /**
  * Get Appeal

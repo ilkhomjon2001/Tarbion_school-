@@ -72,7 +72,19 @@ CONTACT_KIND_LABELS_UZ: dict[str, str] = {
 
 
 class Appeal(Entity):
-    """Ota-onaning murojaati — ochiq yozishma boshi."""
+    """Maktab va oila oʻrtasidagi bitta yozishma.
+
+    Ikki yoʻl bilan boshlanadi:
+
+      · ota-ona yozadi (MUR-01) — odatiy holat;
+      · maktab birinchi boʻlib yozadi (ADM-16) — administrator telefon
+        suhbatini qayd qiladi yoki oʻzi savol beradi.
+
+    Ikkinchi holatda ham `author_id` OTA-ONA boʻlib qoladi: yozishma
+    oilaga tegishli, ota-ona uni oʻz kabinetida koʻradi va javob yozadi.
+    Kim ochgani `created_by_id` da — bu ikkisi aralashtirilsa,
+    «maktab ota-ona nomidan gapirdi» degan yozuv paydo boʻlardi.
+    """
 
     __tablename__ = "appeals"
     __table_args__ = (
@@ -87,10 +99,16 @@ class Appeal(Entity):
     student_id: Mapped[uuid.UUID] = mapped_column(
         PgUUID(as_uuid=True), ForeignKey("students.id"), nullable=False, index=True
     )
-    # Murojaatni yozgan foydalanuvchi (ota-ona). Vasiy hisobi arxivlansa ham
+    # Yozishmaning OILA tomoni (vasiy hisobi). Vasiy hisobi arxivlansa ham
     # murojaat qoladi — yozishma tarixi hisobotda kerak.
     author_id: Mapped[uuid.UUID] = mapped_column(
         PgUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+    )
+    # Yozishmani kim ochgan. `NULL` — ota-ona oʻzi ochgan (odatiy holat).
+    # Toʻldirilgan boʻlsa — maktab xodimi ochgan, va bu faktni yashirmaymiz:
+    # ota-ona kabinetida «Maktab boshladi» deb koʻrsatiladi.
+    created_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("users.id"), nullable=True
     )
 
     target: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -110,8 +128,13 @@ class Appeal(Entity):
         String(20), default=AppealStatus.NEW.value, server_default="new", nullable=False
     )
 
-    # MUR-04: javob berish muddati. Yaratilganda hisoblanadi va keyin
-    # oʻzgarmaydi — aks holda "muddati oʻtdi" hisoboti maʼnosini yoʻqotadi.
+    # MUR-04: MAKTAB javob berish muddati. Ota-ona savol berganda
+    # qoʻyiladi va keyin oʻzgarmaydi — aks holda "muddati oʻtdi" hisoboti
+    # maʼnosini yoʻqotardi.
+    #
+    # Maktab oʻzi boshlagan yozishmada `NULL`: maktabning oʻz savoliga
+    # javob berish muddati boʻlmaydi. Ota-ona javob yozgan payt muddat
+    # qoʻyiladi (`add_message`).
     due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

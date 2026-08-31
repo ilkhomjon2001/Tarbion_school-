@@ -5,8 +5,8 @@
  *
  * Bu fayl bitta ish qiladi: generatsiya qilingan API javobini (`AppealOut`)
  * kabinetlardagi komponentlar allaqachon tushunadigan `Appeal` shakliga
- * oʻgiradi. Shu sabab `AppealThread`, `AppealsBoard` va `ConversationsBoard`
- * qayta yozilmadi — ular mock bilan ham, API bilan ham bir xil ishlaydi.
+ * oʻgiradi. Shu sabab `AppealThread` qayta yozilmadi — u mock bilan ham,
+ * API bilan ham bir xil ishlaydi.
  *
  * Kirish nazorati BU YERDA EMAS. Ota-ona nimani koʻrishini server hal
  * qiladi (`appeals_service._scope()`); frontendda filtrlash — qulaylik,
@@ -22,6 +22,7 @@ import {
   appealsGetAppeal,
   appealsListAppeals,
   appealsListNotes,
+  appealsSearchStudents,
   appealsStatsClasses,
   appealsUpdateAssignee,
   appealsUpdateStatus,
@@ -34,6 +35,7 @@ import type {
   AppealSummaryOut,
   ClassAppealStatOut,
   ContactKind,
+  StudentSearchOut,
   TeacherRowOut,
 } from "@/lib/api/types.gen";
 import type { AppealStatus, AppealTarget } from "@/lib/contracts";
@@ -85,13 +87,13 @@ export function toAppeal(dto: AppealOut): Appeal {
     status: dto.status as AppealStatus,
     createdAt: formatMoment(dto.created_at),
     dueAt: formatDay(dto.due_at),
+    openedByName: dto.created_by_name ?? undefined,
     messages: (dto.messages ?? []).map(
       (m): AppealMessage => ({
         id: m.id,
-        // Muallif ota-onami yoki xodimmi — murojaat muallifi bilan
-        // solishtirib aniqlanadi. Backend buni alohida maydonda
-        // yubormaydi: bir odam bir murojaatda ota-ona, boshqasida
-        // xodim boʻlishi mumkin emas, shuning uchun taqqoslash yetarli.
+        // Xabarni oila tomonimi yoki maktab yozganmi. Yozishmaning oila
+        // tomoni — `author_id`; maktab boshlagan yozishmada birinchi
+        // xabar xodimniki boʻladi va u shu taqqoslashda "staff" chiqadi.
         author: m.author_id === dto.author_id ? "parent" : "staff",
         authorName: m.author_name,
         text: m.body,
@@ -253,4 +255,58 @@ export async function addNote(
 export async function fetchTeacherOptions(): Promise<{ id: string; name: string }[]> {
   const rows = await withAuth<TeacherRowOut[]>(() => directorTeachers());
   return rows.map((t) => ({ id: t.id, name: t.short_name }));
+}
+
+
+export interface StudentMatch {
+  studentId: string;
+  fullName: string;
+  className: string | null;
+  guardians: { id: string; fullName: string; relation: string; isPrimary: boolean }[];
+}
+
+/**
+ * ADM-16: yozishma boshlash uchun oʻquvchi qidiruvi.
+ *
+ * Vasiy oʻquvchi orqali topiladi — administrator ota-onalar roʻyxatidan
+ * tanlamaydi. Shunda notoʻgʻri oilaga yozib yuborish ehtimoli yoʻqoladi.
+ */
+export async function searchStudents(query: string): Promise<StudentMatch[]> {
+  const rows = await withAuth<StudentSearchOut[]>(() =>
+    appealsSearchStudents({ query: { q: query } }),
+  );
+  return rows.map((row) => ({
+    studentId: row.student_id,
+    fullName: row.full_name,
+    className: row.class_name ?? null,
+    guardians: (row.guardians ?? []).map((g) => ({
+      id: g.id,
+      fullName: g.full_name,
+      relation: g.relation,
+      isPrimary: g.is_primary,
+    })),
+  }));
+}
+
+/** Maktab ota-ona bilan yozishmani boshlaydi (ADM-16). */
+export async function startConversation(input: {
+  studentId: string;
+  guardianId: string;
+  title: string;
+  body: string;
+}): Promise<Appeal> {
+  const data = await withAuth<AppealOut>(() =>
+    appealsCreateAppeal({
+      body: {
+        student_id: input.studentId,
+        author_id: input.guardianId,
+        // Yoʻnalishni server baribir `management` ga majburlaydi — maktab
+        // boshlagan yozishmada oila tomonidan yozgan tomon bitta.
+        target: "management",
+        title: input.title,
+        body: input.body,
+      },
+    }),
+  );
+  return toAppeal(data);
 }
