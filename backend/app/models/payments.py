@@ -28,6 +28,7 @@ from sqlalchemy import (
     Index,
     String,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -158,7 +159,16 @@ class Payment(Entity):
     """
 
     __tablename__ = "payments"
-    __table_args__ = (Index("ix_payments_student", "student_id", "paid_on"),)
+    __table_args__ = (
+        Index("ix_payments_student", "student_id", "paid_on"),
+        # O5: kvitansiya raqami moliyaviy hujjat — takror boʻlmasin.
+        Index(
+            "uq_payments_receipt_no",
+            "receipt_no",
+            unique=True,
+            postgresql_where=text("receipt_no IS NOT NULL"),
+        ),
+    )
 
     student_id: Mapped[uuid.UUID] = mapped_column(
         PgUUID(as_uuid=True), ForeignKey("students.id"), nullable=False

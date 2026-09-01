@@ -621,3 +621,103 @@ async def test_arxivlangan_qarzdor_hisobotda_qoladi(
     qarzdorlar = {x["student_name"]: x for x in r.json()}
     assert "Otayev Ali" in qarzdorlar
     assert qarzdorlar["Otayev Ali"]["is_archived"] is True
+
+
+# ─────────────────── Audit regressiyalari (Y1, Y2, Y3) ───────────────────
+
+
+async def test_shartnoma_ozgarsa_otgan_oy_qarzi_yozilaveradi(
+    client: AsyncClient, world: dict
+) -> None:
+    """Y2: shartnoma almashgach O'TGAN oy uchun hisoblansa, o'sha oyda
+    amalda bo'lgan (endi arxivdagi) shartnoma topiladi — qarz jim
+    yo'qolmaydi."""
+    token = await _token(client, "pm.admin")
+    await _shartnoma(client, token, world["ali"].id, fee=3_000_000)
+
+    # Oktabrdan yangi summa — sentyabrdagi eski shartnoma arxivlanadi.
+    r = await client.put(
+        f"/api/v1/payments/students/{world['ali'].id}/contract",
+        headers=_auth(token),
+        json={"monthly_fee": 4_000_000, "starts_on": "2026-10-01"},
+    )
+    assert r.status_code == 200, r.text
+
+    # ENDI sentyabr hisoblanadi — eski shartnoma summasi bilan.
+    r = await client.post(
+        "/api/v1/payments/charges/generate",
+        headers=_auth(token),
+        json={"year": 2026, "month": 9},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["created"] == 1
+
+    r = await client.get(
+        f"/api/v1/payments/students/{world['ali'].id}", headers=_auth(token)
+    )
+    qarz = next(x for x in r.json()["rows"] if x["kind"] == "charge")
+    assert qarz["amount"] == 3_000_000, "sentyabr eski shartnoma summasi bilan yozilishi kerak"
+
+
+async def test_yopiq_arxiv_oquvchi_tushumi_jamlanmada_qoladi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Y1: hisobi yopiq bo'lib ketgan (arxivlangan) o'quvchining to'lovi
+    ro'yxatda ko'rinmasa ham, umumiy «Tushum»dan yo'qolmaydi."""
+    token = await _token(client, "pm.admin")
+    await _shartnoma(client, token, world["ali"].id)
+    await client.post(
+        "/api/v1/payments/charges/generate",
+        headers=_auth(token),
+        json={"year": 2026, "month": 9},
+    )
+    r = await client.post(
+        "/api/v1/payments",
+        headers=_auth(token),
+        json={"student_id": str(world["ali"].id), "amount": OYLIK, "method": "naqd"},
+    )
+    assert r.status_code == 201, r.text
+
+    oldin = (await client.get("/api/v1/payments/summary", headers=_auth(token))).json()
+
+    # O'quvchi ketdi — arxivlanadi (balansi 0: to'liq to'lagan edi).
+    world["ali"].is_archived = True
+    await session.commit()
+
+    keyin = (await client.get("/api/v1/payments/summary", headers=_auth(token))).json()
+    assert keyin["paid"] == oldin["paid"], "arxivlangach tushum kamayib qoldi (Y1)"
+    assert keyin["charged"] == oldin["charged"]
+
+    # Ro'yxatda esa ko'rinmaydi — u yopiq hisob.
+    r = await client.get("/api/v1/payments/students", headers=_auth(token))
+    assert all(x["student_id"] != str(world["ali"].id) for x in r.json())
+
+
+async def test_oy_ortasidan_boshlangan_shartnoma_osha_oyni_hisoblamaydi(
+    client: AsyncClient, world: dict
+) -> None:
+    """Y3: 15-sentabrda kelgan o'quvchiga sentyabr uchun avtomatik
+    TO'LIQ oylik yozilmaydi — admin 1-sanani tanlamaguncha."""
+    token = await _token(client, "pm.admin")
+    r = await client.put(
+        f"/api/v1/payments/students/{world['ali'].id}/contract",
+        headers=_auth(token),
+        json={"monthly_fee": OYLIK, "starts_on": "2026-09-15"},
+    )
+    assert r.status_code == 200, r.text
+
+    r = await client.post(
+        "/api/v1/payments/charges/generate",
+        headers=_auth(token),
+        json={"year": 2026, "month": 9},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["created"] == 0, "oy o'rtasidan boshlangan shartnoma sentyabrni hisoblamasligi kerak"
+
+    # Oktabr esa to'liq hisoblanadi.
+    r = await client.post(
+        "/api/v1/payments/charges/generate",
+        headers=_auth(token),
+        json={"year": 2026, "month": 10},
+    )
+    assert r.json()["created"] == 1

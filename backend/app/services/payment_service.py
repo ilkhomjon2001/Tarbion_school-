@@ -11,6 +11,7 @@ Kim nimani koʻradi — MOLIYA uchun alohida qoida:
 Yozish — faqat `payments.manage` huquqi bilan.
 """
 
+import calendar
 import hashlib
 import hmac
 import uuid
@@ -18,6 +19,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from sqlalchemy import case, func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -27,7 +29,7 @@ from app.core.exceptions import (
     PermissionDeniedError,
     ValidationError,
 )
-from app.core.timeutil import local_today
+from app.core.timeutil import local_today, to_display
 from app.models import (
     TUITION_MONTHS,
     AuditAction,
@@ -140,11 +142,18 @@ async def _get_student(session: AsyncSession, student_id: uuid.UUID) -> Student:
 async def active_contract(
     session: AsyncSession, student_id: uuid.UUID
 ) -> TuitionContract | None:
+    """Bugun amalda boʻlgan shartnoma.
+
+    Kelajak sanali shartnoma bu yerda qaytmaydi (O6): admin sentabrdan
+    boshlanadigan summani avgustda kiritsa, kabinetda hozircha eski
+    holat koʻrinishi kerak.
+    """
     return await session.scalar(
         select(TuitionContract)
         .where(
             TuitionContract.student_id == student_id,
             TuitionContract.is_archived.is_(False),
+            TuitionContract.starts_on <= local_today(),
         )
         .order_by(TuitionContract.starts_on.desc())
         .limit(1)
@@ -170,14 +179,30 @@ async def set_contract(
     if monthly_fee <= 0:
         raise ValidationError("Oylik summa musbat boʻlsin.")
 
-    eski = await active_contract(session, student_id)
-    if eski is not None:
-        eski.is_archived = True
+    # Oldingi FAOL shartnomalar arxivlanadi (kelajakdagilar ham —
+    # yangi kiritish ularni bekor qiladi). Tarix uchun qoladi.
+    eskilar = list(
+        (
+            await session.execute(
+                select(TuitionContract).where(
+                    TuitionContract.student_id == student_id,
+                    TuitionContract.is_archived.is_(False),
+                )
+            )
+        ).scalars()
+    )
+    eski = eskilar[0] if eskilar else None
+    for e in eskilar:
+        e.is_archived = True
 
+    # Y3: kun MAJBURAN 1-ga surilmaydi. Kelishilgan qoida: oy oʻrtasida
+    # kelgan oʻquvchining kirish oyi avtomatik hisoblanmaydi — admin
+    # 1-sanani tanlasa oy toʻliq hisoblanadi, oy oʻrtasini tanlasa
+    # hisob keyingi oydan boshlanadi.
     contract = TuitionContract(
         student_id=student_id,
         monthly_fee=monthly_fee,
-        starts_on=starts_on.replace(day=1),
+        starts_on=starts_on,
         note=(note or "").strip() or None,
     )
     session.add(contract)
@@ -319,19 +344,31 @@ async def generate_charges(
 
     first_day = date(year, month, 1)
 
-    contracts = list(
+    # Y2: oʻtgan oy keyin hisoblansa ham OʻSHA OYDA amalda boʻlgan
+    # shartnoma topilishi kerak. Shartnoma almashganda eskisi arxivlanadi,
+    # shuning uchun arxivdagilar ham olinadi; har oʻquvchi uchun
+    # `starts_on <= first_day` boʻlganlarning eng yangisi tanlanadi.
+    barchasi = list(
         (
             await session.execute(
                 select(TuitionContract)
                 .join(Student, Student.id == TuitionContract.student_id)
                 .where(
-                    TuitionContract.is_archived.is_(False),
                     TuitionContract.starts_on <= first_day,
                     Student.is_archived.is_(False),
+                )
+                .order_by(
+                    TuitionContract.student_id,
+                    TuitionContract.starts_on.desc(),
+                    TuitionContract.created_at.desc(),
                 )
             )
         ).scalars()
     )
+    tanlangan: dict[uuid.UUID, TuitionContract] = {}
+    for c in barchasi:
+        tanlangan.setdefault(c.student_id, c)
+    contracts = list(tanlangan.values())
     if not contracts:
         return 0
 
@@ -423,17 +460,24 @@ async def record_payment(
         raise ValidationError("Toʻlov usuli notoʻgʻri.")
 
     # TOL-04: chek raqami berilmasa reyestr raqami beriladi — KV-<yil>-<tartib>.
+    # Raqam bazadagi ENG KATTA tartibdan davom etadi (COUNT emas:
+    # qoʻlda kiritilgan raqam hisobni buzmasin); poyga unique indeks
+    # bilan tutiladi (O5).
     raqam = (receipt_no or "").strip()
     if not raqam:
         yil = (paid_on or local_today()).year
-        soni = (
-            await session.scalar(
-                select(func.count(Payment.id)).where(
-                    Payment.receipt_no.like(f"KV-{yil}-%")
-                )
+        oxirgi = await session.scalar(
+            select(func.max(Payment.receipt_no)).where(
+                Payment.receipt_no.like(f"KV-{yil}-%")
             )
-        ) or 0
-        raqam = f"KV-{yil}-{soni + 1:04d}"
+        )
+        keyingi = 1
+        if oxirgi:
+            try:
+                keyingi = int(str(oxirgi).rsplit("-", 1)[-1]) + 1
+            except ValueError:
+                keyingi = 1
+        raqam = f"KV-{yil}-{keyingi:04d}"
 
     payment = Payment(
         student_id=student_id,
@@ -573,7 +617,11 @@ async def _totals(
 
 
 async def finance_rows(
-    session: AsyncSession, user: CurrentUser, *, only_debtors: bool = False
+    session: AsyncSession,
+    user: CurrentUser,
+    *,
+    only_debtors: bool = False,
+    include_settled_archived: bool = False,
 ) -> list[StudentFinance]:
     """Barcha oʻquvchilar moliyasi (yoki faqat qarzdorlar)."""
     await assert_finance_admin(session, user)
@@ -609,7 +657,7 @@ async def finance_rows(
         balans = p - c
         if only_debtors and balans >= 0:
             continue
-        if s.is_archived and balans == 0:
+        if s.is_archived and balans == 0 and not include_settled_archived:
             continue  # ketgan va hisobi yopiq — roʻyxatni bosmasin
         natija.append(
             StudentFinance(
@@ -724,7 +772,7 @@ async def student_ledger(
         rows.append(
             LedgerRow(
                 kind="credit",
-                when=k.created_at.date(),
+                when=to_display(k.created_at).date(),
                 title=f"Kredit-yozuv: {k.reason}",
                 amount=-k.amount,
             )
@@ -812,7 +860,8 @@ def _month_coverage(
             holat = "qisman"
         else:
             holat = "tolanmagan"
-        muddat = date(c.year, c.month, settings.payment_due_day)
+        oy_kunlari = calendar.monthrange(c.year, c.month)[1]
+        muddat = date(c.year, c.month, min(settings.payment_due_day, oy_kunlari))
         natija.append(
             MonthStatus(
                 year=c.year,
@@ -934,7 +983,9 @@ async def refund(
 async def summary(session: AsyncSession, user: CurrentUser) -> dict[str, int]:
     """Jamlanma: hisoblangan, tushum, qarz, qarzdorlar soni."""
     await assert_finance_admin(session, user)
-    rows = await finance_rows(session, user)
+    # Y1: jamlanma TOʻLIQ toʻplamdan — hisobi yopiq ketgan oʻquvchilar
+    # roʻyxatda koʻrinmasa ham, tushumi kassadan yoʻqolmaydi.
+    rows = await finance_rows(session, user, include_settled_archived=True)
     return {
         "charged": sum(r.charged for r in rows),
         "paid": sum(r.paid for r in rows),
@@ -1048,7 +1099,13 @@ async def handle_webhook(
         actor_id=intent.created_by_id,
         ip=None,
     )
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError:
+        # P7: provayder retry'i parallel kelsa provider_tx_id unique
+        # indeksi ikkinchisini toʻxtatadi — bu xato emas.
+        await session.rollback()
+        return "allaqachon"
     return "toladi"
 
 
