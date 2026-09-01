@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
-from app.core.timeutil import combine_local
+from app.core.timeutil import combine_local, local_today
 from app.models import (
     AcademicYear,
     AttendanceRecord,
@@ -32,7 +32,8 @@ from app.models import (
 )
 
 PASSWORD = "Sinov12345!"  # noqa: S106
-DAY = date(2026, 9, 15)
+# Davr endi «bugun»dan orqaga sanaladi (audit Y5) — sana nisbiy.
+DAY = local_today() - timedelta(days=1)
 
 
 async def _roles(session: AsyncSession) -> dict[str, Role]:
@@ -195,10 +196,9 @@ async def test_overview_counts_come_from_database(
 async def test_overview_period_window_excludes_older_lessons(
     client: AsyncClient, school: dict[str, object], session: AsyncSession
 ) -> None:
-    """`days` oynasi bazadagi eng soʻnggi darsdan orqaga sanaladi.
+    """`days` oynasi BUGUNDAN orqaga sanaladi (audit Y5).
 
-    Kalendar «bugun» idan emas: demo maʼlumot 2026-yilga tegishli va real
-    sana bilan solishtirilsa hisobot boʻsh chiqardi.
+    Oynadan tashqaridagi eski dars hisobga kirmaydi.
     """
     lesson = (await session.execute(select(Lesson))).scalars().first()
     assert lesson is not None

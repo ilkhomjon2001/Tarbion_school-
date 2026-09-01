@@ -354,11 +354,18 @@ class AttendanceStat:
 
     @property
     def percent(self) -> float:
-        """Kelgan (kechikkan ham) ulushi. Dars boʻlmasa 100 emas, 0."""
-        if self.total == 0:
+        """Kelgan (kechikkan ham) ulushi. Dars boʻlmasa 100 emas, 0.
+
+        O1 (kelishilgan qoida): SABABLI kelmagan kun maxrajdan chiqadi —
+        kasal bola davomat foizida jazolanmaydi. Foiz = (kelgan) /
+        (jami − sababli). Hamma kunlar sababli boʻlsa foiz 100 emas, 0 —
+        "kelgan kun yoʻq" degani.
+        """
+        maxraj = self.total - self.excused
+        if maxraj <= 0:
             return 0.0
         kelgan = self.present + self.late
-        return round(kelgan * 100 / self.total, 1)
+        return round(kelgan * 100 / maxraj, 1)
 
 
 async def attendance_stats(
@@ -387,7 +394,11 @@ async def attendance_stats(
     stmt = (
         select(AttendanceRecord.status, func.count())
         .join(Lesson, Lesson.id == AttendanceRecord.lesson_id)
-        .where(AttendanceRecord.is_archived.is_(False))
+        .where(
+            AttendanceRecord.is_archived.is_(False),
+            # O2: bekor qilingan (arxivlangan) dars yozuvlari foizni buzmasin.
+            Lesson.is_archived.is_(False),
+        )
         .group_by(AttendanceRecord.status)
     )
     stmt = _scope_filter(stmt, allowed)
@@ -442,6 +453,7 @@ async def class_student_stats(
         .join(Lesson, Lesson.id == AttendanceRecord.lesson_id)
         .where(
             AttendanceRecord.is_archived.is_(False),
+            Lesson.is_archived.is_(False),
             Lesson.class_id == class_id,
         )
         .group_by(AttendanceRecord.student_id, AttendanceRecord.status)
