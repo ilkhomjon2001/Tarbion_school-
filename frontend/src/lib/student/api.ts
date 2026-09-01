@@ -15,6 +15,7 @@
 import {
   academicBells,
   academicCurrentYear,
+  attendanceStats,
   authMe,
   journalStudentGrades,
   journalStudentHomework,
@@ -29,6 +30,7 @@ import {
 import type {
   AttemptOut,
   AttemptStartOut,
+  AttendanceStatOut,
   BellOut,
   DayAttendanceOut,
   GradeOut,
@@ -163,6 +165,10 @@ function dayStatus(day: DayAttendanceOut): AttendanceDay["status"] {
 /**
  * Oylik davomat xulosasi (kalendar uchun). Faqat davomat BELGILANGAN
  * kunlar keladi — belgilanmagan kun «kelmadi» boʻlib koʻrinmaydi.
+ *
+ * Foiz BACKENDDAN (`GET /attendance/stats`) — avval clientda ota-ona
+ * kabinetinikidan boshqacha formula bilan hisoblanardi (audit Y10).
+ * Endi hamma kabinet serverning yagona formulasini koʻrsatadi.
  */
 export async function fetchAttendanceSummary(
   studentId: string,
@@ -171,30 +177,31 @@ export async function fetchAttendanceSummary(
 ): Promise<AttendanceSummary> {
   const pad = (n: number) => String(n).padStart(2, "0");
   const lastDay = new Date(year, monthIndex + 1, 0).getDate();
-  const days = await withAuth<DayAttendanceOut[]>(() =>
-    parentChildAttendance({
-      path: { student_id: studentId },
-      query: {
-        date_from: `${year}-${pad(monthIndex + 1)}-01`,
-        date_to: `${year}-${pad(monthIndex + 1)}-${pad(lastDay)}`,
-      },
-    }),
-  );
+  const dateFrom = `${year}-${pad(monthIndex + 1)}-01`;
+  const dateTo = `${year}-${pad(monthIndex + 1)}-${pad(lastDay)}`;
+
+  const [days, stat] = await Promise.all([
+    withAuth<DayAttendanceOut[]>(() =>
+      parentChildAttendance({
+        path: { student_id: studentId },
+        query: { date_from: dateFrom, date_to: dateTo },
+      }),
+    ),
+    withAuth<AttendanceStatOut>(() =>
+      attendanceStats({
+        query: { student_id: studentId, date_from: dateFrom, date_to: dateTo },
+      }),
+    ),
+  ]);
 
   const mapped: AttendanceDay[] = days.map((d) => ({
     date: d.date,
     status: dayStatus(d),
   }));
-  const lessonsTotal = days.reduce((n, d) => n + d.lessons.length, 0);
-  const lessonsPresent = days.reduce(
-    (n, d) => n + d.lessons.filter((l) => l.status !== "absent").length,
-    0,
-  );
 
   return {
     monthLabel: `${MONTHS_UZ[monthIndex]} ${year}`,
-    percentPresent:
-      lessonsTotal > 0 ? Math.round((lessonsPresent / lessonsTotal) * 100) : 100,
+    percentPresent: Math.round(stat.percent),
     days: mapped,
   };
 }

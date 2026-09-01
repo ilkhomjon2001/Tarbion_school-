@@ -13,22 +13,22 @@ import {
   CalendarIcon,
   CheckSquareIcon,
   ClipboardIcon,
-  GraduationCapIcon,
   HomeIcon,
   LogoutIcon,
   StarIcon,
-  TrophyIcon,
 } from "@/components/ui/icons";
 import type { Student } from "@/lib/types";
 
+/**
+ * "Ustozlar" va "Reyting" navdan VAQTINCHA olib qoʻyildi (Y12):
+ * ularning backend'i hali yoʻq, sahifalari "tayyorlanmoqda" holatida.
+ */
 const NAV_ITEMS = [
   { href: "/student", label: "Bosh sahifa", icon: HomeIcon },
   { href: "/student/schedule", label: "Jadval", icon: CalendarIcon },
   { href: "/student/homework", label: "Uy vazifasi", icon: ClipboardIcon },
   { href: "/student/tests", label: "Testlar", icon: CheckSquareIcon },
   { href: "/student/grades", label: "Baholar", icon: StarIcon },
-  { href: "/student/ustozlar", label: "Ustozlar", icon: GraduationCapIcon },
-  { href: "/student/reyting", label: "Reyting", icon: TrophyIcon },
   { href: "/student/announcements", label: "Eʼlonlar", icon: BellIcon },
 ] as const;
 

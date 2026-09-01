@@ -12,10 +12,46 @@
  * u qulaylik boʻlardi, himoya emas (CLAUDE.md 7-qoida).
  */
 
-import { parentChildAttendance, parentMyChildren } from "@/lib/api/sdk.gen";
-import type { ChildOut, DayAttendanceOut } from "@/lib/api/types.gen";
-import type { Child, DayAttendance } from "@/lib/parent/data";
+import {
+  attendanceStats,
+  parentChildAttendance,
+  parentMyChildren,
+} from "@/lib/api/sdk.gen";
+import type {
+  AttendanceStatOut,
+  ChildOut,
+  DayAttendanceOut,
+} from "@/lib/api/types.gen";
 import { withAuth } from "@/lib/session";
+
+export type { AttendanceStatOut };
+
+// ────────────────────── Kabinet shakllari ──────────────────────
+
+export type AttendanceStatus = "present" | "absent" | "excused" | "late";
+
+export interface Child {
+  id: string;
+  fullName: string;
+  shortName: string;
+  className: string;
+  /** Vasiyning shu bolaga qarindoshligi. */
+  relation: string;
+}
+
+export interface DayAttendance {
+  date: string;
+  /** Kun boʻyicha paralar holati. */
+  lessons: { period: number; subject: string; status: AttendanceStatus }[];
+}
+
+/** Kun uchun umumiy holat — kalendar katakchasi rangi uchun. */
+export function dayStatus(day: DayAttendance): AttendanceStatus {
+  if (day.lessons.some((l) => l.status === "absent")) return "absent";
+  if (day.lessons.some((l) => l.status === "excused")) return "excused";
+  if (day.lessons.some((l) => l.status === "late")) return "late";
+  return "present";
+}
 
 /** Vasiyning qarindoshligi — bazada kod, ekranda oʻzbekcha. */
 const RELATION_UZ: Record<string, string> = {
@@ -67,6 +103,24 @@ export async function fetchAttendance(
       status: l.status,
     })),
   }));
+}
+
+/**
+ * Davomat foizi va sanoqlari — BACKEND formulasi bilan (Y10).
+ *
+ * Foiz clientda qayta hisoblanmaydi: ota-ona, oʻquvchi va direktor
+ * kabinetlari bitta `GET /attendance/stats` javobini koʻrsatadi —
+ * yagona haqiqat manbai serverda.
+ */
+export async function fetchAttendanceStats(
+  studentId: string,
+  range: { from: string; to: string },
+): Promise<AttendanceStatOut> {
+  return withAuth<AttendanceStatOut>(() =>
+    attendanceStats({
+      query: { student_id: studentId, date_from: range.from, date_to: range.to },
+    }),
+  );
 }
 
 /** Oyning birinchi va oxirgi kuni — kalendar soʻrovi uchun. */

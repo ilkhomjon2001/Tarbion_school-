@@ -3,13 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { ParentShell } from "@/components/parent/ParentShell";
-import { fetchAttendance, monthRange } from "@/lib/parent/api";
 import {
   dayStatus,
-  monthSummary,
+  fetchAttendance,
+  fetchAttendanceStats,
+  monthRange,
+  type AttendanceStatOut,
   type AttendanceStatus,
   type DayAttendance,
-} from "@/lib/parent/data";
+} from "@/lib/parent/api";
 import { useChildren } from "@/lib/parent/useChild";
 
 /**
@@ -52,6 +54,9 @@ export default function ParentAttendancePage() {
   }));
 
   const [days, setDays] = useState<DayAttendance[] | null>(null);
+  // Oylik xulosa BACKENDDAN (`GET /attendance/stats`) — foiz clientda
+  // qayta hisoblanmaydi, hamma kabinet bitta formulani koʻradi (Y10).
+  const [summary, setSummary] = useState<AttendanceStatOut | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,18 +64,26 @@ export default function ParentAttendancePage() {
     let alive = true;
 
     setDays(null);
+    setSummary(null);
     setError(null);
-    fetchAttendance(child.id, monthRange(ym.year, ym.month))
-      .then((rows) => alive && setDays(rows))
+    const range = monthRange(ym.year, ym.month);
+    Promise.all([
+      fetchAttendance(child.id, range),
+      fetchAttendanceStats(child.id, range),
+    ])
+      .then(([rows, stat]) => {
+        if (!alive) return;
+        setDays(rows);
+        setSummary(stat);
+      })
       .catch(() => alive && setError("Davomatni yuklab boʻlmadi."));
 
     return () => {
       alive = false;
     };
   }, [child, ym.year, ym.month]);
-
-  const summary = useMemo(() => monthSummary(days ?? []), [days]);
   const byDate = useMemo(() => new Map((days ?? []).map((d) => [d.date, d])), [days]);
+  const percent = summary ? Math.round(summary.percent) : 0;
 
   /** Oy katakchalari — dushanbadan boshlanadi. */
   const cells = useMemo(() => {
@@ -130,30 +143,34 @@ export default function ParentAttendancePage() {
               ›
             </MonthButton>
           </div>
-          <p
-            className={`text-2xl font-bold num ${summary.percent >= 90 ? "text-success" : "text-warning"}`}
-          >
-            {summary.percent}%
-          </p>
+          {summary === null ? (
+            <div className="h-8 w-16 animate-pulse rounded bg-surface-muted" aria-busy="true" />
+          ) : (
+            <p
+              className={`text-2xl font-bold num ${percent >= 90 ? "text-success" : "text-warning"}`}
+            >
+              {percent}%
+            </p>
+          )}
         </div>
         <div
           role="progressbar"
-          aria-valuenow={summary.percent}
+          aria-valuenow={percent}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-label="Oylik qatnashish foizi"
           className="mt-2 h-2 overflow-hidden rounded-full bg-surface-muted"
         >
           <div
-            className={`h-full rounded-full ${summary.percent >= 90 ? "bg-success" : "bg-warning"}`}
-            style={{ width: `${summary.percent}%` }}
+            className={`h-full rounded-full ${percent >= 90 ? "bg-success" : "bg-warning"}`}
+            style={{ width: `${percent}%` }}
           />
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
-          <Stat label="Qatnashdi" value={summary.present} tone="text-success" />
-          <Stat label="Sababsiz" value={summary.absent} tone="text-danger" />
-          <Stat label="Sababli" value={summary.excused} tone="text-info" />
-          <Stat label="Kechikdi" value={summary.late} tone="text-warning" />
+          <Stat label="Qatnashdi" value={summary?.present ?? 0} tone="text-success" />
+          <Stat label="Sababsiz" value={summary?.absent ?? 0} tone="text-danger" />
+          <Stat label="Sababli" value={summary?.excused ?? 0} tone="text-info" />
+          <Stat label="Kechikdi" value={summary?.late ?? 0} tone="text-warning" />
         </dl>
       </div>
 

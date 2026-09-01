@@ -5,23 +5,24 @@ import Link from "next/link";
 import { NavBadge } from "@/components/shared/NavBadge";
 import { usePathname } from "next/navigation";
 import {
-  BellIcon,
   CalendarIcon,
   CheckSquareIcon,
   ClipboardIcon,
-  GraduationCapIcon,
   HomeIcon,
   StarIcon,
 } from "@/components/ui/icons";
 
+/**
+ * Telefonda pastki menyu — kundalik 5 ta amal (O21: 7 ta band 360px
+ * ekranga sigʻmasdi va surishga majbur qilardi). Eʼlonlar bosh
+ * sahifadagi havola va katta ekrandagi yon menyu orqali ochiladi.
+ */
 const NAV_ITEMS = [
   { href: "/student", label: "Bosh sahifa", icon: HomeIcon },
   { href: "/student/schedule", label: "Jadval", icon: CalendarIcon },
   { href: "/student/homework", label: "Vazifalar", icon: ClipboardIcon },
   { href: "/student/tests", label: "Testlar", icon: CheckSquareIcon },
   { href: "/student/grades", label: "Baholar", icon: StarIcon },
-  { href: "/student/ustozlar", label: "Ustozlar", icon: GraduationCapIcon },
-  { href: "/student/announcements", label: "Eʼlonlar", icon: BellIcon },
 ] as const;
 
 export function BottomNav() {
@@ -32,13 +33,12 @@ export function BottomNav() {
       aria-label="Asosiy navigatsiya"
       className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      {/* Bandlar ekranga sigʻmaydi — snap bilan surish sezilarli boʻlsin */}
-      <ul className="scroll-x mx-auto flex max-w-3xl snap-x snap-mandatory">
+      <ul className="mx-auto flex max-w-3xl">
         {NAV_ITEMS.map(({ href, label, icon: ItemIcon }) => {
           const isActive =
             href === "/student" ? pathname === href : pathname.startsWith(href);
           return (
-            <li key={href} className="min-w-[68px] flex-1 snap-start">
+            <li key={href} className="min-w-0 flex-1">
               <Link
                 href={href}
                 aria-current={isActive ? "page" : undefined}

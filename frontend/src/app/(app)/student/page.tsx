@@ -209,6 +209,16 @@ export default function StudentHomePage() {
               </div>
             )}
           </section>
+
+          {/* Telefonda pastki menyudan Eʼlonlar olib qoʻyildi (O21) —
+              boʻlimga shu yerdan kiriladi. */}
+          <Link
+            href="/student/announcements"
+            className="flex items-center justify-between rounded-xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+          >
+            <span className="text-sm font-semibold text-foreground">Eʼlonlar</span>
+            <span aria-hidden className="text-foreground-muted">→</span>
+          </Link>
         </div>
       </div>
     </>

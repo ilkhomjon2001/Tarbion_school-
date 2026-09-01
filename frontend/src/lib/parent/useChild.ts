@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { fetchChildren } from "@/lib/parent/api";
-import type { Child } from "@/lib/parent/data";
+import { fetchChildren, type Child } from "@/lib/parent/api";
 
 const KEY = "tarbion.parent.child";
 

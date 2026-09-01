@@ -2,15 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { NavBadge } from "@/components/shared/NavBadge";
 import { NotificationBell } from "@/components/shared/NotificationBell";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import { useAccess } from "@/lib/access-api";
 import { logout } from "@/lib/auth";
-import type { Child } from "@/lib/parent/data";
-import { unreadCount } from "@/lib/parent/news";
+import type { Child } from "@/lib/parent/api";
 
 /**
  * Ota-ona kabineti qobigʻi.
@@ -76,13 +75,6 @@ export function ParentShell({
     () => SIDEBAR_NAV.filter((i) => sections.includes(i.href)),
     [sections],
   );
-  const [unread, setUnread] = useState(0);
-
-  // localStorage faqat brauzerda — shuning uchun effekt ichida.
-  useEffect(() => {
-    setUnread(unreadCount(child.className));
-  }, [child.className, pathname]);
-
   return (
     <div className="min-h-screen bg-background">
       {/* --- Katta ekran: chap panel --- */}
@@ -154,17 +146,10 @@ export function ParentShell({
                 ikkita bir xil qoʻngʻiroq chalgʻitardi. */}
             <Link
               href="/ota-ona/elonlar"
-              aria-label={
-                unread > 0 ? `Eʼlonlar, ${unread} ta oʻqilmagan` : "Eʼlonlar"
-              }
+              aria-label="Eʼlonlar"
               className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand lg:hidden"
             >
               <MegaphoneIcon />
-              {unread > 0 && (
-                <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-brand-foreground">
-                  {unread > 9 ? "9+" : unread}
-                </span>
-              )}
             </Link>
           </div>
 
