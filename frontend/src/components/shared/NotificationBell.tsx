@@ -31,6 +31,10 @@ const TONE: Record<NotificationKind, string> = {
   appeal_message: "bg-info-tint text-info",
   appeal_assigned: "bg-info-tint text-info",
   appeal_closed: "bg-surface-muted text-foreground-muted",
+  grade_new: "bg-brand-tint text-brand-dark",
+  homework_new: "bg-info-tint text-info",
+  homework_graded: "bg-brand-tint text-brand-dark",
+  homework_returned: "bg-warning-tint text-warning",
 };
 
 export function NotificationBell({ className = "" }: { className?: string }) {

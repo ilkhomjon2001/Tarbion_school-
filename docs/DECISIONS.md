@@ -697,3 +697,37 @@ NAT ortidan chiqadi va oʻquv yili boshida 500 kishi parolini xato
 teradi. Oddiy foydalanuvchi oʻzining bitta loginida adashadi, hujumchi
 esa oʻnlab login boʻyicha urinadi — bu ikkisini ajratadigan yagona
 ishonchli belgi.
+
+
+## 2026-08-31 — Baho va uy vazifasi bildirishnomalari (T-018a davomi)
+
+Jurnal backendi kelgach (T-029, T-032, T-033) toʻrtta yangi turkum
+qoʻshildi: `grade_new`, `homework_new`, `homework_graded`,
+`homework_returned`.
+
+**Uy vazifasi ota-onaga BORMAYDI.** Kunda olti-yetti dars boʻladi va har
+biriga vazifa beriladi — ota-onaning qoʻngʻirogʻi kuniga oʻn marta
+toʻlardi, «farzandingiz darsga kelmadi» esa shovqin ichida yoʻqolardi.
+Ota-ona vazifani farzandi sahifasida koʻradi. Qoida `_SECTION` da
+qatʼiy: ota-ona kabineti bu turkum uchun roʻyxatda yoʻq, shuning uchun
+chaqiruvchi servis roʻyxatni filtrlashi shart emas.
+
+**Baholangan ish — boshqa gap.** U kamdan-kam va bahoning oʻzi, shuning
+uchun oilaga boradi va `/ota-ona/baholar` boʻlimida sanaladi.
+
+**Qaytarilgan ish faqat oʻquvchiga.** U OʻQUVCHIDAN amal talab qiladi:
+u koʻrmasa vazifa qayta ishlanmaydi. Bu baho emas, ish jarayoni.
+
+**Vazifa bahosi ikki marta xabar bermaydi.** `grade_submission` `Grade`
+yozuvini oʻzi yaratadi va `set_lesson_grades` dan oʻtmaydi — ikki
+ilgak bir hodisaga tushmaydi. Test buni qatʼiy tekshiradi.
+
+**Baho xabari faqat QIYMAT oʻzgarganda.** Izoh tuzatilgani yoki vazn
+oʻzgargani oilaga xabar emas — ular baho emas. Xato baho olib
+tashlanganda ham yangi xabar chiqmaydi. Davomatdagi qoidaning aynan
+oʻzi.
+
+**Oila roʻyxati bitta joyga koʻchdi** — `notifications_service.
+family_recipients()`. Ilgari `attendance_service` ichida edi; uchinchi
+chaqiruvchi paydo boʻlgach takrorlanish xavfi tugʻildi va biri
+oʻquvchining oʻz hisobini unutishi mumkin edi.

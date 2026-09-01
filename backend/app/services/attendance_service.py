@@ -30,7 +30,6 @@ from app.models import (
     AttendanceRecord,
     AttendanceStatus,
     AuditAction,
-    Guardian,
     Lesson,
     NotificationKind,
     Permission,
@@ -282,32 +281,16 @@ async def _notify_family(
     bildirishnoma ham qolmaydi. Aks holda ota-onaga «kelmadi» deb xabar
     ketib, jurnalda hech narsa boʻlmasligi mumkin edi.
 
-    Vasiylar bitta soʻrovda olinadi — 25 kishilik sinfda har bola uchun
-    alohida soʻrov yuborilsa N+1 boʻlardi.
+    Oila roʻyxati va nomlar bitta joydan olinadi
+    (`notifications_service.family_recipients`) — 25 kishilik sinfda har
+    bola uchun alohida soʻrov yuborilsa N+1 boʻlardi.
     """
     if not changes:
         return
 
     student_ids = [sid for sid, _ in changes]
-
-    rows = await session.execute(
-        select(Guardian.student_id, Guardian.user_id).where(
-            Guardian.student_id.in_(student_ids),
-            Guardian.is_archived.is_(False),
-        )
-    )
-    vasiylar: dict[uuid.UUID, list[uuid.UUID]] = {}
-    for student_id, guardian_user_id in rows.all():
-        vasiylar.setdefault(student_id, []).append(guardian_user_id)
-
-    # Oʻquvchining oʻz hisobi ham xabar oladi — 1-bosqichda hammada
-    # boʻlmasligi mumkin, shuning uchun `None` tashlab yuboriladi.
-    own_rows = await session.execute(
-        select(Student.id, Student.user_id, Student.last_name, Student.first_name).where(
-            Student.id.in_(student_ids)
-        )
-    )
-    oquvchi = {r[0]: r for r in own_rows.all()}
+    oila = await notifications_service.family_recipients(session, student_ids)
+    nomlar = await notifications_service.student_names(session, student_ids)
 
     # Fan nomi ATAYLAB alohida soʻrov bilan. `lesson.subject` ga
     # murojaat qilish `MissingGreenlet` beradi: `load_lesson_for_teacher`
@@ -317,10 +300,9 @@ async def _notify_family(
     kun = lesson.lesson_date.strftime("%d.%m.%Y")
 
     for student_id, status in changes:
-        row = oquvchi.get(student_id)
-        if row is None:
+        ism = nomlar.get(student_id)
+        if ism is None:
             continue
-        ism = f"{row[2]} {row[3]}"
 
         if status == AttendanceStatus.ABSENT.value:
             kind = NotificationKind.ATTENDANCE_ABSENT
@@ -329,18 +311,9 @@ async def _notify_family(
             kind = NotificationKind.ATTENDANCE_LATE
             sarlavha = f"{ism} darsga kechikdi"
 
-        recipients = [
-            notifications_service.Recipient(user_id=uid, student_id=student_id)
-            for uid in vasiylar.get(student_id, [])
-        ]
-        if row[1] is not None:
-            recipients.append(
-                notifications_service.Recipient(user_id=row[1], student_id=student_id)
-            )
-
         await notifications_service.notify(
             session,
-            recipients=recipients,
+            recipients=oila.get(student_id, []),
             kind=kind,
             title=sarlavha,
             body=f"{kun} · {fan or 'dars'} · {lesson.period}-dars",

@@ -287,7 +287,11 @@ export type NotificationKind =
   | "appeal_new"
   | "appeal_message"
   | "appeal_assigned"
-  | "appeal_closed";
+  | "appeal_closed"
+  | "grade_new"
+  | "homework_new"
+  | "homework_graded"
+  | "homework_returned";
 
 export const NOTIFICATION_KINDS: NotificationKind[] = [
   "attendance_absent",
@@ -296,6 +300,10 @@ export const NOTIFICATION_KINDS: NotificationKind[] = [
   "appeal_message",
   "appeal_assigned",
   "appeal_closed",
+  "grade_new",
+  "homework_new",
+  "homework_graded",
+  "homework_returned",
 ];
 
 export const NOTIFICATION_KIND_LABELS: Record<NotificationKind, string> = {
@@ -305,4 +313,8 @@ export const NOTIFICATION_KIND_LABELS: Record<NotificationKind, string> = {
   appeal_message: "Yangi xabar",
   appeal_assigned: "Murojaat biriktirildi",
   appeal_closed: "Murojaat yopildi",
+  grade_new: "Yangi baho",
+  homework_new: "Yangi uy vazifasi",
+  homework_graded: "Vazifa baholandi",
+  homework_returned: "Vazifa qaytarildi",
 };

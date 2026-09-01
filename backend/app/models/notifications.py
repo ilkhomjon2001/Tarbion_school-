@@ -44,6 +44,10 @@ class NotificationKind(enum.StrEnum):
     APPEAL_MESSAGE = "appeal_message"
     APPEAL_ASSIGNED = "appeal_assigned"
     APPEAL_CLOSED = "appeal_closed"
+    GRADE_NEW = "grade_new"
+    HOMEWORK_NEW = "homework_new"
+    HOMEWORK_GRADED = "homework_graded"
+    HOMEWORK_RETURNED = "homework_returned"
 
 
 #: Interfeys uchun turkum nomlari — frontend shu kodlarni oladi.
@@ -54,6 +58,10 @@ NOTIFICATION_KIND_LABELS_UZ: dict[str, str] = {
     NotificationKind.APPEAL_MESSAGE.value: "Yangi xabar",
     NotificationKind.APPEAL_ASSIGNED.value: "Murojaat biriktirildi",
     NotificationKind.APPEAL_CLOSED.value: "Murojaat yopildi",
+    NotificationKind.GRADE_NEW.value: "Yangi baho",
+    NotificationKind.HOMEWORK_NEW.value: "Yangi uy vazifasi",
+    NotificationKind.HOMEWORK_GRADED.value: "Vazifa baholandi",
+    NotificationKind.HOMEWORK_RETURNED.value: "Vazifa qaytarildi",
 }
 
 
