@@ -1,4 +1,6 @@
-import { Suspense } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -7,81 +9,205 @@ import { ListSkeleton, Skeleton } from "@/components/ui/Skeleton";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { CheckSquareIcon } from "@/components/ui/icons";
-import { AnnouncementItem } from "@/components/features/student/AnnouncementItem";
 import { LessonTimeline } from "@/components/features/student/LessonTimeline";
 import { AttendanceCalendar } from "@/components/features/student/AttendanceCalendar";
-import { RankingList } from "@/components/features/student/RankingList";
+import { messageOf } from "@/components/shared/LiveSession";
 import { GRADE_KIND_LABELS } from "@/lib/labels";
 import { formatDate, formatWeekday } from "@/lib/format";
 import {
-  getAttendanceSummary,
-  getClassRanking,
-  getCurrentStudent,
-  getLatestAnnouncements,
-  getRecentGrades,
-  getTodayLessons,
-} from "@/lib/mock/fetchers";
+  fetchAttendanceSummary,
+  fetchScheduleForClass,
+  fetchStudentMe,
+  fetchSubjectGrades,
+  localIso,
+  todayLessonsOf,
+  type StudentMe,
+} from "@/lib/student/api";
+import type {
+  AttendanceSummary,
+  GradeEntry,
+  LessonSummary,
+} from "@/lib/types";
 
-const TODAY_ISO = "2026-08-29";
-
+/**
+ * Oʻquvchi bosh sahifasi — BAZADAN (T-034).
+ *
+ * Reyting va eʼlonlar boʻlimlari bu yerda YOʻQ: ularning backend'i hali
+ * yozilmagan (T-020) va haqiqiy baho yonida soxta reyting koʻrsatish
+ * chalgʻitardi. Backend chiqqach qaytariladi.
+ */
 export default function StudentHomePage() {
+  const [me, setMe] = useState<StudentMe | null>(null);
+  const [lessons, setLessons] = useState<LessonSummary[] | null>(null);
+  const [summary, setSummary] = useState<AttendanceSummary | null>(null);
+  const [recentGrades, setRecentGrades] = useState<GradeEntry[] | null>(null);
+  const [error, setError] = useState("");
+
+  const today = new Date();
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const who = await fetchStudentMe();
+        setMe(who);
+        if (!who.studentId) return;
+
+        const now = new Date();
+        const [schedule, attendance, grades] = await Promise.all([
+          who.classId ? fetchScheduleForClass(who.classId) : Promise.resolve([]),
+          fetchAttendanceSummary(who.studentId, now.getFullYear(), now.getMonth()),
+          fetchSubjectGrades(who.studentId),
+        ]);
+        setLessons(todayLessonsOf(schedule, now));
+        setSummary(attendance);
+        setRecentGrades(
+          grades
+            .flatMap((s) => s.entries)
+            .sort((a, b) => (a.date < b.date ? 1 : -1))
+            .slice(0, 3),
+        );
+      } catch (err) {
+        setError(messageOf(err));
+      }
+    })();
+  }, []);
+
+  if (me && !me.studentId) {
+    return (
+      <>
+        <Header title="Bosh sahifa" />
+        <div className="p-4">
+          <EmptyState
+            title="Hisobingizga oʻquvchi yozuvi biriktirilmagan"
+            description="Administratorga murojaat qiling."
+          />
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <Header title="Bosh sahifa" />
       <div className="grid grid-cols-1 gap-5 p-4 lg:grid-cols-3 lg:gap-6 lg:p-6">
         <div className="flex flex-col gap-5 lg:col-span-2">
-          <Suspense fallback={<Card className="h-16 animate-pulse" />}>
-            <GreetingCard />
-          </Suspense>
+          {error && (
+            <p role="alert" className="rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">
+              {error}
+            </p>
+          )}
 
-          <Suspense fallback={<Card className="h-20 animate-pulse" />}>
-            <TodayStatusCard />
-          </Suspense>
+          {me ? (
+            <div>
+              <h1 className="text-h1 font-bold text-foreground">
+                Assalomu alaykum, {me.fullName}
+              </h1>
+              <p className="mt-1 text-sm text-foreground-muted">
+                Bugun {formatDate(localIso(today))}, {formatWeekday(localIso(today))}.
+                Oʻqishlaringizga omad tilaymiz!
+              </p>
+            </div>
+          ) : (
+            <Card className="h-16 animate-pulse" />
+          )}
+
+          {lessons && summary ? (
+            <Card className="flex items-center gap-4">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-success-tint text-success">
+                <CheckSquareIcon className="h-6 w-6" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-foreground-muted">
+                  Bugungi holat
+                </p>
+                <p className="truncate text-lg font-bold text-foreground">
+                  {lessons.length > 0
+                    ? `Bugun ${lessons.length} ta darsingiz bor`
+                    : "Bugun dars yoʻq"}
+                </p>
+                <p className="text-sm font-semibold text-success">
+                  {summary.monthLabel} davomati: {summary.percentPresent}%
+                </p>
+              </div>
+            </Card>
+          ) : (
+            <Card className="h-20 animate-pulse" />
+          )}
 
           <section>
             <SectionTitle title="Bugungi dars jadvali" href="/student/schedule" />
-            <Suspense fallback={<ListSkeleton count={3} />}>
-              <TodayLessons />
-            </Suspense>
+            {lessons === null ? (
+              <ListSkeleton count={3} />
+            ) : lessons.length === 0 ? (
+              <EmptyState
+                title="Bugun dars yoʻq"
+                description="Dam olishdan bahramand boʻling."
+              />
+            ) : (
+              <Card>
+                <LessonTimeline lessons={lessons} />
+              </Card>
+            )}
           </section>
 
           <section>
             <SectionTitle title="Oylik davomat" href="/student/grades" />
-            <Suspense fallback={<Skeleton className="h-72 w-full" />}>
-              <MonthlyAttendance />
-            </Suspense>
+            {summary === null ? (
+              <Skeleton className="h-72 w-full" />
+            ) : (
+              <Card>
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-sm font-medium text-foreground">{summary.monthLabel}</p>
+                  <p className="text-sm font-semibold text-brand-dark">
+                    {summary.percentPresent}% davomat
+                  </p>
+                </div>
+                <AttendanceCalendar
+                  year={today.getFullYear()}
+                  monthIndex={today.getMonth()}
+                  days={summary.days}
+                  todayIso={localIso(today)}
+                />
+              </Card>
+            )}
           </section>
         </div>
 
         <div className="flex flex-col gap-5">
           <section>
-            <h2 className="mb-2 text-sm font-semibold text-foreground">
-              Oylik statistika
-            </h2>
-            <Suspense fallback={<Card className="h-64 animate-pulse" />}>
-              <MonthlyStats />
-            </Suspense>
-          </section>
-
-          <section>
-            <SectionTitle title="Sinf reytingi" href="/student/reyting" />
-            <Suspense fallback={<ListSkeleton count={3} />}>
-              <RankingTeaser />
-            </Suspense>
+            <h2 className="mb-2 text-sm font-semibold text-foreground">Oylik statistika</h2>
+            {summary === null ? (
+              <Card className="h-64 animate-pulse" />
+            ) : (
+              <MonthlyStats summary={summary} />
+            )}
           </section>
 
           <section>
             <SectionTitle title="Soʻnggi baholar" href="/student/grades" />
-            <Suspense fallback={<ListSkeleton count={2} />}>
-              <RecentGrades />
-            </Suspense>
-          </section>
-
-          <section>
-            <SectionTitle title="Oxirgi eʼlonlar" href="/student/announcements" />
-            <Suspense fallback={<ListSkeleton count={2} />}>
-              <LatestAnnouncements />
-            </Suspense>
+            {recentGrades === null ? (
+              <ListSkeleton count={2} />
+            ) : recentGrades.length === 0 ? (
+              <EmptyState title="Hozircha baho yoʻq" />
+            ) : (
+              <div className="flex flex-col gap-2">
+                {recentGrades.map((grade) => (
+                  <Link
+                    key={grade.id}
+                    href="/student/grades"
+                    className="flex items-center justify-between rounded-xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{grade.subject}</p>
+                      <p className="text-xs text-foreground-muted">
+                        {GRADE_KIND_LABELS[grade.kind]}
+                      </p>
+                    </div>
+                    <Badge tone="brand">{grade.value}</Badge>
+                  </Link>
+                ))}
+              </div>
+            )}
           </section>
         </div>
       </div>
@@ -103,83 +229,7 @@ function SectionTitle({ title, href }: { title: string; href: string }) {
   );
 }
 
-async function GreetingCard() {
-  const student = await getCurrentStudent();
-  const firstName = student.fullName.split(" ")[0];
-  return (
-    <div>
-      <h1 className="text-h1 font-bold text-foreground">
-        Assalomu alaykum, {student.fullName}
-      </h1>
-      <p className="mt-1 text-sm text-foreground-muted">
-        Bugun {formatDate(TODAY_ISO)}, {formatWeekday(TODAY_ISO)}. Oʻqishlaringizga omad
-        tilaymiz, {firstName}!
-      </p>
-    </div>
-  );
-}
-
-async function TodayStatusCard() {
-  const [lessons, summary] = await Promise.all([
-    getTodayLessons(),
-    getAttendanceSummary(),
-  ]);
-  return (
-    <Card className="flex items-center gap-4">
-      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-success-tint text-success">
-        <CheckSquareIcon className="h-6 w-6" />
-      </span>
-      <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-wide text-foreground-muted">
-          Bugungi holat
-        </p>
-        <p className="truncate text-lg font-bold text-foreground">
-          {lessons.length > 0
-            ? `Bugun ${lessons.length} ta darsingiz bor`
-            : "Bugun dars yoʻq"}
-        </p>
-        <p className="text-sm font-semibold text-success">
-          {summary.monthLabel} davomati: {summary.percentPresent}%
-        </p>
-      </div>
-    </Card>
-  );
-}
-
-async function TodayLessons() {
-  const lessons = await getTodayLessons();
-  if (lessons.length === 0) {
-    return <EmptyState title="Bugun dars yoʻq" description="Dam olishdan bahramand boʻling." />;
-  }
-  return (
-    <Card>
-      <LessonTimeline lessons={lessons} />
-    </Card>
-  );
-}
-
-async function MonthlyAttendance() {
-  const summary = await getAttendanceSummary();
-  return (
-    <Card>
-      <div className="mb-3 flex items-center justify-between">
-        <p className="text-sm font-medium text-foreground">{summary.monthLabel}</p>
-        <p className="text-sm font-semibold text-brand-dark">
-          {summary.percentPresent}% davomat
-        </p>
-      </div>
-      <AttendanceCalendar
-        year={2026}
-        monthIndex={7}
-        days={summary.days}
-        todayIso={TODAY_ISO}
-      />
-    </Card>
-  );
-}
-
-async function MonthlyStats() {
-  const summary = await getAttendanceSummary();
+function MonthlyStats({ summary }: { summary: AttendanceSummary }) {
   const counts = { present: 0, absent: 0, other: 0 };
   for (const day of summary.days) {
     if (day.status === "present") counts.present += 1;
@@ -218,58 +268,6 @@ function StatRow({
         {label}
       </span>
       <span className="font-medium text-foreground">{value}</span>
-    </div>
-  );
-}
-
-async function RecentGrades() {
-  const grades = await getRecentGrades(3);
-  if (grades.length === 0) {
-    return <EmptyState title="Hozircha baho yoʻq" />;
-  }
-  return (
-    <div className="flex flex-col gap-2">
-      {grades.map((grade) => (
-        <Link
-          key={grade.id}
-          href={`/student/grades/${grade.id}`}
-          className="flex items-center justify-between rounded-xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
-        >
-          <div>
-            <p className="text-sm font-medium text-foreground">{grade.subject}</p>
-            <p className="text-xs text-foreground-muted">
-              {GRADE_KIND_LABELS[grade.kind]}
-            </p>
-          </div>
-          <Badge tone="brand">{grade.value}</Badge>
-        </Link>
-      ))}
-    </div>
-  );
-}
-
-async function RankingTeaser() {
-  const entries = await getClassRanking();
-  const top = entries.slice(0, 3);
-  const currentUser = entries.find((entry) => entry.isCurrentUser);
-  const currentUserInTop = top.some((entry) => entry.isCurrentUser);
-  return (
-    <RankingList
-      entries={currentUserInTop || !currentUser ? top : [...top, currentUser]}
-    />
-  );
-}
-
-async function LatestAnnouncements() {
-  const items = await getLatestAnnouncements(2);
-  if (items.length === 0) {
-    return <EmptyState title="Yangi eʼlon yoʻq" />;
-  }
-  return (
-    <div className="flex flex-col gap-2">
-      {items.map((item) => (
-        <AnnouncementItem key={item.id} announcement={item} compact />
-      ))}
     </div>
   );
 }

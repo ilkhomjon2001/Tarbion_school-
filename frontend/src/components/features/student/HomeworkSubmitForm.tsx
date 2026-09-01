@@ -1,31 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { Badge } from "@/components/ui/Badge";
 
-export function HomeworkSubmitForm() {
+/**
+ * Vazifa topshirish formasi (UYV-02).
+ *
+ * Fayl biriktirish YOʻQ: fayllar R2 orqali yuklanadi (T-025) va u modul
+ * hali yozilmagan — ishlamaydigan tugma koʻrsatilmaydi.
+ */
+export function HomeworkSubmitForm({
+  onSubmit,
+}: {
+  /** Serverga yuboradi; xato boʻlsa throw qiladi. */
+  onSubmit: (text: string) => Promise<void>;
+}) {
   const [text, setText] = useState("");
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
-
-  if (submitted) {
-    return (
-      <div className="rounded-xl border border-success-tint bg-success-tint p-4 text-center">
-        <p className="text-sm font-medium text-success">
-          Vazifa muvaffaqiyatli topshirildi
-        </p>
-        <p className="mt-1 text-xs text-success/80">
-          Ustoz tekshirgach, natija shu sahifada koʻrinadi.
-        </p>
-      </div>
-    );
-  }
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
   return (
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        setSubmitted(true);
+        if (!text.trim() || busy) return;
+        setBusy(true);
+        setError("");
+        onSubmit(text.trim())
+          .catch((err: unknown) => {
+            setError(err instanceof Error ? err.message : "Topshirib boʻlmadi.");
+          })
+          .finally(() => setBusy(false));
       }}
       className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4"
     >
@@ -46,29 +50,18 @@ export function HomeworkSubmitForm() {
         />
       </div>
 
-      <div>
-        <label className="mb-1.5 block text-sm font-medium text-foreground">
-          Fayl yoki rasm (ixtiyoriy)
-        </label>
-        <label className="flex cursor-pointer items-center justify-between rounded-lg border border-dashed border-border px-3 py-2 text-sm text-foreground-muted hover:bg-surface-muted">
-          <span>{fileName ?? "Fayl tanlash"}</span>
-          {fileName ? <Badge tone="brand">tanlandi</Badge> : null}
-          <input
-            type="file"
-            className="hidden"
-            onChange={(event) =>
-              setFileName(event.target.files?.[0]?.name ?? null)
-            }
-          />
-        </label>
-      </div>
+      {error && (
+        <p role="alert" className="rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">
+          {error}
+        </p>
+      )}
 
       <button
         type="submit"
-        disabled={text.trim().length === 0}
+        disabled={text.trim().length === 0 || busy}
         className="rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50"
       >
-        Topshirish
+        {busy ? "Topshirilmoqda…" : "Topshirish"}
       </button>
     </form>
   );

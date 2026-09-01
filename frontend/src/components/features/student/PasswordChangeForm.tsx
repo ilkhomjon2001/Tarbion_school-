@@ -1,29 +1,40 @@
 "use client";
 
 import { useState } from "react";
+import { changePassword } from "@/lib/password";
 
+/** Parolni almashtirish — BAZAGA yozadi (AUT-08, eski parol soʻraladi). */
 export function PasswordChangeForm() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [status, setStatus] = useState<"idle" | "success" | "mismatch">("idle");
+  const [status, setStatus] = useState<"idle" | "success" | "mismatch" | "error">("idle");
+  const [errorText, setErrorText] = useState("");
+  const [busy, setBusy] = useState(false);
 
   return (
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        if (newPassword.length < 8) {
+        if (newPassword.length < 8 || newPassword !== confirmPassword) {
           setStatus("mismatch");
           return;
         }
-        if (newPassword !== confirmPassword) {
-          setStatus("mismatch");
-          return;
-        }
-        setStatus("success");
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
+        setBusy(true);
+        changePassword(currentPassword, newPassword)
+          .then(() => {
+            setStatus("success");
+            setCurrentPassword("");
+            setNewPassword("");
+            setConfirmPassword("");
+          })
+          .catch((err: unknown) => {
+            setStatus("error");
+            setErrorText(
+              err instanceof Error ? err.message : "Parolni almashtirib boʻlmadi.",
+            );
+          })
+          .finally(() => setBusy(false));
       }}
       className="flex flex-col gap-3"
     >
@@ -76,10 +87,10 @@ export function PasswordChangeForm() {
       <div className="flex items-center gap-3">
         <button
           type="submit"
-          disabled={!currentPassword || !newPassword || !confirmPassword}
+          disabled={!currentPassword || !newPassword || !confirmPassword || busy}
           className="rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Yangilash
+          {busy ? "Yangilanmoqda…" : "Yangilash"}
         </button>
         {status === "success" ? <span className="text-sm text-success">Parol yangilandi</span> : null}
         {status === "mismatch" ? (
@@ -87,6 +98,7 @@ export function PasswordChangeForm() {
             Yangi parollar mos emas yoki juda qisqa (kamida 8 belgi)
           </span>
         ) : null}
+        {status === "error" ? <span className="text-sm text-danger">{errorText}</span> : null}
       </div>
     </form>
   );

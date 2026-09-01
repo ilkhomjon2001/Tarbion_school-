@@ -1,28 +1,51 @@
-import { Suspense } from "react";
+"use client";
+
 import { Card } from "@/components/ui/Card";
 import { Header } from "@/components/ui/Header";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { ContactInfoForm } from "@/components/features/student/ContactInfoForm";
 import { DeviceSecurity } from "@/components/features/student/DeviceSecurity";
 import { LogoutButton } from "@/components/features/student/LogoutButton";
 import { PasswordChangeForm } from "@/components/features/student/PasswordChangeForm";
 import { NotificationPreferencesForm } from "@/components/features/student/NotificationPreferencesForm";
-import { getCurrentStudent, getNotificationPreferences } from "@/lib/mock/fetchers";
+import { getUser } from "@/lib/session";
+import type { Student } from "@/lib/types";
 
+/**
+ * Profil. Ism va sinf SESSIYADAN (T-034), parol almashtirish BAZAGA yozadi.
+ *
+ * «Faol qurilmalar» va bildirishnoma sozlamalari hali demo:
+ * `/auth/sessions` (T-004) va `notification_preferences` (T-018)
+ * backend'da yozilgach ulanadi.
+ */
 export default function ProfilePage() {
+  const user = getUser();
+  const student: Student = {
+    id: user?.student_id ?? "",
+    fullName: user?.full_name ?? "",
+    className: user?.class_name ?? "—",
+  };
+
   return (
     <>
       <Header title="Profil" />
       <div className="flex flex-col gap-4 p-4">
-        <Suspense fallback={<Card className="h-20 animate-pulse" />}>
-          <ProfileHeader />
-        </Suspense>
+        <Card className="flex items-center gap-4">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand text-lg font-semibold text-brand-foreground">
+            {initials(student.fullName)}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-base font-semibold text-foreground">
+              {student.fullName}
+            </p>
+            <p className="text-sm text-foreground-muted">{student.className} sinf</p>
+          </div>
+        </Card>
 
         <section>
           <h2 className="mb-2 text-sm font-semibold text-foreground">Aloqa maʼlumotlari</h2>
-          <Suspense fallback={<Skeleton className="h-40 w-full" />}>
-            <ContactSection />
-          </Suspense>
+          <Card>
+            <ContactInfoForm student={student} />
+          </Card>
         </section>
 
         <section>
@@ -43,9 +66,9 @@ export default function ProfilePage() {
           <h2 className="mb-2 text-sm font-semibold text-foreground">
             Bildirishnoma sozlamalari
           </h2>
-          <Suspense fallback={<Skeleton className="h-40 w-full" />}>
-            <NotificationSection />
-          </Suspense>
+          <NotificationPreferencesForm
+            initial={{ newGrade: true, homeworkReminder: true, announcements: true }}
+          />
         </section>
 
         <section>
@@ -54,35 +77,6 @@ export default function ProfilePage() {
       </div>
     </>
   );
-}
-
-async function ProfileHeader() {
-  const student = await getCurrentStudent();
-  return (
-    <Card className="flex items-center gap-4">
-      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand text-lg font-semibold text-brand-foreground">
-        {initials(student.fullName)}
-      </span>
-      <div className="min-w-0">
-        <p className="truncate text-base font-semibold text-foreground">{student.fullName}</p>
-        <p className="text-sm text-foreground-muted">{student.className} sinf</p>
-      </div>
-    </Card>
-  );
-}
-
-async function ContactSection() {
-  const student = await getCurrentStudent();
-  return (
-    <Card>
-      <ContactInfoForm student={student} />
-    </Card>
-  );
-}
-
-async function NotificationSection() {
-  const prefs = await getNotificationPreferences();
-  return <NotificationPreferencesForm initial={prefs} />;
 }
 
 function initials(fullName: string): string {

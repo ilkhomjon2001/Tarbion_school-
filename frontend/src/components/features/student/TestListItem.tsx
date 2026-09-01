@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { ChevronRightIcon } from "@/components/ui/icons";
-import type { TestItem } from "@/lib/types";
+import type { StudentTestRow } from "@/lib/student/api";
 
-export function TestListItem({ test }: { test: TestItem }) {
+export function TestListItem({ test }: { test: StudentTestRow }) {
   const exhausted = test.attemptsUsed >= test.attemptsAllowed;
 
   return (
@@ -13,17 +13,15 @@ export function TestListItem({ test }: { test: TestItem }) {
     >
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium text-brand">{test.subject}</p>
-        <p className="truncate text-sm font-medium text-foreground">
-          {test.title}
-        </p>
+        <p className="truncate text-sm font-medium text-foreground">{test.title}</p>
         <p className="text-xs text-foreground-muted">
-          {test.durationMinutes} daqiqa · {test.questions.length} savol ·{" "}
-          urinish {test.attemptsUsed}/{test.attemptsAllowed}
+          {test.durationMinutes} daqiqa · {test.questionCount} savol · urinish{" "}
+          {test.attemptsUsed}/{test.attemptsAllowed}
         </p>
       </div>
-      {test.lastScore !== undefined ? (
-        <Badge tone={test.lastScore >= test.passScore ? "success" : "danger"}>
-          <span className="num">{test.lastScore}%</span>
+      {test.lastPercent !== null ? (
+        <Badge tone="brand">
+          <span className="num">{test.lastPercent}%</span>
         </Badge>
       ) : exhausted ? (
         <Badge tone="neutral">Tugagan</Badge>
