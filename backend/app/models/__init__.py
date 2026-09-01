@@ -24,6 +24,12 @@ from app.models.appeals import (
 from app.models.attendance import ATTENDANCE_LABELS_UZ, AttendanceRecord, AttendanceStatus
 from app.models.audit import AuditAction, AuditLog
 from app.models.base import AppendOnly, Base, Entity
+from app.models.documents import (
+    DOCUMENT_TYPE_LABELS_UZ,
+    DocumentRequest,
+    DocumentStatus,
+    DocumentType,
+)
 from app.models.homework import (
     SCALE_MAX,
     SUBMISSION_LABELS_UZ,
@@ -80,6 +86,10 @@ from app.models.wellbeing import (
 )
 
 __all__ = [
+    "DOCUMENT_TYPE_LABELS_UZ",
+    "DocumentRequest",
+    "DocumentStatus",
+    "DocumentType",
     "TONE_LABELS_UZ",
     "WellbeingKind",
     "WellbeingNote",

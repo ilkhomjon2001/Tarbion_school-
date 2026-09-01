@@ -7,12 +7,12 @@
  * jadvalidan olinadi, shunda matn oʻzgarganda kod qayta yigʻilmaydi.
  */
 
-import type { AdminStudent, DocumentType } from "@/lib/admin/types";
+import type { DocumentType } from "@/lib/admin/types";
 
 export const SCHOOL_NAME = "«Tarbion» xususiy umumtaʼlim maktabi";
 
 export interface DocumentContext {
-  student: AdminStudent;
+  student: { fullName: string; birthYear: number | string; className: string };
   academicYear: string;
   recipient: string;
   extraText: string;
@@ -29,10 +29,10 @@ export function fullDate(iso: string): string {
 }
 
 /** Turga xos ikkinchi xatboshi. */
-function typeParagraph(type: DocumentType, student: AdminStudent): string {
+function typeParagraph(type: DocumentType): string {
   switch (type) {
     case "oquv_joyi":
-      return `Oʻquvchi ushbu taʼlim muassasasiga ${fullDate(student.enrolledAt)} qabul qilingan boʻlib, hozirgi kunda oʻqishni davom ettirmoqda.`;
+      return "Oʻquvchi ushbu taʼlim muassasasida oʻqishni davom ettirmoqda.";
     case "daromad":
       return "Oʻquvchining taʼlimi shartnoma asosida amalga oshiriladi. Oylik shartnoma summasi belgilangan tartibda toʻlanadi.";
     case "harbiy":
@@ -50,7 +50,7 @@ export function buildDocumentText(type: DocumentType, context: DocumentContext):
 
   const intro = `Ushbu maʼlumotnoma ${student.fullName} (tugʻilgan yili: ${student.birthYear}) ga berildi. U haqiqatdan ham ${SCHOOL_NAME}ning ${student.className} sinfida ${academicYear} oʻquv yili dasturi asosida taʼlim olmoqda.`;
 
-  const lines = [intro, typeParagraph(type, student)];
+  const lines = [intro, typeParagraph(type)];
   lines.push(
     `Maʼlumotnoma ${recipient.trim() || "talab qilingan joyga"} taqdim etish uchun berildi.`,
   );

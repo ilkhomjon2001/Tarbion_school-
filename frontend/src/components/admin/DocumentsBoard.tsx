@@ -1,412 +1,544 @@
 "use client";
 
-import { useMemo, useState } from "react";
+/**
+ * Maʼlumotnomalar (spravka) — BAZADAN.
+ *
+ * Ikki koʻrinish: navbat (yangi va kutishdagi soʻrovlar) va reyestr
+ * (berilganlar). Berilgan hujjat OʻZGARMAYDI — raqami, kimga va qachon
+ * berilgani saqlanadi, berish audit jurnaliga tushadi (X-13): bu bola
+ * haqidagi maʼlumotning maktabdan chiqishi.
+ */
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { ClipboardIcon } from "@/components/ui/icons";
-import { ACADEMIC_YEAR, useAdmin, useAdminDispatch } from "@/lib/admin/store";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { ListSkeleton } from "@/components/ui/Skeleton";
+import { ClipboardIcon, PlusIcon } from "@/components/ui/icons";
 import { buildDocumentText, fullDate, SCHOOL_NAME } from "@/lib/admin/documents";
+import type { DocumentType } from "@/lib/admin/types";
 import {
-  DOCUMENT_STATUS_LABELS,
-  DOCUMENT_TYPE_LABELS,
-  type AdminStudent,
-  type DocumentRequest,
-  type DocumentType,
-} from "@/lib/admin/types";
+  archiveDocument,
+  createDocumentRequest,
+  DOC_STATUS_LABELS,
+  DOC_TYPE_LABELS,
+  fetchQueue,
+  fetchRegistry,
+  issueDocument,
+  setDocumentWaiting,
+  type DocumentOut,
+} from "@/lib/documents/api";
+import { apiXato, fetchStudents, type StudentListRowOut } from "@/lib/school/api";
 
 type Tab = "queue" | "registry";
 
-const STATUS_TONE = {
-  new: "success",
+const inputClass =
+  "h-9 w-full rounded-lg border border-border bg-surface px-2.5 text-sm outline-none transition-colors placeholder:text-foreground-muted/70 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25";
+
+const primaryBtn =
+  "focus-ring inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand px-3 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark disabled:opacity-50";
+
+const ghostBtn =
+  "focus-ring inline-flex h-9 items-center rounded-lg border border-border px-3 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted disabled:opacity-50";
+
+const STATUS_TONES: Record<string, "info" | "warning" | "success"> = {
+  new: "info",
   waiting: "warning",
-  issued: "neutral",
-} as const;
+  issued: "success",
+};
 
-export function DocumentsBoard({ preselectStudent = "" }: { preselectStudent?: string }) {
-  const { documents, students } = useAdmin();
+export function DocumentsBoard() {
   const [tab, setTab] = useState<Tab>("queue");
-  const queue = useMemo(() => documents.filter((d) => d.status !== "issued"), [documents]);
-  const registry = useMemo(() => documents.filter((d) => d.status === "issued"), [documents]);
+  const [queue, setQueue] = useState<DocumentOut[] | null>(null);
+  const [registry, setRegistry] = useState<DocumentOut[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  // Oʻquvchilar sahifasidan "Maʼlumotnoma yaratish" bosilsa — oʻsha
-  // oʻquvchining soʻrovi ochilgan holda keladi. Boshlangʻich qiymat
-  // useEffect'da emas, useState ichida hisoblanadi: aks holda server
-  // chizgan HTML'da quruvchi boʻlmay qoladi va sahifa sakrab ochiladi.
-  const [activeId, setActiveId] = useState<string | null>(() => {
-    const match = preselectStudent
-      ? documents.find((d) => d.studentId === preselectStudent && d.status !== "issued")
-      : undefined;
-    return match?.id ?? null;
-  });
+  const [adding, setAdding] = useState(false);
+  const [issuing, setIssuing] = useState<DocumentOut | null>(null);
 
-  // Hujjat berilgach navbatdan chiqadi — keyingisiga oʻtamiz.
-  const active = queue.find((d) => d.id === activeId) ?? queue[0] ?? null;
+  const yukla = useCallback(async () => {
+    try {
+      const [q, r] = await Promise.all([fetchQueue(), fetchRegistry()]);
+      setQueue(q);
+      setRegistry(r);
+      setError(null);
+    } catch (err) {
+      setError(apiXato(err, "Maʼlumotnomalarni olib boʻlmadi."));
+      setQueue([]);
+      setRegistry([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    void yukla();
+  }, [yukla]);
+
+  async function amal(f: () => Promise<unknown>) {
+    setBusy(true);
+    setError(null);
+    try {
+      await f();
+      await yukla();
+    } catch (err) {
+      setError(apiXato(err, "Amalni bajarib boʻlmadi."));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4 p-4 md:p-6">
-      <h1 className="text-h2 font-bold text-foreground">Maʼlumotnomalar</h1>
-
-      <div role="tablist" aria-label="Maʼlumotnoma boʻlimlari" className="flex gap-1 border-b border-border">
-        <TabButton active={tab === "queue"} onClick={() => setTab("queue")}>
-          Soʻrovlar ({queue.length})
-        </TabButton>
-        <TabButton active={tab === "registry"} onClick={() => setTab("registry")}>
-          Berilganlar reyestri ({registry.length})
-        </TabButton>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-h2 font-bold text-foreground">Maʼlumotnomalar</h1>
+          <p className="text-sm text-foreground-muted">
+            Berilgan hujjat oʻzgarmaydi va reyestrda qoladi — berish audit jurnaliga tushadi
+          </p>
+        </div>
+        <button type="button" onClick={() => setAdding(true)} className={primaryBtn}>
+          <PlusIcon className="h-4 w-4" />
+          Yangi soʻrov
+        </button>
       </div>
 
-      {tab === "registry" ? (
-        <Registry rows={registry} students={students} />
-      ) : queue.length === 0 ? (
-        <EmptyState
-          icon={<ClipboardIcon className="h-5 w-5" />}
-          title="Soʻrov yoʻq"
-          description="Barcha maʼlumotnoma soʻrovlari bajarilgan."
-        />
-      ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
-          <ol className="flex flex-col gap-2">
-            <li className="text-xs font-medium uppercase tracking-wide text-foreground-muted">
-              Navbat
-            </li>
-            {queue.map((doc) => {
-              const student = students.find((s) => s.id === doc.studentId);
-              const selected = doc.id === activeId;
-              return (
-                <li key={doc.id}>
+      {error && <p className="rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">{error}</p>}
+
+      <div role="tablist" aria-label="Boʻlimlar" className="flex gap-1 border-b border-border">
+        {(
+          [
+            ["queue", `Navbat${queue ? ` (${queue.length})` : ""}`],
+            ["registry", "Reyestr"],
+          ] as [Tab, string][]
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={tab === id}
+            onClick={() => setTab(id)}
+            className={`focus-ring -mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              tab === id
+                ? "border-brand text-brand-dark"
+                : "border-transparent text-foreground-muted hover:text-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "queue" &&
+        (queue === null ? (
+          <ListSkeleton count={4} />
+        ) : queue.length === 0 ? (
+          <EmptyState
+            icon={<ClipboardIcon className="h-5 w-5" />}
+            title="Navbat boʻsh"
+            description="Yangi soʻrov «Yangi soʻrov» tugmasi bilan ochiladi."
+          />
+        ) : (
+          <div className="flex flex-col gap-2">
+            {queue.map((d) => (
+              <article
+                key={d.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface p-4 shadow-sm"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground">
+                    {d.student_name}
+                    <span className="ml-2 text-sm text-foreground-muted">
+                      {d.class_name ?? "sinfsiz"}
+                    </span>
+                  </p>
+                  <p className="mt-0.5 text-sm text-foreground-muted">
+                    {DOC_TYPE_LABELS[d.doc_type] ?? d.doc_type}
+                    {d.requested_by && ` · soʻradi: ${d.requested_by}`} ·{" "}
+                    {new Date(d.created_at).toLocaleDateString("uz-UZ")}
+                  </p>
+                </div>
+                <span className="flex items-center gap-2">
+                  <Badge tone={STATUS_TONES[d.status] ?? "info"}>
+                    {DOC_STATUS_LABELS[d.status] ?? d.status}
+                  </Badge>
+                  {d.status === "new" && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void amal(() => setDocumentWaiting(d.id))}
+                      className={ghostBtn}
+                    >
+                      Kutishga
+                    </button>
+                  )}
                   <button
                     type="button"
-                    onClick={() => setActiveId(doc.id)}
-                    aria-pressed={selected}
-                    className={`focus-ring block w-full rounded-xl border bg-surface p-3 text-left transition-colors ${
-                      selected
-                        ? "border-brand ring-1 ring-brand"
-                        : "card-interactive border-border"
-                    }`}
+                    disabled={busy}
+                    onClick={() => setIssuing(d)}
+                    className={primaryBtn}
                   >
-                    <span className="flex items-center justify-between gap-2">
-                      <Badge tone={STATUS_TONE[doc.status]}>
-                        {DOCUMENT_STATUS_LABELS[doc.status]}
-                      </Badge>
-                      <span className="text-xs text-foreground-muted">{doc.createdAt}</span>
-                    </span>
-                    <span className="mt-2 block text-sm font-semibold text-foreground">
-                      {student?.fullName ?? "—"}
-                    </span>
-                    <span className="block text-xs text-foreground-muted">
-                      {student?.className} sinf oʻquvchisi
-                    </span>
-                    <span className="mt-2 flex items-center gap-1.5 border-t border-border pt-2 text-xs text-foreground">
-                      <ClipboardIcon className="h-3.5 w-3.5 shrink-0 text-foreground-muted" />
-                      {DOCUMENT_TYPE_LABELS[doc.type]}
-                    </span>
+                    Berish
                   </button>
-                </li>
-              );
-            })}
-          </ol>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    title="Xato ochilgan soʻrovni olib tashlash"
+                    onClick={() => void amal(() => archiveDocument(d.id))}
+                    className="focus-ring rounded px-2 py-1 text-xs font-medium text-foreground-muted transition-colors hover:text-danger disabled:opacity-40"
+                  >
+                    Bekor
+                  </button>
+                </span>
+              </article>
+            ))}
+          </div>
+        ))}
 
-          {active && (
-            <DocumentBuilder
-              key={active.id}
-              request={active}
-              student={students.find((s) => s.id === active.studentId)!}
-            />
-          )}
-        </div>
+      {tab === "registry" &&
+        (registry === null ? (
+          <ListSkeleton count={4} />
+        ) : registry.length === 0 ? (
+          <EmptyState
+            icon={<ClipboardIcon className="h-5 w-5" />}
+            title="Reyestr boʻsh"
+            description="Berilgan maʼlumotnomalar shu yerda roʻyxatga olinadi."
+          />
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+            <div className="scroll-x">
+              <table className="w-full min-w-[720px] border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-surface-muted/60 text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
+                    <th className="px-3 py-3">Raqam</th>
+                    <th className="px-3 py-3">Oʻquvchi</th>
+                    <th className="px-3 py-3">Turi</th>
+                    <th className="px-3 py-3">Kimga</th>
+                    <th className="px-3 py-3">Berildi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {registry.map((d) => (
+                    <tr
+                      key={d.id}
+                      className="border-b border-border transition-colors last:border-0 hover:bg-surface-muted/50"
+                    >
+                      <td className="num px-3 py-2.5 font-medium text-foreground">{d.number}</td>
+                      <td className="px-3 py-2.5 text-foreground">
+                        {d.student_name}
+                        <span className="ml-1.5 text-xs text-foreground-muted">
+                          {d.class_name}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-foreground-muted">
+                        {DOC_TYPE_LABELS[d.doc_type] ?? d.doc_type}
+                      </td>
+                      <td className="px-3 py-2.5 text-foreground-muted">{d.recipient ?? "—"}</td>
+                      <td className="num px-3 py-2.5 text-foreground-muted">
+                        {d.issued_at ? new Date(d.issued_at).toLocaleDateString("uz-UZ") : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+
+      {adding && (
+        <NewRequestDialog
+          onClose={() => setAdding(false)}
+          onCreated={() => {
+            setAdding(false);
+            void yukla();
+          }}
+        />
+      )}
+
+      {issuing && (
+        <IssueDialog
+          doc={issuing}
+          onClose={() => setIssuing(null)}
+          onIssued={() => {
+            setIssuing(null);
+            setTab("registry");
+            void yukla();
+          }}
+        />
       )}
     </div>
   );
 }
 
-function DocumentBuilder({
-  request,
-  student,
+/** Yangi soʻrov: oʻquvchi qidiruvdan tanlanadi, tur roʻyxatdan. */
+function NewRequestDialog({
+  onClose,
+  onCreated,
 }: {
-  request: DocumentRequest;
-  student: AdminStudent;
+  onClose: () => void;
+  onCreated: () => void;
 }) {
-  const dispatch = useAdminDispatch();
-  const { documentCounter, profile } = useAdmin();
-  const [type, setType] = useState<DocumentType>(request.type);
-  const [recipient, setRecipient] = useState("");
-  const [copies, setCopies] = useState(1);
-  const [extraText, setExtraText] = useState("");
+  const [query, setQuery] = useState("");
+  const [students, setStudents] = useState<StudentListRowOut[]>([]);
+  const [studentId, setStudentId] = useState("");
+  const [docType, setDocType] = useState("oquv_joyi");
+  const [requestedBy, setRequestedBy] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const number = `2026/09-${documentCounter + 1}`;
-  const paragraphs = buildDocumentText(type, {
-    student,
-    academicYear: ACADEMIC_YEAR,
-    recipient,
-    extraText,
-  });
+  useEffect(() => {
+    const t = setTimeout(() => {
+      fetchStudents({ query: query || undefined })
+        .then((rows) => {
+          setStudents(rows.slice(0, 30));
+          setStudentId((old) => (rows.some((r) => r.id === old) ? old : (rows[0]?.id ?? "")));
+        })
+        .catch(() => setError("Oʻquvchilarni olib boʻlmadi."));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [query]);
 
-  return (
-    <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
-        <h2 className="text-sm font-semibold text-foreground">
-          {student.fullName} uchun maʼlumotnoma yaratish
-        </h2>
-        <span className="num rounded-md bg-surface-muted px-2 py-1 text-xs text-foreground-muted">
-          № {number}
-        </span>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-2">
-        {/* Chap: maʼlumotlar */}
-        <div className="flex flex-col gap-3">
-          <Field label="Maʼlumotnoma turi">
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value as DocumentType)}
-              className={inputClass}
-            >
-              {(Object.keys(DOCUMENT_TYPE_LABELS) as DocumentType[]).map((t) => (
-                <option key={t} value={t}>
-                  {DOCUMENT_TYPE_LABELS[t]}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <div className="rounded-lg border border-border bg-surface-muted/60 p-3">
-            <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-brand-tint px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-dark">
-              Avtomatik
-            </span>
-            <dl className="grid grid-cols-2 gap-3 text-sm">
-              <Row label="Oʻquvchi F.I.Sh">{student.fullName}</Row>
-              <Row label="Tugʻilgan yili">{student.birthYear}</Row>
-              <Row label="Sinf">{student.className}</Row>
-              <Row label="Oʻquv yili">{ACADEMIC_YEAR}</Row>
-              <Row label="Qabul qilingan sana">{student.enrolledAt}</Row>
-              <Row label="Ota-ona / vasiy">{student.guardianName}</Row>
-            </dl>
-            <p className="mt-2 border-t border-border pt-2 text-[11px] text-foreground-muted">
-              Bu maydonlar bazadan olinadi — qoʻlda kiritilmaydi, shu sabab hujjatda
-              xato boʻlmaydi.
-            </p>
-          </div>
-
-          <Field label="Kimga taqdim etiladi">
-            <input
-              value={recipient}
-              onChange={(e) => setRecipient(e.target.value)}
-              placeholder="Talab qilingan joyga"
-              className={inputClass}
-            />
-          </Field>
-
-          <Field label="Nusxalar soni">
-            <input
-              type="number"
-              min={1}
-              max={10}
-              value={copies}
-              onChange={(e) => setCopies(Math.max(1, Number(e.target.value)))}
-              className={`${inputClass} max-w-28`}
-            />
-          </Field>
-
-          <Field label="Qoʻshimcha matn">
-            <textarea
-              value={extraText}
-              onChange={(e) => setExtraText(e.target.value)}
-              rows={3}
-              placeholder="Ixtiyoriy — hujjat oxiriga qoʻshiladi"
-              className={`${inputClass} h-auto resize-none py-2`}
-            />
-          </Field>
-        </div>
-
-        {/* Oʻng: A4 oldindan koʻrish */}
-        <div className="rounded-lg bg-surface-muted p-3">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-foreground-muted">
-            Oldindan koʻrish
-          </p>
-          <article className="print-doc mx-auto max-w-[440px] rounded bg-surface p-6 text-[13px] leading-relaxed shadow-sm">
-            <header className="border-b border-border pb-3 text-center">
-              <p className="text-sm font-bold text-brand">{SCHOOL_NAME}</p>
-              <p className="mt-0.5 text-[11px] text-foreground-muted">
-                Toshkent shahri · Mirobod tumani
-              </p>
-            </header>
-
-            <div className="mt-3 flex justify-between text-[11px] text-foreground-muted">
-              <span>Sana: {fullDate("2026-09-20")}</span>
-              <span className="num">Qayd raqami: № {number}</span>
-            </div>
-
-            <h3 className="my-4 text-center text-base font-bold tracking-wide text-foreground">
-              MAʼLUMOTNOMA
-            </h3>
-
-            {paragraphs.map((text, i) => (
-              <p key={i} className="mb-2 text-justify indent-6 text-foreground">
-                {text}
-              </p>
-            ))}
-
-            <div className="mt-8 flex items-end justify-between text-[11px] text-foreground-muted">
-              <span>
-                Direktor
-                <span className="mt-4 block w-28 border-b border-foreground-muted" />
-                <span className="mt-2 block">
-                  Tayyorladi: {profile.fullName} · {profile.phone}
-                </span>
-              </span>
-              <span className="flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-border text-center text-[9px]">
-                Muhr oʻrni
-              </span>
-            </div>
-          </article>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border bg-surface-muted/50 px-4 py-3">
-        <span className="text-xs text-foreground-muted">
-          Berilgandan keyin hujjat reyestrga tushadi va oʻchirilmaydi.
-        </span>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="focus-ring rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted"
-          >
-            Chop etish / PDF
-          </button>
-          <button
-            type="button"
-            onClick={() =>
-              dispatch({
-                type: "ISSUE_DOCUMENT",
-                documentId: request.id,
-                recipient: recipient.trim() || "Talab qilingan joyga",
-                copies,
-                extraText,
-                docType: type,
-              })
-            }
-            className="focus-ring rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark"
-          >
-            Yaratish va ota-onaga yuborish
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Registry({
-  rows,
-  students,
-}: {
-  rows: DocumentRequest[];
-  students: AdminStudent[];
-}) {
-  if (rows.length === 0) {
-    return (
-      <EmptyState
-        icon={<ClipboardIcon className="h-5 w-5" />}
-        title="Reyestr boʻsh"
-        description="Hali bu sessiyada hujjat berilmagan. Soʻrovlar boʻlimidan hujjat yarating."
-      />
-    );
+  async function yarat(e: React.FormEvent) {
+    e.preventDefault();
+    if (!studentId) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await createDocumentRequest(studentId, docType, requestedBy.trim());
+      onCreated();
+    } catch (err) {
+      setError(apiXato(err, "Soʻrovni ochib boʻlmadi."));
+      setBusy(false);
+    }
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
-      <div className="scroll-x">
-        <table className="w-full min-w-[720px] border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-border bg-surface-muted/60 text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
-              <th className="px-3 py-3">№</th>
-              <th className="px-3 py-3">Sana</th>
-              <th className="px-3 py-3">Oʻquvchi</th>
-              <th className="px-3 py-3">Turi</th>
-              <th className="px-3 py-3">Nusxa</th>
-              <th className="px-3 py-3">Kim berdi</th>
-              <th className="px-3 py-3">Holati</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((doc) => {
-              const student = students.find((s) => s.id === doc.studentId);
-              return (
-                <tr
-                  key={doc.id}
-                  className="border-b border-border transition-colors last:border-0 hover:bg-surface-muted/50"
-                >
-                  <td className="num px-3 py-2.5 font-medium text-foreground">{doc.number}</td>
-                  <td className="num px-3 py-2.5 text-foreground-muted">{doc.issuedAt}</td>
-                  <td className="px-3 py-2.5">
-                    {student?.fullName}
-                    <span className="block text-xs text-foreground-muted">
-                      {student?.className} sinf
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5 text-foreground-muted">
-                    {DOCUMENT_TYPE_LABELS[doc.type]}
-                  </td>
-                  <td className="num px-3 py-2.5 text-foreground-muted">{doc.copies}</td>
-                  <td className="px-3 py-2.5 text-foreground-muted">{doc.issuedBy}</td>
-                  <td className="px-3 py-2.5">
-                    <Badge tone="success">Yuborildi</Badge>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <Dialog title="Yangi soʻrov" onClose={onClose}>
+      <form onSubmit={yarat} className="flex flex-col gap-3">
+        {error && <p className="rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">{error}</p>}
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-medium text-foreground">Oʻquvchi</span>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Familiya boʻyicha qidirish…"
+            className={inputClass}
+          />
+        </label>
+        <select
+          value={studentId}
+          onChange={(e) => setStudentId(e.target.value)}
+          aria-label="Oʻquvchini tanlash"
+          size={5}
+          className="w-full rounded-lg border border-border bg-surface p-1 text-sm outline-none focus-visible:border-brand"
+        >
+          {students.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.full_name} — {s.class_name ?? "sinfsiz"}
+            </option>
+          ))}
+        </select>
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-medium text-foreground">Hujjat turi</span>
+          <select
+            value={docType}
+            onChange={(e) => setDocType(e.target.value)}
+            className={inputClass}
+          >
+            {Object.entries(DOC_TYPE_LABELS).map(([id, label]) => (
+              <option key={id} value={id}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-medium text-foreground">Kim soʻradi</span>
+          <input
+            value={requestedBy}
+            onChange={(e) => setRequestedBy(e.target.value.slice(0, 120))}
+            placeholder="Masalan, Otasi (tel. orqali)"
+            className={inputClass}
+          />
+        </label>
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={onClose} className={ghostBtn}>
+            Bekor qilish
+          </button>
+          <button type="submit" disabled={!studentId || busy} className={primaryBtn}>
+            Soʻrovni ochish
+          </button>
+        </div>
+      </form>
+    </Dialog>
   );
 }
 
-function TabButton({
-  active,
-  onClick,
+/** Berish: matn oldindan koʻrinadi, «Berish» bosilgach raqam olinadi. */
+function IssueDialog({
+  doc,
+  onClose,
+  onIssued,
+}: {
+  doc: DocumentOut;
+  onClose: () => void;
+  onIssued: () => void;
+}) {
+  const [recipient, setRecipient] = useState("");
+  const [copies, setCopies] = useState(1);
+  const [extraText, setExtraText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [issued, setIssued] = useState<DocumentOut | null>(null);
+
+  const koriladigan = issued ?? doc;
+  const matn = useMemo(
+    () =>
+      buildDocumentText(koriladigan.doc_type as DocumentType, {
+        student: {
+          fullName: koriladigan.student_name,
+          birthYear: koriladigan.birth_year ?? "—",
+          className: koriladigan.class_name ?? "—",
+        },
+        academicYear: "2026–2027",
+        recipient: issued ? (issued.recipient ?? "") : recipient,
+        extraText: issued ? (issued.extra_text ?? "") : extraText,
+      }),
+    [koriladigan, recipient, extraText, issued],
+  );
+
+  async function ber() {
+    setBusy(true);
+    setError(null);
+    try {
+      setIssued(
+        await issueDocument(doc.id, { recipient: recipient.trim(), copies, extraText }),
+      );
+    } catch (err) {
+      setError(apiXato(err, "Berib boʻlmadi."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Dialog title={issued ? `Berildi — ${issued.number}` : "Hujjatni berish"} onClose={issued ? onIssued : onClose}>
+      <div className="flex flex-col gap-3">
+        {error && <p className="rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">{error}</p>}
+
+        {!issued && (
+          <>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-medium text-foreground">
+                Qayerga taqdim etiladi
+              </span>
+              <input
+                value={recipient}
+                onChange={(e) => setRecipient(e.target.value.slice(0, 200))}
+                placeholder="Masalan, Ish joyiga"
+                className={inputClass}
+              />
+            </label>
+            <span className="flex gap-2">
+              <label className="block w-24">
+                <span className="mb-1.5 block text-xs font-medium text-foreground">Nusxa</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={copies}
+                  onChange={(e) => setCopies(Number(e.target.value))}
+                  className={`${inputClass} num`}
+                />
+              </label>
+              <label className="block flex-1">
+                <span className="mb-1.5 block text-xs font-medium text-foreground">
+                  Qoʻshimcha matn
+                </span>
+                <input
+                  value={extraText}
+                  onChange={(e) => setExtraText(e.target.value.slice(0, 500))}
+                  className={inputClass}
+                />
+              </label>
+            </span>
+          </>
+        )}
+
+        <div className="rounded-lg border border-border bg-surface-muted/40 p-4 text-sm leading-relaxed text-foreground">
+          <p className="mb-2 text-center font-semibold">{SCHOOL_NAME}</p>
+          <p className="mb-3 text-center text-xs uppercase tracking-wide text-foreground-muted">
+            Maʼlumotnoma {issued?.number && `№ ${issued.number}`}
+          </p>
+          {matn.map((xatboshi) => (
+            <p key={xatboshi} className="mb-2 indent-6">
+              {xatboshi}
+            </p>
+          ))}
+          {issued?.issued_at && (
+            <p className="mt-3 text-xs text-foreground-muted">
+              Berilgan sana: {fullDate(issued.issued_at)}
+            </p>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2">
+          {issued ? (
+            <>
+              <button type="button" onClick={() => window.print()} className={ghostBtn}>
+                Chop etish
+              </button>
+              <button type="button" onClick={onIssued} className={primaryBtn}>
+                Yopish
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" onClick={onClose} className={ghostBtn}>
+                Bekor qilish
+              </button>
+              <button type="button" disabled={busy} onClick={() => void ber()} className={primaryBtn}>
+                Berish va raqam olish
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+function Dialog({
+  title,
+  onClose,
   children,
 }: {
-  active: boolean;
-  onClick: () => void;
+  title: string;
+  onClose: () => void;
   children: React.ReactNode;
 }) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      onClick={onClick}
-      className={`focus-ring -mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-        active
-          ? "border-brand text-brand-dark"
-          : "border-transparent text-foreground-muted hover:text-foreground"
-      }`}
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 sm:items-center sm:p-4"
+      onClick={onClose}
     >
-      {children}
-    </button>
-  );
-}
-
-const inputClass =
-  "h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none transition-colors placeholder:text-foreground-muted/70 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25";
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-foreground-muted">
-        {label}
-      </span>
-      {children}
-    </label>
-  );
-}
-
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <dt className="text-xs text-foreground-muted">{label}</dt>
-      <dd className="font-medium text-foreground">{children}</dd>
+      <div
+        role="dialog"
+        aria-label={title}
+        onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[90vh] w-full max-w-xl flex-col gap-3 overflow-y-auto rounded-t-xl bg-surface p-4 shadow-xl sm:rounded-xl"
+      >
+        <h2 className="text-base font-semibold text-foreground">{title}</h2>
+        {children}
+      </div>
     </div>
   );
 }

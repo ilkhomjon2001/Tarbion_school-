@@ -1127,6 +1127,104 @@ export type DirectorOverviewOut = {
 };
 
 /**
+ * DocumentCreateIn
+ */
+export type DocumentCreateIn = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Doc Type
+     */
+    doc_type: string;
+    /**
+     * Requested By
+     */
+    requested_by?: string;
+};
+
+/**
+ * DocumentIssueIn
+ */
+export type DocumentIssueIn = {
+    /**
+     * Recipient
+     */
+    recipient?: string;
+    /**
+     * Copies
+     */
+    copies?: number;
+    /**
+     * Extra Text
+     */
+    extra_text?: string | null;
+};
+
+/**
+ * DocumentOut
+ */
+export type DocumentOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Student Name
+     */
+    student_name: string;
+    /**
+     * Class Name
+     */
+    class_name: string | null;
+    /**
+     * Birth Year
+     */
+    birth_year: number | null;
+    /**
+     * Doc Type
+     */
+    doc_type: string;
+    /**
+     * Requested By
+     */
+    requested_by: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Number
+     */
+    number: string | null;
+    /**
+     * Issued At
+     */
+    issued_at: string | null;
+    /**
+     * Recipient
+     */
+    recipient: string | null;
+    /**
+     * Copies
+     */
+    copies: number;
+    /**
+     * Extra Text
+     */
+    extra_text: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
  * GenerationOut
  *
  * Darslar generatsiyasi natijasi (T-012).
@@ -3994,6 +4092,157 @@ export type WellbeingArchiveNoteResponses = {
 };
 
 export type WellbeingArchiveNoteResponse = WellbeingArchiveNoteResponses[keyof WellbeingArchiveNoteResponses];
+
+export type DocumentsQueueData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/documents/queue';
+};
+
+export type DocumentsQueueResponses = {
+    /**
+     * Response Documents Queue
+     *
+     * Successful Response
+     */
+    200: Array<DocumentOut>;
+};
+
+export type DocumentsQueueResponse = DocumentsQueueResponses[keyof DocumentsQueueResponses];
+
+export type DocumentsRegistryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/documents/registry';
+};
+
+export type DocumentsRegistryResponses = {
+    /**
+     * Response Documents Registry
+     *
+     * Successful Response
+     */
+    200: Array<DocumentOut>;
+};
+
+export type DocumentsRegistryResponse = DocumentsRegistryResponses[keyof DocumentsRegistryResponses];
+
+export type DocumentsCreateData = {
+    body: DocumentCreateIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/documents';
+};
+
+export type DocumentsCreateErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DocumentsCreateError = DocumentsCreateErrors[keyof DocumentsCreateErrors];
+
+export type DocumentsCreateResponses = {
+    /**
+     * Successful Response
+     */
+    201: DocumentOut;
+};
+
+export type DocumentsCreateResponse = DocumentsCreateResponses[keyof DocumentsCreateResponses];
+
+export type DocumentsSetWaitingData = {
+    body?: never;
+    path: {
+        /**
+         * Doc Id
+         */
+        doc_id: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{doc_id}/waiting';
+};
+
+export type DocumentsSetWaitingErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DocumentsSetWaitingError = DocumentsSetWaitingErrors[keyof DocumentsSetWaitingErrors];
+
+export type DocumentsSetWaitingResponses = {
+    /**
+     * Successful Response
+     */
+    200: DocumentOut;
+};
+
+export type DocumentsSetWaitingResponse = DocumentsSetWaitingResponses[keyof DocumentsSetWaitingResponses];
+
+export type DocumentsIssueData = {
+    body: DocumentIssueIn;
+    path: {
+        /**
+         * Doc Id
+         */
+        doc_id: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{doc_id}/issue';
+};
+
+export type DocumentsIssueErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DocumentsIssueError = DocumentsIssueErrors[keyof DocumentsIssueErrors];
+
+export type DocumentsIssueResponses = {
+    /**
+     * Successful Response
+     */
+    200: DocumentOut;
+};
+
+export type DocumentsIssueResponse = DocumentsIssueResponses[keyof DocumentsIssueResponses];
+
+export type DocumentsArchiveData = {
+    body?: never;
+    path: {
+        /**
+         * Doc Id
+         */
+        doc_id: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{doc_id}/archive';
+};
+
+export type DocumentsArchiveErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DocumentsArchiveError = DocumentsArchiveErrors[keyof DocumentsArchiveErrors];
+
+export type DocumentsArchiveResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DocumentsArchiveResponse = DocumentsArchiveResponses[keyof DocumentsArchiveResponses];
 
 export type AcademicYearsData = {
     body?: never;
