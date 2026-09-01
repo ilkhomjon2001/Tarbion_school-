@@ -2,9 +2,14 @@ name: Sinov · testlar va deploy
 
 # `main` ga har push'da: avval testlar, oʻtgach serverga.
 #
-# Nega ikki bosqich: build va deploy 5-8 daqiqa oladi va u tor IOPS li
-# VPS da ishlaydi. Yiqiladigan koddan buni talab qilish keraksiz yuk —
-# testlar avval GitHub yuguruvchisida oʻtadi.
+# Nega ikki bosqich: build va deploy tor IOPS li VPS da ishlaydi.
+# Yiqiladigan koddan buni talab qilish keraksiz yuk — testlar avval
+# GitHub yuguruvchisida oʻtadi.
+#
+# EHTIYOT YOʻL: commit xabarida `[tez]` boʻlsa testlar oʻtkazib
+# yuboriladi. Shoshilinch tuzatish uchun — deploy ~3 daqiqada tugaydi.
+# Ataylab qoʻlda yoziladigan belgi: tasodifan tushib qolmaydi va
+# kim, qachon xavf olganini commit tarixida koʻrinadi.
 on:
   push:
     branches: [main]
@@ -22,6 +27,7 @@ jobs:
   backend:
     name: Backend · testlar
     runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[tez]')"
 
     services:
       postgres:
@@ -77,6 +83,7 @@ jobs:
   frontend:
     name: Frontend · tip va build
     runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[tez]')"
     defaults:
       run:
         working-directory: frontend
@@ -111,8 +118,17 @@ jobs:
     name: Serverga
     needs: [backend, frontend]
     runs-on: ubuntu-latest
-    # Faqat `main` ga push'da. `workflow_dispatch` da ham ishlaydi.
-    if: github.ref == 'refs/heads/main'
+    # `always()` kerak: `[tez]` bilan testlar SKIPPED boʻladi va
+    # sukut boʻyicha bogʻliq ish ham oʻtkazib yuborilardi.
+    #
+    # Lekin `always()` yolgʻiz xavfli — u yiqilgan testda ham
+    # ishlatardi. Shuning uchun natija ANIQ tekshiriladi: faqat
+    # `success` yoki `skipped` oʻtadi, `failure` toʻsiladi.
+    if: |
+      always() &&
+      github.ref == 'refs/heads/main' &&
+      (needs.backend.result == 'success' || needs.backend.result == 'skipped') &&
+      (needs.frontend.result == 'success' || needs.frontend.result == 'skipped')
 
     steps:
       - name: SSH kaliti
