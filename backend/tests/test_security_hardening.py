@@ -132,11 +132,17 @@ def test_mavjud_bolmagan_login_uchun_ham_argon2_ishlaydi() -> None:
     assert verify_password_constant_time("xato", None) is False
     yoq_uchun = time.perf_counter() - boshlanish
 
-    # argon2 (64 MiB, t=3) hech boʻlmasa 5 ms ishlaydi. Agar `None`
-    # holatida hisoblash tashlab ketilgan boʻlsa, bu shart yiqiladi.
-    assert yoq_uchun > 0.005, "mavjud boʻlmagan login uchun argon2 ishlamadi"
-    # Ikkalasi bir tartibda: biri ikkinchisidan 10 barobar tez emas.
-    assert yoq_uchun > mavjud_uchun / 10
+    # Tekshiruv NISBIY: mutlaq millisekundga bogʻlanmaydi, chunki
+    # argon2 narxi sozlamaga qarab oʻzgaradi (testlarda yengil
+    # profil ishlatiladi — `conftest._tez_argon2`).
+    #
+    # Muhimi shu: mavjud boʻlmagan login uchun ham argon2 ISHLAYDI.
+    # Agar u tashlab ketilsa, chaqiruv bir necha mikrosekundda
+    # qaytardi — ya'ni mavjud login vaqtining yarmidan ham kam.
+    assert yoq_uchun > mavjud_uchun / 2, (
+        "mavjud boʻlmagan login uchun argon2 ishlamadi — "
+        "javob vaqti loginlar roʻyxatini oshkor qiladi"
+    )
 
 
 async def test_login_xatosi_umumiy(client: AsyncClient, user: User) -> None:

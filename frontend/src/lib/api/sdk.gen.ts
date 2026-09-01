@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcademicAddHolidayData, AcademicAddHolidayErrors, AcademicAddHolidayResponses, AcademicArchiveHolidayData, AcademicArchiveHolidayErrors, AcademicArchiveHolidayResponses, AcademicBellsData, AcademicBellsErrors, AcademicBellsResponses, AcademicCreateYearData, AcademicCreateYearErrors, AcademicCreateYearResponses, AcademicCurrentYearData, AcademicCurrentYearResponses, AcademicHolidaysData, AcademicHolidaysErrors, AcademicHolidaysResponses, AcademicMakeCurrentData, AcademicMakeCurrentErrors, AcademicMakeCurrentResponses, AcademicSetBellsData, AcademicSetBellsErrors, AcademicSetBellsResponses, AcademicSetTermsData, AcademicSetTermsErrors, AcademicSetTermsResponses, AcademicTermsData, AcademicTermsErrors, AcademicTermsResponses, AcademicUpdateYearData, AcademicUpdateYearErrors, AcademicUpdateYearResponses, AcademicYearsData, AcademicYearsResponses, AccessPermissionRegistryData, AccessPermissionRegistryResponses, AccessSectionsData, AccessSectionsResponses, AccessSetPermissionsData, AccessSetPermissionsErrors, AccessSetPermissionsResponses, AccessSetSectionsData, AccessSetSectionsErrors, AccessSetSectionsResponses, AccessUserAccessData, AccessUserAccessErrors, AccessUserAccessResponses, AccessUsersData, AccessUsersErrors, AccessUsersResponses, AppealsAddMessageData, AppealsAddMessageErrors, AppealsAddMessageResponses, AppealsAppealsSummaryData, AppealsAppealsSummaryResponses, AppealsComposeOptionsData, AppealsComposeOptionsResponses, AppealsCreateAppealData, AppealsCreateAppealErrors, AppealsCreateAppealResponses, AppealsCreateNoteData, AppealsCreateNoteErrors, AppealsCreateNoteResponses, AppealsGetAppealData, AppealsGetAppealErrors, AppealsGetAppealResponses, AppealsListAppealsData, AppealsListAppealsErrors, AppealsListAppealsResponses, AppealsListNotesData, AppealsListNotesErrors, AppealsListNotesResponses, AppealsSearchStudentsData, AppealsSearchStudentsErrors, AppealsSearchStudentsResponses, AppealsStatsClassesData, AppealsStatsClassesResponses, AppealsUpdateAssigneeData, AppealsUpdateAssigneeErrors, AppealsUpdateAssigneeResponses, AppealsUpdateStatusData, AppealsUpdateStatusErrors, AppealsUpdateStatusResponses, AttendanceClassStudentsData, AttendanceClassStudentsErrors, AttendanceClassStudentsResponses, AttendanceGenerateLessonsData, AttendanceGenerateLessonsErrors, AttendanceGenerateLessonsResponses, AttendanceGenerateTermLessonsData, AttendanceGenerateTermLessonsErrors, AttendanceGenerateTermLessonsResponses, AttendanceLessonAttendanceData, AttendanceLessonAttendanceErrors, AttendanceLessonAttendanceResponses, AttendanceMarkData, AttendanceMarkErrors, AttendanceMarkResponses, AttendanceMyLessonsData, AttendanceMyLessonsErrors, AttendanceMyLessonsRangeData, AttendanceMyLessonsRangeErrors, AttendanceMyLessonsRangeResponses, AttendanceMyLessonsResponses, AttendanceStatsData, AttendanceStatsErrors, AttendanceStatsResponses, AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRefreshData, AuthRefreshResponses, AuthTwoFactorDisableData, AuthTwoFactorDisableErrors, AuthTwoFactorDisableResponses, AuthTwoFactorEnableData, AuthTwoFactorEnableErrors, AuthTwoFactorEnableResponses, AuthTwoFactorRecoveryCodesData, AuthTwoFactorRecoveryCodesErrors, AuthTwoFactorRecoveryCodesResponses, AuthTwoFactorSetupData, AuthTwoFactorSetupResponses, AuthTwoFactorStatusData, AuthTwoFactorStatusResponses, AuthTwoFactorVerifyData, AuthTwoFactorVerifyErrors, AuthTwoFactorVerifyResponses, DirectorClassesData, DirectorClassesResponses, DirectorOverviewData, DirectorOverviewErrors, DirectorOverviewResponses, DirectorTeachersData, DirectorTeachersResponses, JournalArchiveHomeworkData, JournalArchiveHomeworkErrors, JournalArchiveHomeworkResponses, JournalClassAveragesData, JournalClassAveragesErrors, JournalClassAveragesResponses, JournalClassJournalData, JournalClassJournalErrors, JournalClassJournalResponses, JournalCreateHomeworkData, JournalCreateHomeworkErrors, JournalCreateHomeworkResponses, JournalGradeSubmissionData, JournalGradeSubmissionErrors, JournalGradeSubmissionResponses, JournalLessonJournalData, JournalLessonJournalErrors, JournalLessonJournalResponses, JournalMyHomeworkData, JournalMyHomeworkErrors, JournalMyHomeworkResponses, JournalReturnSubmissionData, JournalReturnSubmissionErrors, JournalReturnSubmissionResponses, JournalSetGradesData, JournalSetGradesErrors, JournalSetGradesResponses, JournalStudentGradesData, JournalStudentGradesErrors, JournalStudentGradesResponses, JournalStudentHomeworkData, JournalStudentHomeworkErrors, JournalStudentHomeworkResponses, JournalSubmissionsData, JournalSubmissionsErrors, JournalSubmissionsResponses, JournalSubmitData, JournalSubmitErrors, JournalSubmitResponses, NotificationsBadgesData, NotificationsBadgesResponses, NotificationsListNotificationsData, NotificationsListNotificationsErrors, NotificationsListNotificationsResponses, NotificationsMarkAllReadData, NotificationsMarkAllReadErrors, NotificationsMarkAllReadResponses, NotificationsMarkReadData, NotificationsMarkReadErrors, NotificationsMarkReadResponses, ParentChildAttendanceData, ParentChildAttendanceErrors, ParentChildAttendanceResponses, ParentMyChildrenData, ParentMyChildrenResponses, ScheduleAddEntryData, ScheduleAddEntryErrors, ScheduleAddEntryResponses, ScheduleArchiveEntryData, ScheduleArchiveEntryErrors, ScheduleArchiveEntryResponses, ScheduleEntriesData, ScheduleEntriesErrors, ScheduleEntriesResponses, ScheduleTeacherLoadData, ScheduleTeacherLoadResponses, ScheduleUpdateEntryData, ScheduleUpdateEntryErrors, ScheduleUpdateEntryResponses, SchoolArchiveStaffData, SchoolArchiveStaffErrors, SchoolArchiveStaffResponses, SchoolArchiveStudentData, SchoolArchiveStudentErrors, SchoolArchiveStudentResponses, SchoolClassesData, SchoolClassesResponses, SchoolCreateStaffData, SchoolCreateStaffErrors, SchoolCreateStaffResponses, SchoolCreateStudentData, SchoolCreateStudentErrors, SchoolCreateStudentResponses, SchoolMoveStudentData, SchoolMoveStudentErrors, SchoolMoveStudentResponses, SchoolResetStaffPasswordData, SchoolResetStaffPasswordErrors, SchoolResetStaffPasswordResponses, SchoolRestoreStudentData, SchoolRestoreStudentErrors, SchoolRestoreStudentResponses, SchoolSetStaffSubjectsData, SchoolSetStaffSubjectsErrors, SchoolSetStaffSubjectsResponses, SchoolStaffData, SchoolStaffResponses, SchoolStudentCardData, SchoolStudentCardErrors, SchoolStudentCardResponses, SchoolStudentsData, SchoolStudentsErrors, SchoolStudentsResponses, SchoolSubjectsData, SchoolSubjectsOfClassData, SchoolSubjectsOfClassErrors, SchoolSubjectsOfClassResponses, SchoolSubjectsResponses, ServiceHealthData, ServiceHealthResponses, ServiceReadinessData, ServiceReadinessResponses, TestsAddQuestionData, TestsAddQuestionErrors, TestsAddQuestionResponses, TestsArchiveQuestionData, TestsArchiveQuestionErrors, TestsArchiveQuestionResponses, TestsArchiveTestData, TestsArchiveTestErrors, TestsArchiveTestResponses, TestsAvailableData, TestsAvailableErrors, TestsAvailableResponses, TestsCreateTestData, TestsCreateTestErrors, TestsCreateTestResponses, TestsMyTestsData, TestsMyTestsErrors, TestsMyTestsResponses, TestsQuestionsData, TestsQuestionsErrors, TestsQuestionsResponses, TestsResultsData, TestsResultsErrors, TestsResultsResponses, TestsSetStatusData, TestsSetStatusErrors, TestsSetStatusResponses, TestsStartData, TestsStartErrors, TestsStartResponses, TestsStudentAttemptsData, TestsStudentAttemptsErrors, TestsStudentAttemptsResponses, TestsSubmitData, TestsSubmitErrors, TestsSubmitResponses } from './types.gen';
+import type { AcademicAddHolidayData, AcademicAddHolidayErrors, AcademicAddHolidayResponses, AcademicArchiveHolidayData, AcademicArchiveHolidayErrors, AcademicArchiveHolidayResponses, AcademicBellsData, AcademicBellsErrors, AcademicBellsResponses, AcademicCreateYearData, AcademicCreateYearErrors, AcademicCreateYearResponses, AcademicCurrentYearData, AcademicCurrentYearResponses, AcademicHolidaysData, AcademicHolidaysErrors, AcademicHolidaysResponses, AcademicMakeCurrentData, AcademicMakeCurrentErrors, AcademicMakeCurrentResponses, AcademicSetBellsData, AcademicSetBellsErrors, AcademicSetBellsResponses, AcademicSetTermsData, AcademicSetTermsErrors, AcademicSetTermsResponses, AcademicTermsData, AcademicTermsErrors, AcademicTermsResponses, AcademicUpdateYearData, AcademicUpdateYearErrors, AcademicUpdateYearResponses, AcademicYearsData, AcademicYearsResponses, AccessPermissionRegistryData, AccessPermissionRegistryResponses, AccessSectionsData, AccessSectionsResponses, AccessSetPermissionsData, AccessSetPermissionsErrors, AccessSetPermissionsResponses, AccessSetSectionsData, AccessSetSectionsErrors, AccessSetSectionsResponses, AccessUserAccessData, AccessUserAccessErrors, AccessUserAccessResponses, AccessUsersData, AccessUsersErrors, AccessUsersResponses, AppealsAddMessageData, AppealsAddMessageErrors, AppealsAddMessageResponses, AppealsAppealsSummaryData, AppealsAppealsSummaryResponses, AppealsComposeOptionsData, AppealsComposeOptionsResponses, AppealsCreateAppealData, AppealsCreateAppealErrors, AppealsCreateAppealResponses, AppealsCreateNoteData, AppealsCreateNoteErrors, AppealsCreateNoteResponses, AppealsGetAppealData, AppealsGetAppealErrors, AppealsGetAppealResponses, AppealsListAppealsData, AppealsListAppealsErrors, AppealsListAppealsResponses, AppealsListNotesData, AppealsListNotesErrors, AppealsListNotesResponses, AppealsSearchStudentsData, AppealsSearchStudentsErrors, AppealsSearchStudentsResponses, AppealsStatsClassesData, AppealsStatsClassesResponses, AppealsUpdateAssigneeData, AppealsUpdateAssigneeErrors, AppealsUpdateAssigneeResponses, AppealsUpdateStatusData, AppealsUpdateStatusErrors, AppealsUpdateStatusResponses, AttendanceClassStudentsData, AttendanceClassStudentsErrors, AttendanceClassStudentsResponses, AttendanceGenerateLessonsData, AttendanceGenerateLessonsErrors, AttendanceGenerateLessonsResponses, AttendanceGenerateTermLessonsData, AttendanceGenerateTermLessonsErrors, AttendanceGenerateTermLessonsResponses, AttendanceLessonAttendanceData, AttendanceLessonAttendanceErrors, AttendanceLessonAttendanceResponses, AttendanceMarkData, AttendanceMarkErrors, AttendanceMarkResponses, AttendanceMyLessonsData, AttendanceMyLessonsErrors, AttendanceMyLessonsRangeData, AttendanceMyLessonsRangeErrors, AttendanceMyLessonsRangeResponses, AttendanceMyLessonsResponses, AttendanceStatsData, AttendanceStatsErrors, AttendanceStatsResponses, AuditEntriesData, AuditEntriesErrors, AuditEntriesResponses, AuditFiltersData, AuditFiltersResponses, AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRefreshData, AuthRefreshResponses, AuthTwoFactorDisableData, AuthTwoFactorDisableErrors, AuthTwoFactorDisableResponses, AuthTwoFactorEnableData, AuthTwoFactorEnableErrors, AuthTwoFactorEnableResponses, AuthTwoFactorRecoveryCodesData, AuthTwoFactorRecoveryCodesErrors, AuthTwoFactorRecoveryCodesResponses, AuthTwoFactorSetupData, AuthTwoFactorSetupResponses, AuthTwoFactorStatusData, AuthTwoFactorStatusResponses, AuthTwoFactorVerifyData, AuthTwoFactorVerifyErrors, AuthTwoFactorVerifyResponses, DirectorClassesData, DirectorClassesResponses, DirectorOverviewData, DirectorOverviewErrors, DirectorOverviewResponses, DirectorTeachersData, DirectorTeachersResponses, JournalArchiveHomeworkData, JournalArchiveHomeworkErrors, JournalArchiveHomeworkResponses, JournalClassAveragesData, JournalClassAveragesErrors, JournalClassAveragesResponses, JournalClassJournalData, JournalClassJournalErrors, JournalClassJournalResponses, JournalCreateHomeworkData, JournalCreateHomeworkErrors, JournalCreateHomeworkResponses, JournalGradeSubmissionData, JournalGradeSubmissionErrors, JournalGradeSubmissionResponses, JournalLessonJournalData, JournalLessonJournalErrors, JournalLessonJournalResponses, JournalMyHomeworkData, JournalMyHomeworkErrors, JournalMyHomeworkResponses, JournalReturnSubmissionData, JournalReturnSubmissionErrors, JournalReturnSubmissionResponses, JournalSetGradesData, JournalSetGradesErrors, JournalSetGradesResponses, JournalStudentGradesData, JournalStudentGradesErrors, JournalStudentGradesResponses, JournalStudentHomeworkData, JournalStudentHomeworkErrors, JournalStudentHomeworkResponses, JournalSubmissionsData, JournalSubmissionsErrors, JournalSubmissionsResponses, JournalSubmitData, JournalSubmitErrors, JournalSubmitResponses, NotificationsBadgesData, NotificationsBadgesResponses, NotificationsListNotificationsData, NotificationsListNotificationsErrors, NotificationsListNotificationsResponses, NotificationsMarkAllReadData, NotificationsMarkAllReadErrors, NotificationsMarkAllReadResponses, NotificationsMarkReadData, NotificationsMarkReadErrors, NotificationsMarkReadResponses, ParentChildAttendanceData, ParentChildAttendanceErrors, ParentChildAttendanceResponses, ParentMyChildrenData, ParentMyChildrenResponses, ScheduleAddEntryData, ScheduleAddEntryErrors, ScheduleAddEntryResponses, ScheduleArchiveEntryData, ScheduleArchiveEntryErrors, ScheduleArchiveEntryResponses, ScheduleEntriesData, ScheduleEntriesErrors, ScheduleEntriesResponses, ScheduleTeacherLoadData, ScheduleTeacherLoadResponses, ScheduleUpdateEntryData, ScheduleUpdateEntryErrors, ScheduleUpdateEntryResponses, SchoolArchiveClassData, SchoolArchiveClassErrors, SchoolArchiveClassResponses, SchoolArchiveStaffData, SchoolArchiveStaffErrors, SchoolArchiveStaffResponses, SchoolArchiveStudentData, SchoolArchiveStudentErrors, SchoolArchiveStudentResponses, SchoolArchiveSubjectData, SchoolArchiveSubjectErrors, SchoolArchiveSubjectResponses, SchoolClassesData, SchoolClassesResponses, SchoolCreateClassData, SchoolCreateClassErrors, SchoolCreateClassResponses, SchoolCreateStaffData, SchoolCreateStaffErrors, SchoolCreateStaffResponses, SchoolCreateStudentData, SchoolCreateStudentErrors, SchoolCreateStudentResponses, SchoolCreateSubjectData, SchoolCreateSubjectErrors, SchoolCreateSubjectResponses, SchoolMoveStudentData, SchoolMoveStudentErrors, SchoolMoveStudentResponses, SchoolResetStaffPasswordData, SchoolResetStaffPasswordErrors, SchoolResetStaffPasswordResponses, SchoolRestoreStudentData, SchoolRestoreStudentErrors, SchoolRestoreStudentResponses, SchoolSetClassSubjectData, SchoolSetClassSubjectErrors, SchoolSetClassSubjectResponses, SchoolSetHomeroomData, SchoolSetHomeroomErrors, SchoolSetHomeroomResponses, SchoolSetStaffSubjectsData, SchoolSetStaffSubjectsErrors, SchoolSetStaffSubjectsResponses, SchoolStaffData, SchoolStaffResponses, SchoolStudentCardData, SchoolStudentCardErrors, SchoolStudentCardResponses, SchoolStudentsData, SchoolStudentsErrors, SchoolStudentsResponses, SchoolSubjectsData, SchoolSubjectsOfClassData, SchoolSubjectsOfClassErrors, SchoolSubjectsOfClassResponses, SchoolSubjectsResponses, ServiceHealthData, ServiceHealthResponses, ServiceReadinessData, ServiceReadinessResponses, TestsAddQuestionData, TestsAddQuestionErrors, TestsAddQuestionResponses, TestsArchiveQuestionData, TestsArchiveQuestionErrors, TestsArchiveQuestionResponses, TestsArchiveTestData, TestsArchiveTestErrors, TestsArchiveTestResponses, TestsAvailableData, TestsAvailableErrors, TestsAvailableResponses, TestsCreateTestData, TestsCreateTestErrors, TestsCreateTestResponses, TestsMyTestsData, TestsMyTestsErrors, TestsMyTestsResponses, TestsQuestionsData, TestsQuestionsErrors, TestsQuestionsResponses, TestsResultsData, TestsResultsErrors, TestsResultsResponses, TestsSetStatusData, TestsSetStatusErrors, TestsSetStatusResponses, TestsStartData, TestsStartErrors, TestsStartResponses, TestsStudentAttemptsData, TestsStudentAttemptsErrors, TestsStudentAttemptsResponses, TestsSubmitData, TestsSubmitErrors, TestsSubmitResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -562,6 +562,23 @@ export const attendanceStats = <ThrowOnError extends boolean = false>(options?: 
 export const attendanceClassStudents = <ThrowOnError extends boolean = false>(options: Options<AttendanceClassStudentsData, ThrowOnError>): RequestResult<AttendanceClassStudentsResponses, AttendanceClassStudentsErrors, ThrowOnError> => (options.client ?? client).get<AttendanceClassStudentsResponses, AttendanceClassStudentsErrors, ThrowOnError>({ url: '/api/v1/attendance/classes/{class_id}/students', ...options });
 
 /**
+ * Entries
+ *
+ * Filtrlangan jurnal. Faqat butun maktabni koʻradiganlarga.
+ *
+ * Sana filtri MAHALLIY kun boʻyicha (CLAUDE.md 3-qoida): Toshkentda
+ * 01:00 da yozilgan yozuv UTC da hali kechagi kun boʻladi.
+ */
+export const auditEntries = <ThrowOnError extends boolean = false>(options?: Options<AuditEntriesData, ThrowOnError>): RequestResult<AuditEntriesResponses, AuditEntriesErrors, ThrowOnError> => (options?.client ?? client).get<AuditEntriesResponses, AuditEntriesErrors, ThrowOnError>({ url: '/api/v1/audit', ...options });
+
+/**
+ * Filters
+ *
+ * Jurnalda haqiqatan uchraydigan turlar va amallar.
+ */
+export const auditFilters = <ThrowOnError extends boolean = false>(options?: Options<AuditFiltersData, ThrowOnError>): RequestResult<AuditFiltersResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AuditFiltersResponses, unknown, ThrowOnError>({ url: '/api/v1/audit/filters', ...options });
+
+/**
  * My Children
  *
  * Vasiyning farzandlari (OTA-02).
@@ -736,6 +753,23 @@ export const journalSubmit = <ThrowOnError extends boolean = false>(options: Opt
 export const schoolSubjects = <ThrowOnError extends boolean = false>(options?: Options<SchoolSubjectsData, ThrowOnError>): RequestResult<SchoolSubjectsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<SchoolSubjectsResponses, unknown, ThrowOnError>({ url: '/api/v1/school/subjects', ...options });
 
 /**
+ * Create Subject
+ *
+ * Yangi fan. Huquq: `students.manage`.
+ *
+ * Arxivdagi bir xil nomli fan boʻlsa — u qaytariladi, yangi yozuv
+ * yaratilmaydi: oʻtgan baholar aynan oʻsha fanga bogʻlangan.
+ */
+export const schoolCreateSubject = <ThrowOnError extends boolean = false>(options: Options<SchoolCreateSubjectData, ThrowOnError>): RequestResult<SchoolCreateSubjectResponses, SchoolCreateSubjectErrors, ThrowOnError> => (options.client ?? client).post<SchoolCreateSubjectResponses, SchoolCreateSubjectErrors, ThrowOnError>({
+    url: '/api/v1/school/subjects',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Classes
  *
  * Joriy oʻquv yilidagi sinflar (ADM-02).
@@ -743,11 +777,42 @@ export const schoolSubjects = <ThrowOnError extends boolean = false>(options?: O
 export const schoolClasses = <ThrowOnError extends boolean = false>(options?: Options<SchoolClassesData, ThrowOnError>): RequestResult<SchoolClassesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<SchoolClassesResponses, unknown, ThrowOnError>({ url: '/api/v1/school/classes', ...options });
 
 /**
+ * Create Class
+ *
+ * Yangi sinf joriy oʻquv yilida (ADM-02).
+ *
+ * Sinf rahbari koʻrsatilsa, unga `homeroom_teacher` roli ham
+ * beriladi — rolsiz u sinf rahbari ekranlarini koʻra olmasdi.
+ */
+export const schoolCreateClass = <ThrowOnError extends boolean = false>(options: Options<SchoolCreateClassData, ThrowOnError>): RequestResult<SchoolCreateClassResponses, SchoolCreateClassErrors, ThrowOnError> => (options.client ?? client).post<SchoolCreateClassResponses, SchoolCreateClassErrors, ThrowOnError>({
+    url: '/api/v1/school/classes',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Subjects Of Class
  *
  * Sinfda oʻqitiladigan fanlar va haftalik soati (ADM-03).
  */
 export const schoolSubjectsOfClass = <ThrowOnError extends boolean = false>(options: Options<SchoolSubjectsOfClassData, ThrowOnError>): RequestResult<SchoolSubjectsOfClassResponses, SchoolSubjectsOfClassErrors, ThrowOnError> => (options.client ?? client).get<SchoolSubjectsOfClassResponses, SchoolSubjectsOfClassErrors, ThrowOnError>({ url: '/api/v1/school/classes/{class_id}/subjects', ...options });
+
+/**
+ * Set Class Subject
+ *
+ * Sinfga fan biriktiradi (ADM-03). `weekly_hours=0` — chiqaradi.
+ */
+export const schoolSetClassSubject = <ThrowOnError extends boolean = false>(options: Options<SchoolSetClassSubjectData, ThrowOnError>): RequestResult<SchoolSetClassSubjectResponses, SchoolSetClassSubjectErrors, ThrowOnError> => (options.client ?? client).put<SchoolSetClassSubjectResponses, SchoolSetClassSubjectErrors, ThrowOnError>({
+    url: '/api/v1/school/classes/{class_id}/subjects',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * Staff
@@ -874,6 +939,34 @@ export const schoolResetStaffPassword = <ThrowOnError extends boolean = false>(o
  * Xodimni arxivlaydi. Oʻchirish YOʻQ (CLAUDE.md 1-qoida).
  */
 export const schoolArchiveStaff = <ThrowOnError extends boolean = false>(options: Options<SchoolArchiveStaffData, ThrowOnError>): RequestResult<SchoolArchiveStaffResponses, SchoolArchiveStaffErrors, ThrowOnError> => (options.client ?? client).post<SchoolArchiveStaffResponses, SchoolArchiveStaffErrors, ThrowOnError>({ url: '/api/v1/school/staff/{user_id}/archive', ...options });
+
+/**
+ * Archive Subject
+ *
+ * Oʻquv rejasidan chiqaradi. Jadvalda ishlatilayotgan fan → `409`.
+ */
+export const schoolArchiveSubject = <ThrowOnError extends boolean = false>(options: Options<SchoolArchiveSubjectData, ThrowOnError>): RequestResult<SchoolArchiveSubjectResponses, SchoolArchiveSubjectErrors, ThrowOnError> => (options.client ?? client).post<SchoolArchiveSubjectResponses, SchoolArchiveSubjectErrors, ThrowOnError>({ url: '/api/v1/school/subjects/{subject_id}/archive', ...options });
+
+/**
+ * Set Homeroom
+ *
+ * Sinf rahbarini almashtiradi. `null` — olib tashlash.
+ */
+export const schoolSetHomeroom = <ThrowOnError extends boolean = false>(options: Options<SchoolSetHomeroomData, ThrowOnError>): RequestResult<SchoolSetHomeroomResponses, SchoolSetHomeroomErrors, ThrowOnError> => (options.client ?? client).put<SchoolSetHomeroomResponses, SchoolSetHomeroomErrors, ThrowOnError>({
+    url: '/api/v1/school/classes/{class_id}/homeroom',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Archive Class
+ *
+ * Arxivlaydi. Oʻquvchisi bor sinf → `409`.
+ */
+export const schoolArchiveClass = <ThrowOnError extends boolean = false>(options: Options<SchoolArchiveClassData, ThrowOnError>): RequestResult<SchoolArchiveClassResponses, SchoolArchiveClassErrors, ThrowOnError> => (options.client ?? client).post<SchoolArchiveClassResponses, SchoolArchiveClassErrors, ThrowOnError>({ url: '/api/v1/school/classes/{class_id}/archive', ...options });
 
 /**
  * Entries

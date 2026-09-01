@@ -153,3 +153,38 @@ def _two_factor_not_required(request: pytest.FixtureRequest) -> Iterator[None]:
         yield
     finally:
         twofactor_service.is_required = asl  # type: ignore[assignment]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _tez_argon2() -> Iterator[None]:
+    """Testlarda argon2 parametrlari yengillashtiriladi.
+
+    Ishlab chiqarishda argon2 ATAYLAB sekin: 64 MiB xotira va 3
+    iteratsiya bitta xeshni ~126 ms qiladi va brute-force'ni qimmat
+    qiladi. Testda esa bu faqat kutish — har fixture 5 ta foydalanuvchi
+    yaratadi, ya'ni 630 ms, va butun to'plamda ~4 daqiqa.
+
+    Nima OʻZGARMAYDI: algoritm oʻsha argon2id, chaqiruv joylari,
+    tekshiruv mantigʻi. Faqat narx tushadi. Parametrlarning oʻzi kod
+    emas, sozlama — ular ishlab chiqarish uchun `core/security.py` da
+    qat'iy yozilgan va u yerda tekshiriladi.
+    """
+    from argon2 import PasswordHasher
+
+    from app.core import security
+
+    asl_hasher = security._hasher
+    asl_dummy = security._DUMMY_HASH
+
+    security._hasher = PasswordHasher(
+        time_cost=1, memory_cost=8, parallelism=1, hash_len=16
+    )
+    # Soxta xesh ham yangi parametrlar bilan qayta yasaladi: aks holda
+    # «foydalanuvchi topilmadi» yoʻli eski, qimmat xeshni tekshirib
+    # sekin qolardi.
+    security._DUMMY_HASH = security._hasher.hash("sinov-uchun-soxta-qiymat")
+
+    yield
+
+    security._hasher = asl_hasher
+    security._DUMMY_HASH = asl_dummy

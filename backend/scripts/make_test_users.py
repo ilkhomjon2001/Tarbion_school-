@@ -25,7 +25,7 @@ belgisini qidiradi.
 
 import asyncio
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from sqlalchemy import func, select
@@ -38,6 +38,7 @@ from app.core.db import SessionFactory  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
 from app.models import (  # noqa: E402
     Guardian,
+    Permission,
     Role,
     RoleName,
     ScheduleEntry,
@@ -46,6 +47,7 @@ from app.models import (  # noqa: E402
     Subject,
     TeacherSubject,
     User,
+    UserPermission,
     UserRole,
 )
 
@@ -65,20 +67,48 @@ class SinovHisob:
     first_name: str
     roles: list[str]
     izoh: str
+    #: T-005: rol nima KOʻRISHINI belgilaydi, huquq nima QILA
+    #: olishini. Rolsiz huquq ham, huquqsiz rol ham yetarli emas —
+    #: sinov hisobiga ikkalasi ham kerak, aks holda administrator
+    #: kabinetni ochadi-yu, hech nima qila olmasdi.
+    permissions: list[str] = field(default_factory=list)
 
 
 HISOBLAR = [
     SinovHisob(
-        "admin.test", "Admin", "Test", [RoleName.ADMIN.value],
-        "Maʼlumotnoma, qabul, toʻlov, xodimlar, huquqlar",
+        "admin.test",
+        "Admin",
+        "Test",
+        [RoleName.ADMIN.value],
+        "Maʼlumotnoma, qabul, xodimlar — toʻliq huquq bilan",
+        # `permissions.grant` ATAYLAB yoʻq: uni faqat super
+        # administrator bera oladi (T-005).
+        [
+            Permission.USERS_CREATE.value,
+            Permission.USERS_MANAGE.value,
+            Permission.USERS_RESET_PASSWORD.value,
+            Permission.STUDENTS_MANAGE.value,
+            Permission.SCHEDULE_MANAGE.value,
+            Permission.ATTENDANCE_EDIT_CLOSED.value,
+            Permission.REPORTS_EXPORT.value,
+            Permission.ANNOUNCEMENTS_PUBLISH.value,
+        ],
     ),
     SinovHisob(
-        "rahbar.test", "Rahbar", "Test", [RoleName.DIRECTOR.value],
-        "Faqat hisobot va analitika",
+        "rahbar.test",
+        "Rahbar",
+        "Test",
+        [RoleName.DIRECTOR.value],
+        "Hisobot va analitika",
+        [Permission.REPORTS_VIEW_ALL.value, Permission.REPORTS_EXPORT.value],
     ),
     SinovHisob(
-        "oquvbolim.test", "Oquvbolim", "Test", [RoleName.ACADEMIC.value],
+        "oquvbolim.test",
+        "Oquvbolim",
+        "Test",
+        [RoleName.ACADEMIC.value],
         "Jadval, imtihon, sifat nazorati",
+        [Permission.SCHEDULE_MANAGE.value, Permission.REPORTS_VIEW_ALL.value],
     ),
     SinovHisob(
         "ustoz.test", "Ustoz", "Test", [RoleName.TEACHER.value],
@@ -139,6 +169,37 @@ async def _hisob_yarat(session: AsyncSession, h: SinovHisob) -> tuple[User, bool
     user.is_archived = False
     await session.flush()
     return user, yangi
+
+
+async def _huquq_ber(session: AsyncSession, user: User, kodlar: list[str]) -> str:
+    """Sinov hisobiga huquqlarni beradi.
+
+    Idempotent: allaqachon berilgani qayta qoʻshilmaydi.
+    """
+    if not kodlar:
+        return ""
+
+    mavjud = set(
+        (
+            await session.execute(
+                select(UserPermission.permission).where(
+                    UserPermission.user_id == user.id,
+                    UserPermission.is_archived.is_(False),
+                )
+            )
+        ).scalars()
+    )
+    qoshildi = 0
+    for kod in kodlar:
+        if kod in mavjud:
+            continue
+        session.add(
+            UserPermission(user_id=user.id, permission=kod, granted_by_id=user.id)
+        )
+        qoshildi += 1
+
+    await session.flush()
+    return f"{len(kodlar)} huquq" + (f" ({qoshildi} yangi)" if qoshildi else "")
 
 
 async def _ustozga_dars(session: AsyncSession, ustoz: User) -> str:
@@ -288,16 +349,19 @@ async def main() -> int:
 
         for h in HISOBLAR:
             user, yangi = await _hisob_yarat(session, h)
-            qoshimcha = ""
+            qoshimcha = await _huquq_ber(session, user, h.permissions)
+
+            qismlar = [qoshimcha] if qoshimcha else []
 
             if RoleName.HOMEROOM_TEACHER.value in h.roles:
                 sinf = await _sinf_rahbari(session, user)
-                dars = await _ustozga_dars(session, user)
-                qoshimcha = f"sinf: {sinf} · {dars}"
+                qismlar += [f"sinf: {sinf}", await _ustozga_dars(session, user)]
             elif RoleName.TEACHER.value in h.roles:
-                qoshimcha = await _ustozga_dars(session, user)
+                qismlar.append(await _ustozga_dars(session, user))
             elif RoleName.PARENT.value in h.roles:
-                qoshimcha = f"farzand: {await _otaonaga_farzand(session, user)}"
+                qismlar.append(f"farzand: {await _otaonaga_farzand(session, user)}")
+
+            qoshimcha = " · ".join(x for x in qismlar if x)
 
             belgi = "yangi" if yangi else "yangilandi"
             print(f"  {h.login:<{kenglik}}  {belgi:<10} {h.izoh}")

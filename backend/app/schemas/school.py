@@ -128,3 +128,29 @@ class StaffSubjectsIn(BaseModel):
 class PasswordResetOut(BaseModel):
     login: str
     new_password: str
+
+
+# ─────────────── Maʼlumotnomani boshqarish (ADM-02, ADM-03) ───────────────
+
+
+class SubjectCreateIn(BaseModel):
+    name: str = Field(min_length=2, max_length=80)
+    short_name: str = Field(default="", max_length=20)
+
+
+class ClassCreateIn(BaseModel):
+    #: «11-A» koʻrinishida. Server katta harfga keltiradi.
+    name: str = Field(min_length=2, max_length=20)
+    homeroom_teacher_id: uuid.UUID | None = None
+
+
+class HomeroomIn(BaseModel):
+    """`null` — sinf rahbarini olib tashlash."""
+
+    teacher_id: uuid.UUID | None = None
+
+
+class ClassSubjectIn(BaseModel):
+    subject_id: uuid.UUID
+    #: 0 — oʻquv rejasidan chiqarish.
+    weekly_hours: int = Field(ge=0, le=20)

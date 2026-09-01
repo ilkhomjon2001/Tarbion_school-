@@ -16,6 +16,7 @@ from app.api.v1 import academic as academic_router
 from app.api.v1 import access as access_router
 from app.api.v1 import appeals as appeals_router
 from app.api.v1 import attendance as attendance_router
+from app.api.v1 import audit as audit_router
 from app.api.v1 import auth as auth_router
 from app.api.v1 import director as director_router
 from app.api.v1 import journal as journal_router
@@ -102,6 +103,7 @@ app.include_router(academic_router.router, prefix=API_V1)
 app.include_router(director_router.router, prefix=API_V1)
 app.include_router(appeals_router.router, prefix=API_V1)
 app.include_router(attendance_router.router, prefix=API_V1)
+app.include_router(audit_router.router, prefix=API_V1)
 app.include_router(parent_router.router, prefix=API_V1)
 app.include_router(journal_router.router, prefix=API_V1)
 app.include_router(school_router.router, prefix=API_V1)

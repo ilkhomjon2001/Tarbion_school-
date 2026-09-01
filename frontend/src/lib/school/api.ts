@@ -18,17 +18,31 @@ import {
   scheduleEntries,
   scheduleTeacherLoad,
   scheduleUpdateEntry,
+  schoolArchiveClass,
   schoolArchiveStaff,
+  schoolArchiveStudent,
+  schoolArchiveSubject,
   schoolClasses,
+  schoolCreateClass,
+  schoolCreateStudent,
+  schoolCreateSubject,
   schoolCreateStaff,
   schoolResetStaffPassword,
   schoolSetStaffSubjects,
+  schoolMoveStudent,
+  schoolRestoreStudent,
+  schoolSetClassSubject,
+  schoolSetHomeroom,
   schoolStaff,
+  schoolStudentCard,
   schoolStudents,
+  schoolSubjectsOfClass,
   schoolSubjects,
 } from "@/lib/api/sdk.gen";
 import type {
   ClassOut,
+  ClassSubjectOut,
+  StudentCardOut,
   PasswordResetOut,
   ScheduleEntryOut,
   StaffCreatedOut,
@@ -41,6 +55,8 @@ import { withAuth } from "@/lib/session";
 
 export type {
   ClassOut,
+  ClassSubjectOut,
+  StudentCardOut,
   PasswordResetOut,
   ScheduleEntryOut,
   StaffCreatedOut,
@@ -97,9 +113,17 @@ export async function fetchStaff(): Promise<StaffOut[]> {
 export async function fetchStudents(filter?: {
   classId?: string;
   query?: string;
+  /** `true` — arxivlangan oʻquvchilar. Sukut boʻyicha faol. */
+  archived?: boolean;
 }): Promise<StudentListRowOut[]> {
   return withAuth<StudentListRowOut[]>(() =>
-    schoolStudents({ query: { class_id: filter?.classId, q: filter?.query } }),
+    schoolStudents({
+      query: {
+        class_id: filter?.classId,
+        q: filter?.query,
+        archived: filter?.archived ?? false,
+      },
+    }),
   );
 }
 
@@ -257,4 +281,115 @@ export function useSchoolDirectory(): SchoolDirectory {
   }, [tick]);
 
   return { subjects, classes, staff, loading, error, reload };
+}
+
+
+// ─────────────── Maʼlumotnomani boshqarish (ADM-02, ADM-03) ───────────────
+
+/** Arxivdagi bir xil nomli fan boʻlsa — u qaytadi, yangisi yaratilmaydi. */
+export async function createSubject(
+  name: string,
+  shortName = "",
+): Promise<SubjectOut> {
+  return withAuth<SubjectOut>(() =>
+    schoolCreateSubject({ body: { name, short_name: shortName } }),
+  );
+}
+
+/** Jadvalda ishlatilayotgan fan → `409`. */
+export async function archiveSubject(subjectId: string): Promise<SubjectOut> {
+  return withAuth<SubjectOut>(() =>
+    schoolArchiveSubject({ path: { subject_id: subjectId } }),
+  );
+}
+
+export async function createClass(
+  name: string,
+  homeroomTeacherId?: string | null,
+): Promise<ClassOut> {
+  return withAuth<ClassOut>(() =>
+    schoolCreateClass({
+      body: { name, homeroom_teacher_id: homeroomTeacherId ?? null },
+    }),
+  );
+}
+
+/** `null` — sinf rahbarini olib tashlash. */
+export async function setHomeroomTeacher(
+  classId: string,
+  teacherId: string | null,
+): Promise<ClassOut> {
+  return withAuth<ClassOut>(() =>
+    schoolSetHomeroom({ path: { class_id: classId }, body: { teacher_id: teacherId } }),
+  );
+}
+
+/** Oʻquvchisi bor sinf → `409`. */
+export async function archiveClass(classId: string): Promise<void> {
+  await withAuth<void>(() => schoolArchiveClass({ path: { class_id: classId } }));
+}
+
+export async function fetchClassSubjects(classId: string): Promise<ClassSubjectOut[]> {
+  return withAuth<ClassSubjectOut[]>(() =>
+    schoolSubjectsOfClass({ path: { class_id: classId } }),
+  );
+}
+
+/** `weeklyHours = 0` — oʻquv rejasidan chiqaradi (arxivlanadi). */
+export async function setClassSubject(
+  classId: string,
+  subjectId: string,
+  weeklyHours: number,
+): Promise<void> {
+  await withAuth<void>(() =>
+    schoolSetClassSubject({
+      path: { class_id: classId },
+      body: { subject_id: subjectId, weekly_hours: weeklyHours },
+    }),
+  );
+}
+
+// ─────────────────────────── Oʻquvchilar ───────────────────────────
+
+export async function fetchStudentCard(studentId: string): Promise<StudentCardOut> {
+  return withAuth<StudentCardOut>(() =>
+    schoolStudentCard({ path: { student_id: studentId } }),
+  );
+}
+
+export type StudentCreateInput = {
+  last_name: string;
+  first_name: string;
+  middle_name?: string | null;
+  birth_date?: string | null;
+  class_id?: string | null;
+};
+
+export async function createStudent(input: StudentCreateInput): Promise<StudentCardOut> {
+  return withAuth<StudentCardOut>(() => schoolCreateStudent({ body: input }));
+}
+
+export async function moveStudent(
+  studentId: string,
+  classId: string | null,
+): Promise<StudentCardOut> {
+  return withAuth<StudentCardOut>(() =>
+    schoolMoveStudent({ path: { student_id: studentId }, body: { class_id: classId } }),
+  );
+}
+
+/** Arxivlaydi — oʻchirmaydi. Sabab majburiy (CLAUDE.md 1-qoida). */
+export async function archiveStudent(
+  studentId: string,
+  reason: string,
+): Promise<StudentCardOut> {
+  return withAuth<StudentCardOut>(() =>
+    schoolArchiveStudent({ path: { student_id: studentId }, body: { reason } }),
+  );
+}
+
+export async function restoreStudent(studentId: string): Promise<StudentCardOut> {
+  return withAuth<StudentCardOut>(() =>
+    schoolRestoreStudent({ path: { student_id: studentId } }),
+  );
 }

@@ -597,6 +597,93 @@ export type AttendanceStatOut = {
 };
 
 /**
+ * AuditEntryOut
+ */
+export type AuditEntryOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Object Type
+     */
+    object_type: string;
+    /**
+     * Object Id
+     */
+    object_id: string | null;
+    /**
+     * Action
+     */
+    action: string;
+    /**
+     * Old Value
+     */
+    old_value: {
+        [key: string]: unknown;
+    } | null;
+    /**
+     * New Value
+     */
+    new_value: {
+        [key: string]: unknown;
+    } | null;
+    /**
+     * Actor Id
+     */
+    actor_id: string | null;
+    /**
+     * Actor Name
+     */
+    actor_name: string | null;
+    /**
+     * Ip Address
+     */
+    ip_address: string | null;
+};
+
+/**
+ * AuditFiltersOut
+ *
+ * Jurnalda haqiqatan uchraydigan qiymatlar.
+ *
+ * Qatʼiy roʻyxat emas: yangi modul qoʻshilganda filtr oʻzi
+ * kengayadi.
+ */
+export type AuditFiltersOut = {
+    /**
+     * Object Types
+     */
+    object_types: Array<string>;
+    /**
+     * Actions
+     */
+    actions: Array<string>;
+};
+
+/**
+ * AuditPageOut
+ */
+export type AuditPageOut = {
+    /**
+     * Rows
+     */
+    rows: Array<AuditEntryOut>;
+    /**
+     * Total
+     */
+    total: number;
+    /**
+     * Has More
+     */
+    has_more: boolean;
+};
+
+/**
  * BadgeOut
  *
  * Yon menyu uchun: qaysi boʻlimda nechta oʻqilmagan xabar bor.
@@ -747,6 +834,20 @@ export type ClassAppealStatOut = {
 };
 
 /**
+ * ClassCreateIn
+ */
+export type ClassCreateIn = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Homeroom Teacher Id
+     */
+    homeroom_teacher_id?: string | null;
+};
+
+/**
  * ClassJournalOut
  */
 export type ClassJournalOut = {
@@ -850,6 +951,20 @@ export type ClassRowOut = {
      * Average Grade
      */
     average_grade: number;
+};
+
+/**
+ * ClassSubjectIn
+ */
+export type ClassSubjectIn = {
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Weekly Hours
+     */
+    weekly_hours: number;
 };
 
 /**
@@ -1133,6 +1248,18 @@ export type HolidayOut = {
      * Title
      */
     title: string;
+};
+
+/**
+ * HomeroomIn
+ *
+ * `null` — sinf rahbarini olib tashlash.
+ */
+export type HomeroomIn = {
+    /**
+     * Teacher Id
+     */
+    teacher_id?: string | null;
 };
 
 /**
@@ -2256,6 +2383,20 @@ export type StudentSubjectGradesOut = {
      * Average
      */
     average: number | null;
+};
+
+/**
+ * SubjectCreateIn
+ */
+export type SubjectCreateIn = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Short Name
+     */
+    short_name?: string;
 };
 
 /**
@@ -4333,6 +4474,82 @@ export type AttendanceClassStudentsResponses = {
 
 export type AttendanceClassStudentsResponse = AttendanceClassStudentsResponses[keyof AttendanceClassStudentsResponses];
 
+export type AuditEntriesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Object Type
+         */
+        object_type?: string | null;
+        /**
+         * Action
+         */
+        action?: string | null;
+        /**
+         * Actor Id
+         */
+        actor_id?: string | null;
+        /**
+         * Date From
+         */
+        date_from?: string | null;
+        /**
+         * Date To
+         */
+        date_to?: string | null;
+        /**
+         * Q
+         *
+         * Obyekt, amal, xodim yoki qiymat
+         */
+        q?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Offset
+         */
+        offset?: number;
+    };
+    url: '/api/v1/audit';
+};
+
+export type AuditEntriesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AuditEntriesError = AuditEntriesErrors[keyof AuditEntriesErrors];
+
+export type AuditEntriesResponses = {
+    /**
+     * Successful Response
+     */
+    200: AuditPageOut;
+};
+
+export type AuditEntriesResponse = AuditEntriesResponses[keyof AuditEntriesResponses];
+
+export type AuditFiltersData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/audit/filters';
+};
+
+export type AuditFiltersResponses = {
+    /**
+     * Successful Response
+     */
+    200: AuditFiltersOut;
+};
+
+export type AuditFiltersResponse = AuditFiltersResponses[keyof AuditFiltersResponses];
+
 export type ParentMyChildrenData = {
     body?: never;
     path?: never;
@@ -4836,6 +5053,31 @@ export type SchoolSubjectsResponses = {
 
 export type SchoolSubjectsResponse = SchoolSubjectsResponses[keyof SchoolSubjectsResponses];
 
+export type SchoolCreateSubjectData = {
+    body: SubjectCreateIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/school/subjects';
+};
+
+export type SchoolCreateSubjectErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolCreateSubjectError = SchoolCreateSubjectErrors[keyof SchoolCreateSubjectErrors];
+
+export type SchoolCreateSubjectResponses = {
+    /**
+     * Successful Response
+     */
+    201: SubjectOut;
+};
+
+export type SchoolCreateSubjectResponse = SchoolCreateSubjectResponses[keyof SchoolCreateSubjectResponses];
+
 export type SchoolClassesData = {
     body?: never;
     path?: never;
@@ -4853,6 +5095,31 @@ export type SchoolClassesResponses = {
 };
 
 export type SchoolClassesResponse = SchoolClassesResponses[keyof SchoolClassesResponses];
+
+export type SchoolCreateClassData = {
+    body: ClassCreateIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/school/classes';
+};
+
+export type SchoolCreateClassErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolCreateClassError = SchoolCreateClassErrors[keyof SchoolCreateClassErrors];
+
+export type SchoolCreateClassResponses = {
+    /**
+     * Successful Response
+     */
+    201: ClassOut;
+};
+
+export type SchoolCreateClassResponse = SchoolCreateClassResponses[keyof SchoolCreateClassResponses];
 
 export type SchoolSubjectsOfClassData = {
     body?: never;
@@ -4885,6 +5152,36 @@ export type SchoolSubjectsOfClassResponses = {
 };
 
 export type SchoolSubjectsOfClassResponse = SchoolSubjectsOfClassResponses[keyof SchoolSubjectsOfClassResponses];
+
+export type SchoolSetClassSubjectData = {
+    body: ClassSubjectIn;
+    path: {
+        /**
+         * Class Id
+         */
+        class_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/classes/{class_id}/subjects';
+};
+
+export type SchoolSetClassSubjectErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolSetClassSubjectError = SchoolSetClassSubjectErrors[keyof SchoolSetClassSubjectErrors];
+
+export type SchoolSetClassSubjectResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type SchoolSetClassSubjectResponse = SchoolSetClassSubjectResponses[keyof SchoolSetClassSubjectResponses];
 
 export type SchoolStaffData = {
     body?: never;
@@ -5209,6 +5506,96 @@ export type SchoolArchiveStaffResponses = {
 };
 
 export type SchoolArchiveStaffResponse = SchoolArchiveStaffResponses[keyof SchoolArchiveStaffResponses];
+
+export type SchoolArchiveSubjectData = {
+    body?: never;
+    path: {
+        /**
+         * Subject Id
+         */
+        subject_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/subjects/{subject_id}/archive';
+};
+
+export type SchoolArchiveSubjectErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolArchiveSubjectError = SchoolArchiveSubjectErrors[keyof SchoolArchiveSubjectErrors];
+
+export type SchoolArchiveSubjectResponses = {
+    /**
+     * Successful Response
+     */
+    200: SubjectOut;
+};
+
+export type SchoolArchiveSubjectResponse = SchoolArchiveSubjectResponses[keyof SchoolArchiveSubjectResponses];
+
+export type SchoolSetHomeroomData = {
+    body: HomeroomIn;
+    path: {
+        /**
+         * Class Id
+         */
+        class_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/classes/{class_id}/homeroom';
+};
+
+export type SchoolSetHomeroomErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolSetHomeroomError = SchoolSetHomeroomErrors[keyof SchoolSetHomeroomErrors];
+
+export type SchoolSetHomeroomResponses = {
+    /**
+     * Successful Response
+     */
+    200: ClassOut;
+};
+
+export type SchoolSetHomeroomResponse = SchoolSetHomeroomResponses[keyof SchoolSetHomeroomResponses];
+
+export type SchoolArchiveClassData = {
+    body?: never;
+    path: {
+        /**
+         * Class Id
+         */
+        class_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/classes/{class_id}/archive';
+};
+
+export type SchoolArchiveClassErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolArchiveClassError = SchoolArchiveClassErrors[keyof SchoolArchiveClassErrors];
+
+export type SchoolArchiveClassResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type SchoolArchiveClassResponse = SchoolArchiveClassResponses[keyof SchoolArchiveClassResponses];
 
 export type ScheduleEntriesData = {
     body?: never;

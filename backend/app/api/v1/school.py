@@ -14,11 +14,15 @@ from fastapi import APIRouter, Query, Request, Response
 
 from app.api.v1.deps import CurrentUserDep
 from app.core.db import SessionDep
+from app.core.exceptions import NotFoundError
 from app.models import User
 from app.schemas.school import (
+    ClassCreateIn,
     ClassOut,
+    ClassSubjectIn,
     ClassSubjectOut,
     GuardianOut,
+    HomeroomIn,
     PasswordResetOut,
     StaffCreatedOut,
     StaffCreateIn,
@@ -29,9 +33,10 @@ from app.schemas.school import (
     StudentCreateIn,
     StudentListRowOut,
     StudentMoveIn,
+    SubjectCreateIn,
     SubjectOut,
 )
-from app.services import school_service, user_service
+from app.services import reference_service, school_service, user_service
 
 router = APIRouter(prefix="/school", tags=["school"])
 
@@ -316,4 +321,137 @@ async def archive_staff(
     """Xodimni arxivlaydi. Oʻchirish YOʻQ (CLAUDE.md 1-qoida)."""
     await user_service.archive_user(session, actor=user, user_id=user_id, ip=_client_ip(request))
     await session.commit()
+    return Response(status_code=204)
+
+
+# ─────────────── Maʼlumotnomani boshqarish (ADM-02, ADM-03) ───────────────
+
+
+@router.post("/subjects", response_model=SubjectOut, status_code=201)
+async def create_subject(
+    payload: SubjectCreateIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> SubjectOut:
+    """Yangi fan. Huquq: `students.manage`.
+
+    Arxivdagi bir xil nomli fan boʻlsa — u qaytariladi, yangi yozuv
+    yaratilmaydi: oʻtgan baholar aynan oʻsha fanga bogʻlangan.
+    """
+    s = await reference_service.create_subject(
+        session,
+        actor=user,
+        name=payload.name,
+        short_name=payload.short_name,
+        ip=_client_ip(request),
+    )
+    return SubjectOut(id=s.id, name=s.name, short_name=s.short_name)
+
+
+@router.post("/subjects/{subject_id}/archive", response_model=SubjectOut)
+async def archive_subject(
+    subject_id: uuid.UUID,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> SubjectOut:
+    """Oʻquv rejasidan chiqaradi. Jadvalda ishlatilayotgan fan → `409`."""
+    s = await reference_service.archive_subject(
+        session, actor=user, subject_id=subject_id, ip=_client_ip(request)
+    )
+    return SubjectOut(id=s.id, name=s.name, short_name=s.short_name)
+
+
+async def _class_out(session: SessionDep, class_id: uuid.UUID) -> ClassOut:
+    """Sinfni roʻyxat bilan bir xil shaklda qaytaradi.
+
+    Roʻyxat funksiyasi qayta ishlatiladi: oʻquvchi soni va rahbar
+    ismini ikkinchi marta yigʻish kodni ikkiga boʻlardi.
+    """
+    rows = await school_service.list_classes(session)
+    c = next((x for x in rows if x.id == class_id), None)
+    if c is None:
+        raise NotFoundError("Sinf topilmadi.")
+    return ClassOut(
+        id=c.id,
+        name=c.name,
+        academic_year=c.academic_year,
+        homeroom_teacher=c.homeroom_teacher,
+        student_count=c.student_count,
+    )
+
+
+@router.post("/classes", response_model=ClassOut, status_code=201)
+async def create_class(
+    payload: ClassCreateIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> ClassOut:
+    """Yangi sinf joriy oʻquv yilida (ADM-02).
+
+    Sinf rahbari koʻrsatilsa, unga `homeroom_teacher` roli ham
+    beriladi — rolsiz u sinf rahbari ekranlarini koʻra olmasdi.
+    """
+    cls = await reference_service.create_class(
+        session,
+        actor=user,
+        name=payload.name,
+        homeroom_teacher_id=payload.homeroom_teacher_id,
+        ip=_client_ip(request),
+    )
+    return await _class_out(session, cls.id)
+
+
+@router.put("/classes/{class_id}/homeroom", response_model=ClassOut)
+async def set_homeroom(
+    class_id: uuid.UUID,
+    payload: HomeroomIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> ClassOut:
+    """Sinf rahbarini almashtiradi. `null` — olib tashlash."""
+    await reference_service.set_homeroom_teacher(
+        session,
+        actor=user,
+        class_id=class_id,
+        teacher_id=payload.teacher_id,
+        ip=_client_ip(request),
+    )
+    return await _class_out(session, class_id)
+
+
+@router.post("/classes/{class_id}/archive", status_code=204)
+async def archive_class(
+    class_id: uuid.UUID,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> Response:
+    """Arxivlaydi. Oʻquvchisi bor sinf → `409`."""
+    await reference_service.archive_class(
+        session, actor=user, class_id=class_id, ip=_client_ip(request)
+    )
+    return Response(status_code=204)
+
+
+@router.put("/classes/{class_id}/subjects", status_code=204)
+async def set_class_subject(
+    class_id: uuid.UUID,
+    payload: ClassSubjectIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> Response:
+    """Sinfga fan biriktiradi (ADM-03). `weekly_hours=0` — chiqaradi."""
+    await reference_service.set_class_subject(
+        session,
+        actor=user,
+        class_id=class_id,
+        subject_id=payload.subject_id,
+        weekly_hours=payload.weekly_hours,
+        ip=_client_ip(request),
+    )
     return Response(status_code=204)
