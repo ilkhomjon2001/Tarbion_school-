@@ -757,3 +757,23 @@ HMAC imzoli webhook, idempotentlik, summa faqat intent yozuvidan (X-9).
 Haqiqiy integratsiyada faqat imzo sxemasi va URL almashadi. Standart
 shartnoma 3 500 000 soʻm/oy, oʻquv yili 9 oy (sentabr–may) — loyiha
 egasining qarori.
+
+## 2026-09-02 · Audit tuzatishlari boʻyicha uchta biznes-qoida
+
+Audit (AUDIT.md) topilmalarini yopishda qabul qilindi:
+
+1. **Davomat foizida sababli kun maxrajdan chiqadi** (O1). Foiz =
+   kelgan / (jami − sababli). Kasal bola foizda jazolanmaydi; barcha
+   kabinetlar va direktor paneli endi bitta formuladan
+   (`AttendanceStat.percent`, `director_service`) oladi.
+
+2. **Shartnoma boshlanish kuni oy oʻrtasi boʻlsa, oʻsha oy avtomatik
+   hisoblanmaydi** (Y3). Admin 1-sanani tanlasa oy toʻliq qarz boʻladi,
+   oy oʻrtasini tanlasa hisob keyingi oydan boshlanadi — «birinchi oy
+   qoʻlda» qoidasining aniq ifodasi. Oʻtgan oy uchun hisoblashda oʻsha
+   oyda amalda boʻlgan (arxivdagi) shartnoma tanlanadi (Y2).
+
+3. **Reyting formulasi** (REY-01): vaznli, 5 ballik shkalaga
+   normallashgan oʻrtacha baho; teng boʻlsa davomat foizi. X-6 —
+   oʻquvchiga faqat OʻZ oʻrni va koʻrsatkichlari qaytadi, sinfdoshlar
+   roʻyxati yoʻq.
