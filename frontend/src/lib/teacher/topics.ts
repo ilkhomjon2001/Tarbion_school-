@@ -46,6 +46,19 @@ interface FlatTopic {
 let cache: FlatTopic[] | null = null;
 let loading: Promise<FlatTopic[]> | null = null;
 
+/**
+ * ASCII `'` → oʻzbek apostrofi (CLAUDE.md 8-qoida).
+ *
+ * Baza fayli (`daraxt.json`) ASCII apostrof bilan yozilgan; u tuzatilguncha
+ * mavzular BAZAGA notoʻgʻri belgida yozilib qolmasin. Qoida: o/g dan
+ * keyin — ʻ (U+02BB), boshqa oʻrinda tutuq belgisi — ʼ (U+02BC).
+ */
+function fixApostrophes(text: string): string {
+  return text
+    .replace(/([oOgG])['‘’`]/g, "$1ʻ")
+    .replace(/['‘’`]/g, "ʼ");
+}
+
 async function loadTopics(): Promise<FlatTopic[]> {
   if (cache) return cache;
   if (loading) return loading;
@@ -58,11 +71,13 @@ async function loadTopics(): Promise<FlatTopic[]> {
         for (const [className, terms] of Object.entries(classes)) {
           for (const [term, lessons] of Object.entries(terms)) {
             lessons.forEach((l, index) => {
+              const title = fixApostrophes(l.t);
+              const model = l.m === null ? null : fixApostrophes(l.m);
               flat.push({
-                title: l.t,
-                lower: l.t.toLowerCase(),
-                model: l.m,
-                modelLower: (l.m ?? "").toLowerCase(),
+                title,
+                lower: title.toLowerCase(),
+                model,
+                modelLower: (model ?? "").toLowerCase(),
                 year,
                 className,
                 term,
@@ -99,7 +114,8 @@ export async function suggestTopics(
   query: string,
   limit = 8,
 ): Promise<TopicSuggestion[]> {
-  const q = query.trim().toLowerCase();
+  // Ustoz ASCII `'` terishi mumkin — qidiruv baribir topsin.
+  const q = fixApostrophes(query.trim()).toLowerCase();
   if (q.length < 2) return [];
 
   const all = await loadTopics();

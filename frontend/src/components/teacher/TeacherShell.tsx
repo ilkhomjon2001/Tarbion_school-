@@ -10,7 +10,6 @@ import { useEffect, useMemo, useState } from "react";
 
 import { getTodayLessons } from "@/lib/teacher/attendance-api";
 import { useTeacherMe } from "@/lib/teacher/me";
-import { classColor } from "@/lib/teacher/schedule";
 import type { TeacherLesson } from "@/lib/teacher/types";
 import { logout } from "@/lib/auth";
 
@@ -53,6 +52,22 @@ const NAV_GROUPS = [
     ],
   },
 ] as const;
+
+/**
+ * Sinf boʻyicha rang — nom xeshidan barqaror tanlanadi, shunda jadvalda
+ * qaysi sinf qayerda ekani bir qarashda koʻrinadi. Rang yolgʻiz maʼno
+ * tashimaydi: yonida sinf nomi ham yozilgan. Faqat mavjud tokenlar,
+ * xom hex yoʻq (CLAUDE.md).
+ */
+const CLASS_DOTS = ["bg-brand", "bg-info", "bg-warning", "bg-success", "bg-danger"];
+
+function classDot(className: string): string {
+  let hash = 0;
+  for (let i = 0; i < className.length; i += 1) {
+    hash = (hash * 31 + className.charCodeAt(i)) | 0;
+  }
+  return CLASS_DOTS[Math.abs(hash) % CLASS_DOTS.length];
+}
 
 export function TeacherShell({
   title,
@@ -170,7 +185,7 @@ export function TeacherShell({
                     >
                       <span
                         aria-hidden
-                        className={`h-8 w-1 shrink-0 rounded-full ${classColor(lesson.className).dot}`}
+                        className={`h-8 w-1 shrink-0 rounded-full ${classDot(lesson.className)}`}
                       />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[13px] font-medium">

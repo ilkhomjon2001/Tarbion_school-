@@ -8,9 +8,6 @@
  * koʻrinmaydi" — hammasi serverda. Frontend faqat serverdan kelgan
  * `gradable`, `editable` va `shows_average` bayroqlarini chizadi
  * (CLAUDE.md 7-qoida).
- *
- * Shu sabab bu fayl `lib/teacher/store.ts` dagi localStorage
- * funksiyalaridan farqli — u yerda qoidalar frontendda edi.
  */
 
 import {

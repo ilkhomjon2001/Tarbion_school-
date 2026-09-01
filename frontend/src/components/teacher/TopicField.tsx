@@ -7,24 +7,18 @@ import { suggestTopics, warmTopics, type TopicSuggestion } from "@/lib/teacher/t
 /**
  * Mavzu maydoni — bazadan bashorat bilan.
  *
- * Ustoz mavzuni qoʻlda toʻliq yozmasin: reja mavzusi avtomatik turadi,
- * boshqasini yozsa 2 harfdan keyin mos mavzular taklif qilinadi.
+ * Ustoz mavzuni qoʻlda toʻliq yozmasin: 2 harfdan keyin metodik bazadan
+ * mos mavzular taklif qilinadi, mos kelmasa oʻz matnini yozaveradi.
  * Klaviatura bilan boshqariladi (↓ ↑ Enter Esc) — sichqoncha shart emas.
  */
 export function TopicField({
   value,
   onChange,
   disabled,
-  planLabel,
-  planTopic,
 }: {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
-  /** "4/21-dars" koʻrinishidagi yorliq. */
-  planLabel?: string | null;
-  /** Rejadagi mavzu — "rejaga qaytarish" tugmasi uchun. */
-  planTopic?: string | null;
 }) {
   const inputId = useId();
   const listId = `${inputId}-list`;
@@ -82,31 +76,12 @@ export function TopicField({
   }
 
   const showList = open && !disabled && suggestions.length > 0;
-  const offPlan = Boolean(planTopic && value && value !== planTopic);
 
   return (
     <div ref={boxRef} className="relative">
-      <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
-        <label htmlFor={inputId} className="text-sm font-medium">
-          Oʻtilgan mavzu
-        </label>
-        <div className="flex items-center gap-2">
-          {planLabel && (
-            <span className="rounded-full bg-brand-tint px-2.5 py-0.5 text-xs font-medium text-brand-dark">
-              Rejadan: {planLabel}
-            </span>
-          )}
-          {offPlan && (
-            <button
-              type="button"
-              onClick={() => onChange(planTopic!)}
-              className="rounded-lg border border-border px-2 py-0.5 text-xs text-foreground-muted transition-colors hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-            >
-              Rejaga qaytarish
-            </button>
-          )}
-        </div>
-      </div>
+      <label htmlFor={inputId} className="mb-1.5 block text-sm font-medium">
+        Oʻtilgan mavzu
+      </label>
 
       <input
         id={inputId}
@@ -158,8 +133,7 @@ export function TopicField({
       )}
 
       <p className="mt-1.5 text-xs text-foreground-muted">
-        Davomat bilan birga sinf jurnaliga yoziladi. Reja faqat davomat
-        saqlangandan keyin keyingi mavzuga oʻtadi.
+        Davomat bilan birga sinf jurnaliga yoziladi.
       </p>
     </div>
   );

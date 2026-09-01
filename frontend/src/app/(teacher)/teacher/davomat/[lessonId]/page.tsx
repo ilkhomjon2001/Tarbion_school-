@@ -7,10 +7,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TeacherShell } from "@/components/teacher/TeacherShell";
 import { TopicField } from "@/components/teacher/TopicField";
 import { LessonGradeBook } from "@/components/teacher/LessonGradeBook";
-import { hasPlan, planFor } from "@/lib/teacher/plan";
-import { canGrade } from "@/lib/teacher/roles";
 import { getAttendance, saveAttendance } from "@/lib/teacher/attendance-api";
-import { conductedCount } from "@/lib/teacher/store";
+import { useMyTeaching } from "@/lib/teacher/me";
 import {
   ATTENDANCE_LABELS,
   ATTENDANCE_ORDER,
@@ -60,23 +58,32 @@ export default function AttendancePage() {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   /**
    * Davomat saqlangach jurnal SHU sahifada ochiladi — ustoz boshqa
    * ekranga oʻtmaydi. Ish ketma-ketligi bitta oynada: mavzu → davomat →
-   * baho. Faqat oʻsha fandan baho qoʻyish huquqi bor ustozga (roles.ts).
+   * baho. Panel ustozning REAL dars yuklamasiga qarab ochiladi
+   * (`useMyTeaching` — jadvaldan); yakuniy tekshiruv baribir serverda.
    */
   const [journalOpen, setJournalOpen] = useState(false);
   const [savedOnce, setSavedOnce] = useState(false);
   const journalRef = useRef<HTMLDivElement>(null);
 
-  // Oʻtilgan mavzu — rejadan avtomatik toʻladi, ustoz tahrirlay oladi.
+  // Oʻtilgan mavzu — ustoz erkin kiritadi, davomat bilan birga saqlanadi.
   const [topic, setTopic] = useState("");
-  const [planIndex, setPlanIndex] = useState<number | null>(null);
-  const [planLabel, setPlanLabel] = useState<string | null>(null);
-  const [planTopic, setPlanTopic] = useState<string | null>(null);
 
   const rowRefs = useRef<(HTMLTableRowElement | null)[]>([]);
+
+  // K3: baho qoʻyish huquqi — hardcoded roʻyxat emas, ustozning oʻz
+  // jadvalidan: shu sinfda shu fandan dars beradimi.
+  const teaching = useMyTeaching();
+  const canGradeLesson = useMemo(() => {
+    if (!lesson) return false;
+    return teaching.slots.some(
+      (s) => s.className === lesson.className && s.subjectName === lesson.subject,
+    );
+  }, [lesson, teaching.slots]);
 
   useEffect(() => {
     let alive = true;
@@ -88,22 +95,7 @@ export default function AttendancePage() {
       }
       setLesson(data.lesson);
       setRows(data.rows);
-
-      // Reja HAQIQATDA oʻtilgan darslar boʻyicha siljiydi (plan.ts ga qara).
-      if (hasPlan(data.lesson.className)) {
-        const done = conductedCount(
-          data.lesson.className,
-          data.lesson.subject,
-          data.lesson.date,
-        );
-        const plan = planFor(data.lesson, done);
-        setPlanIndex(plan?.index ?? null);
-        setPlanLabel(plan?.title ? `${plan.human}-dars` : null);
-        setPlanTopic(plan?.title?.title ?? null);
-        setTopic(data.topic || plan?.title?.title || "");
-      } else {
-        setTopic(data.topic);
-      }
+      setTopic(data.topic);
     });
     return () => {
       alive = false;
@@ -169,19 +161,29 @@ export default function AttendancePage() {
   const save = useCallback(async () => {
     if (!rows || readOnly || saving) return;
     setSaving(true);
-    await saveAttendance(params.lessonId, rows, { topic, planIndex });
-    setSaving(false);
-    setDirty(false);
-    setSavedAt(
-      new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }),
-    );
+    setSaveError(null);
+    try {
+      await saveAttendance(params.lessonId, rows, { topic });
+      setDirty(false);
+      setSavedAt(
+        new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }),
+      );
 
-    // Baho qoʻyish huquqi bor ustozga jurnal shu yerda ochiladi.
-    if (lesson && canGrade(lesson.className, lesson.subject)) {
-      setSavedOnce(true);
-      setJournalOpen(true);
+      // Baho qoʻyish huquqi bor ustozga jurnal shu yerda ochiladi.
+      if (canGradeLesson) {
+        setSavedOnce(true);
+        setJournalOpen(true);
+      }
+    } catch {
+      // K4: xato yutilmaydi — belgilangan davomat joyida qoladi,
+      // ustoz qayta urinishi mumkin.
+      setSaveError(
+        "Saqlab boʻlmadi. Internet aloqasini tekshirib, qayta urinib koʻring.",
+      );
+    } finally {
+      setSaving(false);
     }
-  }, [lesson, params.lessonId, planIndex, readOnly, rows, saving, topic]);
+  }, [canGradeLesson, params.lessonId, readOnly, rows, saving, topic]);
 
   // Jurnal ochilganda unga siljib boramiz — sahifa uzun, ustoz
   // qayerga qarashini oʻzi izlab oʻtirmasin.
@@ -311,8 +313,6 @@ export default function AttendancePage() {
           <TopicField
             value={topic}
             disabled={readOnly}
-            planLabel={planLabel}
-            planTopic={planTopic}
             onChange={(v) => {
               setTopic(v);
               setDirty(true);
@@ -447,6 +447,24 @@ export default function AttendancePage() {
             ))}
           </ul>
 
+          {/* K4: saqlash xatosi — qizil banner, davomat yoʻqolmaydi. */}
+          {saveError && (
+            <div
+              role="alert"
+              className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-danger/40 bg-danger-tint px-4 py-3 text-sm text-danger"
+            >
+              <p className="font-medium">{saveError}</p>
+              <button
+                type="button"
+                onClick={save}
+                disabled={saving}
+                className="inline-flex h-9 items-center rounded-lg border border-danger px-3 text-sm font-semibold text-danger transition-colors hover:bg-danger hover:text-brand-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {saving ? "Saqlanmoqda…" : "Qayta urinish"}
+              </button>
+            </div>
+          )}
+
           {/* --- Pastdagi yopishib turuvchi panel --- */}
           <div className="sticky bottom-0 -mx-4 mt-4 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -471,8 +489,11 @@ export default function AttendancePage() {
                   <span className="text-sm text-warning">Saqlanmagan oʻzgarish bor</span>
                 )}
 
-                {/* Saqlangach jurnal shu yerdan ochiladi. */}
-                {savedOnce && !journalOpen && (
+                {/* Saqlangach (yoki davomat avvaldan belgilangan boʻlsa)
+                    jurnal shu yerdan ochiladi. */}
+                {canGradeLesson &&
+                  (savedOnce || lesson?.presentCount !== null) &&
+                  !journalOpen && (
                   <button
                     type="button"
                     onClick={() => setJournalOpen(true)}

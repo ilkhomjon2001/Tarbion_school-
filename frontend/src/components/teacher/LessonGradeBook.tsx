@@ -9,9 +9,7 @@
  * Qoidalar SERVERDA, bu yerda emas:
  *   `gradable` / `block_reason` — kimga baho qoʻyish mumkinligi
  *   `editable`                  — DAV-03 oynasi ochiqmi
- * Frontend ularni faqat chizadi (CLAUDE.md 7-qoida). Shu sabab bu
- * komponent eski `GradeBook` dan farqli: u localStorage bilan ishlab,
- * qoidalarni oʻzi hisoblardi.
+ * Frontend ularni faqat chizadi (CLAUDE.md 7-qoida).
  *
  * Tezlik: katak tanlanganda klaviaturadan raqam bosish yetarli. Ustoz
  * 25 kishilik sinfga baho qoʻyayotganda sichqoncha bilan kichik

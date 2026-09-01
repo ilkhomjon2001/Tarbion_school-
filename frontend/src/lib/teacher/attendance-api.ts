@@ -8,10 +8,6 @@
  * `TeacherLesson` / `AttendanceRow` shakliga oʻgiradi. Shu sabab
  * davomat ekrani va bosh sahifa deyarli qayta yozilmadi.
  *
- * Funksiya nomlari `lib/teacher/store.ts` dagilar bilan bir xil
- * (`getTodayLessons`, `getAttendance`, `saveAttendance`) — sahifalar
- * faqat importni almashtiradi.
- *
  * Kirish nazorati BU YERDA EMAS. Ustoz qaysi darsni koʻrishini server
  * hal qiladi (`services/access.py`); frontenddagi tekshiruv — qulaylik,
  * himoya emas (CLAUDE.md 7-qoida).
@@ -155,18 +151,11 @@ export async function getAttendance(lessonId: string): Promise<{
   };
 }
 
-/**
- * Butun sinf davomatini saqlaydi.
- *
- * `planIndex` backendga yuborilmaydi: reja indeksi frontenddagi hisob
- * (`lib/teacher/plan.ts`), serverda ustuni yoʻq. U hozircha
- * localStorage da qoladi — reja moduli backendga chiqqanda (MET-01)
- * shu yerga qoʻshiladi.
- */
+/** Butun sinf davomatini saqlaydi — mavzu ham birga yoziladi (DAV-06). */
 export async function saveAttendance(
   lessonId: string,
   rows: AttendanceRow[],
-  meta: { topic: string; planIndex: number | null },
+  meta: { topic: string },
 ): Promise<void> {
   await withAuth(() =>
     attendanceMark({
