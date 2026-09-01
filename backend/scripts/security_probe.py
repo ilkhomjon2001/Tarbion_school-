@@ -168,15 +168,32 @@ def main() -> int:
     # ATAYLAB sinf rahbari BOʻLMAGAN ustozlar: 4-qoida (oʻrtacha fan
     # ustoziga koʻrinmaydi) faqat shunda tekshiriladi. Sinf rahbari
     # oʻrtachani koʻrishi — toʻgʻri xatti-harakat.
-    ustozlar = [
+    nomzodlar = [
         x
         for x in xodimlar  # type: ignore[union-attr]
         if "teacher" in x["roles"] and "homeroom_teacher" not in x["roles"]
     ]
-    if len(ustozlar) < 2:
+    if len(nomzodlar) < 2:
         print("  Sinf rahbari boʻlmagan ikkita ustoz topilmadi.")
         return 1
-    ustoz_a, ustoz_b = ustozlar[0], ustozlar[1]
+
+    # Birinchisi JADVALI BOR boʻlishi shart: undan keyingi tekshiruvlar
+    # dars, jurnal va test ustida ishlaydi. Jadvali boʻsh ustoz tanlansa
+    # yarim tekshiruv oʻtkazib yuborilardi va bu jimgina yashiringan
+    # boʻshliq boʻlardi.
+    ustoz_a = None
+    for nomzod in nomzodlar:
+        _, jadval, _ = call(
+            "GET", "/schedule/entries", sa, query=f"?teacher_id={nomzod['user_id']}"
+        )
+        if jadval:
+            ustoz_a = nomzod
+            break
+    if ustoz_a is None:
+        print("  Jadvali bor, sinf rahbari boʻlmagan ustoz topilmadi.")
+        return 1
+
+    ustoz_b = next(x for x in nomzodlar if x["user_id"] != ustoz_a["user_id"])
 
     a_login, a_parol = reset(sa, ustoz_a["user_id"])
     b_login, b_parol = reset(sa, ustoz_b["user_id"])
