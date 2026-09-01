@@ -338,7 +338,21 @@ async def seed(session: AsyncSession, data: dict[str, Any]) -> None:
         if cls is None:
             continue
         seed_val = hash_text(f"stu-{s['ref']}")
+        # Oʻquvchi kabineti (T-034) uchun har biriga hisob ochiladi —
+        # parol boshqa seed hisoblarnikidek umumiy.
+        account = User(
+            login=_unique_login(band, s["lastName"], s["firstName"]),
+            password_hash=pwd,
+            last_name=s["lastName"],
+            first_name=s["firstName"],
+            middle_name=None,
+            must_change_password=False,
+        )
+        account.roles = [roles[RoleName.STUDENT.value]]
+        session.add(account)
+        await session.flush()
         st = Student(
+            user_id=account.id,
             class_id=cls.id,
             last_name=s["lastName"],
             first_name=s["firstName"],

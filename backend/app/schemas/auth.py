@@ -28,6 +28,11 @@ class UserOut(BaseModel):
     #: Qaysi amallarni bajara oladi. Tugmalarni yashirish uchun; haqiqiy
     #: tekshiruv baribir serverda (CLAUDE.md 7-qoida).
     permissions: list[str] = []
+    #: Oʻquvchi roli uchun (T-034): kabinet oʻz maʼlumotini shu id bilan
+    #: soʻraydi. Server baribir `access.py` orqali tekshiradi — bu qulaylik.
+    student_id: uuid.UUID | None = None
+    class_id: uuid.UUID | None = None
+    class_name: str | None = None
 
 
 class TokenOut(BaseModel):

@@ -9,13 +9,14 @@ XSS bilan oʻgʻirlab boʻlmaydi.
 """
 
 from fastapi import APIRouter, Request, Response, status
+from sqlalchemy import select
 
 from app.api.v1.deps import CurrentUserDep
 from app.core.config import settings
 from app.core.db import SessionDep
 from app.core.exceptions import AuthRequiredError
 from app.core.sections import cabinet_of, effective_sections
-from app.models import Permission, RoleName, User
+from app.models import Permission, RoleName, SchoolClass, Student, User
 from app.schemas.auth import (
     ChangePasswordIn,
     LoginIn,
@@ -61,6 +62,21 @@ async def _user_out(session, user) -> UserOut:  # noqa: ANN001 — SQLAlchemy mo
     """
     roles = set(user.role_names)
     berilgan = await permissions.granted_permissions(session, user.id)
+
+    # Oʻquvchi kabineti oʻz yozuvini bilishi kerak (T-034). Bitta soʻrov,
+    # faqat oʻquvchi rolida — qolganlarga maydonlar `None` boʻlib qoladi.
+    student_id = class_id = class_name = None
+    if RoleName.STUDENT.value in roles:
+        row = (
+            await session.execute(
+                select(Student.id, Student.class_id, SchoolClass.name)
+                .outerjoin(SchoolClass, SchoolClass.id == Student.class_id)
+                .where(Student.user_id == user.id, Student.is_archived.is_(False))
+            )
+        ).first()
+        if row is not None:
+            student_id, class_id, class_name = row
+
     return UserOut(
         id=user.id,
         login=user.login,
@@ -75,6 +91,9 @@ async def _user_out(session, user) -> UserOut:  # noqa: ANN001 — SQLAlchemy mo
             if RoleName.SUPERADMIN.value in roles
             else sorted(berilgan)
         ),
+        student_id=student_id,
+        class_id=class_id,
+        class_name=class_name,
     )
 
 
