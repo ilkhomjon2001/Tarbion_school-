@@ -231,6 +231,8 @@ class Permission(enum.StrEnum):
     # ── Aloqa ──
     #: Ommaviy eʼlon yuborish.
     ANNOUNCEMENTS_PUBLISH = "announcements.publish"
+    #: Soʻrovnoma tuzish, faollashtirish va natijalarini koʻrish.
+    SURVEYS_MANAGE = "surveys.manage"
 
 
 class UserPermission(Entity):

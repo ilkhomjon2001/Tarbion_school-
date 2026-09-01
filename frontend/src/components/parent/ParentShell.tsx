@@ -44,6 +44,7 @@ const SIDEBAR_NAV = [
   { href: "/ota-ona/tarbiya", label: "Tarbiya va psixologiya", icon: HeartIcon },
   { href: "/ota-ona/oshxona", label: "Oshxona menyusi", icon: MealIcon },
   { href: "/ota-ona/elonlar", label: "Eʼlonlar", icon: BellIcon },
+  { href: "/ota-ona/sorovnoma", label: "Soʻrovnoma", icon: StarIcon },
 ] as const;
 
 export function ParentShell({

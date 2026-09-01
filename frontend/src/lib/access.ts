@@ -69,6 +69,7 @@ export const SECTIONS: Section[] = [
   { id: "/ota-ona/tarbiya", label: "Tarbiya va psixologiya", cabinet: "parent" },
   { id: "/ota-ona/oshxona", label: "Oshxona menyusi", cabinet: "parent" },
   { id: "/ota-ona/elonlar", label: "Eʼlonlar", cabinet: "parent" },
+  { id: "/ota-ona/sorovnoma", label: "Soʻrovnoma", cabinet: "parent" },
 
   // ── Rahbariyat ──
   { id: "/rahbar", label: "Bosh sahifa", cabinet: "director", locked: true },

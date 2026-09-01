@@ -71,6 +71,19 @@ export type AcademicYearUpdateIn = {
 };
 
 /**
+ * ActiveSurveyOut
+ *
+ * Ota-ona koʻradigan faol soʻrovnoma — u yoʻq boʻlsa `survey=None`.
+ */
+export type ActiveSurveyOut = {
+    survey: SurveyOut | null;
+    /**
+     * Teachers
+     */
+    teachers: Array<TeacherToRateOut>;
+};
+
+/**
  * AnnouncementCreateIn
  */
 export type AnnouncementCreateIn = {
@@ -2169,6 +2182,26 @@ export type RecoveryCodesOut = {
 };
 
 /**
+ * RespondIn
+ */
+export type RespondIn = {
+    /**
+     * Teacher Id
+     */
+    teacher_id: string;
+    /**
+     * Scores
+     */
+    scores: {
+        [key: string]: number;
+    };
+    /**
+     * Comment
+     */
+    comment?: string | null;
+};
+
+/**
  * ReturnSubmissionIn
  *
  * UYV-03: izoh majburiy — nima notoʻgʻri ekani aytilmasa vazifa foydasiz.
@@ -2822,6 +2855,96 @@ export type SubmitIn = {
 };
 
 /**
+ * SurveyCommentOut
+ */
+export type SurveyCommentOut = {
+    /**
+     * Class Name
+     */
+    class_name: string;
+    /**
+     * Text
+     */
+    text: string;
+};
+
+/**
+ * SurveyCreateIn
+ */
+export type SurveyCreateIn = {
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Questions
+     */
+    questions: Array<string>;
+};
+
+/**
+ * SurveyOut
+ */
+export type SurveyOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Questions
+     */
+    questions: Array<SurveyQuestionOut>;
+    /**
+     * Response Count
+     */
+    response_count: number;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * SurveyQuestionAvgOut
+ */
+export type SurveyQuestionAvgOut = {
+    /**
+     * Text
+     */
+    text: string;
+    /**
+     * Average
+     */
+    average: number;
+};
+
+/**
+ * SurveyQuestionOut
+ */
+export type SurveyQuestionOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Text
+     */
+    text: string;
+    /**
+     * Position
+     */
+    position: number;
+};
+
+/**
  * TargetOut
  */
 export type TargetOut = {
@@ -2932,6 +3055,42 @@ export type TeacherLoadOut = {
 };
 
 /**
+ * TeacherResultOut
+ */
+export type TeacherResultOut = {
+    /**
+     * Teacher Id
+     */
+    teacher_id: string;
+    /**
+     * Teacher Name
+     */
+    teacher_name: string;
+    /**
+     * Response Count
+     */
+    response_count: number;
+    /**
+     * Average
+     */
+    average: number;
+    /**
+     * Distribution
+     */
+    distribution: {
+        [key: string]: number;
+    };
+    /**
+     * Criteria
+     */
+    criteria: Array<SurveyQuestionAvgOut>;
+    /**
+     * Comments
+     */
+    comments: Array<SurveyCommentOut>;
+};
+
+/**
  * TeacherRowOut
  */
 export type TeacherRowOut = {
@@ -2971,6 +3130,32 @@ export type TeacherRowOut = {
      * Grades Given
      */
     grades_given: number;
+};
+
+/**
+ * TeacherToRateOut
+ */
+export type TeacherToRateOut = {
+    /**
+     * Teacher Id
+     */
+    teacher_id: string;
+    /**
+     * Teacher Name
+     */
+    teacher_name: string;
+    /**
+     * Subjects
+     */
+    subjects: Array<string>;
+    /**
+     * Class Name
+     */
+    class_name: string;
+    /**
+     * Answered
+     */
+    answered: boolean;
 };
 
 /**
@@ -4243,6 +4428,166 @@ export type DocumentsArchiveResponses = {
 };
 
 export type DocumentsArchiveResponse = DocumentsArchiveResponses[keyof DocumentsArchiveResponses];
+
+export type SurveysListSurveysData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/surveys';
+};
+
+export type SurveysListSurveysResponses = {
+    /**
+     * Response Surveys List Surveys
+     *
+     * Successful Response
+     */
+    200: Array<SurveyOut>;
+};
+
+export type SurveysListSurveysResponse = SurveysListSurveysResponses[keyof SurveysListSurveysResponses];
+
+export type SurveysCreateData = {
+    body: SurveyCreateIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/surveys';
+};
+
+export type SurveysCreateErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SurveysCreateError = SurveysCreateErrors[keyof SurveysCreateErrors];
+
+export type SurveysCreateResponses = {
+    /**
+     * Successful Response
+     */
+    201: SurveyOut;
+};
+
+export type SurveysCreateResponse = SurveysCreateResponses[keyof SurveysCreateResponses];
+
+export type SurveysSetStatusData = {
+    body?: never;
+    path: {
+        /**
+         * Survey Id
+         */
+        survey_id: string;
+    };
+    query: {
+        /**
+         * Status
+         */
+        status: string;
+    };
+    url: '/api/v1/surveys/{survey_id}/status';
+};
+
+export type SurveysSetStatusErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SurveysSetStatusError = SurveysSetStatusErrors[keyof SurveysSetStatusErrors];
+
+export type SurveysSetStatusResponses = {
+    /**
+     * Successful Response
+     */
+    200: SurveyOut;
+};
+
+export type SurveysSetStatusResponse = SurveysSetStatusResponses[keyof SurveysSetStatusResponses];
+
+export type SurveysActiveData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/surveys/active';
+};
+
+export type SurveysActiveResponses = {
+    /**
+     * Successful Response
+     */
+    200: ActiveSurveyOut;
+};
+
+export type SurveysActiveResponse = SurveysActiveResponses[keyof SurveysActiveResponses];
+
+export type SurveysRespondData = {
+    body: RespondIn;
+    path: {
+        /**
+         * Survey Id
+         */
+        survey_id: string;
+    };
+    query?: never;
+    url: '/api/v1/surveys/{survey_id}/respond';
+};
+
+export type SurveysRespondErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SurveysRespondError = SurveysRespondErrors[keyof SurveysRespondErrors];
+
+export type SurveysRespondResponses = {
+    /**
+     * Response Surveys Respond
+     *
+     * Successful Response
+     */
+    201: {
+        [key: string]: boolean;
+    };
+};
+
+export type SurveysRespondResponse = SurveysRespondResponses[keyof SurveysRespondResponses];
+
+export type SurveysResultsData = {
+    body?: never;
+    path: {
+        /**
+         * Survey Id
+         */
+        survey_id: string;
+    };
+    query?: never;
+    url: '/api/v1/surveys/{survey_id}/results';
+};
+
+export type SurveysResultsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SurveysResultsError = SurveysResultsErrors[keyof SurveysResultsErrors];
+
+export type SurveysResultsResponses = {
+    /**
+     * Response Surveys Results
+     *
+     * Successful Response
+     */
+    200: Array<TeacherResultOut>;
+};
+
+export type SurveysResultsResponse = SurveysResultsResponses[keyof SurveysResultsResponses];
 
 export type AcademicYearsData = {
     body?: never;

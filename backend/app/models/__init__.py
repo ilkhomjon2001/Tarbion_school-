@@ -67,6 +67,14 @@ from app.models.school import (
     Subject,
     TeacherSubject,
 )
+from app.models.surveys import (
+    SURVEY_STATUS_LABELS_UZ,
+    Survey,
+    SurveyQuestion,
+    SurveyResponse,
+    SurveyScore,
+    SurveyStatus,
+)
 from app.models.tests import (
     QUESTION_KIND_LABELS_UZ,
     TEST_STATUS_LABELS_UZ,
@@ -86,6 +94,12 @@ from app.models.wellbeing import (
 )
 
 __all__ = [
+    "SURVEY_STATUS_LABELS_UZ",
+    "Survey",
+    "SurveyQuestion",
+    "SurveyResponse",
+    "SurveyScore",
+    "SurveyStatus",
     "DOCUMENT_TYPE_LABELS_UZ",
     "DocumentRequest",
     "DocumentStatus",

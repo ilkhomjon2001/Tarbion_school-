@@ -76,6 +76,7 @@ SECTIONS: list[Section] = [
     Section("/ota-ona/tarbiya", "Tarbiya va psixologiya", "parent"),
     Section("/ota-ona/oshxona", "Oshxona menyusi", "parent"),
     Section("/ota-ona/elonlar", "Eʼlonlar", "parent"),
+    Section("/ota-ona/sorovnoma", "Soʻrovnoma", "parent"),
     # ── Rahbariyat ──
     Section("/rahbar", "Bosh sahifa", "director", locked=True),
     Section("/rahbar/jadval", "Dars jadvali", "director"),

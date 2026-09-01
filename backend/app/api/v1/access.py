@@ -44,6 +44,7 @@ PERMISSION_LABELS: dict[str, tuple[str, str]] = {
     Permission.PAYMENTS_MANAGE.value: ("Toʻlov kiritish va storno", "Moliya"),
     Permission.REPORTS_EXPORT.value: ("Roʻyxatlarni yuklab olish", "Hisobot"),
     Permission.REPORTS_VIEW_ALL.value: ("Butun maktab hisobotlari", "Hisobot"),
+    Permission.SURVEYS_MANAGE.value: ("Soʻrovnoma tuzish va natijalarini koʻrish", "Aloqa"),
     Permission.ANNOUNCEMENTS_PUBLISH.value: ("Ommaviy eʼlon yuborish", "Aloqa"),
 }
 
