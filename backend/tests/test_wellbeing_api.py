@@ -166,7 +166,9 @@ async def yozuvlar(client: AsyncClient, world: dict) -> dict:
     admin = await _token(client, "wb.admin")
     fan = await _token(client, "wb.fan")
     r1 = await _yoz(client, fan, world["ali"].id, text="Fizikadan faol qatnashdi.")
-    r2 = await _yoz(client, admin, world["ali"].id, kind="psychology", text="Suhbat oʻtkazildi, holati barqaror.")
+    r2 = await _yoz(
+        client, admin, world["ali"].id, kind="psychology", text="Suhbat oʻtkazildi."
+    )
     assert r1.status_code == 201 and r2.status_code == 201
     return {"behavior": r1.json()["id"], "psychology": r2.json()["id"]}
 
