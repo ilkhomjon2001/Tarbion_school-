@@ -712,7 +712,9 @@ async def test_oy_ortasidan_boshlangan_shartnoma_osha_oyni_hisoblamaydi(
         json={"year": 2026, "month": 9},
     )
     assert r.status_code == 200, r.text
-    assert r.json()["created"] == 0, "oy o'rtasidan boshlangan shartnoma sentyabrni hisoblamasligi kerak"
+    assert r.json()["created"] == 0, (
+        "oy o'rtasidan boshlangan shartnoma sentyabrni hisoblamasligi kerak"
+    )
 
     # Oktabr esa to'liq hisoblanadi.
     r = await client.post(

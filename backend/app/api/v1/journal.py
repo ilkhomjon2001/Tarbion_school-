@@ -14,7 +14,6 @@ from fastapi import APIRouter, Query, Request, Response, status
 from app.api.v1.deps import CurrentUserDep
 from app.core.db import SessionDep
 from app.schemas.journal import (
-    StudentRatingOut,
     ClassJournalOut,
     ClassJournalRowOut,
     GradeOut,
@@ -26,6 +25,7 @@ from app.schemas.journal import (
     LessonJournalOut,
     ReturnSubmissionIn,
     StudentHomeworkOut,
+    StudentRatingOut,
     StudentSubjectGradesOut,
     SubmissionListOut,
     SubmissionOut,

@@ -16,7 +16,6 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
-    UniqueConstraint,
     text,
 )
 from sqlalchemy.dialects.postgresql import UUID as PgUUID

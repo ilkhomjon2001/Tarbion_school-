@@ -146,7 +146,8 @@ class Settings(BaseSettings):
             )
         if not self.trusted_proxies:
             xatolar.append(
-                "TRUSTED_PROXIES boʻsh — Caddy ortida audit va login-lockout IP lari 127.0.0.1 boʻlib qoladi"
+                "TRUSTED_PROXIES boʻsh — Caddy ortida audit va "
+                "login-lockout IP lari 127.0.0.1 boʻlib qoladi"
             )
 
         if xatolar:

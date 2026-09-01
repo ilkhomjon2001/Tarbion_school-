@@ -233,7 +233,6 @@ async def test_jadval_ozgarsa_otgan_darslar_ozgarmaydi(
     lesson = await session.scalar(select(Lesson).where(Lesson.lesson_date == DUSHANBA))
     assert lesson is not None
     eski_ustoz = lesson.teacher_id
-    eski_xona = lesson.room
 
     # Jadvaldagi ustozni almashtiramiz.
     entry = await session.scalar(select(ScheduleEntry).where(ScheduleEntry.weekday == 1))

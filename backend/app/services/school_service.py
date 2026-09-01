@@ -645,7 +645,8 @@ async def student_teachers(
     if student is None or student.class_id is None:
         return []
 
-    from app.models import ScheduleEntry, Subject as Subj
+    from app.models import ScheduleEntry
+    from app.models import Subject as Subj
 
     rows = (
         await session.execute(
@@ -663,7 +664,6 @@ async def student_teachers(
     cls = await session.get(SchoolClass, student.class_id)
     homeroom_id = cls.homeroom_teacher_id if cls else None
 
-    yigilgan: dict[uuid.UUID, StudentTeacherRow] = {}
     fanlar: dict[uuid.UUID, set[str]] = {}
     ismlar: dict[uuid.UUID, str] = {}
     for u, fan in rows:

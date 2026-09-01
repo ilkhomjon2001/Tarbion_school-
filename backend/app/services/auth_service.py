@@ -19,7 +19,6 @@ from app.core.security import (
     hash_password,
     hash_token,
     needs_rehash,
-    verify_password,
     verify_password_constant_time,
 )
 from app.core.timeutil import utcnow
