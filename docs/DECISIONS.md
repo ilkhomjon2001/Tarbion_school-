@@ -731,3 +731,18 @@ oʻzi.
 family_recipients()`. Ilgari `attendance_service` ichida edi; uchinchi
 chaqiruvchi paydo boʻlgach takrorlanish xavfi tugʻildi va biri
 oʻquvchining oʻz hisobini unutishi mumkin edi.
+
+## 2026-09-01 · `/auth/me` oʻquvchi uchun `student_id` qaytaradi
+`UserOut` ga `student_id`, `class_id`, `class_name` qoʻshildi (faqat
+oʻquvchi rolida toʻladi). Sabab: kabinet oʻz yozuvini bilishi kerak,
+alohida `/student/me` endpointiga hojat yoʻq. Bu qulaylik — haqiqiy
+tekshiruv baribir `services/access.py` da (X-1). Seed endi har
+oʻquvchiga hisob ochadi (T-034).
+
+## 2026-09-01 · Mock sahifalar API'ga ulandi, backend'i yoʻqlari mock qoldi
+Oʻquvchi kabineti, ota-ona baholari, ustoz murojaatlari, admin qabul,
+rahbariyat bosh sahifa/sinflar/ustozlar bazadan oʻqiydi. Qoida:
+haqiqiy raqam yonida soxta raqam koʻrsatilmaydi — shuning uchun backend'i
+yoʻq boʻlimlar (reyting, eʼlonlar, imtihonlar, moliya) yo olib qoʻyildi,
+yo «modul ulanmagan» deb belgilandi. Maʼlumot qatlami naqshlari:
+`lib/student/api.ts`, `lib/director/api.ts` (adapter + `withAuth`).

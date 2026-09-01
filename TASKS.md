@@ -31,8 +31,16 @@ T-003, T-004, T-005 hamon `[~]`: endpointlar ishlaydi, lekin
 «Tayyor» mezonlaridagi sessiya roʻyxati, parol almashtirish va
 blokirovka testlari yozilmagan.
 
-Qolgan boʻshliq: `bot/` da faqat README, moliya jadvallari yoʻq,
-qolgan rahbariyat sahifalari hamon mock ustida.
+**Yangilik (1-sentyabr):** API'si tayyor boʻlgan mock sahifalar ulandi —
+oʻquvchi kabineti (bosh sahifa, jadval, vazifa, baho, test, profil),
+ota-ona baholari, ustoz murojaatlari, admin qabul (EnrollWizard),
+rahbariyat bosh sahifa + sinflar + ustozlar. `/auth/me` endi oʻquvchi
+uchun `student_id`/`class_id` qaytaradi, seed har oʻquvchiga hisob ochadi.
+
+Qolgan boʻshliq: `bot/` da faqat README, moliya jadvallari yoʻq.
+Mock'da qolganlar (backend yoʻqligi uchun): eʼlonlar, reyting,
+oʻquvchi «ustozlar» sahifasi, rahbariyat hisobotlar/toʻlovlar/ustoz
+profili, admin toʻlov-shartnoma-lid-soʻrovnoma boʻlimlari, tarbiya/oshxona.
 
 ---
 
@@ -574,17 +582,23 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
   - Frontend: ✅ tayyor — `/teacher/vazifa`, `/student/homework`
 - [x] T-033 · Uy vazifasini tekshirish va qaytarish — UYV-03, UYV-06 · backend tayyor
   - Frontend: ✅ tayyor — `/teacher/vazifa/[id]`
-- [ ] T-034 · O'quvchi kabineti — jadval, vazifalar, natijalar
-  - Frontend: ✅ tayyor — `/student/*` — 12 sahifa
-- [ ] T-035 · Ota-ona kabineti: baholar va uy vazifasi — OTA-04, OTA-05
-  - Frontend: ✅ tayyor — `/ota-ona/baholar`
+- [~] T-034 · O'quvchi kabineti — jadval, vazifalar, natijalar
+  - Frontend: ✅ API'GA ULANDI (1-sentyabr) — bosh sahifa, jadval, vazifa,
+    baho, test, profil `lib/student/api.ts` orqali bazadan. Eʼlonlar,
+    reyting, «ustozlar» sahifasi mock (backend yoʻq). `/auth/me` →
+    `student_id`, seed'da oʻquvchi hisoblari
+- [~] T-035 · Ota-ona kabineti: baholar va uy vazifasi — OTA-04, OTA-05
+  - Frontend: ✅ API'GA ULANDI (1-sentyabr) — `/ota-ona/baholar` jurnal
+    API'sidan oʻqiydi (qatlam oʻquvchi kabineti bilan umumiy). Imtihon va
+    chorak bahosi boʻlimlari backend chiqqach qaytariladi (T-031)
 - [~] T-036 · Murojaatlar moduli — MUR-01…MUR-04
   - Backend: ✅ `appeals` + `appeal_messages` + `appeal_notes`, 13 endpoint, 43 test
   - Frontend: ✅ ota-ona, administrator va rahbariyat sahifalari BAZADAN oʻqiydi
   - ADM-16: maktab ham yozishmani boshlay oladi — administrator oʻquvchini
     qidiradi, vasiy hisobi shundan olinadi. Yozishma oilaga tegishli
     (`author_id`), kim ochgani `created_by_id` da qoladi
-  - Ustoz kabineti (`/teacher/murojaat`) hali mock ustida — keyingi qadam
+  - Ustoz kabineti (`/teacher/murojaat`) ham ULANDI (1-sentyabr) —
+    roʻyxat, yozishma, yopish `appeals` API'sidan; kesim serverda
 - [ ] T-037 · Sababli qoldirish arizasi — DAV-04
   - Frontend: ⬜ yoʻq
 - [ ] T-038 · 2-bosqich xabarnomalari — Ilova B (2-bosqich qatorlari)
@@ -602,8 +616,10 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
   - Frontend: 🟡 qisman — `/teacher/test` da savol qoʻshish bor, savollar banki yoʻq
 - [x] T-042 · Test yaratish va parametrlar — TST-03 · backend + ustoz ekrani
   - Frontend: ✅ tayyor — `/teacher/test`
-- [~] T-043 · Test ishlash va avtomatik tekshiruv — TST-04 · backend tayyor; o'quvchi ekrani T-034 (hisob) ni kutadi
-  - Frontend: ✅ tayyor — `/student/tests/[id]`
+- [~] T-043 · Test ishlash va avtomatik tekshiruv — TST-04 · backend tayyor
+  - Frontend: ✅ API'GA ULANDI (1-sentyabr) — `/student/tests/[id]` →
+    `LiveTestRunner`: savollar urinish boshlanganda serverdan (javobsiz),
+    natijani server hisoblaydi
 - [~] T-044 · Test natijalari tahlili — TST-05 · ustoz uchun natijalar jadvali tayyor
   - Frontend: 🟡 qisman — natija koʻrsatiladi, tahlil kesimlari yoʻq
 - [ ] T-045 · Savollarni Excel'dan import — TST-06
@@ -616,8 +632,11 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
   - Frontend: ✅ tayyor — `/admin/tolovlar` — qarzdorlar, muddat choʻzish, chegirma, hisobdan chiqarish, eslatma
 - [ ] T-049 · Ota-ona kabinetida to'lov — OTA-06
   - Frontend: ✅ tayyor — `/ota-ona/tolov`
-- [ ] T-050 · Direktor paneli: KPI va grafiklar — DIR-01…DIR-06
-  - Frontend: ✅ tayyor — `/rahbar` va `/rahbar/hisobotlar` — 6 ta grafik
+- [~] T-050 · Direktor paneli: KPI va grafiklar — DIR-01…DIR-06
+  - Frontend: 🟡 qisman ULANDI (1-sentyabr) — `/rahbar` (KPI + davomat
+    trendi), `/rahbar/sinflar` (oʻquvchi kesimi bilan), `/rahbar/ustozlar`
+    bazadan. `/rahbar/hisobotlar`, `/rahbar/tolovlar`, ustoz profili
+    hali mock — moliya jadvallari va KPI endpointlari yoʻq
 - [ ] T-051 · Ustozlar faoliyati hisoboti — DIR-04
   - Frontend: ✅ tayyor — `/rahbar/ustozlar/[id]` → «KPI» — 4 koʻrsatkich, imtihon dinamikasi, sinflar kesimi
 - [ ] T-052 · Xavf ostidagi o'quvchilar — DIR-07
