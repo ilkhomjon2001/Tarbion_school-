@@ -777,3 +777,15 @@ Audit (AUDIT.md) topilmalarini yopishda qabul qilindi:
    normallashgan oʻrtacha baho; teng boʻlsa davomat foizi. X-6 —
    oʻquvchiga faqat OʻZ oʻrni va koʻrsatkichlari qaytadi, sinfdoshlar
    roʻyxati yoʻq.
+
+## 2026-09-02 · Real oʻquvchi roʻyxati serverga yuklandi (egasining buyrugʻi)
+
+Loyiha egasi Google Sheets'dagi real roʻyxatni (98 oʻquvchi, 18 ustoz,
+ota-ona telefonlari) bazaga yuklashni buyurdi; demo maʼlumot toʻliq
+almashtirildi (`app/import_real.py`). CLAUDE.md'dagi «yurist tasdigʻigacha
+real maʼlumot yuklanmaydi» ogohlantirishi egaga eslatildi — qaror uniki.
+Server hozircha Germaniyada; Oʻzbekistonga koʻchirish masalasi ochiq.
+Vasiylar telefon boʻyicha birlashtirildi (aka-ukalar bitta hisobda),
+apostroflar 8-qoidaga normalizatsiya qilindi. Barcha yangi hisoblar
+5 xonali vaqtinchalik parol + majburiy almashtirish bilan ochildi;
+parollar faqat lokal CSV faylda.
