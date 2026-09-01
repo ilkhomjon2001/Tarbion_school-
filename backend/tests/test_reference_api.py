@@ -214,15 +214,31 @@ async def test_sinf_rahbariga_rol_beriladi(
     assert RoleName.HOMEROOM_TEACHER.value in ustoz.role_names
 
 
-async def test_rahbarni_almashtirish(client: AsyncClient, world: dict) -> None:
+async def test_rahbarni_almashtirish(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Mavjud sinfga rahbar qoʻyilganda ham rol beriladi (T-008).
+
+    Sinf ochishda bu allaqachon tekshirilgan, lekin amalda rahbar
+    koʻpincha KEYIN biriktiriladi — sinflar avgustda ochiladi, kim
+    qaysi sinfga rahbarlik qilishi keyinroq hal boʻladi. Shu yoʻl
+    tekshirilmasa, rolsiz sinf rahbari paydo boʻlishi mumkin edi.
+    """
+    ustoz = world["ustoz"]
+    assert RoleName.HOMEROOM_TEACHER.value not in ustoz.role_names
+
     token = await _token(client, "rf.admin")
     r = await client.put(
         f"/api/v1/school/classes/{world['bosh_sinf'].id}/homeroom",
         headers=_auth(token),
-        json={"teacher_id": str(world["ustoz"].id)},
+        json={"teacher_id": str(ustoz.id)},
     )
     assert r.status_code == 200, r.text
     assert r.json()["homeroom_teacher"] == "Aliyev Sinov"
+    assert r.json()["homeroom_teacher_id"] == str(ustoz.id)
+
+    await session.refresh(ustoz, attribute_names=["roles"])
+    assert RoleName.HOMEROOM_TEACHER.value in ustoz.role_names
 
     r = await client.put(
         f"/api/v1/school/classes/{world['bosh_sinf'].id}/homeroom",
@@ -231,6 +247,7 @@ async def test_rahbarni_almashtirish(client: AsyncClient, world: dict) -> None:
     )
     assert r.status_code == 200
     assert r.json()["homeroom_teacher"] is None
+    assert r.json()["homeroom_teacher_id"] is None
 
 
 async def test_bosh_sinf_arxivlanadi(

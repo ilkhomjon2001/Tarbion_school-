@@ -180,10 +180,11 @@ yuboriladi. Bot ulanmagan bo'lsa — administrator qo'lda tiklaydi.
 
 ## Ma'muriy yadro
 
-### [~] T-007 · O'quv yili, choraklar, qo'ng'iroqlar jadvali
+### [x] T-007 · O'quv yili, choraklar, qo'ng'iroqlar jadvali
 **TZ:** ADM-01, ADM-07
 **Kerak:** T-005
-**Frontend:** ✅ tayyor — `/admin/baza` → «Oʻquv yili»: chorak sanalarini tahrirlash (`from < to` validatsiyasi, haftalar avtomatik qayta hisoblanadi), dars kunlari va dars vaqtlari roʻyxati. Bir nechta oʻquv yili va bayramlar yoʻq.
+**Frontend:** ✅ tayyor va API'ga ulangan — `/admin/baza` → «Oʻquv yili»: yillar,
+choraklar (yaxlit saqlash), bayramlar va qo'ng'iroqlar jadvali. Soxta ma'lumot yo'q.
 
 `academic_years` (boshlanish, tugash, joriy), `terms` (chorak, sanalar),
 `holidays`, `bell_schedule` (para raqami, boshlanish, tugash vaqti).
@@ -196,14 +197,18 @@ huquqini talab qiladi, o'qish kirgan har kimga ochiq. 20 ta test.
 **Tayyor:**
 - [x] Choraklar sanasi bir-birini qoplamaydi (validatsiya) — `409`
 - [x] Faqat bitta o'quv yili "joriy" bo'la oladi
-- [ ] Admin sahifasida CRUD ishlaydi — frontend hali mock'da
+- [x] Admin sahifasida CRUD ishlaydi
 
 ---
 
 ### [x] T-008 · Sinflar, fanlar, xodimlar
 **TZ:** ADM-02, ADM-03, ADM-04
 **Kerak:** T-007
-**Frontend:** ✅ tayyor — `/admin/baza`: Sinflar (ochish, sinf rahbari va sigʻimni oʻzgartirish, arxivlash — oʻquvchisi bor sinf arxivlanmaydi), Fanlar (qoʻshish, oʻquv rejasidan chiqarish), Xonalar (qoʻshish, foydalanishdan chiqarish). Xodimlar — `/rahbar/ustozlar` va `/admin/sozlamalar`.
+**Frontend:** ✅ tayyor va API'ga ulangan — `/admin/baza`: Sinflar (ochish, sinf
+rahbarini tanlash, o'quv rejasi — fan va haftalik soat, arxivlash), Fanlar
+(qo'shish, arxivlash, kim o'qitishi). Xonalar — jadvaldan yig'iladi, alohida
+ma'lumotnoma yo'q (sig'im/qavat sxema qarorini talab qiladi). Xodimlar —
+`/rahbar/ustozlar` va `/admin/sozlamalar`.
 
 `classes` (nomi, o'quv yili, sinf rahbari), `subjects`,
 `class_subjects` (sinf + fan + haftalik soat), `teacher_subjects`.
@@ -214,7 +219,8 @@ avtomatik, boshlang'ich parol bir marta qaytadi), fan biriktirish, parol tiklash
 arxivlash. **Frontend:** `/admin/sozlamalar` → «Xodimlar».
 
 **Tayyor:**
-- [ ] Sinf rahbari biriktirilganda unga `homeroom_teacher` roli qo'shiladi
+- [x] Sinf rahbari biriktirilganda unga `homeroom_teacher` roli qo'shiladi —
+      sinf ochishda ham, keyin biriktirishda ham; ikkalasi ham testda
 - [x] Bir sinfda bir fan bir marta (unique constraint)
 - [x] Xodim yaratish va fan biriktirish ishlaydi
 
@@ -232,9 +238,11 @@ Bir o'quvchida bir nechta vasiy, bir vasiyda bir nechta farzand.
 Amallar: boshqa sinfga ko'chirish, arxivga o'tkazish (o'chirish emas).
 
 **Tayyor:**
-- [ ] Vasiy qo'shilganda unga `parent` roli va hisob yaratiladi
-- [ ] Arxivlangan o'quvchi ro'yxatlarda ko'rinmaydi, hisobotlarda qoladi
-- [ ] Sinfni o'zgartirish tarixi saqlanadi
+- [ ] Vasiy qo'shilganda unga `parent` roli va hisob yaratiladi — endpoint yo'q,
+      hozircha faqat seed orqali
+- [x] Arxivlangan o'quvchi ro'yxatlarda ko'rinmaydi, hisobotlarda qoladi
+- [x] Sinfni o'zgartirish tarixi saqlanadi — `audit_log` da eski va yangi
+      `class_id`; `/admin/audit` dan filtrlab ko'riladi
 
 ---
 
