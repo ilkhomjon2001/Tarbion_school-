@@ -117,7 +117,8 @@ async def generate(
         for cls, kun, para in (
             await session.execute(
                 select(Lesson.class_id, Lesson.lesson_date, Lesson.period).where(
-                    Lesson.lesson_date.between(date_from, date_to)
+                    Lesson.lesson_date.between(date_from, date_to),
+                    Lesson.is_archived.is_(False),
                 )
             )
         ).all()

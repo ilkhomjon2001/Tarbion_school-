@@ -248,8 +248,40 @@ async def test_jadval_ozgarsa_otgan_darslar_ozgarmaydi(
     await _generate(client, token, DUSHANBA, DUSHANBA)
     await session.refresh(lesson)
 
+    # Y4 (audit): KELAJAKDAGI toza dars jadvalga ERGASHADI — yangi xona
+    # unda ham koʻrinadi. Ustoz oʻzgartirilmagani uchun oʻsha qoladi.
     assert lesson.teacher_id == eski_ustoz
+    assert lesson.room == "999", "kelajak dars jadval oʻzgarishiga ergashishi kerak (Y4)"
+
+
+async def test_otgan_dars_jadval_ozgarsa_qotadi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """T-012 mezoni + Y4 chegarasi: OʻTGAN dars jadval bilan oʻzgarmaydi."""
+    from datetime import date as _date
+
+    token = await _token(client, "gen.ustoz")
+    await _generate(client, token, DUSHANBA, DUSHANBA)
+
+    lesson = await session.scalar(select(Lesson).where(Lesson.lesson_date == DUSHANBA))
+    assert lesson is not None
+    # Darsni sun'iy ravishda oʻtmishga suramiz — davomatli tarixiy dars kabi.
+    lesson.lesson_date = _date(2026, 8, 24)
+    await session.commit()
+    eski_xona = lesson.room
+
+    entry = await session.scalar(select(ScheduleEntry).where(ScheduleEntry.weekday == 1))
+    assert entry is not None
+    resp = await client.patch(
+        f"/api/v1/schedule/entries/{entry.id}",
+        headers=_auth(token),
+        json={"room": "777"},
+    )
+    assert resp.status_code == 200, resp.text
+
+    await session.refresh(lesson)
     assert lesson.room == eski_xona, "oʻtgan dars jadval bilan birga oʻzgarib ketdi"
+    assert lesson.is_archived is False
 
 
 async def test_chorak_uchun_generatsiya(client: AsyncClient, world: dict) -> None:

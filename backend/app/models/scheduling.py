@@ -17,6 +17,7 @@ from sqlalchemy import (
     Index,
     String,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -94,8 +95,17 @@ class Lesson(Entity):
 
     __tablename__ = "lessons"
     __table_args__ = (
-        # Idempotent generatsiya: bitta sinf-sana-para uchun bitta dars.
-        UniqueConstraint("class_id", "lesson_date", "period"),
+        # Idempotent generatsiya: bitta sinf-sana-para uchun bitta FAOL
+        # dars. Partial — arxivlangan (bekor qilingan jadvaldagi) dars
+        # slotni band qilib turmaydi (Y4).
+        Index(
+            "uq_lessons_slot",
+            "class_id",
+            "lesson_date",
+            "period",
+            unique=True,
+            postgresql_where=text("NOT is_archived"),
+        ),
         Index("ix_lessons_teacher_date", "teacher_id", "lesson_date"),
         Index("ix_lessons_class_date", "class_id", "lesson_date"),
     )

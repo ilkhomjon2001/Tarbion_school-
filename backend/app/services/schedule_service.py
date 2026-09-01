@@ -22,9 +22,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
-from app.core.timeutil import utcnow
+from app.core.timeutil import local_today, utcnow
 from app.models import (
+    AttendanceRecord,
     AuditAction,
+    Grade,
+    Lesson,
     Permission,
     ScheduleEntry,
     SchoolClass,
@@ -258,6 +261,34 @@ async def add_entry(
     return next(r for r in rows if r.id == entry.id)
 
 
+async def _future_clean_lessons(
+    session: AsyncSession, entry_id: uuid.UUID
+) -> list[Lesson]:
+    """Shu jadval yozuvidan yaratilgan, hali OʻTMAGAN va «toza» darslar.
+
+    Toza — davomat belgilanmagan va baho yoʻq: bunday darsni jadval
+    oʻzgarishi bilan sinxronlash xavfsiz. Davomati bor dars tarix —
+    unga tegilmaydi (davomat darsga bogʻlanadi, jadvalga emas).
+    """
+    baholi = select(Grade.lesson_id).where(
+        Grade.lesson_id.is_not(None), Grade.is_archived.is_(False)
+    )
+    davomatli = select(AttendanceRecord.lesson_id).where(
+        AttendanceRecord.is_archived.is_(False)
+    )
+    rows = await session.execute(
+        select(Lesson).where(
+            Lesson.schedule_entry_id == entry_id,
+            Lesson.is_archived.is_(False),
+            Lesson.lesson_date >= local_today(),
+            Lesson.attendance_marked_at.is_(None),
+            Lesson.id.not_in(baholi),
+            Lesson.id.not_in(davomatli),
+        )
+    )
+    return list(rows.scalars())
+
+
 async def update_entry(
     session: AsyncSession,
     *,
@@ -303,6 +334,15 @@ async def update_entry(
             room=yangi_room,
             exclude_id=entry.id,
         )
+        # Y4: allaqachon yaratilgan KELAJAK darslar ham yangilanadi —
+        # aks holda eski ustoz «mening darslarim»da koʻraverar, yangisi
+        # koʻrmas edi. Oʻrinbosarlik (ADM-10) bilan alohida oʻzgartirilgan
+        # dars ham shu yerda jadvalga tenglashtiriladi — jadvalni
+        # oʻzgartirish aniq niyat.
+        for dars in await _future_clean_lessons(session, entry.id):
+            dars.teacher_id = yangi_teacher
+            dars.room = yangi_room
+
         entry.teacher_id = yangi_teacher
         entry.room = yangi_room
         audit_service.record(
@@ -326,8 +366,10 @@ async def archive_entry(
 ) -> None:
     """Jadvaldan chiqaradi. Oʻchirish YOʻQ (CLAUDE.md 1-qoida).
 
-    Allaqachon generatsiya qilingan darslar (`lessons`) qolaveradi —
-    ulardagi davomat va baho jadvalga emas, darsga bogʻlangan.
+    OʻTGAN darslar qolaveradi — ulardagi davomat va baho jadvalga emas,
+    darsga bogʻlangan. KELAJAKDAGI (davomatsiz, bahosiz) darslar esa
+    birga arxivlanadi (Y4): bekor qilingan jadval boʻyicha dars
+    oʻquvchi va ota-ona jadvalida koʻrinib turmasligi kerak.
     """
     await assert_permission(session, actor, Permission.SCHEDULE_MANAGE)
 
@@ -337,6 +379,11 @@ async def archive_entry(
     if entry.is_archived:
         return
 
+    kelajak = await _future_clean_lessons(session, entry.id)
+    for dars in kelajak:
+        dars.is_archived = True
+        dars.archived_at = utcnow()
+
     entry.is_archived = True
     entry.archived_at = utcnow()
     audit_service.record(
@@ -345,7 +392,7 @@ async def archive_entry(
         object_id=entry.id,
         action=AuditAction.ARCHIVE,
         old={"weekday": entry.weekday, "period": entry.period},
-        new={"is_archived": True},
+        new={"is_archived": True, "archived_future_lessons": len(kelajak)},
         actor_id=actor.id,
         ip=ip,
     )

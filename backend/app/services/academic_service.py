@@ -30,9 +30,12 @@ from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.core.timeutil import utcnow
 from app.models import (
     AcademicYear,
+    AttendanceRecord,
     AuditAction,
     BellSchedule,
+    Grade,
     Holiday,
+    Lesson,
     Permission,
     Term,
 )
@@ -389,6 +392,38 @@ async def list_holidays(session: AsyncSession, year_id: uuid.UUID) -> list[Holid
     return list(rows.scalars())
 
 
+async def _archive_clean_lessons_on(session: AsyncSession, day: date) -> int:
+    """Taʼtil eʼlon qilingan kundagi «toza» darslarni arxivlaydi (O9).
+
+    Toza — davomatsiz va bahosiz: bunday dars taʼtil kuni jadvalda
+    turmasligi kerak. Davomati bor dars tegilmaydi — u allaqachon
+    oʻtgan haqiqat.
+    """
+    baholi = select(Grade.lesson_id).where(
+        Grade.lesson_id.is_not(None), Grade.is_archived.is_(False)
+    )
+    davomatli = select(AttendanceRecord.lesson_id).where(
+        AttendanceRecord.is_archived.is_(False)
+    )
+    darslar = list(
+        (
+            await session.execute(
+                select(Lesson).where(
+                    Lesson.lesson_date == day,
+                    Lesson.is_archived.is_(False),
+                    Lesson.attendance_marked_at.is_(None),
+                    Lesson.id.not_in(baholi),
+                    Lesson.id.not_in(davomatli),
+                )
+            )
+        ).scalars()
+    )
+    for dars in darslar:
+        dars.is_archived = True
+        dars.archived_at = utcnow()
+    return len(darslar)
+
+
 async def add_holiday(
     session: AsyncSession,
     *,
@@ -416,13 +451,18 @@ async def add_holiday(
         mavjud.is_archived = False
         mavjud.archived_at = None
         mavjud.title = title.strip()
+        arxivlandi = await _archive_clean_lessons_on(session, day)
         audit_service.record(
             session,
             object_type="holiday",
             object_id=mavjud.id,
             action=AuditAction.UPDATE,
             old={"is_archived": True},
-            new={"is_archived": False, "title": mavjud.title},
+            new={
+                "is_archived": False,
+                "title": mavjud.title,
+                "archived_lessons": arxivlandi,
+            },
             actor_id=actor.id,
             ip=ip,
         )
@@ -432,12 +472,13 @@ async def add_holiday(
     holiday = Holiday(academic_year_id=year_id, day=day, title=title.strip())
     session.add(holiday)
     await session.flush()
+    arxivlandi = await _archive_clean_lessons_on(session, day)
     audit_service.record(
         session,
         object_type="holiday",
         object_id=holiday.id,
         action=AuditAction.CREATE,
-        new={"day": day, "title": holiday.title},
+        new={"day": day, "title": holiday.title, "archived_lessons": arxivlandi},
         actor_id=actor.id,
         ip=ip,
     )
