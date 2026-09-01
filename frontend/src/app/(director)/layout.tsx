@@ -3,15 +3,15 @@ import { DirectorMobileTopBar } from "@/components/director/DirectorMobileTopBar
 import { DirectorSidebar } from "@/components/director/DirectorSidebar";
 import { DirectorTopbar } from "@/components/director/DirectorTopbar";
 import { buildDirectorSearchIndex } from "@/lib/director/search";
-import { getSchoolClasses, getTeachers } from "@/lib/director/fetchers";
 
-export default async function DirectorLayout({
+export default function DirectorLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [teachers, classes] = await Promise.all([getTeachers(), getSchoolClasses()]);
-  const searchIndex = buildDirectorSearchIndex({ teachers, classes });
+  // Qidiruvda faqat sahifalar: ustoz va sinf roʻyxati endi BAZADAN keladi
+  // (mock emas), ularni har sahifa ochilishida oldindan yuklash qimmat.
+  const searchIndex = buildDirectorSearchIndex({ teachers: [], classes: [] });
 
   return (
     <AuthGuard role="director">

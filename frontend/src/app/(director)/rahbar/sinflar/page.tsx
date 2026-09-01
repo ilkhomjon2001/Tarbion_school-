@@ -1,7 +1,6 @@
-import { Suspense } from "react";
-import { TableSkeleton } from "@/components/ui/Skeleton";
-import { ClassesBoard } from "@/components/director/ClassesBoard";
-import { getSchoolClasses, getTeachers } from "@/lib/director/fetchers";
+import { LiveClassesBoard } from "@/components/director/LiveClassesBoard";
+
+export const metadata = { title: "Sinflar — Tarbion rahbariyat" };
 
 export default function ClassesPage() {
   return (
@@ -9,17 +8,10 @@ export default function ClassesPage() {
       <div className="mb-4">
         <h1 className="text-h2 font-bold text-foreground">Sinflar</h1>
         <p className="text-sm text-foreground-muted">
-          Sinflar roʻyxati, sinf rahbarlari va oʻquvchilar davomati
+          Sinflar roʻyxati, sinf rahbarlari va oʻquvchilar davomati — bazadan
         </p>
       </div>
-      <Suspense fallback={<TableSkeleton rows={7} columns={5} />}>
-        <ClassesSection />
-      </Suspense>
+      <LiveClassesBoard />
     </div>
   );
-}
-
-async function ClassesSection() {
-  const [classes, teachers] = await Promise.all([getSchoolClasses(), getTeachers()]);
-  return <ClassesBoard classes={classes} teachers={teachers} />;
 }
