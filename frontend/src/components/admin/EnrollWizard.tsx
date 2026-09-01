@@ -1,38 +1,51 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { CheckIcon, PlusIcon } from "@/components/ui/icons";
 import { formatSom } from "@/lib/format";
-import {
-  ACADEMIC_YEAR,
-  useActiveClasses,
-  useAdmin,
-  useAdminDispatch,
-} from "@/lib/admin/store";
+import { ACADEMIC_YEAR, useAdmin, useAdminDispatch } from "@/lib/admin/store";
 import { APPLICATION_STATUS_LABELS, type Application } from "@/lib/admin/types";
-import { staffById } from "@/lib/school/staff";
+import {
+  apiXato,
+  createGuardian,
+  createStudent,
+  fetchClasses,
+  type ClassOut,
+} from "@/lib/school/api";
 
 const STEPS = ["Oʻquvchi", "Ota-ona / vasiy", "Sinf va shartnoma", "Tasdiqlash"];
 
 const MONTHS_IN_YEAR = 9;
 
-const RELATIONS = ["Ota", "Ona", "Vasiy", "Boshqa"];
+/** Qarindoshlik — bazada kod, ekranda oʻzbekcha (StudentCard bilan bir xil). */
+const RELATIONS: { id: string; label: string }[] = [
+  { id: "father", label: "Ota" },
+  { id: "mother", label: "Ona" },
+  { id: "guardian", label: "Vasiy" },
+];
 
-/** Sinf tanlash roʻyxati — nom, band joy va sinf rahbari bir joyda. */
-interface ClassOption {
-  name: string;
-  count: number;
-  free: number;
-  homeroomTeacherId: string;
+function relationLabel(id: string): string {
+  return RELATIONS.find((r) => r.id === id)?.label ?? id;
 }
 
-/** Sinf rahbarini nomi boʻyicha topish — maʼlumot bazasidagi roʻyxatdan. */
-function useHomeroomName(className: string): string {
-  const classes = useActiveClasses();
-  const id = classes.find((c) => c.name === className)?.homeroomTeacherId ?? "";
-  return staffById(id)?.fullName ?? "—";
+/**
+ * «Familiya Ism [Otasining ismi …]» → API kutadigan uch boʻlak.
+ * Hujjatlarda yozuv shu tartibda boʻladi; ortiqcha soʻzlar otasining
+ * ismiga qoʻshiladi.
+ */
+function splitFullName(full: string): {
+  last_name: string;
+  first_name: string;
+  middle_name: string | null;
+} {
+  const parts = full.trim().split(/\s+/);
+  return {
+    last_name: parts[0] ?? "",
+    first_name: parts[1] ?? "",
+    middle_name: parts.length > 2 ? parts.slice(2).join(" ") : null,
+  };
 }
 
 /** Boʻsh forma — "Ariza kutmasdan qoʻshish" uchun. */
@@ -45,7 +58,7 @@ function emptyApplication(defaultClass: string): Application {
     previousSchool: "",
     guardianFullName: "",
     guardianPhone: "+998 ",
-    guardianRelation: "Ota",
+    guardianRelation: "father",
     address: "",
     className: defaultClass,
     academicYear: ACADEMIC_YEAR,
@@ -76,14 +89,25 @@ export function EnrollWizard({
   fromLeadId?: string;
 }) {
   const router = useRouter();
-  const { applications, students, leads } = useAdmin();
-  const classes = useActiveClasses();
+  const { applications, leads } = useAdmin();
   const dispatch = useAdminDispatch();
 
-  const defaultClass = classes[0]?.name ?? "";
+  // Sinflar BAZADAN — sinf tanlanmasa oʻquvchi «sinfsiz» yaratiladi.
+  const [classes, setClasses] = useState<ClassOut[]>([]);
+  const [loadError, setLoadError] = useState("");
+  useEffect(() => {
+    void (async () => {
+      try {
+        setClasses(await fetchClasses());
+      } catch (err) {
+        setLoadError(apiXato(err, "Sinflar roʻyxatini olib boʻlmadi."));
+      }
+    })();
+  }, []);
+
   const [draft, setDraft] = useState<Application | null>(() => {
     if (!startBlank) return null;
-    const blank = emptyApplication(defaultClass);
+    const blank = emptyApplication("");
     const lead = fromLeadId ? leads.find((l) => l.id === fromLeadId) : undefined;
     if (!lead) return blank;
     // Lidda bor maʼlumot koʻchiriladi, qolgani qoʻlda toʻldiriladi.
@@ -99,26 +123,57 @@ export function EnrollWizard({
     };
   });
   const [step, setStep] = useState(startBlank ? 0 : 2);
-  const [done, setDone] = useState<string | null>(null);
+  const [done, setDone] = useState<EnrollResult | null>(null);
   const [touched, setTouched] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const pending = applications.filter((a) => a.status === "new");
 
-  // Sinf toʻlganini oʻquvchilar sonidan hisoblaymiz — qoʻlda yozilgan
-  // "joy yoʻq" bayrogʻi tez eskiradi.
-  const capacity = useMemo<ClassOption[]>(() => {
-    const counts = new Map<string, number>();
-    for (const s of students) {
-      if (s.status !== "active") continue;
-      counts.set(s.className, (counts.get(s.className) ?? 0) + 1);
+  /**
+   * Yakuniy qadam — BAZAGA yozadi: avval oʻquvchi, keyin vasiy hisobi.
+   * Vasiy paroli javobda BIR MARTA keladi va yakuniy ekranda koʻrsatiladi.
+   *
+   * Telefon boshqa hisobda boʻlsa server 409 qaytaradi va xabar kimligini
+   * aytadi — bunday holda ikkinchi farzand oʻquvchi kartochkasidagi
+   * «Mavjud hisobga bogʻlash» orqali qoʻshiladi.
+   */
+  async function accept(application: Application) {
+    setSaving(true);
+    setSaveError("");
+    try {
+      const classId =
+        classes.find((c) => c.name === application.className)?.id ?? null;
+      const student = await createStudent({
+        ...splitFullName(application.studentFullName),
+        birth_date: application.birthDate || null,
+        class_id: classId,
+      });
+      const guardian = await createGuardian(student.id, {
+        ...splitFullName(application.guardianFullName),
+        phone: application.guardianPhone.trim() || null,
+        relation: application.guardianRelation,
+        is_primary: true,
+      });
+      if (application.id) {
+        dispatch({
+          type: "ACCEPT_APPLICATION",
+          application,
+          applicationId: application.id,
+        });
+      }
+      setDone({
+        studentName: student.full_name,
+        guardianLogin: guardian.guardian.login,
+        guardianPassword: guardian.initial_password,
+      });
+      setDraft(null);
+    } catch (err) {
+      setSaveError(apiXato(err, "Saqlab boʻlmadi. Qayta urinib koʻring."));
+    } finally {
+      setSaving(false);
     }
-    return classes.map((c) => ({
-      name: c.name,
-      count: counts.get(c.name) ?? 0,
-      free: c.capacity - (counts.get(c.name) ?? 0),
-      homeroomTeacherId: c.homeroomTeacherId,
-    }));
-  }, [students, classes]);
+  }
 
   function startFromApplication(application: Application) {
     setDraft({ ...application });
@@ -128,7 +183,7 @@ export function EnrollWizard({
   }
 
   function startBlankDraft() {
-    setDraft(emptyApplication(defaultClass));
+    setDraft(emptyApplication(classes[0]?.name ?? ""));
     setStep(0);
     setDone(null);
     setTouched(false);
@@ -141,7 +196,7 @@ export function EnrollWizard({
   if (done) {
     return (
       <EnrolledScreen
-        name={done}
+        result={done}
         onMore={() => setDone(null)}
         onList={() => router.push("/admin/oquvchilar")}
       />
@@ -255,9 +310,25 @@ export function EnrollWizard({
             {step === 0 && <StudentStep draft={draft} update={update} />}
             {step === 1 && <GuardianStep draft={draft} update={update} />}
             {step === 2 && (
-              <ContractStep draft={draft} update={update} capacity={capacity} />
+              <ContractStep draft={draft} update={update} classes={classes} />
             )}
-            {step === 3 && <ConfirmStep application={{ ...draft, monthlyFee: monthly }} />}
+            {step === 3 && (
+              <ConfirmStep
+                application={{ ...draft, monthlyFee: monthly }}
+                classes={classes}
+              />
+            )}
+
+            {loadError && (
+              <p role="alert" className="mt-4 rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">
+                {loadError}
+              </p>
+            )}
+            {saveError && (
+              <p role="alert" className="mt-4 rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">
+                {saveError}
+              </p>
+            )}
 
             {touched && problems.length > 0 && (
               <ul className="animate-enter mt-4 space-y-1 rounded-lg bg-danger-tint px-3 py-2 text-xs text-danger">
@@ -318,18 +389,11 @@ export function EnrollWizard({
               ) : (
                 <button
                   type="button"
-                  onClick={() => {
-                    dispatch({
-                      type: "ACCEPT_APPLICATION",
-                      application: draft,
-                      applicationId: draft.id || undefined,
-                    });
-                    setDone(draft.studentFullName);
-                    setDraft(null);
-                  }}
-                  className="focus-ring rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark"
+                  disabled={saving}
+                  onClick={() => void accept(draft)}
+                  className="focus-ring rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Qabul qilish va sinfga qoʻshish
+                  {saving ? "Saqlanmoqda…" : "Qabul qilish va sinfga qoʻshish"}
                 </button>
               )}
             </div>
@@ -482,8 +546,8 @@ function GuardianStep({
             className={inputClass}
           >
             {RELATIONS.map((r) => (
-              <option key={r} value={r}>
-                {r}
+              <option key={r.id} value={r.id}>
+                {r.label}
               </option>
             ))}
           </select>
@@ -506,13 +570,13 @@ function GuardianStep({
 function ContractStep({
   draft,
   update,
-  capacity,
+  classes,
 }: {
   draft: Application;
   update: (patch: Partial<Application>) => void;
-  capacity: ClassOption[];
+  classes: ClassOut[];
 }) {
-  const homeroomName = useHomeroomName(draft.className);
+  const chosen = classes.find((c) => c.name === draft.className);
 
   return (
     <>
@@ -529,15 +593,15 @@ function ContractStep({
             onChange={(e) => update({ className: e.target.value })}
             className={inputClass}
           >
-            {capacity.map((c) => (
-              <option key={c.name} value={c.name} disabled={c.free <= 0}>
-                {c.name} · {c.count} oʻquvchi ·{" "}
-                {c.free > 0 ? `${c.free} joy bor` : "Joy yoʻq"}
+            <option value="">Sinfni tanlang…</option>
+            {classes.map((c) => (
+              <option key={c.id} value={c.name}>
+                {c.name} · {c.student_count} oʻquvchi
               </option>
             ))}
           </select>
           <span className="mt-1 block text-xs text-foreground-muted">
-            Sinf rahbari: {homeroomName}
+            Sinf rahbari: {chosen?.homeroom_teacher ?? "—"}
           </span>
         </Field>
         <Field label="Qabul sanasi">
@@ -660,15 +724,26 @@ function Stepper({ step, onGo }: { step: number; onGo: (target: number) => void 
   );
 }
 
-function ConfirmStep({ application }: { application: Application }) {
-  const homeroomName = useHomeroomName(application.className);
+function ConfirmStep({
+  application,
+  classes,
+}: {
+  application: Application;
+  classes: ClassOut[];
+}) {
+  const homeroomName =
+    classes.find((c) => c.name === application.className)?.homeroom_teacher ?? "—";
 
   return (
     <>
       <h2 className="mb-1 text-base font-semibold text-foreground">Tasdiqlash</h2>
       <p className="mb-4 text-sm text-foreground-muted">
         Maʼlumotlarni tekshiring. Tasdiqlangach oʻquvchi {application.className} sinfiga
-        qoʻshiladi va shartnoma boʻyicha toʻlov jadvali ochiladi.
+        qoʻshiladi va vasiy uchun kabinet hisobi ochiladi.
+      </p>
+      <p className="mb-4 rounded-lg bg-warning-tint px-3 py-2 text-xs text-warning">
+        Toʻlov moduli hali ulanmagan: shartnoma summasi, chegirma va toʻlov kuni
+        hozircha bazaga yozilmaydi.
       </p>
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
         <Row label="Oʻquvchi">{application.studentFullName}</Row>
@@ -678,7 +753,7 @@ function ConfirmStep({ application }: { application: Application }) {
         <Row label="Qabul sanasi">{application.enrollDate}</Row>
         <Row label="Oldingi maktab">{application.previousSchool || "—"}</Row>
         <Row label="Ota-ona / vasiy">
-          {application.guardianFullName} ({application.guardianRelation})
+          {application.guardianFullName} ({relationLabel(application.guardianRelation)})
         </Row>
         <Row label="Telefon">{application.guardianPhone}</Row>
         <Row label="Manzil">{application.address || "—"}</Row>
@@ -739,7 +814,7 @@ function RecapPanel({
         <div className="mt-1.5 rounded-lg bg-surface-muted p-3">
           <p className="text-sm font-medium text-foreground">{application.guardianFullName}</p>
           <span className="mt-1 inline-block">
-            <Badge tone="success">{application.guardianRelation}</Badge>
+            <Badge tone="success">{relationLabel(application.guardianRelation)}</Badge>
           </span>
           <dl className="mt-2 space-y-1.5 text-xs">
             <Row label="Telefon raqami">{application.guardianPhone}</Row>
@@ -809,12 +884,19 @@ function Placeholder() {
   );
 }
 
+/** Qabul natijasi — vasiy paroli BIR MARTA shu yerda koʻrsatiladi. */
+interface EnrollResult {
+  studentName: string;
+  guardianLogin: string;
+  guardianPassword: string;
+}
+
 function EnrolledScreen({
-  name,
+  result,
   onMore,
   onList,
 }: {
-  name: string;
+  result: EnrollResult;
   onMore: () => void;
   onList: () => void;
 }) {
@@ -824,11 +906,30 @@ function EnrolledScreen({
         <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-tint text-brand-dark">
           <CheckIcon className="h-6 w-6" />
         </span>
-        <h1 className="text-h3 font-semibold text-foreground">Oʻquvchi sinfga qoʻshildi</h1>
+        <h1 className="text-h3 font-semibold text-foreground">Oʻquvchi bazaga qoʻshildi</h1>
         <p className="mt-2 text-sm text-foreground-muted">
-          <span className="font-medium text-foreground">{name}</span> bazaga qoʻshildi.
-          Toʻlov jadvali ochildi, amal audit jurnaliga tushdi.
+          <span className="font-medium text-foreground">{result.studentName}</span> bazaga
+          qoʻshildi, amal audit jurnaliga tushdi.
         </p>
+        <div className="mt-4 rounded-lg bg-warning-tint px-3 py-3 text-left">
+          <p className="text-xs font-semibold text-warning">
+            Vasiy kabinetiga kirish maʼlumotlari — FAQAT HOZIR koʻrsatiladi
+          </p>
+          <dl className="mt-2 space-y-1 text-sm">
+            <div className="flex justify-between gap-2">
+              <dt className="text-foreground-muted">Login</dt>
+              <dd className="num font-semibold text-foreground">{result.guardianLogin}</dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt className="text-foreground-muted">Boshlangʻich parol</dt>
+              <dd className="num font-semibold text-foreground">{result.guardianPassword}</dd>
+            </div>
+          </dl>
+          <p className="mt-2 text-xs text-foreground-muted">
+            Yozib oling va ota-onaga topshiring — sahifadan chiqilgach parolni
+            qayta koʻrib boʻlmaydi, faqat yangisini berish mumkin.
+          </p>
+        </div>
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <button
             type="button"
