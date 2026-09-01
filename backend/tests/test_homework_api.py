@@ -57,6 +57,8 @@ async def world(session: AsyncSession) -> dict[str, object]:
     begona = await _user(session, roles, [RoleName.TEACHER.value], "hw.begona", "Valiyev")
     ota_a = await _user(session, roles, [RoleName.PARENT.value], "hw.ota_a", "Karimov")
     ota_b = await _user(session, roles, [RoleName.PARENT.value], "hw.ota_b", "Rahimov")
+    ali_u = await _user(session, roles, [RoleName.STUDENT.value], "hw.ali", "Abdullayev")
+    vali_u = await _user(session, roles, [RoleName.STUDENT.value], "hw.vali", "Boboyev")
 
     year = AcademicYear(
         name="2026-2027", starts_on=date(2026, 8, 1), ends_on=date(2027, 5, 25), is_current=True
@@ -73,8 +75,8 @@ async def world(session: AsyncSession) -> dict[str, object]:
     session.add(cls)
     await session.flush()
 
-    ali = Student(class_id=cls.id, last_name="Abdullayev", first_name="Ali")
-    vali = Student(class_id=cls.id, last_name="Boboyev", first_name="Vali")
+    ali = Student(class_id=cls.id, last_name="Abdullayev", first_name="Ali", user_id=ali_u.id)
+    vali = Student(class_id=cls.id, last_name="Boboyev", first_name="Vali", user_id=vali_u.id)
     session.add_all([ali, vali])
     await session.flush()
 
@@ -244,7 +246,7 @@ async def test_oquvchi_topshiradi(client: AsyncClient, world: dict) -> None:
     ustoz = await _token(client, "hw.ustoz")
     await _create(client, ustoz, world)
 
-    ota = await _token(client, "hw.ota_a")
+    ota = await _token(client, "hw.ali")
     sub_id = await _submission_id(client, ota, str(world["ali"].id))
 
     r = await client.post(
@@ -266,7 +268,7 @@ async def test_muddatdan_keyin_topshirish_late(
     # Muddatni orqaga suramiz — vaqt oʻtganini simulyatsiya qilish uchun.
     await _muddatni_orqaga(session, hw["id"])
 
-    ota = await _token(client, "hw.ota_a")
+    ota = await _token(client, "hw.ali")
     sub_id = await _submission_id(client, ota, str(world["ali"].id))
     r = await client.post(
         f"/api/v1/journal/submissions/{sub_id}/submit", headers=_auth(ota), json={}
@@ -283,7 +285,7 @@ async def test_kechikish_taqiqlangan_bolsa_rad_etiladi(
 
     await _muddatni_orqaga(session, hw["id"])
 
-    ota = await _token(client, "hw.ota_a")
+    ota = await _token(client, "hw.ali")
     sub_id = await _submission_id(client, ota, str(world["ali"].id))
     r = await client.post(
         f"/api/v1/journal/submissions/{sub_id}/submit", headers=_auth(ota), json={}
@@ -299,9 +301,15 @@ async def test_begona_topshiriqni_topshira_olmaydi(client: AsyncClient, world: d
     ota_a = await _token(client, "hw.ota_a")
     sub_id = await _submission_id(client, ota_a, str(world["ali"].id))
 
-    ota_b = await _token(client, "hw.ota_b")
+    # Begona OʻQUVCHI ham, oʻz vasiysi ham topshira olmaydi (K6).
+    vali_t = await _token(client, "hw.vali")
     r = await client.post(
-        f"/api/v1/journal/submissions/{sub_id}/submit", headers=_auth(ota_b), json={}
+        f"/api/v1/journal/submissions/{sub_id}/submit", headers=_auth(vali_t), json={}
+    )
+    assert r.status_code == 403, r.text
+
+    r = await client.post(
+        f"/api/v1/journal/submissions/{sub_id}/submit", headers=_auth(ota_a), json={}
     )
     assert r.status_code == 403, r.text
 
@@ -423,7 +431,7 @@ async def test_baholangan_ish_qayta_topshirilmaydi(client: AsyncClient, world: d
         json={"score": 4},
     )
 
-    ota = await _token(client, "hw.ota_a")
+    ota = await _token(client, "hw.ali")
     r = await client.post(
         f"/api/v1/journal/submissions/{sub['id']}/submit", headers=_auth(ota), json={}
     )
@@ -435,7 +443,7 @@ async def test_topshirilmagan_vazifalar_filtri(client: AsyncClient, world: dict)
     ustoz = await _token(client, "hw.ustoz")
     await _create(client, ustoz, world)
 
-    ota = await _token(client, "hw.ota_a")
+    ota = await _token(client, "hw.ali")
     r = await client.get(
         f"/api/v1/journal/students/{world['ali'].id}/homework",
         headers=_auth(ota),

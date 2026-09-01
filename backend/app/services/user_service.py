@@ -13,7 +13,7 @@ Login administrator tanlamaydi: `familiya.ism` shaklida tizim yasaydi
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
@@ -25,7 +25,15 @@ from app.core.security import (
     verify_password,
 )
 from app.core.timeutil import utcnow
-from app.models import AuditAction, Permission, Role, RoleName, User, UserRole
+from app.models import (
+    AuditAction,
+    Permission,
+    RefreshToken,
+    Role,
+    RoleName,
+    User,
+    UserRole,
+)
 from app.services import audit_service, permissions
 from app.services.access import CurrentUser
 
@@ -150,6 +158,17 @@ async def create_user(
     return CreatedUser(user=user, initial_password=parol)
 
 
+async def _revoke_all_sessions(
+    session: AsyncSession, user_id: uuid.UUID, *, reason: str
+) -> None:
+    """Foydalanuvchining barcha faol refresh tokenlarini bekor qiladi."""
+    await session.execute(
+        update(RefreshToken)
+        .where(RefreshToken.user_id == user_id, RefreshToken.revoked_at.is_(None))
+        .values(revoked_at=utcnow(), revoked_reason=reason)
+    )
+
+
 async def change_own_password(
     session: AsyncSession,
     *,
@@ -173,6 +192,11 @@ async def change_own_password(
 
     user.password_hash = hash_password(new_password)
     user.must_change_password = False
+
+    # AUT-08: parol oʻzgardi — barcha qurilmalardagi sessiya tugatiladi.
+    # Aks holda hisob egallanganda parol yangilansa ham oʻgʻirlangan
+    # refresh token 30 kungacha ishlashda davom etardi.
+    await _revoke_all_sessions(session, user.id, reason="password_changed")
 
     # Parolning oʻzi hech qayerda yozilmaydi — `audit_service` maxsus
     # maydonlarni ***`ga almashtiradi, lekin biz ularni umuman yubormaymiz.
@@ -208,6 +232,10 @@ async def reset_password(
     parol = generate_initial_password()
     user.password_hash = hash_password(parol)
     user.must_change_password = True
+
+    # Tiklashda ham eski sessiyalar oʻladi — hisob egallangan boʻlsa,
+    # yangi parol berilgach oʻgʻrining tokeni ishlamasligi kerak.
+    await _revoke_all_sessions(session, user.id, reason="password_reset")
 
     audit_service.record(
         session,

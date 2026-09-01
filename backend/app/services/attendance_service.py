@@ -72,7 +72,13 @@ def edit_deadline(lesson: Lesson):
 
 
 def can_teacher_edit(lesson: Lesson) -> bool:
-    return utcnow() <= edit_deadline(lesson)
+    """Dars boshlanganidan to 24 soatlik oynagacha (DAV-03).
+
+    Boshlanmagan darsga ham yozib boʻlmaydi — aks holda ustoz kelasi
+    haftani oldindan "toʻldirib" qoʻyishi mumkin edi.
+    """
+    hozir = utcnow()
+    return lesson.starts_at <= hozir <= edit_deadline(lesson)
 
 
 async def _assert_can_edit(session: AsyncSession, user: CurrentUser, lesson: Lesson) -> None:

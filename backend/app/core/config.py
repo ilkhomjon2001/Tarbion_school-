@@ -140,6 +140,15 @@ class Settings(BaseSettings):
         if len(set(self.jwt_secret)) < 8:
             xatolar.append("JWT_SECRET juda oddiy")
 
+        if self.sinov_provider_key == "sinov-kalit-almashtiring":  # noqa: S105
+            xatolar.append(
+                "SINOV_PROVIDER_KEY namunadagi qiymat — toʻlov webhooki imzosi shu kalitga tayanadi"
+            )
+        if not self.trusted_proxies:
+            xatolar.append(
+                "TRUSTED_PROXIES boʻsh — Caddy ortida audit va login-lockout IP lari 127.0.0.1 boʻlib qoladi"
+            )
+
         if xatolar:
             ro_yxat = "; ".join(xatolar)
             raise ValueError(f"Ishlab chiqarish sozlamasi xavfli: {ro_yxat}")

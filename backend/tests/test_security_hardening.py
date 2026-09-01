@@ -291,10 +291,18 @@ def test_ishlab_chiqarishda_xavfli_sozlama_rad_etiladi() -> None:
         "cookie_secure": True,
         "debug": False,
         "cors_origins": ["https://tarbion.uz"],
+        "sinov_provider_key": "test-uchun-alohida-kalit-123",
+        "trusted_proxies": "172.18.0.0/16",
     }
 
     with pytest.raises(ValidationError, match="COOKIE_SECURE"):
         Settings(**{**asos, "cookie_secure": False})  # type: ignore[arg-type]
+
+    # Yangi prod tekshiruvlar: default sinov kaliti va boʻsh proksi roʻyxati.
+    with pytest.raises(ValidationError, match="SINOV_PROVIDER_KEY"):
+        Settings(**{**asos, "sinov_provider_key": "sinov-kalit-almashtiring"})  # type: ignore[arg-type]
+    with pytest.raises(ValidationError, match="TRUSTED_PROXIES"):
+        Settings(**{**asos, "trusted_proxies": ""})  # type: ignore[arg-type]
 
     with pytest.raises(ValidationError, match="http://"):
         Settings(**{**asos, "cors_origins": ["http://tarbion.uz"]})  # type: ignore[arg-type]

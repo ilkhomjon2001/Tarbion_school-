@@ -44,8 +44,8 @@ from app.models import (
 from app.services import audit_service, notifications_service
 from app.services.access import (
     CurrentUser,
-    accessible_student_ids,
     assert_can_view_student,
+    assert_student_self,
     load_homework_for_teacher,
 )
 
@@ -609,11 +609,10 @@ async def submit(
     """
     submission = await session.get(HomeworkSubmission, submission_id)
     if submission is None or submission.is_archived:
-        raise NotFoundError("Topshiriq topilmadi.")
-
-    ruxsat = await accessible_student_ids(session, user)
-    if ruxsat is not None and submission.student_id not in ruxsat:
         raise PermissionDeniedError("Bu topshiriq sizga tegishli emas.")
+
+    # Faqat oʻquvchining oʻzi topshiradi — vasiy/ustoz uning nomidan emas.
+    await assert_student_self(session, user, submission.student_id)
 
     homework = await session.get(Homework, submission.homework_id)
     if homework is None or homework.is_archived:

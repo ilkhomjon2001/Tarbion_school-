@@ -290,43 +290,6 @@ async def revoke_session(session: AsyncSession, *, raw_token: str | None) -> Non
     await session.commit()
 
 
-async def change_password(
-    session: AsyncSession,
-    *,
-    user: User,
-    current_password: str,
-    new_password: str,
-    ip: str | None,
-) -> None:
-    """AUT-08. Eski parol soʻraladi va barcha sessiyalar bekor qilinadi."""
-    if not verify_password(current_password, user.password_hash):
-        raise InvalidCredentialsError("Joriy parol notoʻgʻri.")
-    if len(new_password) < 8:
-        raise ValidationError("Yangi parol kamida 8 belgidan iborat boʻlsin.")
-    if current_password == new_password:
-        raise ValidationError("Yangi parol eskisidan farq qilishi kerak.")
-
-    user.password_hash = hash_password(new_password)
-    user.must_change_password = False
-
-    # Parol oʻzgardi — barcha qurilmalardagi sessiya tugatiladi.
-    await session.execute(
-        update(RefreshToken)
-        .where(RefreshToken.user_id == user.id, RefreshToken.revoked_at.is_(None))
-        .values(revoked_at=utcnow(), revoked_reason="password_changed")
-    )
-    audit_service.record(
-        session,
-        object_type="user",
-        object_id=user.id,
-        action=AuditAction.UPDATE,
-        new={"password": "***"},
-        actor_id=user.id,
-        ip=ip,
-    )
-    await session.commit()
-
-
 async def ensure_roles(session: AsyncSession, names: list[str]) -> dict[str, Role]:
     """Rollarni oʻqiydi (seed uchun)."""
     rows = await session.execute(select(Role).where(Role.name.in_(names)))

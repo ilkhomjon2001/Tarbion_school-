@@ -24,7 +24,12 @@ from sqlalchemy import Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.exceptions import ConflictError, NotFoundError, ValidationError
+from app.core.exceptions import (
+    ConflictError,
+    NotFoundError,
+    PermissionDeniedError,
+    ValidationError,
+)
 from app.core.timeutil import utcnow
 from app.models import (
     AcademicYear,
@@ -428,7 +433,13 @@ async def list_staff(session: AsyncSession, user: CurrentUser) -> list[StaffRow]
     """Xodimlar — ustoz, administrator, rahbariyat (ADM-04).
 
     Oʻquvchi va ota-ona rollari chiqarilmaydi: bu xodimlar roʻyxati.
+
+    Faqat xodimlar koʻradi: roʻyxatda `login` bor — oʻquvchi/ota-onaga
+    berilsa, bu brute-force uchun tayyor nishonlar roʻyxati boʻlardi
+    (X-6). Oʻquvchiga ustozlar kerak boʻlsa — alohida, loginsiz endpoint.
     """
+    if not (user.is_staff_wide or user.is_teacher):
+        raise PermissionDeniedError("Bu roʻyxat faqat xodimlar uchun.")
     xodim_rollari = {
         RoleName.TEACHER.value,
         RoleName.HOMEROOM_TEACHER.value,

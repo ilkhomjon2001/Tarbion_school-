@@ -60,7 +60,9 @@ async def _teacher_class_ids(session: AsyncSession, user: CurrentUser) -> set[uu
 async def _get_student(session: AsyncSession, student_id: uuid.UUID) -> Student:
     student = await session.get(Student, student_id)
     if student is None or student.is_archived:
-        raise NotFoundError("Oʻquvchi topilmadi.")
+        # 404 emas: mavjud boʻlmagan id 404, ruxsatsiz id 403 qaytarsa,
+        # farqdan oʻquvchi idʼlarini sanab chiqish mumkin boʻlardi (X-3).
+        raise PermissionDeniedError("Bu oʻquvchi maʼlumotini koʻrishga ruxsatingiz yoʻq.")
     return student
 
 

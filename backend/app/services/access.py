@@ -162,6 +162,28 @@ async def assert_can_view_student(
     raise PermissionDeniedError("Bu oʻquvchi maʼlumotini koʻrishga ruxsatingiz yoʻq.")
 
 
+async def assert_student_self(
+    session: AsyncSession, user: CurrentUser, student_id: uuid.UUID
+) -> None:
+    """Amal faqat oʻquvchining OʻZ hisobidan: vazifa topshirish, test yechish.
+
+    `accessible_student_ids` bilan tekshirish yetarli EMAS: u toʻplamga
+    vasiy va ustoz ham kiradi — ota-ona farzandi oʻrniga test yechib
+    berishi mumkin boʻlardi. Koʻrish huquqi bilan bajarish huquqi farqli.
+    """
+    row = await session.execute(
+        select(Student.id).where(
+            Student.id == student_id,
+            Student.user_id == user.id,
+            Student.is_archived.is_(False),
+        )
+    )
+    if row.scalar_one_or_none() is None:
+        raise PermissionDeniedError(
+            "Bu amal faqat oʻquvchining oʻz hisobidan bajariladi."
+        )
+
+
 async def load_lesson_for_teacher(
     session: AsyncSession, user: CurrentUser, lesson_id: uuid.UUID
 ) -> Lesson:

@@ -59,6 +59,8 @@ async def world(session: AsyncSession) -> dict[str, object]:
     begona = await _user(session, roles, [RoleName.TEACHER.value], "ts.begona", "Valiyev")
     ota_a = await _user(session, roles, [RoleName.PARENT.value], "ts.ota_a", "Karimov")
     ota_b = await _user(session, roles, [RoleName.PARENT.value], "ts.ota_b", "Rahimov")
+    ali_u = await _user(session, roles, [RoleName.STUDENT.value], "ts.ali", "Abdullayev")
+    vali_u = await _user(session, roles, [RoleName.STUDENT.value], "ts.vali", "Boboyev")
 
     year = AcademicYear(
         name="2026-2027", starts_on=date(2026, 8, 1), ends_on=date(2027, 5, 25), is_current=True
@@ -76,9 +78,9 @@ async def world(session: AsyncSession) -> dict[str, object]:
     session.add_all([cls_a, cls_b])
     await session.flush()
 
-    ali = Student(class_id=cls_a.id, last_name="Abdullayev", first_name="Ali")
+    ali = Student(class_id=cls_a.id, last_name="Abdullayev", first_name="Ali", user_id=ali_u.id)
     # Boshqa SINFdagi oʻquvchi — testni koʻrmasligi kerak.
-    vali = Student(class_id=cls_b.id, last_name="Boboyev", first_name="Vali")
+    vali = Student(class_id=cls_b.id, last_name="Boboyev", first_name="Vali", user_id=vali_u.id)
     session.add_all([ali, vali])
     await session.flush()
 
@@ -343,7 +345,7 @@ async def test_oquvchiga_togri_javob_yuborilmaydi(client: AsyncClient, world: di
     await _add_question(client, ustoz, t["id"], correct=1)
     await _publish(client, ustoz, t["id"])
 
-    ota = await _token(client, "ts.ota_a")
+    ota = await _token(client, "ts.ali")
     r = await client.post(
         f"/api/v1/tests/{t['id']}/students/{world['ali'].id}/start", headers=_auth(ota)
     )
@@ -363,7 +365,7 @@ async def test_oquvchi_ustoz_endpointiga_kira_olmaydi(client: AsyncClient, world
     await _add_question(client, ustoz, t["id"])
     await _publish(client, ustoz, t["id"])
 
-    ota = await _token(client, "ts.ota_a")
+    ota = await _token(client, "ts.ali")
     r = await client.get(f"/api/v1/tests/{t['id']}/questions", headers=_auth(ota))
     assert r.status_code == 403, r.text
 
@@ -380,7 +382,7 @@ async def test_ball_serverda_hisoblanadi(client: AsyncClient, world: dict) -> No
 
     togri = next(o["id"] for o in q["options"] if o["is_correct"])
 
-    ota = await _token(client, "ts.ota_a")
+    ota = await _token(client, "ts.ali")
     r = await client.post(
         f"/api/v1/tests/{t['id']}/students/{world['ali'].id}/start", headers=_auth(ota)
     )
@@ -405,7 +407,7 @@ async def test_notogri_javobga_ball_berilmaydi(client: AsyncClient, world: dict)
 
     notogri = next(o["id"] for o in q["options"] if not o["is_correct"])
 
-    ota = await _token(client, "ts.ota_a")
+    ota = await _token(client, "ts.ali")
     attempt = (
         await client.post(
             f"/api/v1/tests/{t['id']}/students/{world['ali'].id}/start", headers=_auth(ota)
@@ -427,7 +429,7 @@ async def test_javobsiz_savol_ball_bermaydi(client: AsyncClient, world: dict) ->
     q = await _add_question(client, ustoz, t["id"], points=5)
     await _publish(client, ustoz, t["id"])
 
-    ota = await _token(client, "ts.ota_a")
+    ota = await _token(client, "ts.ali")
     attempt = (
         await client.post(
             f"/api/v1/tests/{t['id']}/students/{world['ali'].id}/start", headers=_auth(ota)
@@ -452,7 +454,7 @@ async def test_urinishlar_soni_cheklanadi(client: AsyncClient, world: dict) -> N
     q = await _add_question(client, ustoz, t["id"])
     await _publish(client, ustoz, t["id"])
 
-    ota = await _token(client, "ts.ota_a")
+    ota = await _token(client, "ts.ali")
     url = f"/api/v1/tests/{t['id']}/students/{world['ali'].id}/start"
 
     attempt = (await client.post(url, headers=_auth(ota))).json()
@@ -474,7 +476,7 @@ async def test_tugallanmagan_urinish_davom_etadi(client: AsyncClient, world: dic
     await _add_question(client, ustoz, t["id"])
     await _publish(client, ustoz, t["id"])
 
-    ota = await _token(client, "ts.ota_a")
+    ota = await _token(client, "ts.ali")
     url = f"/api/v1/tests/{t['id']}/students/{world['ali'].id}/start"
 
     birinchi = (await client.post(url, headers=_auth(ota))).json()
@@ -488,7 +490,7 @@ async def test_ikki_marta_yuborilmaydi(client: AsyncClient, world: dict) -> None
     q = await _add_question(client, ustoz, t["id"])
     await _publish(client, ustoz, t["id"])
 
-    ota = await _token(client, "ts.ota_a")
+    ota = await _token(client, "ts.ali")
     attempt = (
         await client.post(
             f"/api/v1/tests/{t['id']}/students/{world['ali'].id}/start", headers=_auth(ota)
@@ -507,7 +509,7 @@ async def test_qoralama_test_ishlanmaydi(client: AsyncClient, world: dict) -> No
     t = await _create_test(client, ustoz, world)
     await _add_question(client, ustoz, t["id"])
 
-    ota = await _token(client, "ts.ota_a")
+    ota = await _token(client, "ts.ali")
     r = await client.post(
         f"/api/v1/tests/{t['id']}/students/{world['ali'].id}/start", headers=_auth(ota)
     )
@@ -526,7 +528,7 @@ async def test_hali_ochilmagan_test(client: AsyncClient, world: dict) -> None:
     await _add_question(client, ustoz, t["id"])
     await _publish(client, ustoz, t["id"])
 
-    ota = await _token(client, "ts.ota_a")
+    ota = await _token(client, "ts.ali")
     r = await client.post(
         f"/api/v1/tests/{t['id']}/students/{world['ali'].id}/start", headers=_auth(ota)
     )
@@ -545,7 +547,7 @@ async def test_boshqa_sinf_oquvchisi_testni_ocha_olmaydi(
     await _add_question(client, ustoz, t["id"])
     await _publish(client, ustoz, t["id"])
 
-    ota_b = await _token(client, "ts.ota_b")
+    ota_b = await _token(client, "ts.vali")
     r = await client.post(
         f"/api/v1/tests/{t['id']}/students/{world['vali'].id}/start", headers=_auth(ota_b)
     )
@@ -556,7 +558,7 @@ async def test_begona_otaona_boshqa_bolani_sorasa_403(
     client: AsyncClient, world: dict
 ) -> None:
     """URL dagi `student_id` ni oʻzgartirish."""
-    ota_b = await _token(client, "ts.ota_b")
+    ota_b = await _token(client, "ts.vali")
     r = await client.get(
         f"/api/v1/tests/students/{world['ali'].id}/available", headers=_auth(ota_b)
     )
@@ -577,7 +579,7 @@ async def test_ochiq_testlar_faqat_oz_sinfiniki(client: AsyncClient, world: dict
     assert [x["title"] for x in r.json()] == ["Kvadrat tenglamalar"]
 
     # 8-B oʻquvchisiga bu test koʻrinmaydi.
-    ota_b = await _token(client, "ts.ota_b")
+    ota_b = await _token(client, "ts.vali")
     r = await client.get(
         f"/api/v1/tests/students/{world['vali'].id}/available", headers=_auth(ota_b)
     )
@@ -590,14 +592,15 @@ async def test_begona_urinishni_yuborib_bolmaydi(client: AsyncClient, world: dic
     q = await _add_question(client, ustoz, t["id"])
     await _publish(client, ustoz, t["id"])
 
-    ota_a = await _token(client, "ts.ota_a")
+    ali_t = await _token(client, "ts.ali")
     attempt = (
         await client.post(
-            f"/api/v1/tests/{t['id']}/students/{world['ali'].id}/start", headers=_auth(ota_a)
+            f"/api/v1/tests/{t['id']}/students/{world['ali'].id}/start", headers=_auth(ali_t)
         )
     ).json()
 
-    ota_b = await _token(client, "ts.ota_b")
+    # Begona oʻquvchi urinishni yakunlay olmaydi.
+    ota_b = await _token(client, "ts.vali")
     r = await client.post(
         f"/api/v1/tests/attempts/{attempt['attempt_id']}/submit",
         headers=_auth(ota_b),
@@ -618,7 +621,7 @@ async def test_natijalar_ustozga_korinadi(
     await _publish(client, ustoz, t["id"])
 
     togri = next(o["id"] for o in q["options"] if o["is_correct"])
-    ota = await _token(client, "ts.ota_a")
+    ota = await _token(client, "ts.ali")
     attempt = (
         await client.post(
             f"/api/v1/tests/{t['id']}/students/{world['ali'].id}/start", headers=_auth(ota)
@@ -652,7 +655,7 @@ async def test_oquvchi_oz_natijalarini_koradi(client: AsyncClient, world: dict) 
     q = await _add_question(client, ustoz, t["id"])
     await _publish(client, ustoz, t["id"])
 
-    ota = await _token(client, "ts.ota_a")
+    ota = await _token(client, "ts.ali")
     attempt = (
         await client.post(
             f"/api/v1/tests/{t['id']}/students/{world['ali'].id}/start", headers=_auth(ota)
@@ -669,3 +672,25 @@ async def test_oquvchi_oz_natijalarini_koradi(client: AsyncClient, world: dict) 
     )
     assert r.status_code == 200
     assert len(r.json()) == 1
+
+
+async def test_ota_ona_farzand_nomidan_test_yecha_olmaydi(
+    client: AsyncClient, world: dict
+) -> None:
+    """K6: koʻrish huquqi ≠ bajarish huquqi — vasiy testni boshlay olmaydi."""
+    ustoz = await _token(client, "ts.ustoz")
+    t = await _create_test(client, ustoz, world)
+    await _add_question(client, ustoz, t["id"], correct=1)
+    await _publish(client, ustoz, t["id"])
+
+    ota = await _token(client, "ts.ota_a")  # haqiqiy vasiy, lekin oʻquvchi emas
+    r = await client.post(
+        f"/api/v1/tests/{t['id']}/students/{world['ali'].id}/start", headers=_auth(ota)
+    )
+    assert r.status_code == 403, r.text
+
+    # Ustoz ham oʻquvchi nomidan boshlay olmaydi.
+    r = await client.post(
+        f"/api/v1/tests/{t['id']}/students/{world['ali'].id}/start", headers=_auth(ustoz)
+    )
+    assert r.status_code == 403, r.text

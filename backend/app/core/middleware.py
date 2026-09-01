@@ -8,6 +8,8 @@ import hashlib
 import ipaddress
 from collections.abc import Awaitable, Callable
 
+import jwt
+
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -251,11 +253,22 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
 
 def _identity(request: Request) -> str:
-    """Kim soʻrayapti: token egasi yoki IP."""
+    """Kim soʻrayapti: token egasi yoki IP.
+
+    Token kaliti faqat IMZOSI TOʻGʻRI tokenga beriladi: aks holda
+    hujumchi har soʻrovda tasodifiy `Bearer xyz` yuborib har gal yangi
+    kalit olar va IP limitini butunlay chetlab oʻtar edi. HS256 imzo
+    tekshiruvi — bitta HMAC, arzon.
+    """
+    ip = request.client.host if request.client else "nomalum"
     auth = request.headers.get("Authorization", "")
     if auth.lower().startswith("bearer "):
         token = auth[7:]
+        try:
+            jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+        except jwt.PyJWTError:
+            return "ip:" + ip  # yaroqsiz token — IP kaliti, yangi kalit YOʻQ
         # Token oʻzi kalit boʻlmasin — xeshi yetarli va u logga
         # tushsa ham zarar yoʻq.
         return "t:" + hashlib.sha256(token.encode()).hexdigest()[:32]
-    return "ip:" + (request.client.host if request.client else "nomalum")
+    return "ip:" + ip

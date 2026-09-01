@@ -52,8 +52,8 @@ from app.models import (
 from app.services import audit_service
 from app.services.access import (
     CurrentUser,
-    accessible_student_ids,
     assert_can_view_student,
+    assert_student_self,
 )
 
 MAX_OPTIONS = 8
@@ -674,7 +674,8 @@ async def start_attempt(
 
     Urinishlar soni SERVERDA cheklanadi (3-qoida).
     """
-    await assert_can_view_student(session, user, student_id)
+    # Faqat oʻquvchining oʻzi boshlaydi — vasiy/ustoz uning nomidan emas.
+    await assert_student_self(session, user, student_id)
 
     test = await session.get(Test, test_id)
     if test is None or test.is_archived:
@@ -765,9 +766,8 @@ async def submit_attempt(
     if attempt is None or attempt.is_archived:
         raise NotFoundError("Urinish topilmadi.")
 
-    ruxsat = await accessible_student_ids(session, user)
-    if ruxsat is not None and attempt.student_id not in ruxsat:
-        raise PermissionDeniedError("Bu urinish sizga tegishli emas.")
+    # Faqat oʻquvchining oʻzi yakunlaydi (K6 — natija butunligi).
+    await assert_student_self(session, user, attempt.student_id)
 
     if attempt.submitted_at is not None:
         raise ConflictError("Bu urinish allaqachon yakunlangan.")

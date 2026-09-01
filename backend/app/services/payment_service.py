@@ -405,11 +405,15 @@ async def record_payment(
     provider: str | None = None,
     provider_tx_id: str | None = None,
     ip: str | None = None,
-    skip_permission: bool = False,
+    _signature_verified: bool = False,
 ) -> Payment:
-    """Toʻlov yozadi. `skip_permission` faqat webhook yoʻli uchun —
-    u imzo bilan tasdiqlangan va o'z tekshiruvidan oʻtgan."""
-    if not skip_permission:
+    """Toʻlov yozadi.
+
+    `_signature_verified` — FAQAT `handle_webhook` ichki chaqiruvi uchun
+    (imzo tekshiruvidan oʻtgan). Pastki chiziq ataylab: bu parametr
+    tashqi kod uchun emas, har qanday boshqa chaqiruv ruxsat tekshiradi.
+    """
+    if not _signature_verified:
         await _assert_can_write(session, actor)
     await _get_student(session, student_id)
 
