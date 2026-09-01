@@ -15,13 +15,18 @@ from fastapi import APIRouter, Query, Request, Response
 from app.api.v1.deps import CurrentUserDep
 from app.core.db import SessionDep
 from app.core.exceptions import NotFoundError
-from app.models import User
+from app.models import Guardian, User
 from app.schemas.school import (
     ClassCreateIn,
     ClassOut,
     ClassSubjectIn,
     ClassSubjectOut,
+    GuardianCreatedOut,
+    GuardianCreateIn,
+    GuardianLinkIn,
     GuardianOut,
+    GuardianRowOut,
+    GuardianUnlinkIn,
     HomeroomIn,
     PasswordResetOut,
     StaffCreatedOut,
@@ -36,7 +41,7 @@ from app.schemas.school import (
     SubjectCreateIn,
     SubjectOut,
 )
-from app.services import reference_service, school_service, user_service
+from app.services import guardian_service, reference_service, school_service, user_service
 
 router = APIRouter(prefix="/school", tags=["school"])
 
@@ -457,3 +462,146 @@ async def set_class_subject(
         ip=_client_ip(request),
     )
     return Response(status_code=204)
+
+
+# ─────────────────────────── Vasiylar (T-009) ───────────────────────────
+
+
+async def _guardian_row(session: SessionDep, link: Guardian, vasiy: User) -> GuardianRowOut:
+    return GuardianRowOut(
+        id=link.id,
+        user_id=vasiy.id,
+        full_name=vasiy.full_name,
+        login=vasiy.login,
+        relation=link.relation,
+        phone=vasiy.phone,
+        is_primary=link.is_primary,
+        is_archived=link.is_archived,
+        children_count=await guardian_service.children_count(session, vasiy.id),
+    )
+
+
+@router.get("/students/{student_id}/guardians", response_model=list[GuardianRowOut])
+async def student_guardians(
+    student_id: uuid.UUID,
+    user: CurrentUserDep,
+    session: SessionDep,
+    archived: bool = False,
+) -> list[GuardianRowOut]:
+    """Oʻquvchining vasiylari.
+
+    Kirish huquqi kartochka orqali tekshiriladi — ota-ona bu yerdan
+    begona oilaning vasiylarini koʻra olmaydi (X-1).
+    """
+    await school_service.student_card(session, user, student_id)
+    rows = await guardian_service.list_guardians(session, student_id, include_archived=archived)
+    return [await _guardian_row(session, g, u) for g, u in rows]
+
+
+@router.post(
+    "/students/{student_id}/guardians", response_model=GuardianCreatedOut, status_code=201
+)
+async def create_guardian(
+    student_id: uuid.UUID,
+    payload: GuardianCreateIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> GuardianCreatedOut:
+    """Yangi ota-ona hisobi ochib bogʻlaydi. Huquq: `students.manage`.
+
+    Telefon boshqa ota-onada boʻlsa `409` — bu odatda ikkinchi farzand,
+    mavjud hisobga bogʻlash kerak.
+    """
+    link, created = await guardian_service.create_and_link(
+        session,
+        actor=user,
+        student_id=student_id,
+        last_name=payload.last_name,
+        first_name=payload.first_name,
+        middle_name=payload.middle_name,
+        phone=payload.phone,
+        email=payload.email,
+        relation=payload.relation,
+        is_primary=payload.is_primary,
+        ip=_client_ip(request),
+    )
+    return GuardianCreatedOut(
+        guardian=await _guardian_row(session, link, created.user),
+        initial_password=created.initial_password,
+    )
+
+
+@router.put("/students/{student_id}/guardians", response_model=GuardianRowOut)
+async def link_guardian(
+    student_id: uuid.UUID,
+    payload: GuardianLinkIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> GuardianRowOut:
+    """Mavjud hisobni vasiy qilib bogʻlaydi — ikkinchi farzand shu yoʻldan."""
+    link = await guardian_service.link_existing(
+        session,
+        actor=user,
+        student_id=student_id,
+        user_id=payload.user_id,
+        relation=payload.relation,
+        is_primary=payload.is_primary,
+        ip=_client_ip(request),
+    )
+    vasiy = await session.get(User, payload.user_id)
+    assert vasiy is not None
+    return await _guardian_row(session, link, vasiy)
+
+
+@router.post(
+    "/students/{student_id}/guardians/{guardian_id}/primary", response_model=GuardianRowOut
+)
+async def make_primary(
+    student_id: uuid.UUID,
+    guardian_id: uuid.UUID,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> GuardianRowOut:
+    """Asosiy vasiy — xabarnoma birinchi navbatda shunga ketadi."""
+    link = await guardian_service.set_primary(
+        session,
+        actor=user,
+        student_id=student_id,
+        guardian_id=guardian_id,
+        ip=_client_ip(request),
+    )
+    vasiy = await session.get(User, link.user_id)
+    assert vasiy is not None
+    return await _guardian_row(session, link, vasiy)
+
+
+@router.post(
+    "/students/{student_id}/guardians/{guardian_id}/unlink", response_model=GuardianRowOut
+)
+async def unlink_guardian(
+    student_id: uuid.UUID,
+    guardian_id: uuid.UUID,
+    payload: GuardianUnlinkIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> GuardianRowOut:
+    """Bogʻlanishni arxivlaydi — kirish huquqi shu zahoti yopiladi.
+
+    Oʻchirish endpointi ATAYLAB yoʻq (1-qoida): «kim qachon kimga
+    bogʻlangan edi» tarixi qolishi kerak.
+    """
+    link = await guardian_service.unlink(
+        session,
+        actor=user,
+        student_id=student_id,
+        guardian_id=guardian_id,
+        reason=payload.reason,
+        ip=_client_ip(request),
+    )
+    vasiy = await session.get(User, link.user_id)
+    assert vasiy is not None
+    return await _guardian_row(session, link, vasiy)

@@ -238,8 +238,10 @@ Bir o'quvchida bir nechta vasiy, bir vasiyda bir nechta farzand.
 Amallar: boshqa sinfga ko'chirish, arxivga o'tkazish (o'chirish emas).
 
 **Tayyor:**
-- [ ] Vasiy qo'shilganda unga `parent` roli va hisob yaratiladi — endpoint yo'q,
-      hozircha faqat seed orqali
+- [x] Vasiy qo'shilganda unga `parent` roli va hisob yaratiladi —
+      `POST /school/students/{id}/guardians`; boshlang'ich parol bir marta
+      qaytadi. Ikkinchi farzand mavjud hisobga bog'lanadi (`PUT`), telefon
+      takrorlansa `409` va xabar kimligini aytadi
 - [x] Arxivlangan o'quvchi ro'yxatlarda ko'rinmaydi, hisobotlarda qoladi
 - [x] Sinfni o'zgartirish tarixi saqlanadi — `audit_log` da eski va yangi
       `class_id`; `/admin/audit` dan filtrlab ko'riladi

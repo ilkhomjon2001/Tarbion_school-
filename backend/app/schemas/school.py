@@ -155,3 +155,55 @@ class ClassSubjectIn(BaseModel):
     subject_id: uuid.UUID
     #: 0 — oʻquv rejasidan chiqarish.
     weekly_hours: int = Field(ge=0, le=20)
+
+
+# ─────────────────────────── Vasiylar (T-009) ───────────────────────────
+
+
+class GuardianRowOut(BaseModel):
+    """Oʻquvchi kartochkasidagi vasiy qatori.
+
+    Telefon SHU YERDA bor — bu bitta oʻquvchi kartochkasi, roʻyxat
+    emas (X-6).
+    """
+
+    id: uuid.UUID
+    user_id: uuid.UUID
+    full_name: str
+    login: str
+    relation: str
+    phone: str | None
+    is_primary: bool
+    is_archived: bool
+    children_count: int
+
+
+class GuardianLinkIn(BaseModel):
+    """Mavjud hisobni bogʻlash — ikkinchi farzand shu yoʻldan qoʻshiladi."""
+
+    user_id: uuid.UUID
+    relation: str
+    is_primary: bool = False
+
+
+class GuardianCreateIn(BaseModel):
+    last_name: str = Field(min_length=1, max_length=80)
+    first_name: str = Field(min_length=1, max_length=80)
+    middle_name: str | None = Field(default=None, max_length=80)
+    phone: str | None = Field(default=None, max_length=20)
+    email: str | None = Field(default=None, max_length=120)
+    relation: str
+    is_primary: bool = False
+
+
+class GuardianCreatedOut(BaseModel):
+    """Boshlangʻich parol BIR MARTA qaytadi — bazada faqat xeshi qoladi."""
+
+    guardian: GuardianRowOut
+    initial_password: str
+
+
+class GuardianUnlinkIn(BaseModel):
+    """Sabab majburiy: kirish huquqi yopiladi, keyin «nega» soʻraladi."""
+
+    reason: str = Field(min_length=2, max_length=200)

@@ -1157,6 +1157,73 @@ export type GradeSubmissionIn = {
 };
 
 /**
+ * GuardianCreateIn
+ */
+export type GuardianCreateIn = {
+    /**
+     * Last Name
+     */
+    last_name: string;
+    /**
+     * First Name
+     */
+    first_name: string;
+    /**
+     * Middle Name
+     */
+    middle_name?: string | null;
+    /**
+     * Phone
+     */
+    phone?: string | null;
+    /**
+     * Email
+     */
+    email?: string | null;
+    /**
+     * Relation
+     */
+    relation: string;
+    /**
+     * Is Primary
+     */
+    is_primary?: boolean;
+};
+
+/**
+ * GuardianCreatedOut
+ *
+ * Boshlangʻich parol BIR MARTA qaytadi — bazada faqat xeshi qoladi.
+ */
+export type GuardianCreatedOut = {
+    guardian: GuardianRowOut;
+    /**
+     * Initial Password
+     */
+    initial_password: string;
+};
+
+/**
+ * GuardianLinkIn
+ *
+ * Mavjud hisobni bogʻlash — ikkinchi farzand shu yoʻldan qoʻshiladi.
+ */
+export type GuardianLinkIn = {
+    /**
+     * User Id
+     */
+    user_id: string;
+    /**
+     * Relation
+     */
+    relation: string;
+    /**
+     * Is Primary
+     */
+    is_primary?: boolean;
+};
+
+/**
  * GuardianOptionOut
  *
  * Oʻquvchining vasiy hisobi — yozishma kimga borishini tanlash uchun.
@@ -1200,6 +1267,65 @@ export type GuardianOut = {
      * Phone
      */
     phone: string | null;
+};
+
+/**
+ * GuardianRowOut
+ *
+ * Oʻquvchi kartochkasidagi vasiy qatori.
+ *
+ * Telefon SHU YERDA bor — bu bitta oʻquvchi kartochkasi, roʻyxat
+ * emas (X-6).
+ */
+export type GuardianRowOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * User Id
+     */
+    user_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Login
+     */
+    login: string;
+    /**
+     * Relation
+     */
+    relation: string;
+    /**
+     * Phone
+     */
+    phone: string | null;
+    /**
+     * Is Primary
+     */
+    is_primary: boolean;
+    /**
+     * Is Archived
+     */
+    is_archived: boolean;
+    /**
+     * Children Count
+     */
+    children_count: number;
+};
+
+/**
+ * GuardianUnlinkIn
+ *
+ * Sabab majburiy: kirish huquqi yopiladi, keyin «nega» soʻraladi.
+ */
+export type GuardianUnlinkIn = {
+    /**
+     * Reason
+     */
+    reason: string;
 };
 
 /**
@@ -5600,6 +5726,171 @@ export type SchoolArchiveClassResponses = {
 };
 
 export type SchoolArchiveClassResponse = SchoolArchiveClassResponses[keyof SchoolArchiveClassResponses];
+
+export type SchoolStudentGuardiansData = {
+    body?: never;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: {
+        /**
+         * Archived
+         */
+        archived?: boolean;
+    };
+    url: '/api/v1/school/students/{student_id}/guardians';
+};
+
+export type SchoolStudentGuardiansErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolStudentGuardiansError = SchoolStudentGuardiansErrors[keyof SchoolStudentGuardiansErrors];
+
+export type SchoolStudentGuardiansResponses = {
+    /**
+     * Response School Student Guardians
+     *
+     * Successful Response
+     */
+    200: Array<GuardianRowOut>;
+};
+
+export type SchoolStudentGuardiansResponse = SchoolStudentGuardiansResponses[keyof SchoolStudentGuardiansResponses];
+
+export type SchoolCreateGuardianData = {
+    body: GuardianCreateIn;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/students/{student_id}/guardians';
+};
+
+export type SchoolCreateGuardianErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolCreateGuardianError = SchoolCreateGuardianErrors[keyof SchoolCreateGuardianErrors];
+
+export type SchoolCreateGuardianResponses = {
+    /**
+     * Successful Response
+     */
+    201: GuardianCreatedOut;
+};
+
+export type SchoolCreateGuardianResponse = SchoolCreateGuardianResponses[keyof SchoolCreateGuardianResponses];
+
+export type SchoolLinkGuardianData = {
+    body: GuardianLinkIn;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/students/{student_id}/guardians';
+};
+
+export type SchoolLinkGuardianErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolLinkGuardianError = SchoolLinkGuardianErrors[keyof SchoolLinkGuardianErrors];
+
+export type SchoolLinkGuardianResponses = {
+    /**
+     * Successful Response
+     */
+    200: GuardianRowOut;
+};
+
+export type SchoolLinkGuardianResponse = SchoolLinkGuardianResponses[keyof SchoolLinkGuardianResponses];
+
+export type SchoolMakePrimaryData = {
+    body?: never;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+        /**
+         * Guardian Id
+         */
+        guardian_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/students/{student_id}/guardians/{guardian_id}/primary';
+};
+
+export type SchoolMakePrimaryErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolMakePrimaryError = SchoolMakePrimaryErrors[keyof SchoolMakePrimaryErrors];
+
+export type SchoolMakePrimaryResponses = {
+    /**
+     * Successful Response
+     */
+    200: GuardianRowOut;
+};
+
+export type SchoolMakePrimaryResponse = SchoolMakePrimaryResponses[keyof SchoolMakePrimaryResponses];
+
+export type SchoolUnlinkGuardianData = {
+    body: GuardianUnlinkIn;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+        /**
+         * Guardian Id
+         */
+        guardian_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/students/{student_id}/guardians/{guardian_id}/unlink';
+};
+
+export type SchoolUnlinkGuardianErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolUnlinkGuardianError = SchoolUnlinkGuardianErrors[keyof SchoolUnlinkGuardianErrors];
+
+export type SchoolUnlinkGuardianResponses = {
+    /**
+     * Successful Response
+     */
+    200: GuardianRowOut;
+};
+
+export type SchoolUnlinkGuardianResponse = SchoolUnlinkGuardianResponses[keyof SchoolUnlinkGuardianResponses];
 
 export type ScheduleEntriesData = {
     body?: never;

@@ -24,6 +24,7 @@ import {
   schoolArchiveSubject,
   schoolClasses,
   schoolCreateClass,
+  schoolCreateGuardian,
   schoolCreateStudent,
   schoolCreateSubject,
   schoolCreateStaff,
@@ -34,13 +35,19 @@ import {
   schoolSetClassSubject,
   schoolSetHomeroom,
   schoolStaff,
+  schoolLinkGuardian,
+  schoolMakePrimary,
   schoolStudentCard,
+  schoolStudentGuardians,
+  schoolUnlinkGuardian,
   schoolStudents,
   schoolSubjectsOfClass,
   schoolSubjects,
 } from "@/lib/api/sdk.gen";
 import type {
   ClassOut,
+  GuardianCreatedOut,
+  GuardianRowOut,
   ClassSubjectOut,
   StudentCardOut,
   PasswordResetOut,
@@ -55,6 +62,8 @@ import { withAuth } from "@/lib/session";
 
 export type {
   ClassOut,
+  GuardianCreatedOut,
+  GuardianRowOut,
   ClassSubjectOut,
   StudentCardOut,
   PasswordResetOut,
@@ -391,5 +400,86 @@ export async function archiveStudent(
 export async function restoreStudent(studentId: string): Promise<StudentCardOut> {
   return withAuth<StudentCardOut>(() =>
     schoolRestoreStudent({ path: { student_id: studentId } }),
+  );
+}
+
+
+// ─────────────────────────── Vasiylar (T-009) ───────────────────────────
+
+/**
+ * Vasiylar roʻyxati. Telefon SHU YERDA bor — bu bitta oʻquvchi
+ * kartochkasi, roʻyxat emas (X-6).
+ */
+export async function fetchGuardians(
+  studentId: string,
+  archived = false,
+): Promise<GuardianRowOut[]> {
+  return withAuth<GuardianRowOut[]>(() =>
+    schoolStudentGuardians({ path: { student_id: studentId }, query: { archived } }),
+  );
+}
+
+export type GuardianCreateInput = {
+  last_name: string;
+  first_name: string;
+  middle_name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  relation: string;
+  is_primary?: boolean;
+};
+
+/**
+ * Yangi ota-ona hisobi ochib bogʻlaydi. Boshlangʻich parol javobda
+ * BIR MARTA qaytadi.
+ *
+ * Telefon boshqa ota-onada boʻlsa `409` — odatda bu ikkinchi farzand,
+ * `linkGuardian` bilan mavjud hisobga bogʻlash kerak.
+ */
+export async function createGuardian(
+  studentId: string,
+  input: GuardianCreateInput,
+): Promise<GuardianCreatedOut> {
+  return withAuth<GuardianCreatedOut>(() =>
+    schoolCreateGuardian({ path: { student_id: studentId }, body: input }),
+  );
+}
+
+/** Mavjud hisobni bogʻlash — ikkinchi farzand shu yoʻldan qoʻshiladi. */
+export async function linkGuardian(
+  studentId: string,
+  userId: string,
+  relation: string,
+  isPrimary = false,
+): Promise<GuardianRowOut> {
+  return withAuth<GuardianRowOut>(() =>
+    schoolLinkGuardian({
+      path: { student_id: studentId },
+      body: { user_id: userId, relation, is_primary: isPrimary },
+    }),
+  );
+}
+
+/** Asosiy vasiy — xabarnoma birinchi navbatda shunga ketadi. */
+export async function makePrimaryGuardian(
+  studentId: string,
+  guardianId: string,
+): Promise<GuardianRowOut> {
+  return withAuth<GuardianRowOut>(() =>
+    schoolMakePrimary({ path: { student_id: studentId, guardian_id: guardianId } }),
+  );
+}
+
+/** Arxivlaydi — kirish huquqi shu zahoti yopiladi. Oʻchirish yoʻq. */
+export async function unlinkGuardian(
+  studentId: string,
+  guardianId: string,
+  reason: string,
+): Promise<GuardianRowOut> {
+  return withAuth<GuardianRowOut>(() =>
+    schoolUnlinkGuardian({
+      path: { student_id: studentId, guardian_id: guardianId },
+      body: { reason },
+    }),
   );
 }
