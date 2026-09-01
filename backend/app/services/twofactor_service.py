@@ -63,6 +63,14 @@ CHALLENGE_TTL_MINUTES = 5
 
 
 def is_required(user: User) -> bool:
+    """Shu foydalanuvchida 2FA majburiymi.
+
+    `REQUIRE_TWO_FACTOR=false` boʻlsa hech kimga majburiy emas —
+    sinov muhiti uchun. Funksiyaning oʻzi ishlaydi: kim yoqsa,
+    unga kirishda kod soʻraladi.
+    """
+    if not settings.require_two_factor:
+        return False
     return bool(REQUIRED_ROLES & set(user.role_names))
 
 

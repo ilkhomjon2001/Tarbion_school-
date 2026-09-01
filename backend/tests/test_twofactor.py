@@ -40,6 +40,22 @@ async def _user(
     return u
 
 
+@pytest.fixture(autouse=True)
+def _majburiylik_yoqiq(monkeypatch: pytest.MonkeyPatch) -> None:
+    """X-14 majburiyligi YOQIQ holatda sinaladi.
+
+    `REQUIRE_TWO_FACTOR` sozlamasi ishlab chiquvchining `.env` iga
+    bogʻliq: sinov serverida u `false`. Testlar undan mustaqil
+    boʻlishi kerak — aks holda ular kimningdir mahalliy sozlamasiga
+    qarab yiqilib turardi.
+
+    Majburiylikni oʻchirish holatini alohida test tekshiradi.
+    """
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "require_two_factor", True)
+
+
 @pytest.fixture
 async def ustoz(session: AsyncSession) -> User:
     """Oddiy ustoz — 2FA MAJBURIY EMAS."""
@@ -446,6 +462,46 @@ async def test_superadmin_uchun_majburiy_emas(client: AsyncClient, session: Asyn
 
     # Istasa yoqa oladi — va keyin oʻchira ham oladi.
     sekret, _ = await _enable_2fa(client, token)
+    kod = totp._code_at(sekret, totp.current_step() + 1)
+    r = await client.post(
+        "/api/v1/auth/2fa/disable",
+        headers=_auth(token),
+        json={"password": PASSWORD, "code": kod},
+    )
+    assert r.status_code == 204, r.text
+
+
+async def test_majburiylikni_ochirib_qoyish_mumkin(
+    client: AsyncClient, session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Sinov muhitida majburiylik oʻchiriladi (`REQUIRE_TWO_FACTOR=false`).
+
+    Muhim: oʻchirilganda 2FA FUNKSIYASI qoladi — foydalanuvchi uni
+    istasa yoqadi va kirishda kod soʻraladi. Faqat MAJBURLASH yoʻqoladi.
+    """
+    from app.core.config import settings
+    from app.services import twofactor_service
+
+    admin = await _user(session, [RoleName.ADMIN.value], "tf.admin2")
+
+    # Bu faylda autouse fixture ishlamaydi — asl `is_required` ni
+    # tiklaymiz va sozlamani oʻzgartiramiz.
+    monkeypatch.setattr(settings, "require_two_factor", False)
+    assert twofactor_service.is_required(admin) is False
+
+    token = (await _login(client, "tf.admin2"))["access_token"]
+    r = await client.get("/api/v1/school/students", headers=_auth(token))
+    assert r.status_code == 200, "majburiylik oʻchiq boʻlsa ham toʻsildi"
+
+    # Funksiyaning oʻzi ishlayapti: yoqib koʻramiz.
+    sekret, _ = await _enable_2fa(client, token)
+    r = await client.post(
+        "/api/v1/auth/login", json={"login": "tf.admin2", "password": PASSWORD}
+    )
+    assert r.json()["two_factor_required"] is True, "yoqilgan 2FA ishlamadi"
+    assert sekret
+
+    # Yoqilgan boʻlsa — majburiylik oʻchiq boʻlgani uchun oʻchira ham oladi.
     kod = totp._code_at(sekret, totp.current_step() + 1)
     r = await client.post(
         "/api/v1/auth/2fa/disable",

@@ -57,6 +57,14 @@ class Settings(BaseSettings):
     # odamning loginini terib koʻrmaydi.
     login_max_logins_per_ip: int = 15
 
+    # X-14: administrator va direktorga 2FA majburiymi.
+    #
+    # Sukut boʻyicha YOQIQ — xavfsiz standart. Sinov muhitida oʻchirish
+    # mumkin: har testda autentifikator ilovasini ochish ish jarayonini
+    # toʻsadi. Oʻchirilganda 2FA FUNKSIYASI qoladi — foydalanuvchi uni
+    # istasa yoqadi, faqat majburlanmaydi.
+    require_two_factor: bool = True
+
     # --- Cookie ---
     refresh_cookie_name: str = "tarbion_rt"
     # Ishlab chiqarishda majburiy True (NFR-07: barcha aloqa HTTPS).
