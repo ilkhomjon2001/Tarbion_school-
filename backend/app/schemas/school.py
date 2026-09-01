@@ -226,3 +226,17 @@ class CafeteriaMenuIn(BaseModel):
 
 class CafeteriaMenuOut(BaseModel):
     days: dict[str, list[str]]
+
+
+class SchoolSettingsIn(BaseModel):
+    name: str = Field(min_length=1, max_length=160)
+    address: str = Field(default="", max_length=200)
+    phone: str = Field(default="", max_length=40)
+    director_name: str = Field(default="", max_length=120)
+
+
+class SchoolSettingsOut(BaseModel):
+    name: str
+    address: str
+    phone: str
+    director_name: str

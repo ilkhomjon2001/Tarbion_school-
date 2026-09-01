@@ -149,3 +149,18 @@ class CafeteriaMenuItem(Entity):
     weekday: Mapped[int] = mapped_column(nullable=False)
     position: Mapped[int] = mapped_column(nullable=False, default=0)
     dish: Mapped[str] = mapped_column(String(120), nullable=False)
+
+
+class SchoolSettings(Entity):
+    """Maktab rekvizitlari — bitta qator (singleton).
+
+    Kvitansiya sarlavhasi, hujjat shablonlari va sozlamalar ekrani shu
+    yerdan oladi. Tarix uchun eski qator arxivlanadi, yangisi yoziladi.
+    """
+
+    __tablename__ = "school_settings"
+
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    address: Mapped[str] = mapped_column(String(200), default="", nullable=False)
+    phone: Mapped[str] = mapped_column(String(40), default="", nullable=False)
+    director_name: Mapped[str] = mapped_column(String(120), default="", nullable=False)

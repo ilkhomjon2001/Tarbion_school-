@@ -437,3 +437,39 @@ async def test_menyuni_ota_ona_yoza_olmaydi(client: AsyncClient, world: dict) ->
         "/api/v1/school/menu", headers=_auth(ota), json={"days": {"1": ["Osh"]}}
     )
     assert r.status_code == 403, r.text
+
+
+# ─────────────────────────── Maktab rekvizitlari ───────────────────────────
+
+
+async def test_maktab_rekvizitlari_yoziladi(client: AsyncClient, world: dict) -> None:
+    sa_t = await _token(client, "sch.sa")
+    r = await client.put(
+        "/api/v1/school/settings",
+        headers=_auth(sa_t),
+        json={
+            "name": "«Tarbion» xususiy maktabi",
+            "address": "Toshkent sh.",
+            "phone": "+998 71 200 00 00",
+            "director_name": "Karimov B.",
+        },
+    )
+    assert r.status_code == 200, r.text
+
+    # Ustoz o'qiy oladi (hujjat/kvitansiya uchun), ota-ona esa yo'q.
+    ustoz = await _token(client, "sch.ustoz")
+    r = await client.get("/api/v1/school/settings", headers=_auth(ustoz))
+    assert r.status_code == 200, r.text
+    assert r.json()["director_name"] == "Karimov B."
+
+    ota = await _token(client, "sch.otaona_a")
+    assert (
+        await client.get("/api/v1/school/settings", headers=_auth(ota))
+    ).status_code == 403
+
+    # Yozish faqat users.manage bilan.
+    assert (
+        await client.put(
+            "/api/v1/school/settings", headers=_auth(ustoz), json={"name": "X"}
+        )
+    ).status_code == 403

@@ -765,3 +765,100 @@ async def set_cafeteria_menu(
     )
     await session.commit()
     return await cafeteria_menu(session)
+
+
+# ─────────────────────────── Maktab rekvizitlari ───────────────────────────
+
+
+@dataclass(frozen=True, slots=True)
+class SchoolInfo:
+    name: str
+    address: str
+    phone: str
+    director_name: str
+
+
+_DEFAULT_SCHOOL = SchoolInfo(
+    name="«Tarbion» xususiy maktabi", address="", phone="", director_name=""
+)
+
+
+async def school_settings(session: AsyncSession, user: CurrentUser) -> SchoolInfo:
+    """Maktab rekvizitlari — faqat xodimlarga (kvitansiya, hujjatlar)."""
+    if not (user.is_staff_wide or user.is_teacher):
+        raise PermissionDeniedError("Bu maʼlumot faqat xodimlar uchun.")
+
+    from app.models import SchoolSettings
+
+    row = await session.scalar(
+        select(SchoolSettings)
+        .where(SchoolSettings.is_archived.is_(False))
+        .order_by(SchoolSettings.created_at.desc())
+        .limit(1)
+    )
+    if row is None:
+        return _DEFAULT_SCHOOL
+    return SchoolInfo(
+        name=row.name,
+        address=row.address,
+        phone=row.phone,
+        director_name=row.director_name,
+    )
+
+
+async def set_school_settings(
+    session: AsyncSession,
+    user: CurrentUser,
+    *,
+    name: str,
+    address: str,
+    phone: str,
+    director_name: str,
+    ip: str | None = None,
+) -> SchoolInfo:
+    """Rekvizitlarni yangilaydi — eski qator arxivlanadi (tarix qoladi)."""
+    from app.models import SchoolSettings
+
+    await assert_permission(session, user, Permission.USERS_MANAGE)
+
+    toza_nom = name.strip()
+    if not toza_nom:
+        raise ValidationError("Maktab nomi boʻsh boʻlmasin.")
+
+    eski = list(
+        (
+            await session.execute(
+                select(SchoolSettings).where(SchoolSettings.is_archived.is_(False))
+            )
+        ).scalars()
+    )
+    for e in eski:
+        e.is_archived = True
+        e.archived_at = utcnow()
+
+    row = SchoolSettings(
+        name=toza_nom[:160],
+        address=address.strip()[:200],
+        phone=phone.strip()[:40],
+        director_name=director_name.strip()[:120],
+    )
+    session.add(row)
+    await session.flush()
+
+    audit_service.record(
+        session,
+        object_type="school_settings",
+        object_id=row.id,
+        action=AuditAction.UPDATE,
+        old={"name": eski[0].name} if eski else None,
+        new={"name": row.name, "director_name": row.director_name},
+        actor_id=user.id,
+        ip=ip,
+    )
+    await session.commit()
+    return SchoolInfo(
+        name=row.name,
+        address=row.address,
+        phone=row.phone,
+        director_name=row.director_name,
+    )

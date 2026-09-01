@@ -17,6 +17,8 @@ import { ConfirmArchiveButton } from "@/components/admin/ConfirmArchiveButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ListSkeleton, StatCardSkeleton } from "@/components/ui/Skeleton";
 import { WalletIcon } from "@/components/ui/icons";
+import { schoolSchoolSettings } from "@/lib/api/sdk.gen";
+import type { SchoolSettingsOut } from "@/lib/api/types.gen";
 import { formatSom } from "@/lib/format";
 import {
   addCredit,
@@ -38,6 +40,7 @@ import {
   type StudentLedgerOut,
 } from "@/lib/payments/api";
 import { apiXato } from "@/lib/school/api";
+import { withAuth } from "@/lib/session";
 
 const inputClass =
   "h-9 w-full rounded-lg border border-border bg-surface px-2.5 text-sm outline-none transition-colors placeholder:text-foreground-muted/70 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25";
@@ -257,6 +260,18 @@ function LedgerDrawer({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [panel, setPanel] = useState<"tolov" | "shartnoma" | "chegirma" | "kredit" | "qaytarish" | null>(null);
+
+  // Kvitansiya sarlavhasi uchun maktab nomi — sozlamalardan (fallback bilan).
+  const [schoolName, setSchoolName] = useState("«Tarbion» xususiy maktabi");
+  useEffect(() => {
+    let alive = true;
+    withAuth<SchoolSettingsOut>(() => schoolSchoolSettings())
+      .then((r) => alive && r.name && setSchoolName(r.name))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
   const [stornoId, setStornoId] = useState<string | null>(null);
   const [stornoReason, setStornoReason] = useState("Summa xato kiritilgan");
 
@@ -453,6 +468,7 @@ function LedgerDrawer({
                         type="button"
                         onClick={() =>
                           printReceipt({
+                            schoolName,
                             studentName: fin?.student_name ?? "",
                             className: fin?.class_name ?? "",
                             title: r.title,
@@ -911,6 +927,7 @@ function escapeHtml(value: string): string {
 
 /** Kvitansiyani yangi oynada chop etish (TOL-04). */
 function printReceipt(r: {
+  schoolName: string;
   studentName: string;
   className: string;
   title: string;
@@ -933,7 +950,7 @@ function printReceipt(r: {
   td:last-child { text-align: right; font-weight: bold; }
   .imzo { margin-top: 28px; font-size: 12px; display: flex; justify-content: space-between; }
 </style></head><body>
-<h1>«Tarbion» xususiy umumtaʼlim maktabi</h1>
+<h1>${e(r.schoolName)}</h1>
 <h2>Toʻlov kvitansiyasi № ${e(r.receiptNo)}</h2>
 <table>
   <tr><td>Oʻquvchi</td><td>${e(r.studentName)} (${e(r.className)})</td></tr>

@@ -3277,6 +3277,50 @@ export type ScheduleEntryUpdateIn = {
 };
 
 /**
+ * SchoolSettingsIn
+ */
+export type SchoolSettingsIn = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Address
+     */
+    address?: string;
+    /**
+     * Phone
+     */
+    phone?: string;
+    /**
+     * Director Name
+     */
+    director_name?: string;
+};
+
+/**
+ * SchoolSettingsOut
+ */
+export type SchoolSettingsOut = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Address
+     */
+    address: string;
+    /**
+     * Phone
+     */
+    phone: string;
+    /**
+     * Director Name
+     */
+    director_name: string;
+};
+
+/**
  * ScoreItemIn
  */
 export type ScoreItemIn = {
@@ -8517,6 +8561,47 @@ export type SchoolSetClassSubjectResponses = {
 };
 
 export type SchoolSetClassSubjectResponse = SchoolSetClassSubjectResponses[keyof SchoolSetClassSubjectResponses];
+
+export type SchoolSchoolSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/school/settings';
+};
+
+export type SchoolSchoolSettingsResponses = {
+    /**
+     * Successful Response
+     */
+    200: SchoolSettingsOut;
+};
+
+export type SchoolSchoolSettingsResponse = SchoolSchoolSettingsResponses[keyof SchoolSchoolSettingsResponses];
+
+export type SchoolSetSchoolSettingsData = {
+    body: SchoolSettingsIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/school/settings';
+};
+
+export type SchoolSetSchoolSettingsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolSetSchoolSettingsError = SchoolSetSchoolSettingsErrors[keyof SchoolSetSchoolSettingsErrors];
+
+export type SchoolSetSchoolSettingsResponses = {
+    /**
+     * Successful Response
+     */
+    200: SchoolSettingsOut;
+};
+
+export type SchoolSetSchoolSettingsResponse = SchoolSetSchoolSettingsResponses[keyof SchoolSetSchoolSettingsResponses];
 
 export type SchoolCafeteriaMenuData = {
     body?: never;

@@ -31,6 +31,8 @@ from app.schemas.school import (
     GuardianUnlinkIn,
     HomeroomIn,
     PasswordResetOut,
+    SchoolSettingsIn,
+    SchoolSettingsOut,
     StaffCreatedOut,
     StaffCreateIn,
     StaffOut,
@@ -110,6 +112,37 @@ async def subjects_of_class(
     """Sinfda oʻqitiladigan fanlar va haftalik soati (ADM-03)."""
     rows = await school_service.class_subjects(session, class_id)
     return [ClassSubjectOut(subject_id=s.id, subject_name=s.name, weekly_hours=h) for s, h in rows]
+
+
+@router.get("/settings", response_model=SchoolSettingsOut)
+async def school_settings(user: CurrentUserDep, session: SessionDep) -> SchoolSettingsOut:
+    """Maktab rekvizitlari — xodimlarga (kvitansiya sarlavhasi shu yerdan)."""
+    r = await school_service.school_settings(session, user)
+    return SchoolSettingsOut(
+        name=r.name, address=r.address, phone=r.phone, director_name=r.director_name
+    )
+
+
+@router.put("/settings", response_model=SchoolSettingsOut)
+async def set_school_settings(
+    payload: SchoolSettingsIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> SchoolSettingsOut:
+    """Rekvizitlarni yangilaydi. Huquq: `users.manage`."""
+    r = await school_service.set_school_settings(
+        session,
+        user,
+        name=payload.name,
+        address=payload.address,
+        phone=payload.phone,
+        director_name=payload.director_name,
+        ip=_client_ip(request),
+    )
+    return SchoolSettingsOut(
+        name=r.name, address=r.address, phone=r.phone, director_name=r.director_name
+    )
 
 
 @router.get("/menu", response_model=CafeteriaMenuOut)
