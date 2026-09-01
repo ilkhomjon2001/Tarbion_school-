@@ -26,16 +26,18 @@ import {
   academicSetTerms,
   academicTerms,
   academicYears,
+  attendanceGenerateTermLessons,
 } from "@/lib/api/sdk.gen";
 import type {
   AcademicYearOut,
   BellOut,
+  GenerationOut,
   HolidayOut,
   TermOut,
 } from "@/lib/api/types.gen";
 import { withAuth } from "@/lib/session";
 
-export type { AcademicYearOut, BellOut, HolidayOut, TermOut };
+export type { AcademicYearOut, BellOut, GenerationOut, HolidayOut, TermOut };
 
 // ─────────────────────────── Oʻquv yili ───────────────────────────
 
@@ -103,6 +105,21 @@ export async function addHoliday(
 export async function archiveHoliday(holidayId: string): Promise<HolidayOut> {
   return withAuth<HolidayOut>(() =>
     academicArchiveHoliday({ path: { holiday_id: holidayId } }),
+  );
+}
+
+// ─────────────────────── Darslar generatsiyasi ───────────────────────
+
+/**
+ * Chorak uchun jadvaldan konkret darslar yaratadi (T-012).
+ *
+ * Idempotent: qayta chaqirilsa mavjud darslar oʻtkazib yuboriladi va
+ * oʻzgartirilmaydi — jadval keyin oʻzgarsa ham, oʻtgan darslardagi
+ * davomat buzilmaydi. Huquq: `schedule.manage` (server tekshiradi).
+ */
+export async function generateTermLessons(termId: string): Promise<GenerationOut> {
+  return withAuth<GenerationOut>(() =>
+    attendanceGenerateTermLessons({ path: { term_id: termId } }),
   );
 }
 

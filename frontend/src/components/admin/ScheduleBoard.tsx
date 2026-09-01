@@ -20,6 +20,13 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ListSkeleton } from "@/components/ui/Skeleton";
 import { CalendarIcon, PlusIcon, XIcon } from "@/components/ui/icons";
+import {
+  fetchCurrentYear,
+  fetchTerms,
+  generateTermLessons,
+  type GenerationOut,
+  type TermOut,
+} from "@/lib/academic/api";
 import { useAccess } from "@/lib/access-api";
 import {
   WEEKDAYS_UZ,
@@ -234,6 +241,148 @@ export function ScheduleBoard() {
           tekshiriladi. Jadvaldan chiqarilgan dars oʻchmaydi, arxivlanadi.
         </p>
       </div>
+
+      {canEdit && <GenerateLessonsCard />}
+    </div>
+  );
+}
+
+// ─────────────────────── Darslarni yaratish ───────────────────────
+
+/** Bugungi mahalliy sana `YYYY-MM-DD` — chorakni sukut boʻyicha tanlash uchun. */
+const LOCAL_DATE_FMT = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Tashkent",
+});
+
+/**
+ * Jadval — haftalik shablon; ustoz kabineti esa konkret sanali
+ * `lessons` yozuvlarini koʻradi (T-012). Shu karta ikkisini bogʻlaydi:
+ * tanlangan chorak uchun darslarni generatsiya qiladi.
+ *
+ * Qayta bosish xavfsiz — server idempotent, mavjud dars oʻzgarmaydi.
+ * Jadvalga yangi dars qoʻshilgach ham shu tugma yetarli: faqat
+ * yetishmayotgani yaratiladi.
+ */
+function GenerateLessonsCard() {
+  const [terms, setTerms] = useState<TermOut[] | null>(null);
+  const [termId, setTermId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [natija, setNatija] = useState<GenerationOut | null>(null);
+  const [xato, setXato] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetchCurrentYear()
+      .then((yil) => (yil === null ? [] : fetchTerms(yil.id)))
+      .then((t) => {
+        if (!alive) return;
+        setTerms(t);
+        // Sukut — bugun ichida turgan chorak; boʻlmasa keyingisi, u ham
+        // boʻlmasa oxirgisi (yil tugagach ham qayta generatsiya mumkin).
+        const bugun = LOCAL_DATE_FMT.format(new Date());
+        const joriy =
+          t.find((c) => c.starts_on <= bugun && bugun <= c.ends_on) ??
+          t.find((c) => c.starts_on > bugun) ??
+          t[t.length - 1];
+        if (joriy) setTermId(joriy.id);
+      })
+      .catch(() => alive && setTerms([]));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  async function yarat() {
+    if (!termId) return;
+    setBusy(true);
+    setXato(null);
+    setNatija(null);
+    try {
+      setNatija(await generateTermLessons(termId));
+    } catch (err) {
+      setXato(apiXato(err, "Darslarni yaratib boʻlmadi."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+      <h2 className="text-sm font-semibold text-foreground">Darslarni yaratish</h2>
+      <p className="mt-1 text-xs text-foreground-muted">
+        Jadval — haftalik shablon. Ustoz kabineti (davomat, jurnal) esa konkret
+        sanali darslarni koʻradi — ular shu yerda chorak uchun yaratiladi.
+        Jadvalni oʻzgartirgach qayta bosish xavfsiz: mavjud darslar va ulardagi
+        davomat oʻzgarmaydi, faqat yetishmayotgani qoʻshiladi.
+      </p>
+
+      {terms === null ? (
+        <p className="mt-3 text-sm text-foreground-muted">Choraklar yuklanmoqda…</p>
+      ) : terms.length === 0 ? (
+        <p className="mt-3 rounded-lg bg-warning-tint px-3 py-2 text-sm text-warning">
+          Choraklar belgilanmagan. Avval «Kalendar» tabida oʻquv yili va
+          choraklarni kiriting.
+        </p>
+      ) : (
+        <div className="mt-3 flex flex-wrap items-end gap-2">
+          <label className="min-w-[12rem]">
+            <span className="mb-1.5 block text-xs font-medium text-foreground">Chorak</span>
+            <select
+              value={termId}
+              onChange={(e) => setTermId(e.target.value)}
+              className={inputClass}
+            >
+              {terms.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.starts_on} — {c.ends_on})
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            disabled={busy || termId === ""}
+            onClick={() => void yarat()}
+            className={primaryButtonClass}
+          >
+            {busy ? "Yaratilmoqda…" : "Darslarni yaratish"}
+          </button>
+        </div>
+      )}
+
+      {xato && (
+        <p className="mt-3 rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">{xato}</p>
+      )}
+
+      {natija && (
+        <div className="mt-3 flex flex-col gap-2">
+          <p className="rounded-lg bg-success-tint px-3 py-2 text-sm text-success">
+            <span className="num font-semibold">{natija.created}</span> ta dars yaratildi
+            {natija.skipped_existing > 0 && (
+              <>
+                {" · "}
+                <span className="num">{natija.skipped_existing}</span> tasi allaqachon bor edi
+              </>
+            )}
+            {natija.skipped_holidays > 0 && (
+              <>
+                {" · "}
+                <span className="num">{natija.skipped_holidays}</span> ta taʼtil kuni
+                oʻtkazib yuborildi
+              </>
+            )}
+            {" "}
+            (<span className="num">{natija.date_from} — {natija.date_to}</span>)
+          </p>
+          {natija.missing_bells.length > 0 && (
+            <p className="rounded-lg bg-warning-tint px-3 py-2 text-sm text-warning">
+              {natija.missing_bells.join(", ")}-paralar uchun qoʻngʻiroq vaqti
+              belgilanmagan — bu paradagi darslar yaratilmadi. «Kalendar» tabida
+              qoʻngʻiroqlar jadvalini toʻldirib, qayta yarating.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
