@@ -9,7 +9,9 @@ import { BrandLogo } from "@/components/ui/BrandLogo";
 import { useAccess } from "@/lib/access-api";
 import { logout } from "@/lib/auth";
 import {
+  BarChartIcon,
   BellIcon,
+  UsersIcon,
   CalendarIcon,
   CheckSquareIcon,
   ClipboardIcon,
@@ -29,6 +31,8 @@ const NAV_ITEMS = [
   { href: "/student/homework", label: "Uy vazifasi", icon: ClipboardIcon },
   { href: "/student/tests", label: "Testlar", icon: CheckSquareIcon },
   { href: "/student/grades", label: "Baholar", icon: StarIcon },
+  { href: "/student/reyting", label: "Reyting", icon: BarChartIcon },
+  { href: "/student/ustozlar", label: "Ustozlarim", icon: UsersIcon },
   { href: "/student/announcements", label: "Eʼlonlar", icon: BellIcon },
 ] as const;
 

@@ -37,6 +37,8 @@ export interface Child {
   className: string;
   /** Vasiyning shu bolaga qarindoshligi. */
   relation: string;
+  /** Maktabdan ketgan — faqat qarzi qolgani uchun roʻyxatda (O7). */
+  isArchived: boolean;
 }
 
 export interface DayAttendance {
@@ -69,6 +71,7 @@ function toChild(row: ChildOut): Child {
     shortName: row.short_name,
     className: row.class_name,
     relation: RELATION_UZ[row.relation] ?? row.relation,
+    isArchived: row.is_archived ?? false,
   };
 }
 

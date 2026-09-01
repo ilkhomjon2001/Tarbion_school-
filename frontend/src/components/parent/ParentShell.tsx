@@ -185,6 +185,11 @@ export function ParentShell({
                     </span>
                     {c.shortName}
                     <span className="text-xs opacity-70">{c.className}</span>
+                    {c.isArchived && (
+                      <span className="rounded-full bg-surface-muted px-1.5 text-[10px] font-semibold uppercase text-foreground-muted">
+                        ketgan
+                      </span>
+                    )}
                   </button>
                 );
               })}

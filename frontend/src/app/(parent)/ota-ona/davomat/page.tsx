@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { ParentShell } from "@/components/parent/ParentShell";
+import { createAppeal } from "@/lib/appeals/api";
 import {
   dayStatus,
   fetchAttendance,
@@ -263,7 +264,7 @@ export default function ParentAttendancePage() {
       {/* DAV-04: sababli qoldirish arizasi */}
       <section className="mt-5">
         {showForm ? (
-          <ExcuseForm onClose={() => setShowForm(false)} />
+          <ExcuseForm studentId={child.id} onClose={() => setShowForm(false)} />
         ) : (
           <button
             type="button"
@@ -331,31 +332,64 @@ function DaySheet({ day, onClose }: { day: DayAttendance; onClose: () => void })
 
 /* --- DAV-04: ariza --- */
 
-function ExcuseForm({ onClose }: { onClose: () => void }) {
+function ExcuseForm({
+  studentId,
+  onClose,
+}: {
+  studentId: string;
+  onClose: () => void;
+}) {
   const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [xato, setXato] = useState(false);
+  const [dan, setDan] = useState(bugungiSana());
+  const [gacha, setGacha] = useState(bugungiSana());
+  const [sabab, setSabab] = useState("");
 
   if (sent) {
     return (
       <div role="status" className="rounded-xl border border-success/30 bg-success-tint p-4">
         <p className="font-medium text-success">Ariza yuborildi</p>
         <p className="mt-1 text-sm text-success/85">
-          Sinf rahbari koʻrib chiqadi. Javob «Murojaat» boʻlimida va Telegram
-          orqali keladi.
+          Sinf rahbariga murojaat sifatida yetkazildi — javobni «Murojaat»
+          boʻlimida koʻrasiz.
         </p>
       </div>
     );
   }
 
+  async function yubor(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy || sabab.trim().length < 3) return;
+    setBusy(true);
+    setXato(false);
+    try {
+      // DAV-04 arizasi — sinf rahbariga MUROJAAT sifatida boradi:
+      // alohida jadval kerak emas, javob yozishmasi ham tayyor (MUR-*).
+      await createAppeal({
+        studentId,
+        target: "homeroom",
+        title: `Sababli qoldirish arizasi (${dan} — ${gacha})`,
+        body: `Davr: ${dan} — ${gacha}.\nSabab: ${sabab.trim()}`,
+      });
+      setSent(true);
+      setTimeout(onClose, 2500);
+    } catch {
+      setXato(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        setSent(true);
-        setTimeout(onClose, 2500);
-      }}
-      className="rounded-xl border border-border bg-surface p-4"
-    >
+    <form onSubmit={yubor} className="rounded-xl border border-border bg-surface p-4">
       <h2 className="text-sm font-semibold">Sababli qoldirish arizasi</h2>
+
+      {xato && (
+        <p className="mt-2 rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">
+          Yuborib boʻlmadi. Internetni tekshirib, qayta urinib koʻring.
+        </p>
+      )}
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <div>
@@ -366,7 +400,8 @@ function ExcuseForm({ onClose }: { onClose: () => void }) {
             id="ex-from"
             type="date"
             required
-            defaultValue={bugungiSana()}
+            value={dan}
+            onChange={(e) => setDan(e.target.value)}
             className="h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
           />
         </div>
@@ -378,7 +413,8 @@ function ExcuseForm({ onClose }: { onClose: () => void }) {
             id="ex-to"
             type="date"
             required
-            defaultValue={bugungiSana()}
+            value={gacha}
+            onChange={(e) => setGacha(e.target.value)}
             className="h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
           />
         </div>
@@ -391,23 +427,14 @@ function ExcuseForm({ onClose }: { onClose: () => void }) {
             id="ex-reason"
             rows={3}
             required
+            value={sabab}
+            onChange={(e) => setSabab(e.target.value.slice(0, 400))}
             placeholder="Masalan: shifokor koʻrigida edi"
             className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none placeholder:text-foreground-muted/60 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
           />
-        </div>
-
-        <div className="sm:col-span-2">
-          <label htmlFor="ex-file" className="mb-1.5 block text-sm font-medium">
-            Hujjat (ixtiyoriy)
-          </label>
-          <input
-            id="ex-file"
-            type="file"
-            accept="image/*,.pdf"
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-surface-muted file:px-3 file:py-1.5 file:text-sm file:text-foreground focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
-          />
           <p className="mt-1 text-xs text-foreground-muted">
-            Shifokor maʼlumotnomasi rasmi yoki PDF.
+            Shifokor maʼlumotnomasi boʻlsa, uni sinf rahbariga koʻrsatasiz —
+            fayl yuklash tez orada qoʻshiladi.
           </p>
         </div>
       </div>
@@ -422,14 +449,16 @@ function ExcuseForm({ onClose }: { onClose: () => void }) {
         </button>
         <button
           type="submit"
-          className="inline-flex h-11 items-center rounded-lg bg-brand px-4 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          disabled={busy || sabab.trim().length < 3}
+          className="inline-flex h-11 items-center rounded-lg bg-brand px-4 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
         >
-          Arizani yuborish
+          {busy ? "Yuborilmoqda…" : "Arizani yuborish"}
         </button>
       </div>
     </form>
   );
 }
+
 
 function Stat({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (

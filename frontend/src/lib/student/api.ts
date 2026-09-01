@@ -26,8 +26,12 @@ import {
   testsStart,
   testsStudentAttempts,
   testsSubmit,
+  journalStudentRating,
+  schoolStudentTeachers,
 } from "@/lib/api/sdk.gen";
 import type {
+  StudentRatingOut,
+  StudentTeacherOut,
   AttemptOut,
   AttemptStartOut,
   AttendanceStatOut,
@@ -338,4 +342,46 @@ export async function submitTestAttempt(
   return withAuth<AttemptOut>(() =>
     testsSubmit({ path: { attempt_id: attemptId }, body: { answers } }),
   );
+}
+
+// ─────────────────────────── Reyting va ustozlar ───────────────────────────
+
+export interface StudentRating {
+  rank: number | null;
+  totalStudents: number;
+  average: number | null;
+  attendancePercent: number;
+}
+
+/** Sinf ichidagi oʻrin (REY-01). X-6: faqat OʻZ koʻrsatkichlari qaytadi. */
+export async function fetchRating(studentId: string): Promise<StudentRating> {
+  const r = await withAuth<StudentRatingOut>(() =>
+    journalStudentRating({ path: { student_id: studentId } }),
+  );
+  return {
+    rank: r.rank ?? null,
+    totalStudents: r.total_students,
+    average: r.average ?? null,
+    attendancePercent: r.attendance_percent,
+  };
+}
+
+export interface MyTeacher {
+  teacherId: string;
+  fullName: string;
+  subjects: string[];
+  isHomeroom: boolean;
+}
+
+/** Oʻquvchiga dars beradigan ustozlar — ism va fan, loginsiz (X-6). */
+export async function fetchMyTeachers(studentId: string): Promise<MyTeacher[]> {
+  const rows = await withAuth<StudentTeacherOut[]>(() =>
+    schoolStudentTeachers({ path: { student_id: studentId } }),
+  );
+  return rows.map((r) => ({
+    teacherId: r.teacher_id,
+    fullName: r.full_name,
+    subjects: r.subjects,
+    isHomeroom: r.is_homeroom,
+  }));
 }

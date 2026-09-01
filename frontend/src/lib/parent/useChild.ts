@@ -88,6 +88,7 @@ const BOSH_CHILD: Child = {
   shortName: "",
   className: "",
   relation: "",
+  isArchived: false,
 };
 
 export function useChild(): [Child, (id: string) => void] {
