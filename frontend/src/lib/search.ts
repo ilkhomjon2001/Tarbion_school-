@@ -13,8 +13,6 @@ const NAV_PAGES: SearchIndexItem[] = [
   { id: "nav-homework", label: "Uy vazifasi", category: "Sahifa", href: "/student/homework" },
   { id: "nav-tests", label: "Testlar", category: "Sahifa", href: "/student/tests" },
   { id: "nav-grades", label: "Baholar", category: "Sahifa", href: "/student/grades" },
-  { id: "nav-ranking", label: "Reyting", category: "Sahifa", href: "/student/reyting" },
-  { id: "nav-cafeteria", label: "Oshxona", category: "Sahifa", href: "/student/oshxona" },
   { id: "nav-announcements", label: "Eʼlonlar", category: "Sahifa", href: "/student/announcements" },
   { id: "nav-profile", label: "Profil", category: "Sahifa", href: "/student/profil" },
 ];

@@ -6,12 +6,10 @@ import { ChevronRightIcon } from "@/components/ui/icons";
 import {
   APPEAL_STATUS_LABELS,
   APPEAL_TARGET_LABELS,
-  withNewMessage,
   type Appeal,
   type AppealStatus,
   type MessageAuthor,
 } from "@/lib/school/appeals";
-import { staffById } from "@/lib/school/staff";
 
 const STATUS_TONE: Record<AppealStatus, "info" | "warning" | "success" | "neutral"> = {
   new: "info",
@@ -61,8 +59,8 @@ export function AppealThread({
   const listRef = useRef<HTMLUListElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Ism avval javobdan olinadi (API), topilmasa mock roʻyxatidan.
-  const assigneeName = appeal.assigneeName ?? staffById(appeal.assigneeId)?.shortName ?? null;
+  // Masʼul ismi backend javobidan.
+  const assigneeName = appeal.assigneeName ?? null;
   const messageCount = appeal.messages.length;
 
   // Yozishma ochilganda va yangi xabar qoʻshilganda oxiriga tushamiz —
@@ -76,12 +74,8 @@ export function AppealThread({
   function send() {
     const text = draft.trim();
     if (!text) return;
-    if (onSend) onSend(text);
-    else {
-      setLocalAppeal((prev) =>
-        withNewMessage(prev, { author: viewer, staffId: viewerStaffId, text }),
-      );
-    }
+    // Yuborish faqat API orqali (`onSend`) — lokal mock qatlam olib tashlangan.
+    onSend?.(text);
     setDraft("");
     inputRef.current?.focus();
   }
@@ -141,9 +135,7 @@ export function AppealThread({
           {/* Uzun yozishma kartochkani choʻzib yubormasin */}
           <ul ref={listRef} className="flex max-h-80 flex-col gap-2 overflow-y-auto pr-1">
             {appeal.messages.map((message) => {
-              const author =
-                message.authorName ??
-                (message.staffId ? staffById(message.staffId)?.shortName : null);
+              const author = message.authorName ?? null;
               const mine = message.author === viewer;
               return (
                 <li
