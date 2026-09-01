@@ -83,14 +83,40 @@ export async function completeTwoFactor(
   return { role, mustChangePassword: user.must_change_password };
 }
 
+/**
+ * Chiqish: sessiyani bekor qiladi va kirish sahifasiga oʻtkazadi.
+ *
+ * Yoʻnaltirish SHU YERDA, chaqiruvchida emas. Sabab: har bir qobiqda
+ * `logout(); router.push("/login")` yozilgan edi va ikkita nuqson bor
+ * edi — biri `logout()` ni KUTMASDAN oʻtardi (server refresh
+ * cookie'ni bekor qilishga ulgurmasligi mumkin), ikkinchisida esa
+ * yoʻnaltirish umuman yoʻq edi.
+ *
+ * `window.location.replace` ataylab, `router.push` emas:
+ *
+ *   · toʻliq qayta yuklash xotiradagi BARCHA holatni tashlaydi —
+ *     komponentlarda qolgan foydalanuvchi maʼlumoti, keshlangan
+ *     javoblar. `router.push` da ilova tirik qoladi va oldingi
+ *     ekrandagi maʼlumot xotirada turaverardi.
+ *   · `replace` — «orqaga» tugmasi kabinetga qaytarmaydi.
+ */
 export async function logout(): Promise<void> {
+  // Serverga yetib borishini kutamiz: `session.logout()` avval
+  // mahalliy tokenni tozalaydi, keyin cookie'ni bekor qiladi va
+  // xatoni oʻzi yutadi. Kutmasak sahifa yopilib, cookie qolib
+  // ketishi mumkin.
   await session.logout();
+
   try {
     localStorage.removeItem(REMEMBER_KEY);
     localStorage.removeItem(ROLE_HINT_KEY);
     sessionStorage.removeItem(ROLE_HINT_KEY);
   } catch {
     /* xotira bloklangan */
+  }
+
+  if (typeof window !== "undefined") {
+    window.location.replace("/login");
   }
 }
 

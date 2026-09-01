@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 
 import { NavBadge } from "@/components/shared/NavBadge";
@@ -41,7 +41,6 @@ export function Sidebar({ student }: { student: Student }) {
     () => NAV_ITEMS.filter((i) => sections.includes(i.href)),
     [sections],
   );
-  const router = useRouter();
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border bg-surface md:flex">
@@ -103,8 +102,7 @@ export function Sidebar({ student }: { student: Student }) {
         <button
           type="button"
           onClick={() => {
-            logout();
-            router.push("/login");
+            void logout();
           }}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-muted hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
         >

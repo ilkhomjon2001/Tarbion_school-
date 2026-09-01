@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { NavBadge } from "@/components/shared/NavBadge";
@@ -75,7 +75,6 @@ export function ParentShell({
     () => SIDEBAR_NAV.filter((i) => sections.includes(i.href)),
     [sections],
   );
-  const router = useRouter();
   const [unread, setUnread] = useState(0);
 
   // localStorage faqat brauzerda — shuning uchun effekt ichida.
@@ -128,8 +127,7 @@ export function ParentShell({
           <button
             type="button"
             onClick={() => {
-              logout();
-              router.push("/login");
+              void logout();
             }}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-muted hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
           >
