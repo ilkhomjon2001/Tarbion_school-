@@ -17,6 +17,8 @@ from app.core.db import SessionDep
 from app.core.exceptions import NotFoundError
 from app.models import Guardian, User
 from app.schemas.school import (
+    CafeteriaMenuIn,
+    CafeteriaMenuOut,
     ClassCreateIn,
     ClassOut,
     ClassSubjectIn,
@@ -108,6 +110,30 @@ async def subjects_of_class(
     """Sinfda oʻqitiladigan fanlar va haftalik soati (ADM-03)."""
     rows = await school_service.class_subjects(session, class_id)
     return [ClassSubjectOut(subject_id=s.id, subject_name=s.name, weekly_hours=h) for s, h in rows]
+
+
+@router.get("/menu", response_model=CafeteriaMenuOut)
+async def cafeteria_menu(user: CurrentUserDep, session: SessionDep) -> CafeteriaMenuOut:
+    """Oshxona haftalik menyusi (OTA-08) — barcha rollarga ochiq."""
+    days = await school_service.cafeteria_menu(session)
+    return CafeteriaMenuOut(days={str(k): v for k, v in days.items()})
+
+
+@router.put("/menu", response_model=CafeteriaMenuOut)
+async def set_cafeteria_menu(
+    payload: CafeteriaMenuIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> CafeteriaMenuOut:
+    """Menyuni yaxlit yozadi. Huquq: `students.manage`."""
+    days = await school_service.set_cafeteria_menu(
+        session,
+        user,
+        days={int(k): v for k, v in payload.days.items()},
+        ip=_client_ip(request),
+    )
+    return CafeteriaMenuOut(days={str(k): v for k, v in days.items()})
 
 
 @router.get("/students/{student_id}/teachers", response_model=list[StudentTeacherOut])

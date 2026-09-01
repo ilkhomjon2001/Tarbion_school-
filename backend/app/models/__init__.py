@@ -105,6 +105,7 @@ from app.models.payments import (
 )
 from app.models.scheduling import Lesson, ScheduleEntry
 from app.models.school import (
+    CafeteriaMenuItem,
     ClassSubject,
     Guardian,
     GuardianRelation,
@@ -211,6 +212,7 @@ __all__ = [
     "LeadSource",
     "LeadStatus",
     "BellSchedule",
+    "CafeteriaMenuItem",
     "ClassSubject",
     "CONTACT_KIND_LABELS_UZ",
     "ContactKind",

@@ -28,6 +28,9 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { ListSkeleton } from "@/components/ui/Skeleton";
 import { GridIcon, PlusIcon } from "@/components/ui/icons";
 import {
+  saveCafeteriaMenu,
+  fetchCafeteriaMenu,
+  WEEKDAYS_UZ,
   apiXato,
   archiveClass,
   archiveSubject,
@@ -45,7 +48,7 @@ import {
   type SubjectOut,
 } from "@/lib/school/api";
 
-type Tab = "classes" | "subjects" | "rooms" | "calendar" | "schedule";
+type Tab = "classes" | "subjects" | "rooms" | "calendar" | "schedule" | "menu";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "classes", label: "Sinflar" },
@@ -53,6 +56,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "rooms", label: "Xonalar" },
   { id: "calendar", label: "Oʻquv yili" },
   { id: "schedule", label: "Dars jadvali" },
+  { id: "menu", label: "Oshxona" },
 ];
 
 const refInputClass =
@@ -145,6 +149,7 @@ export function ReferenceData() {
 
       {tab === "calendar" && <AcademicCalendarTab />}
       {tab === "schedule" && <ScheduleBoard />}
+      {tab === "menu" && <CafeteriaMenuTab />}
 
       {(tab === "classes" || tab === "subjects") && !dir.loading && !dir.error && (
         <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-foreground-muted">
@@ -779,6 +784,104 @@ function RoomsTab({ dir }: { dir: SchoolDirectory }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+
+// ─────────────────────────── Oshxona menyusi ───────────────────────────
+
+/**
+ * Haftalik taomnoma (OTA-08): har kun uchun bitta matn maydoni,
+ * har qatorda bitta taom. Yaxlit saqlanadi — eski hafta arxivlanadi.
+ * Ota-ona kabinetidagi «Oshxona» sahifasi shu maʼlumotni koʻrsatadi.
+ */
+function CafeteriaMenuTab() {
+  const [kunlar, setKunlar] = useState<Record<number, string> | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [xabar, setXabar] = useState<{ tur: "ok" | "xato"; matn: string } | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetchCafeteriaMenu()
+      .then((m) => {
+        if (!alive) return;
+        const d: Record<number, string> = {};
+        for (const wd of WEEKDAYS_UZ) d[wd.id] = (m[wd.id] ?? []).join("\n");
+        setKunlar(d);
+      })
+      .catch(() => alive && setXabar({ tur: "xato", matn: "Menyuni olib boʻlmadi." }));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  async function saqla() {
+    if (!kunlar || busy) return;
+    setBusy(true);
+    setXabar(null);
+    try {
+      const days: Record<number, string[]> = {};
+      for (const [k, v] of Object.entries(kunlar)) {
+        days[Number(k)] = v
+          .split("\n")
+          .map((x) => x.trim())
+          .filter(Boolean);
+      }
+      await saveCafeteriaMenu(days);
+      setXabar({ tur: "ok", matn: "Menyu saqlandi — ota-ona kabinetida koʻrinadi." });
+    } catch {
+      setXabar({ tur: "xato", matn: "Saqlab boʻlmadi. Qayta urinib koʻring." });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (kunlar === null && xabar === null) return <ListSkeleton count={4} />;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm text-foreground-muted">
+        Har kun uchun taomlarni alohida qatorlarda yozing. Saqlanganda eski
+        menyu arxivlanadi va ota-ona kabinetida yangisi koʻrinadi.
+      </p>
+
+      {xabar && (
+        <p
+          className={`rounded-lg px-3 py-2 text-sm ${
+            xabar.tur === "ok"
+              ? "bg-success-tint text-success"
+              : "bg-danger-tint text-danger"
+          }`}
+        >
+          {xabar.matn}
+        </p>
+      )}
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {WEEKDAYS_UZ.map((d) => (
+          <label key={d.id} className="block">
+            <span className="mb-1.5 block text-xs font-medium text-foreground">
+              {d.long}
+            </span>
+            <textarea
+              rows={4}
+              value={kunlar?.[d.id] ?? ""}
+              onChange={(e) =>
+                setKunlar((prev) => ({ ...(prev ?? {}), [d.id]: e.target.value }))
+              }
+              placeholder={"Osh\nSalat\nKompot"}
+              className="w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-sm outline-none transition-colors placeholder:text-foreground-muted/50 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
+            />
+          </label>
+        ))}
+      </div>
+
+      <div className="flex justify-end">
+        <button type="button" onClick={() => void saqla()} disabled={busy} className={primaryBtn}>
+          {busy ? "Saqlanmoqda…" : "Menyuni saqlash"}
+        </button>
+      </div>
     </div>
   );
 }

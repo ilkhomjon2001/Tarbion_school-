@@ -132,3 +132,20 @@ class Guardian(Entity):
     is_primary: Mapped[bool] = mapped_column(default=False, server_default="false", nullable=False)
 
     student: Mapped[Student] = relationship(lazy="joined")
+
+
+class CafeteriaMenuItem(Entity):
+    """Oshxona haftalik menyusi — bitta qator = bitta taom (OTA-08).
+
+    Haftalik shablon (jadvalga oʻxshash): hafta kuni + tartib + taom.
+    Yangi hafta yozilganda eski qatorlar arxivlanadi — tarix qoladi
+    (CLAUDE.md 1-qoida).
+    """
+
+    __tablename__ = "cafeteria_menu_items"
+    __table_args__ = (Index("ix_cafeteria_menu_day", "weekday", "is_archived"),)
+
+    #: 1 = dushanba … 7 = yakshanba.
+    weekday: Mapped[int] = mapped_column(nullable=False)
+    position: Mapped[int] = mapped_column(nullable=False, default=0)
+    dish: Mapped[str] = mapped_column(String(120), nullable=False)

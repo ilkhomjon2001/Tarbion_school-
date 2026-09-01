@@ -401,3 +401,39 @@ async def test_begona_ota_ustozlar_royxatini_kora_olmaydi(
         f"/api/v1/school/students/{world['ali'].id}/teachers", headers=_auth(begona)
     )
     assert r.status_code == 403, r.text
+
+
+# ─────────────────────────── Oshxona menyusi ───────────────────────────
+
+
+async def test_menyu_yoziladi_va_oqiladi(client: AsyncClient, world: dict) -> None:
+    admin = await _token(client, "sch.sa")  # superadmin — barcha huquqlar
+    r = await client.put(
+        "/api/v1/school/menu",
+        headers=_auth(admin),
+        json={"days": {"1": ["Osh", "Salat"], "2": ["Shorva"]}},
+    )
+    assert r.status_code == 200, r.text
+
+    # Ota-ona ham o'qiy oladi — ochiq ma'lumot.
+    ota = await _token(client, "sch.otaona_a")
+    r = await client.get("/api/v1/school/menu", headers=_auth(ota))
+    assert r.status_code == 200, r.text
+    assert r.json()["days"]["1"] == ["Osh", "Salat"]
+
+    # Yaxlit yozish: eski hafta almashadi, qo'shilib ketmaydi.
+    await client.put(
+        "/api/v1/school/menu",
+        headers=_auth(admin),
+        json={"days": {"1": ["Lag'mon"]}},
+    )
+    r = await client.get("/api/v1/school/menu", headers=_auth(admin))
+    assert r.json()["days"] == {"1": ["Lag'mon"]}
+
+
+async def test_menyuni_ota_ona_yoza_olmaydi(client: AsyncClient, world: dict) -> None:
+    ota = await _token(client, "sch.otaona_a")
+    r = await client.put(
+        "/api/v1/school/menu", headers=_auth(ota), json={"days": {"1": ["Osh"]}}
+    )
+    assert r.status_code == 403, r.text

@@ -841,6 +841,32 @@ export type BellsIn = {
 };
 
 /**
+ * CafeteriaMenuIn
+ *
+ * Haftalik menyu — kun (1–7, satr koʻrinishida) → taomlar.
+ */
+export type CafeteriaMenuIn = {
+    /**
+     * Days
+     */
+    days?: {
+        [key: string]: Array<string>;
+    };
+};
+
+/**
+ * CafeteriaMenuOut
+ */
+export type CafeteriaMenuOut = {
+    /**
+     * Days
+     */
+    days: {
+        [key: string]: Array<string>;
+    };
+};
+
+/**
  * CallFeedOut
  *
  * Umumiy qoʻngʻiroqlar jurnali qatori — lid maʼlumoti bilan.
@@ -8491,6 +8517,47 @@ export type SchoolSetClassSubjectResponses = {
 };
 
 export type SchoolSetClassSubjectResponse = SchoolSetClassSubjectResponses[keyof SchoolSetClassSubjectResponses];
+
+export type SchoolCafeteriaMenuData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/school/menu';
+};
+
+export type SchoolCafeteriaMenuResponses = {
+    /**
+     * Successful Response
+     */
+    200: CafeteriaMenuOut;
+};
+
+export type SchoolCafeteriaMenuResponse = SchoolCafeteriaMenuResponses[keyof SchoolCafeteriaMenuResponses];
+
+export type SchoolSetCafeteriaMenuData = {
+    body: CafeteriaMenuIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/school/menu';
+};
+
+export type SchoolSetCafeteriaMenuErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolSetCafeteriaMenuError = SchoolSetCafeteriaMenuErrors[keyof SchoolSetCafeteriaMenuErrors];
+
+export type SchoolSetCafeteriaMenuResponses = {
+    /**
+     * Successful Response
+     */
+    200: CafeteriaMenuOut;
+};
+
+export type SchoolSetCafeteriaMenuResponse = SchoolSetCafeteriaMenuResponses[keyof SchoolSetCafeteriaMenuResponses];
 
 export type SchoolStudentTeachersData = {
     body?: never;

@@ -688,3 +688,80 @@ async def student_teachers(
     ]
     natija.sort(key=lambda r: (not r.is_homeroom, r.full_name))
     return natija
+
+
+# ─────────────────────────── Oshxona menyusi ───────────────────────────
+
+
+async def cafeteria_menu(session: AsyncSession) -> dict[int, list[str]]:
+    """Haftalik menyu: hafta kuni → taomlar roʻyxati (OTA-08).
+
+    Ochiq maʼlumot — istalgan tizimga kirgan foydalanuvchi koʻradi.
+    """
+    from app.models import CafeteriaMenuItem
+
+    rows = (
+        await session.execute(
+            select(CafeteriaMenuItem)
+            .where(CafeteriaMenuItem.is_archived.is_(False))
+            .order_by(CafeteriaMenuItem.weekday, CafeteriaMenuItem.position)
+        )
+    ).scalars()
+    natija: dict[int, list[str]] = {}
+    for item in rows:
+        natija.setdefault(item.weekday, []).append(item.dish)
+    return natija
+
+
+async def set_cafeteria_menu(
+    session: AsyncSession,
+    user: CurrentUser,
+    *,
+    days: dict[int, list[str]],
+    ip: str | None = None,
+) -> dict[int, list[str]]:
+    """Haftalik menyuni YAXLIT yozadi (choraklar naqshidagi kabi).
+
+    Eski qatorlar arxivlanadi, oʻchirilmaydi (1-qoida). Har oʻzgarish
+    auditga tushadi.
+    """
+    from app.models import CafeteriaMenuItem
+
+    await assert_permission(session, user, Permission.STUDENTS_MANAGE)
+
+    for weekday, dishes in days.items():
+        if weekday < 1 or weekday > 7:
+            raise ValidationError("Hafta kuni 1–7 oraligʻida boʻlsin.")
+        if len(dishes) > 20:
+            raise ValidationError("Bir kunga 20 tadan ortiq taom yozilmaydi.")
+
+    eski = list(
+        (
+            await session.execute(
+                select(CafeteriaMenuItem).where(CafeteriaMenuItem.is_archived.is_(False))
+            )
+        ).scalars()
+    )
+    for item in eski:
+        item.is_archived = True
+        item.archived_at = utcnow()
+
+    for weekday, dishes in days.items():
+        for i, dish in enumerate(dishes):
+            toza = dish.strip()
+            if not toza:
+                continue
+            session.add(CafeteriaMenuItem(weekday=weekday, position=i, dish=toza[:120]))
+
+    audit_service.record(
+        session,
+        object_type="cafeteria_menu",
+        object_id=None,
+        action=AuditAction.UPDATE,
+        old={"days": len({e.weekday for e in eski})},
+        new={"days": len([d for d, v in days.items() if any(x.strip() for x in v)])},
+        actor_id=user.id,
+        ip=ip,
+    )
+    await session.commit()
+    return await cafeteria_menu(session)

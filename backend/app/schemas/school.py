@@ -216,3 +216,13 @@ class StudentTeacherOut(BaseModel):
     full_name: str
     subjects: list[str]
     is_homeroom: bool
+
+
+class CafeteriaMenuIn(BaseModel):
+    """Haftalik menyu — kun (1–7, satr koʻrinishida) → taomlar."""
+
+    days: dict[str, list[str]] = Field(default_factory=dict)
+
+
+class CafeteriaMenuOut(BaseModel):
+    days: dict[str, list[str]]

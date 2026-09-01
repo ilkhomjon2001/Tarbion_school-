@@ -43,8 +43,11 @@ import {
   schoolStudents,
   schoolSubjectsOfClass,
   schoolSubjects,
+  schoolCafeteriaMenu,
+  schoolSetCafeteriaMenu,
 } from "@/lib/api/sdk.gen";
 import type {
+  CafeteriaMenuOut,
   ClassOut,
   GuardianCreatedOut,
   GuardianRowOut,
@@ -482,4 +485,28 @@ export async function unlinkGuardian(
       body: { reason },
     }),
   );
+}
+
+// ─────────────────────────── Oshxona menyusi ───────────────────────────
+
+/** Haftalik menyu: hafta kuni (1–7) → taomlar (OTA-08). */
+export async function fetchCafeteriaMenu(): Promise<Record<number, string[]>> {
+  const r = await withAuth<CafeteriaMenuOut>(() => schoolCafeteriaMenu());
+  const days: Record<number, string[]> = {};
+  for (const [k, v] of Object.entries(r.days)) days[Number(k)] = v;
+  return days;
+}
+
+/** Menyuni yaxlit yozadi — `students.manage` talab qilinadi. */
+export async function saveCafeteriaMenu(
+  days: Record<number, string[]>,
+): Promise<Record<number, string[]>> {
+  const body: Record<string, string[]> = {};
+  for (const [k, v] of Object.entries(days)) body[String(k)] = v;
+  const r = await withAuth<CafeteriaMenuOut>(() =>
+    schoolSetCafeteriaMenu({ body: { days: body } }),
+  );
+  const natija: Record<number, string[]> = {};
+  for (const [k, v] of Object.entries(r.days)) natija[Number(k)] = v;
+  return natija;
 }
