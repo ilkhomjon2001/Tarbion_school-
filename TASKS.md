@@ -626,13 +626,19 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
   - Frontend: 🟡 qisman — natija koʻrsatiladi, tahlil kesimlari yoʻq
 - [ ] T-045 · Savollarni Excel'dan import — TST-06
   - Frontend: ⬜ yoʻq
-- [ ] T-046 · To'lov: shartnoma va to'lov jadvali — TOL-01, TOL-02
+- [x] T-046 · To'lov: shartnoma va to'lov jadvali — TOL-01, TOL-02 —
+  shartnoma (standart 3.5 mln/oy), chegirma, oylik hisoblash (sentabr–may,
+  idempotent). Hisoblangan qarz qotadi
   - Frontend: ✅ tayyor — `/admin/shartnomalar` — kelgan-ketgan bazasi, sabab va sana bilan
-- [ ] T-047 · To'lov kiritish va kvitansiya — TOL-03, TOL-04, TOL-07
+- [x] T-047 · To'lov kiritish va kvitansiya — TOL-03, TOL-04, TOL-07 —
+  kiritish, chek raqami, STORNO (tahrirlash yo'q), hammasi auditda
   - Frontend: ✅ tayyor — `/admin/tolovlar` — toʻlov kiritish, chek raqami, STORNO (tahrirlash yoʻq)
-- [ ] T-048 · Qarzdorlik hisoboti va eslatmalar — TOL-05, TOL-06
+- [~] T-048 · Qarzdorlik hisoboti va eslatmalar — TOL-05, TOL-06 —
+  qarzdorlar ro'yxati va jamlanma tayyor; eslatma yuborish T-018 outbox bilan
   - Frontend: ✅ tayyor — `/admin/tolovlar` — qarzdorlar, muddat choʻzish, chegirma, hisobdan chiqarish, eslatma
-- [ ] T-049 · Ota-ona kabinetida to'lov — OTA-06
+- [x] T-049 · Ota-ona kabinetida to'lov — OTA-06 — balans, tarix va
+  SINOV provayderi orqali onlayn to'lov oqimi (X-9 imzo+idempotentlik tayyor;
+  haqiqiy Payme/Click kelganda kalit va URL almashadi)
   - Frontend: ✅ tayyor — `/ota-ona/tolov`
 - [~] T-050 · Direktor paneli: KPI va grafiklar — DIR-01…DIR-06
   - Frontend: 🟡 qisman ULANDI (1-sentyabr) — `/rahbar` (KPI + davomat

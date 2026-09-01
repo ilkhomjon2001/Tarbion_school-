@@ -1,123 +1,203 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
+
 import { ParentShell } from "@/components/parent/ParentShell";
-import { formatSom, PAYMENTS } from "@/lib/parent/data";
+import { formatSom } from "@/lib/format";
 import { useChild } from "@/lib/parent/useChild";
+import {
+  completeSinov,
+  createIntent,
+  fetchLedger,
+  METHOD_LABELS,
+  type IntentOut,
+  type StudentLedgerOut,
+} from "@/lib/payments/api";
 
 /**
- * Toʻlov holati (OTA-06).
+ * Toʻlov (OTA-06) — BAZADAN.
  *
- * Ota-ona uchun ikkita savol: "qarzim bormi?" va "kvitansiya qayerda?".
- * Shuning uchun qarzdorlik eng tepada, katta yozuvda; tarix pastda,
- * har qatorda kvitansiya yuklab olish.
+ * Balans, oylik qarzlar va toʻlovlar tarixi. Server faqat OʻZ
+ * farzandining maʼlumotini beradi (X-1).
  *
- * Pul CLAUDE.md 2-qoidasi boʻyicha butun sonda, soʻmda saqlanadi.
+ * «Toʻlash» hozircha SINOV provayderi orqali: haqiqiy pul harakati
+ * YOʻQ, oqim esa haqiqiy — niyat ochiladi, imzolangan callback keladi,
+ * balans yopiladi. Payme/Click ulanganda shu tugma haqiqiy toʻlovga
+ * aylanadi.
  */
-export default function ParentPaymentPage() {
-  const [child, setChild] = useChild();
-  const payment = PAYMENTS[child.id];
-  const hasDebt = payment.balance > 0;
+export default function ParentPaymentsPage() {
+  const [child, selectChild] = useChild();
+  const [ledger, setLedger] = useState<StudentLedgerOut | null>(null);
+  const [error, setError] = useState(false);
+  const [intent, setIntent] = useState<IntentOut | null>(null);
+  const [amount, setAmount] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const yukla = useCallback(async () => {
+    if (!child.id) return;
+    setLedger(null);
+    try {
+      const l = await fetchLedger(child.id);
+      setLedger(l);
+      setError(false);
+      // Standart taklif — joriy qarz.
+      setAmount(l.finance.balance < 0 ? String(-l.finance.balance) : "");
+    } catch {
+      setError(true);
+    }
+  }, [child.id]);
+
+  useEffect(() => {
+    void yukla();
+  }, [yukla]);
+
+  async function tolashniBoshla() {
+    if (!child.id || Number(amount) <= 0) return;
+    setBusy(true);
+    try {
+      setIntent(await createIntent(child.id, Number(amount)));
+    } catch {
+      setError(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function yakunla(outcome: "paid" | "cancelled") {
+    if (!intent) return;
+    setBusy(true);
+    try {
+      const r = await completeSinov(intent.id, outcome);
+      setIntent(null);
+      if (r.status === "paid") await yukla();
+    } catch {
+      setError(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const fin = ledger?.finance;
 
   return (
-    <ParentShell title="Toʻlov" child={child} onChildChange={setChild}>
-      {/* Holat */}
-      <div
-        className={`mb-5 rounded-xl border p-5 ${
-          hasDebt ? "border-danger/30 bg-danger-tint" : "border-success/30 bg-success-tint"
-        }`}
-      >
-        <p
-          className={`text-xs uppercase tracking-wide ${hasDebt ? "text-danger/80" : "text-success/80"}`}
-        >
-          {hasDebt ? "Toʻlanishi kerak" : "Qarzdorlik yoʻq"}
-        </p>
-        <p className={`mt-1 text-3xl font-bold num ${hasDebt ? "text-danger" : "text-success"}`}>
-          {hasDebt ? formatSom(payment.balance) : "Toʻlangan"}
-        </p>
-        <p className={`mt-1 text-sm ${hasDebt ? "text-danger/85" : "text-success/85"}`}>
-          {hasDebt
-            ? `Toʻlash muddati: ${payment.nextDueDate}`
-            : `Keyingi toʻlov: ${payment.nextDueDate}`}
-        </p>
-
-        {hasDebt && (
-          <button
-            type="button"
-            className="mt-4 inline-flex h-11 items-center rounded-lg bg-danger px-4 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-          >
-            Onlayn toʻlash
-          </button>
+    <ParentShell title="Toʻlov" child={child} onChildChange={selectChild}>
+      <div className="flex flex-col gap-3">
+        {error && (
+          <p className="rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">
+            Maʼlumotni olib boʻlmadi. Sahifani yangilab koʻring.
+          </p>
         )}
+
+        {fin && (
+          <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wide text-foreground-muted">
+              Joriy balans
+            </p>
+            <p
+              className={`num mt-1 text-2xl font-bold ${
+                fin.balance < 0 ? "text-danger" : "text-success"
+              }`}
+            >
+              {formatSom(fin.balance)}
+            </p>
+            {fin.monthly_fee !== null && (
+              <p className="num mt-1 text-sm text-foreground-muted">
+                Oylik shartnoma: {formatSom(fin.monthly_fee)}
+              </p>
+            )}
+
+            {fin.balance < 0 && !intent && (
+              <div className="mt-3 flex flex-wrap items-end gap-2 border-t border-border pt-3">
+                <label className="block">
+                  <span className="mb-1 block text-xs font-medium text-foreground">
+                    Toʻlov summasi (soʻm)
+                  </span>
+                  <input
+                    type="number"
+                    min={1000}
+                    step={50000}
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="num h-10 w-44 rounded-lg border border-border bg-surface px-3 text-sm outline-none focus-visible:border-brand"
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={busy || Number(amount) <= 0}
+                  onClick={() => void tolashniBoshla()}
+                  className="focus-ring inline-flex h-10 items-center rounded-lg bg-brand px-4 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark disabled:opacity-50"
+                >
+                  Toʻlash (SINOV)
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {intent && (
+          <div className="rounded-xl border-2 border-dashed border-warning bg-warning-tint/30 p-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-warning">
+              SINOV REJIMI — haqiqiy pul yechilmaydi
+            </p>
+            <p className="mt-2 text-sm text-foreground">
+              Bu sahifa haqiqiy toʻlov tizimining oʻrnini bosadi. Summa:{" "}
+              <span className="num font-bold">{formatSom(intent.amount)}</span>
+            </p>
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void yakunla("paid")}
+                className="focus-ring inline-flex h-10 items-center rounded-lg bg-success px-4 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                Toʻlovni tasdiqlash
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void yakunla("cancelled")}
+                className="focus-ring inline-flex h-10 items-center rounded-lg border border-border px-4 text-sm font-medium text-foreground disabled:opacity-50"
+              >
+                Bekor qilish
+              </button>
+            </div>
+          </div>
+        )}
+
+        <section className="flex flex-col gap-1.5">
+          <h2 className="text-sm font-semibold text-foreground">Hisob-kitob tarixi</h2>
+          {ledger === null ? (
+            <p className="text-sm text-foreground-muted">Yuklanmoqda…</p>
+          ) : ledger.rows.length === 0 ? (
+            <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-foreground-muted">
+              Hali yozuv yoʻq.
+            </p>
+          ) : (
+            [...ledger.rows].reverse().map((r, i) => (
+              <div
+                key={`${r.kind}-${r.payment_id ?? i}-${r.when}`}
+                className="flex items-center justify-between gap-2 rounded-lg bg-surface-muted px-3 py-2 text-sm"
+              >
+                <span className={`min-w-0 ${r.stornod ? "line-through opacity-60" : ""}`}>
+                  <span className="block truncate text-foreground">
+                    {r.title}
+                    {r.method && r.kind === "payment" && ` (${METHOD_LABELS[r.method] ?? r.method})`}
+                  </span>
+                  <span className="num block text-xs text-foreground-muted">{r.when}</span>
+                </span>
+                <span
+                  className={`num shrink-0 font-medium ${
+                    r.amount > 0 ? "text-danger" : "text-success"
+                  }`}
+                >
+                  {r.amount > 0 ? "+" : ""}
+                  {formatSom(r.amount)}
+                </span>
+              </div>
+            ))
+          )}
+        </section>
       </div>
-
-      {/* Shartnoma */}
-      <dl className="mb-5 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <dt className="text-xs uppercase tracking-wide text-foreground-muted">
-            Oylik toʻlov
-          </dt>
-          <dd className="mt-1 text-xl font-semibold num">{formatSom(payment.monthlyFee)}</dd>
-        </div>
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <dt className="text-xs uppercase tracking-wide text-foreground-muted">
-            Oʻquvchi
-          </dt>
-          <dd className="mt-1 text-xl font-semibold num">
-            {child.shortName}{" "}
-            <span className="text-sm font-normal text-foreground-muted">
-              · {child.className}
-            </span>
-          </dd>
-        </div>
-      </dl>
-
-      {/* Tarix va kvitansiyalar */}
-      <section>
-        <h2 className="mb-2.5 text-sm font-semibold">Toʻlovlar tarixi</h2>
-        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
-          <table className="w-full min-w-[520px] border-collapse text-sm">
-            <caption className="sr-only">
-              {child.shortName} boʻyicha toʻlovlar tarixi va kvitansiyalar
-            </caption>
-            <thead>
-              <tr className="border-b border-border bg-surface-muted/60 text-left text-xs uppercase tracking-wide text-foreground-muted">
-                <th scope="col" className="px-4 py-2.5 font-medium">Sana</th>
-                <th scope="col" className="px-4 py-2.5 font-medium">Summa</th>
-                <th scope="col" className="px-4 py-2.5 font-medium">Usul</th>
-                <th scope="col" className="px-4 py-2.5 font-medium">Kvitansiya</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payment.history.map((p) => (
-                <tr key={p.id} className="border-b border-border last:border-0">
-                  <td className="whitespace-nowrap px-4 py-2.5">{p.paidAt}</td>
-                  <td className="whitespace-nowrap px-4 py-2.5 font-medium">
-                    {formatSom(p.amount)}
-                  </td>
-                  <td className="px-4 py-2.5 text-foreground-muted">{p.method}</td>
-                  <td className="px-4 py-2.5">
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1.5 text-brand-dark underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-                    >
-                      <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 3v12M7 11l5 5 5-5M4 20h16" />
-                      </svg>
-                      {p.receiptNo}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <p className="mt-2.5 text-xs text-foreground-muted">
-          Kvitansiya PDF koʻrinishida yuklab olinadi. Toʻlovda xatolik boʻlsa —
-          «Murojaat» boʻlimi orqali yozing, toʻlov yozuvi oʻchirilmaydi, tuzatish
-          alohida yozuv bilan qilinadi.
-        </p>
-      </section>
     </ParentShell>
   );
 }

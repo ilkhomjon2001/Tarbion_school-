@@ -78,6 +78,19 @@ from app.models.notifications import (
     Notification,
     NotificationKind,
 )
+from app.models.payments import (
+    DEFAULT_MONTHLY_FEE,
+    PAYMENT_METHOD_LABELS_UZ,
+    TUITION_MONTHS,
+    DiscountKind,
+    IntentStatus,
+    Payment,
+    PaymentIntent,
+    PaymentMethod,
+    TuitionCharge,
+    TuitionContract,
+    TuitionDiscount,
+)
 from app.models.scheduling import Lesson, ScheduleEntry
 from app.models.school import (
     ClassSubject,
@@ -115,6 +128,17 @@ from app.models.wellbeing import (
 )
 
 __all__ = [
+    "DEFAULT_MONTHLY_FEE",
+    "DiscountKind",
+    "IntentStatus",
+    "PAYMENT_METHOD_LABELS_UZ",
+    "Payment",
+    "PaymentIntent",
+    "PaymentMethod",
+    "TUITION_MONTHS",
+    "TuitionCharge",
+    "TuitionContract",
+    "TuitionDiscount",
     "EXAM_KIND_LABELS_UZ",
     "EXAM_STATUS_LABELS_UZ",
     "Exam",

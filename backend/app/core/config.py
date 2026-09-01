@@ -65,6 +65,10 @@ class Settings(BaseSettings):
     # istasa yoqadi, faqat majburlanmaydi.
     require_two_factor: bool = True
 
+    #: Sinov toʻlov provayderi webhook imzosi kaliti. Haqiqiy provayder
+    #: kelganda uning kaliti alohida nom bilan qoʻshiladi.
+    sinov_provider_key: str = "sinov-kalit-almashtiring"  # noqa: S105
+
     # --- Cookie ---
     refresh_cookie_name: str = "tarbion_rt"
     # Ishlab chiqarishda majburiy True (NFR-07: barcha aloqa HTTPS).

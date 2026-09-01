@@ -14,6 +14,7 @@ import {
   fetchClasses,
   type ClassOut,
 } from "@/lib/school/api";
+import { addDiscount, setContract } from "@/lib/payments/api";
 
 const STEPS = ["Oʻquvchi", "Ota-ona / vasiy", "Sinf va shartnoma", "Tasdiqlash"];
 
@@ -155,6 +156,20 @@ export function EnrollWizard({
         relation: application.guardianRelation,
         is_primary: true,
       });
+
+      // Shartnoma ham BAZAGA yoziladi (TOL-01): joriy oyning 1-sanasidan.
+      // Chegirma foizi koʻrsatilgan boʻlsa u ham sabab bilan saqlanadi.
+      const hozir = new Date();
+      const oyBoshi = `${hozir.getFullYear()}-${String(hozir.getMonth() + 1).padStart(2, "0")}-01`;
+      await setContract(student.id, application.monthlyFee, oyBoshi, "Qabul sehrgaridan");
+      if (application.discountPercent > 0) {
+        await addDiscount(student.id, {
+          kind: "percent",
+          value: application.discountPercent,
+          reason: "Qabulda kelishilgan chegirma",
+          starts_on: oyBoshi,
+        });
+      }
       if (application.id) {
         dispatch({
           type: "ACCEPT_APPLICATION",

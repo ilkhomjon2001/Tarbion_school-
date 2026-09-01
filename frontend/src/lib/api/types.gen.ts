@@ -1086,6 +1086,24 @@ export type ClassSubjectOut = {
 export type ContactKind = 'phone' | 'in_person' | 'online';
 
 /**
+ * ContractIn
+ */
+export type ContractIn = {
+    /**
+     * Monthly Fee
+     */
+    monthly_fee: number;
+    /**
+     * Starts On
+     */
+    starts_on: string;
+    /**
+     * Note
+     */
+    note?: string | null;
+};
+
+/**
  * DayAttendanceOut
  *
  * Bitta kunning davomati.
@@ -1137,6 +1155,62 @@ export type DirectorOverviewOut = {
      * Attendance Trend
      */
     attendance_trend: Array<AttendancePoint>;
+};
+
+/**
+ * DiscountIn
+ */
+export type DiscountIn = {
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Value
+     */
+    value: number;
+    /**
+     * Reason
+     */
+    reason: string;
+    /**
+     * Starts On
+     */
+    starts_on: string;
+    /**
+     * Ends On
+     */
+    ends_on?: string | null;
+};
+
+/**
+ * DiscountOut
+ */
+export type DiscountOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Value
+     */
+    value: number;
+    /**
+     * Reason
+     */
+    reason: string;
+    /**
+     * Starts On
+     */
+    starts_on: string;
+    /**
+     * Ends On
+     */
+    ends_on: string | null;
 };
 
 /**
@@ -1424,6 +1498,46 @@ export type ExamStatsOut = {
      * Pass Rate
      */
     pass_rate: number | null;
+};
+
+/**
+ * FinanceSummaryOut
+ */
+export type FinanceSummaryOut = {
+    /**
+     * Charged
+     */
+    charged: number;
+    /**
+     * Paid
+     */
+    paid: number;
+    /**
+     * Debt
+     */
+    debt: number;
+    /**
+     * Debtors
+     */
+    debtors: number;
+    /**
+     * Students With Contract
+     */
+    students_with_contract: number;
+};
+
+/**
+ * GenerateChargesIn
+ */
+export type GenerateChargesIn = {
+    /**
+     * Year
+     */
+    year: number;
+    /**
+     * Month
+     */
+    month: number;
 };
 
 /**
@@ -1873,6 +1987,46 @@ export type HomeworkOut = {
 };
 
 /**
+ * IntentCreateIn
+ */
+export type IntentCreateIn = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Amount
+     */
+    amount: number;
+};
+
+/**
+ * IntentOut
+ */
+export type IntentOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Amount
+     */
+    amount: number;
+    /**
+     * Provider
+     */
+    provider: string;
+    /**
+     * Status
+     */
+    status: string;
+};
+
+/**
  * JournalStudentOut
  */
 export type JournalStudentOut = {
@@ -1961,6 +2115,44 @@ export type LeaveOut = {
      * Created At
      */
     created_at: string;
+};
+
+/**
+ * LedgerRowOut
+ */
+export type LedgerRowOut = {
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * When
+     */
+    when: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Amount
+     */
+    amount: number;
+    /**
+     * Payment Id
+     */
+    payment_id: string | null;
+    /**
+     * Method
+     */
+    method: string | null;
+    /**
+     * Receipt No
+     */
+    receipt_no: string | null;
+    /**
+     * Stornod
+     */
+    stornod: boolean;
 };
 
 /**
@@ -2277,6 +2469,36 @@ export type PasswordResetOut = {
      * New Password
      */
     new_password: string;
+};
+
+/**
+ * PaymentIn
+ */
+export type PaymentIn = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Amount
+     */
+    amount: number;
+    /**
+     * Method
+     */
+    method: string;
+    /**
+     * Paid On
+     */
+    paid_on?: string | null;
+    /**
+     * Receipt No
+     */
+    receipt_no?: string | null;
+    /**
+     * Note
+     */
+    note?: string | null;
 };
 
 /**
@@ -2733,6 +2955,18 @@ export type SetSectionsIn = {
 };
 
 /**
+ * SinovCompleteIn
+ *
+ * Sinov «bank sahifasi»dagi tugma: toʻlash yoki bekor qilish.
+ */
+export type SinovCompleteIn = {
+    /**
+     * Outcome
+     */
+    outcome: string;
+};
+
+/**
  * StaffCreateIn
  */
 export type StaffCreateIn = {
@@ -2850,6 +3084,16 @@ export type StatusUpdateIn = {
 };
 
 /**
+ * StornoIn
+ */
+export type StornoIn = {
+    /**
+     * Reason
+     */
+    reason: string;
+};
+
+/**
  * StudentArchiveIn
  *
  * Sabab majburiy: "nega ketdi" hisoboti shundan chiqadi.
@@ -2936,6 +3180,40 @@ export type StudentCreateIn = {
 };
 
 /**
+ * StudentFinanceOut
+ */
+export type StudentFinanceOut = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Student Name
+     */
+    student_name: string;
+    /**
+     * Class Name
+     */
+    class_name: string | null;
+    /**
+     * Monthly Fee
+     */
+    monthly_fee: number | null;
+    /**
+     * Charged
+     */
+    charged: number;
+    /**
+     * Paid
+     */
+    paid: number;
+    /**
+     * Balance
+     */
+    balance: number;
+};
+
+/**
  * StudentHomeworkOut
  */
 export type StudentHomeworkOut = {
@@ -2983,6 +3261,21 @@ export type StudentHomeworkOut = {
      * Teacher Comment
      */
     teacher_comment: string | null;
+};
+
+/**
+ * StudentLedgerOut
+ */
+export type StudentLedgerOut = {
+    finance: StudentFinanceOut;
+    /**
+     * Rows
+     */
+    rows: Array<LedgerRowOut>;
+    /**
+     * Discounts
+     */
+    discounts: Array<DiscountOut>;
 };
 
 /**
@@ -3967,6 +4260,26 @@ export type ValidationError = {
     ctx?: {
         [key: string]: unknown;
     };
+};
+
+/**
+ * WebhookIn
+ *
+ * Provayder callback shakli — haqiqiy integratsiyada ham shu oʻzak.
+ */
+export type WebhookIn = {
+    /**
+     * Tx Id
+     */
+    tx_id: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Signature
+     */
+    signature: string;
 };
 
 /**
@@ -5297,6 +5610,372 @@ export type ExamsSetPlanStatusResponses = {
 };
 
 export type ExamsSetPlanStatusResponse = ExamsSetPlanStatusResponses[keyof ExamsSetPlanStatusResponses];
+
+export type PaymentsSummaryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/payments/summary';
+};
+
+export type PaymentsSummaryResponses = {
+    /**
+     * Successful Response
+     */
+    200: FinanceSummaryOut;
+};
+
+export type PaymentsSummaryResponse = PaymentsSummaryResponses[keyof PaymentsSummaryResponses];
+
+export type PaymentsStudentsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Debtors
+         */
+        debtors?: boolean;
+    };
+    url: '/api/v1/payments/students';
+};
+
+export type PaymentsStudentsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PaymentsStudentsError = PaymentsStudentsErrors[keyof PaymentsStudentsErrors];
+
+export type PaymentsStudentsResponses = {
+    /**
+     * Response Payments Students
+     *
+     * Successful Response
+     */
+    200: Array<StudentFinanceOut>;
+};
+
+export type PaymentsStudentsResponse = PaymentsStudentsResponses[keyof PaymentsStudentsResponses];
+
+export type PaymentsStudentLedgerData = {
+    body?: never;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: never;
+    url: '/api/v1/payments/students/{student_id}';
+};
+
+export type PaymentsStudentLedgerErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PaymentsStudentLedgerError = PaymentsStudentLedgerErrors[keyof PaymentsStudentLedgerErrors];
+
+export type PaymentsStudentLedgerResponses = {
+    /**
+     * Successful Response
+     */
+    200: StudentLedgerOut;
+};
+
+export type PaymentsStudentLedgerResponse = PaymentsStudentLedgerResponses[keyof PaymentsStudentLedgerResponses];
+
+export type PaymentsSetContractData = {
+    body: ContractIn;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: never;
+    url: '/api/v1/payments/students/{student_id}/contract';
+};
+
+export type PaymentsSetContractErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PaymentsSetContractError = PaymentsSetContractErrors[keyof PaymentsSetContractErrors];
+
+export type PaymentsSetContractResponses = {
+    /**
+     * Successful Response
+     */
+    200: StudentLedgerOut;
+};
+
+export type PaymentsSetContractResponse = PaymentsSetContractResponses[keyof PaymentsSetContractResponses];
+
+export type PaymentsAddDiscountData = {
+    body: DiscountIn;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: never;
+    url: '/api/v1/payments/students/{student_id}/discounts';
+};
+
+export type PaymentsAddDiscountErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PaymentsAddDiscountError = PaymentsAddDiscountErrors[keyof PaymentsAddDiscountErrors];
+
+export type PaymentsAddDiscountResponses = {
+    /**
+     * Successful Response
+     */
+    200: StudentLedgerOut;
+};
+
+export type PaymentsAddDiscountResponse = PaymentsAddDiscountResponses[keyof PaymentsAddDiscountResponses];
+
+export type PaymentsArchiveDiscountData = {
+    body?: never;
+    path: {
+        /**
+         * Discount Id
+         */
+        discount_id: string;
+    };
+    query?: never;
+    url: '/api/v1/payments/discounts/{discount_id}/archive';
+};
+
+export type PaymentsArchiveDiscountErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PaymentsArchiveDiscountError = PaymentsArchiveDiscountErrors[keyof PaymentsArchiveDiscountErrors];
+
+export type PaymentsArchiveDiscountResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type PaymentsArchiveDiscountResponse = PaymentsArchiveDiscountResponses[keyof PaymentsArchiveDiscountResponses];
+
+export type PaymentsGenerateChargesData = {
+    body: GenerateChargesIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/payments/charges/generate';
+};
+
+export type PaymentsGenerateChargesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PaymentsGenerateChargesError = PaymentsGenerateChargesErrors[keyof PaymentsGenerateChargesErrors];
+
+export type PaymentsGenerateChargesResponses = {
+    /**
+     * Response Payments Generate Charges
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: number;
+    };
+};
+
+export type PaymentsGenerateChargesResponse = PaymentsGenerateChargesResponses[keyof PaymentsGenerateChargesResponses];
+
+export type PaymentsRecordPaymentData = {
+    body: PaymentIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/payments';
+};
+
+export type PaymentsRecordPaymentErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PaymentsRecordPaymentError = PaymentsRecordPaymentErrors[keyof PaymentsRecordPaymentErrors];
+
+export type PaymentsRecordPaymentResponses = {
+    /**
+     * Successful Response
+     */
+    201: StudentLedgerOut;
+};
+
+export type PaymentsRecordPaymentResponse = PaymentsRecordPaymentResponses[keyof PaymentsRecordPaymentResponses];
+
+export type PaymentsStornoData = {
+    body: StornoIn;
+    path: {
+        /**
+         * Payment Id
+         */
+        payment_id: string;
+    };
+    query?: never;
+    url: '/api/v1/payments/{payment_id}/storno';
+};
+
+export type PaymentsStornoErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PaymentsStornoError = PaymentsStornoErrors[keyof PaymentsStornoErrors];
+
+export type PaymentsStornoResponses = {
+    /**
+     * Successful Response
+     */
+    200: StudentLedgerOut;
+};
+
+export type PaymentsStornoResponse = PaymentsStornoResponses[keyof PaymentsStornoResponses];
+
+export type PaymentsCreateIntentData = {
+    body: IntentCreateIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/payments/intents';
+};
+
+export type PaymentsCreateIntentErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PaymentsCreateIntentError = PaymentsCreateIntentErrors[keyof PaymentsCreateIntentErrors];
+
+export type PaymentsCreateIntentResponses = {
+    /**
+     * Successful Response
+     */
+    201: IntentOut;
+};
+
+export type PaymentsCreateIntentResponse = PaymentsCreateIntentResponses[keyof PaymentsCreateIntentResponses];
+
+export type PaymentsSinovCompleteData = {
+    body: SinovCompleteIn;
+    path: {
+        /**
+         * Intent Id
+         */
+        intent_id: string;
+    };
+    query?: never;
+    url: '/api/v1/payments/intents/{intent_id}/sinov-complete';
+};
+
+export type PaymentsSinovCompleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PaymentsSinovCompleteError = PaymentsSinovCompleteErrors[keyof PaymentsSinovCompleteErrors];
+
+export type PaymentsSinovCompleteResponses = {
+    /**
+     * Successful Response
+     */
+    200: IntentOut;
+};
+
+export type PaymentsSinovCompleteResponse = PaymentsSinovCompleteResponses[keyof PaymentsSinovCompleteResponses];
+
+export type PaymentsWebhookData = {
+    body: WebhookIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/payments/webhook/sinov';
+};
+
+export type PaymentsWebhookErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PaymentsWebhookError = PaymentsWebhookErrors[keyof PaymentsWebhookErrors];
+
+export type PaymentsWebhookResponses = {
+    /**
+     * Response Payments Webhook
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: string;
+    };
+};
+
+export type PaymentsWebhookResponse = PaymentsWebhookResponses[keyof PaymentsWebhookResponses];
+
+export type PaymentsGetIntentData = {
+    body?: never;
+    path: {
+        /**
+         * Intent Id
+         */
+        intent_id: string;
+    };
+    query?: never;
+    url: '/api/v1/payments/intents/{intent_id}';
+};
+
+export type PaymentsGetIntentErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PaymentsGetIntentError = PaymentsGetIntentErrors[keyof PaymentsGetIntentErrors];
+
+export type PaymentsGetIntentResponses = {
+    /**
+     * Successful Response
+     */
+    200: IntentOut;
+};
+
+export type PaymentsGetIntentResponse = PaymentsGetIntentResponses[keyof PaymentsGetIntentResponses];
 
 export type AcademicYearsData = {
     body?: never;

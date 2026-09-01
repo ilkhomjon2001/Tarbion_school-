@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcademicAddHolidayData, AcademicAddHolidayErrors, AcademicAddHolidayResponses, AcademicArchiveHolidayData, AcademicArchiveHolidayErrors, AcademicArchiveHolidayResponses, AcademicBellsData, AcademicBellsErrors, AcademicBellsResponses, AcademicCreateYearData, AcademicCreateYearErrors, AcademicCreateYearResponses, AcademicCurrentYearData, AcademicCurrentYearResponses, AcademicHolidaysData, AcademicHolidaysErrors, AcademicHolidaysResponses, AcademicMakeCurrentData, AcademicMakeCurrentErrors, AcademicMakeCurrentResponses, AcademicSetBellsData, AcademicSetBellsErrors, AcademicSetBellsResponses, AcademicSetTermsData, AcademicSetTermsErrors, AcademicSetTermsResponses, AcademicTermsData, AcademicTermsErrors, AcademicTermsResponses, AcademicUpdateYearData, AcademicUpdateYearErrors, AcademicUpdateYearResponses, AcademicYearsData, AcademicYearsResponses, AccessPermissionRegistryData, AccessPermissionRegistryResponses, AccessSectionsData, AccessSectionsResponses, AccessSetPermissionsData, AccessSetPermissionsErrors, AccessSetPermissionsResponses, AccessSetSectionsData, AccessSetSectionsErrors, AccessSetSectionsResponses, AccessUserAccessData, AccessUserAccessErrors, AccessUserAccessResponses, AccessUsersData, AccessUsersErrors, AccessUsersResponses, AnnouncementsArchiveData, AnnouncementsArchiveErrors, AnnouncementsArchiveResponses, AnnouncementsCreateData, AnnouncementsCreateErrors, AnnouncementsCreateResponses, AnnouncementsListAnnouncementsData, AnnouncementsListAnnouncementsErrors, AnnouncementsListAnnouncementsResponses, AnnouncementsPreviewData, AnnouncementsPreviewErrors, AnnouncementsPreviewResponses, AnnouncementsTargetsData, AnnouncementsTargetsResponses, AppealsAddMessageData, AppealsAddMessageErrors, AppealsAddMessageResponses, AppealsAppealsSummaryData, AppealsAppealsSummaryResponses, AppealsComposeOptionsData, AppealsComposeOptionsResponses, AppealsCreateAppealData, AppealsCreateAppealErrors, AppealsCreateAppealResponses, AppealsCreateNoteData, AppealsCreateNoteErrors, AppealsCreateNoteResponses, AppealsGetAppealData, AppealsGetAppealErrors, AppealsGetAppealResponses, AppealsListAppealsData, AppealsListAppealsErrors, AppealsListAppealsResponses, AppealsListNotesData, AppealsListNotesErrors, AppealsListNotesResponses, AppealsSearchStudentsData, AppealsSearchStudentsErrors, AppealsSearchStudentsResponses, AppealsStatsClassesData, AppealsStatsClassesResponses, AppealsUpdateAssigneeData, AppealsUpdateAssigneeErrors, AppealsUpdateAssigneeResponses, AppealsUpdateStatusData, AppealsUpdateStatusErrors, AppealsUpdateStatusResponses, AttendanceClassStudentsData, AttendanceClassStudentsErrors, AttendanceClassStudentsResponses, AttendanceGenerateLessonsData, AttendanceGenerateLessonsErrors, AttendanceGenerateLessonsResponses, AttendanceGenerateTermLessonsData, AttendanceGenerateTermLessonsErrors, AttendanceGenerateTermLessonsResponses, AttendanceLessonAttendanceData, AttendanceLessonAttendanceErrors, AttendanceLessonAttendanceResponses, AttendanceMarkData, AttendanceMarkErrors, AttendanceMarkResponses, AttendanceMyLessonsData, AttendanceMyLessonsErrors, AttendanceMyLessonsRangeData, AttendanceMyLessonsRangeErrors, AttendanceMyLessonsRangeResponses, AttendanceMyLessonsResponses, AttendanceStatsData, AttendanceStatsErrors, AttendanceStatsResponses, AuditEntriesData, AuditEntriesErrors, AuditEntriesResponses, AuditFiltersData, AuditFiltersResponses, AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRefreshData, AuthRefreshResponses, AuthTwoFactorDisableData, AuthTwoFactorDisableErrors, AuthTwoFactorDisableResponses, AuthTwoFactorEnableData, AuthTwoFactorEnableErrors, AuthTwoFactorEnableResponses, AuthTwoFactorRecoveryCodesData, AuthTwoFactorRecoveryCodesErrors, AuthTwoFactorRecoveryCodesResponses, AuthTwoFactorSetupData, AuthTwoFactorSetupResponses, AuthTwoFactorStatusData, AuthTwoFactorStatusResponses, AuthTwoFactorVerifyData, AuthTwoFactorVerifyErrors, AuthTwoFactorVerifyResponses, DirectorClassesData, DirectorClassesResponses, DirectorOverviewData, DirectorOverviewErrors, DirectorOverviewResponses, DirectorTeachersData, DirectorTeachersResponses, DocumentsArchiveData, DocumentsArchiveErrors, DocumentsArchiveResponses, DocumentsCreateData, DocumentsCreateErrors, DocumentsCreateResponses, DocumentsIssueData, DocumentsIssueErrors, DocumentsIssueResponses, DocumentsQueueData, DocumentsQueueResponses, DocumentsRegistryData, DocumentsRegistryResponses, DocumentsSetWaitingData, DocumentsSetWaitingErrors, DocumentsSetWaitingResponses, ExamsCreateExamData, ExamsCreateExamErrors, ExamsCreateExamResponses, ExamsCreatePlanData, ExamsCreatePlanErrors, ExamsCreatePlanResponses, ExamsEnterResultsData, ExamsEnterResultsErrors, ExamsEnterResultsResponses, ExamsListExamsData, ExamsListExamsResponses, ExamsListPlansData, ExamsListPlansResponses, ExamsResultsData, ExamsResultsErrors, ExamsResultsResponses, ExamsSetPlanStatusData, ExamsSetPlanStatusErrors, ExamsSetPlanStatusResponses, ExamsSetStatusData, ExamsSetStatusErrors, ExamsSetStatusResponses, HrAddLeaveData, HrAddLeaveErrors, HrAddLeaveResponses, HrArchiveLeaveData, HrArchiveLeaveErrors, HrArchiveLeaveResponses, HrEmployeesData, HrEmployeesResponses, HrLeavesData, HrLeavesResponses, HrUpdateProfileData, HrUpdateProfileErrors, HrUpdateProfileResponses, JournalArchiveHomeworkData, JournalArchiveHomeworkErrors, JournalArchiveHomeworkResponses, JournalClassAveragesData, JournalClassAveragesErrors, JournalClassAveragesResponses, JournalClassJournalData, JournalClassJournalErrors, JournalClassJournalResponses, JournalCreateHomeworkData, JournalCreateHomeworkErrors, JournalCreateHomeworkResponses, JournalGradeSubmissionData, JournalGradeSubmissionErrors, JournalGradeSubmissionResponses, JournalLessonJournalData, JournalLessonJournalErrors, JournalLessonJournalResponses, JournalMyHomeworkData, JournalMyHomeworkErrors, JournalMyHomeworkResponses, JournalReturnSubmissionData, JournalReturnSubmissionErrors, JournalReturnSubmissionResponses, JournalSetGradesData, JournalSetGradesErrors, JournalSetGradesResponses, JournalStudentGradesData, JournalStudentGradesErrors, JournalStudentGradesResponses, JournalStudentHomeworkData, JournalStudentHomeworkErrors, JournalStudentHomeworkResponses, JournalSubmissionsData, JournalSubmissionsErrors, JournalSubmissionsResponses, JournalSubmitData, JournalSubmitErrors, JournalSubmitResponses, NotificationsBadgesData, NotificationsBadgesResponses, NotificationsListNotificationsData, NotificationsListNotificationsErrors, NotificationsListNotificationsResponses, NotificationsMarkAllReadData, NotificationsMarkAllReadErrors, NotificationsMarkAllReadResponses, NotificationsMarkReadData, NotificationsMarkReadErrors, NotificationsMarkReadResponses, ParentChildAttendanceData, ParentChildAttendanceErrors, ParentChildAttendanceResponses, ParentMyChildrenData, ParentMyChildrenResponses, ScheduleAddEntryData, ScheduleAddEntryErrors, ScheduleAddEntryResponses, ScheduleArchiveEntryData, ScheduleArchiveEntryErrors, ScheduleArchiveEntryResponses, ScheduleEntriesData, ScheduleEntriesErrors, ScheduleEntriesResponses, ScheduleTeacherLoadData, ScheduleTeacherLoadResponses, ScheduleUpdateEntryData, ScheduleUpdateEntryErrors, ScheduleUpdateEntryResponses, SchoolArchiveClassData, SchoolArchiveClassErrors, SchoolArchiveClassResponses, SchoolArchiveStaffData, SchoolArchiveStaffErrors, SchoolArchiveStaffResponses, SchoolArchiveStudentData, SchoolArchiveStudentErrors, SchoolArchiveStudentResponses, SchoolArchiveSubjectData, SchoolArchiveSubjectErrors, SchoolArchiveSubjectResponses, SchoolClassesData, SchoolClassesResponses, SchoolCreateClassData, SchoolCreateClassErrors, SchoolCreateClassResponses, SchoolCreateGuardianData, SchoolCreateGuardianErrors, SchoolCreateGuardianResponses, SchoolCreateStaffData, SchoolCreateStaffErrors, SchoolCreateStaffResponses, SchoolCreateStudentData, SchoolCreateStudentErrors, SchoolCreateStudentResponses, SchoolCreateSubjectData, SchoolCreateSubjectErrors, SchoolCreateSubjectResponses, SchoolLinkGuardianData, SchoolLinkGuardianErrors, SchoolLinkGuardianResponses, SchoolMakePrimaryData, SchoolMakePrimaryErrors, SchoolMakePrimaryResponses, SchoolMoveStudentData, SchoolMoveStudentErrors, SchoolMoveStudentResponses, SchoolResetStaffPasswordData, SchoolResetStaffPasswordErrors, SchoolResetStaffPasswordResponses, SchoolRestoreStudentData, SchoolRestoreStudentErrors, SchoolRestoreStudentResponses, SchoolSetClassSubjectData, SchoolSetClassSubjectErrors, SchoolSetClassSubjectResponses, SchoolSetHomeroomData, SchoolSetHomeroomErrors, SchoolSetHomeroomResponses, SchoolSetStaffSubjectsData, SchoolSetStaffSubjectsErrors, SchoolSetStaffSubjectsResponses, SchoolStaffData, SchoolStaffResponses, SchoolStudentCardData, SchoolStudentCardErrors, SchoolStudentCardResponses, SchoolStudentGuardiansData, SchoolStudentGuardiansErrors, SchoolStudentGuardiansResponses, SchoolStudentsData, SchoolStudentsErrors, SchoolStudentsResponses, SchoolSubjectsData, SchoolSubjectsOfClassData, SchoolSubjectsOfClassErrors, SchoolSubjectsOfClassResponses, SchoolSubjectsResponses, SchoolUnlinkGuardianData, SchoolUnlinkGuardianErrors, SchoolUnlinkGuardianResponses, ServiceHealthData, ServiceHealthResponses, ServiceReadinessData, ServiceReadinessResponses, SurveysActiveData, SurveysActiveResponses, SurveysCreateData, SurveysCreateErrors, SurveysCreateResponses, SurveysListSurveysData, SurveysListSurveysResponses, SurveysRespondData, SurveysRespondErrors, SurveysRespondResponses, SurveysResultsData, SurveysResultsErrors, SurveysResultsResponses, SurveysSetStatusData, SurveysSetStatusErrors, SurveysSetStatusResponses, TestsAddQuestionData, TestsAddQuestionErrors, TestsAddQuestionResponses, TestsArchiveQuestionData, TestsArchiveQuestionErrors, TestsArchiveQuestionResponses, TestsArchiveTestData, TestsArchiveTestErrors, TestsArchiveTestResponses, TestsAvailableData, TestsAvailableErrors, TestsAvailableResponses, TestsCreateTestData, TestsCreateTestErrors, TestsCreateTestResponses, TestsMyTestsData, TestsMyTestsErrors, TestsMyTestsResponses, TestsQuestionsData, TestsQuestionsErrors, TestsQuestionsResponses, TestsResultsData, TestsResultsErrors, TestsResultsResponses, TestsSetStatusData, TestsSetStatusErrors, TestsSetStatusResponses, TestsStartData, TestsStartErrors, TestsStartResponses, TestsStudentAttemptsData, TestsStudentAttemptsErrors, TestsStudentAttemptsResponses, TestsSubmitData, TestsSubmitErrors, TestsSubmitResponses, WellbeingArchiveNoteData, WellbeingArchiveNoteErrors, WellbeingArchiveNoteResponses, WellbeingCreateNoteData, WellbeingCreateNoteErrors, WellbeingCreateNoteResponses, WellbeingNotesOfStudentData, WellbeingNotesOfStudentErrors, WellbeingNotesOfStudentResponses } from './types.gen';
+import type { AcademicAddHolidayData, AcademicAddHolidayErrors, AcademicAddHolidayResponses, AcademicArchiveHolidayData, AcademicArchiveHolidayErrors, AcademicArchiveHolidayResponses, AcademicBellsData, AcademicBellsErrors, AcademicBellsResponses, AcademicCreateYearData, AcademicCreateYearErrors, AcademicCreateYearResponses, AcademicCurrentYearData, AcademicCurrentYearResponses, AcademicHolidaysData, AcademicHolidaysErrors, AcademicHolidaysResponses, AcademicMakeCurrentData, AcademicMakeCurrentErrors, AcademicMakeCurrentResponses, AcademicSetBellsData, AcademicSetBellsErrors, AcademicSetBellsResponses, AcademicSetTermsData, AcademicSetTermsErrors, AcademicSetTermsResponses, AcademicTermsData, AcademicTermsErrors, AcademicTermsResponses, AcademicUpdateYearData, AcademicUpdateYearErrors, AcademicUpdateYearResponses, AcademicYearsData, AcademicYearsResponses, AccessPermissionRegistryData, AccessPermissionRegistryResponses, AccessSectionsData, AccessSectionsResponses, AccessSetPermissionsData, AccessSetPermissionsErrors, AccessSetPermissionsResponses, AccessSetSectionsData, AccessSetSectionsErrors, AccessSetSectionsResponses, AccessUserAccessData, AccessUserAccessErrors, AccessUserAccessResponses, AccessUsersData, AccessUsersErrors, AccessUsersResponses, AnnouncementsArchiveData, AnnouncementsArchiveErrors, AnnouncementsArchiveResponses, AnnouncementsCreateData, AnnouncementsCreateErrors, AnnouncementsCreateResponses, AnnouncementsListAnnouncementsData, AnnouncementsListAnnouncementsErrors, AnnouncementsListAnnouncementsResponses, AnnouncementsPreviewData, AnnouncementsPreviewErrors, AnnouncementsPreviewResponses, AnnouncementsTargetsData, AnnouncementsTargetsResponses, AppealsAddMessageData, AppealsAddMessageErrors, AppealsAddMessageResponses, AppealsAppealsSummaryData, AppealsAppealsSummaryResponses, AppealsComposeOptionsData, AppealsComposeOptionsResponses, AppealsCreateAppealData, AppealsCreateAppealErrors, AppealsCreateAppealResponses, AppealsCreateNoteData, AppealsCreateNoteErrors, AppealsCreateNoteResponses, AppealsGetAppealData, AppealsGetAppealErrors, AppealsGetAppealResponses, AppealsListAppealsData, AppealsListAppealsErrors, AppealsListAppealsResponses, AppealsListNotesData, AppealsListNotesErrors, AppealsListNotesResponses, AppealsSearchStudentsData, AppealsSearchStudentsErrors, AppealsSearchStudentsResponses, AppealsStatsClassesData, AppealsStatsClassesResponses, AppealsUpdateAssigneeData, AppealsUpdateAssigneeErrors, AppealsUpdateAssigneeResponses, AppealsUpdateStatusData, AppealsUpdateStatusErrors, AppealsUpdateStatusResponses, AttendanceClassStudentsData, AttendanceClassStudentsErrors, AttendanceClassStudentsResponses, AttendanceGenerateLessonsData, AttendanceGenerateLessonsErrors, AttendanceGenerateLessonsResponses, AttendanceGenerateTermLessonsData, AttendanceGenerateTermLessonsErrors, AttendanceGenerateTermLessonsResponses, AttendanceLessonAttendanceData, AttendanceLessonAttendanceErrors, AttendanceLessonAttendanceResponses, AttendanceMarkData, AttendanceMarkErrors, AttendanceMarkResponses, AttendanceMyLessonsData, AttendanceMyLessonsErrors, AttendanceMyLessonsRangeData, AttendanceMyLessonsRangeErrors, AttendanceMyLessonsRangeResponses, AttendanceMyLessonsResponses, AttendanceStatsData, AttendanceStatsErrors, AttendanceStatsResponses, AuditEntriesData, AuditEntriesErrors, AuditEntriesResponses, AuditFiltersData, AuditFiltersResponses, AuthChangePasswordData, AuthChangePasswordErrors, AuthChangePasswordResponses, AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRefreshData, AuthRefreshResponses, AuthTwoFactorDisableData, AuthTwoFactorDisableErrors, AuthTwoFactorDisableResponses, AuthTwoFactorEnableData, AuthTwoFactorEnableErrors, AuthTwoFactorEnableResponses, AuthTwoFactorRecoveryCodesData, AuthTwoFactorRecoveryCodesErrors, AuthTwoFactorRecoveryCodesResponses, AuthTwoFactorSetupData, AuthTwoFactorSetupResponses, AuthTwoFactorStatusData, AuthTwoFactorStatusResponses, AuthTwoFactorVerifyData, AuthTwoFactorVerifyErrors, AuthTwoFactorVerifyResponses, DirectorClassesData, DirectorClassesResponses, DirectorOverviewData, DirectorOverviewErrors, DirectorOverviewResponses, DirectorTeachersData, DirectorTeachersResponses, DocumentsArchiveData, DocumentsArchiveErrors, DocumentsArchiveResponses, DocumentsCreateData, DocumentsCreateErrors, DocumentsCreateResponses, DocumentsIssueData, DocumentsIssueErrors, DocumentsIssueResponses, DocumentsQueueData, DocumentsQueueResponses, DocumentsRegistryData, DocumentsRegistryResponses, DocumentsSetWaitingData, DocumentsSetWaitingErrors, DocumentsSetWaitingResponses, ExamsCreateExamData, ExamsCreateExamErrors, ExamsCreateExamResponses, ExamsCreatePlanData, ExamsCreatePlanErrors, ExamsCreatePlanResponses, ExamsEnterResultsData, ExamsEnterResultsErrors, ExamsEnterResultsResponses, ExamsListExamsData, ExamsListExamsResponses, ExamsListPlansData, ExamsListPlansResponses, ExamsResultsData, ExamsResultsErrors, ExamsResultsResponses, ExamsSetPlanStatusData, ExamsSetPlanStatusErrors, ExamsSetPlanStatusResponses, ExamsSetStatusData, ExamsSetStatusErrors, ExamsSetStatusResponses, HrAddLeaveData, HrAddLeaveErrors, HrAddLeaveResponses, HrArchiveLeaveData, HrArchiveLeaveErrors, HrArchiveLeaveResponses, HrEmployeesData, HrEmployeesResponses, HrLeavesData, HrLeavesResponses, HrUpdateProfileData, HrUpdateProfileErrors, HrUpdateProfileResponses, JournalArchiveHomeworkData, JournalArchiveHomeworkErrors, JournalArchiveHomeworkResponses, JournalClassAveragesData, JournalClassAveragesErrors, JournalClassAveragesResponses, JournalClassJournalData, JournalClassJournalErrors, JournalClassJournalResponses, JournalCreateHomeworkData, JournalCreateHomeworkErrors, JournalCreateHomeworkResponses, JournalGradeSubmissionData, JournalGradeSubmissionErrors, JournalGradeSubmissionResponses, JournalLessonJournalData, JournalLessonJournalErrors, JournalLessonJournalResponses, JournalMyHomeworkData, JournalMyHomeworkErrors, JournalMyHomeworkResponses, JournalReturnSubmissionData, JournalReturnSubmissionErrors, JournalReturnSubmissionResponses, JournalSetGradesData, JournalSetGradesErrors, JournalSetGradesResponses, JournalStudentGradesData, JournalStudentGradesErrors, JournalStudentGradesResponses, JournalStudentHomeworkData, JournalStudentHomeworkErrors, JournalStudentHomeworkResponses, JournalSubmissionsData, JournalSubmissionsErrors, JournalSubmissionsResponses, JournalSubmitData, JournalSubmitErrors, JournalSubmitResponses, NotificationsBadgesData, NotificationsBadgesResponses, NotificationsListNotificationsData, NotificationsListNotificationsErrors, NotificationsListNotificationsResponses, NotificationsMarkAllReadData, NotificationsMarkAllReadErrors, NotificationsMarkAllReadResponses, NotificationsMarkReadData, NotificationsMarkReadErrors, NotificationsMarkReadResponses, ParentChildAttendanceData, ParentChildAttendanceErrors, ParentChildAttendanceResponses, ParentMyChildrenData, ParentMyChildrenResponses, PaymentsAddDiscountData, PaymentsAddDiscountErrors, PaymentsAddDiscountResponses, PaymentsArchiveDiscountData, PaymentsArchiveDiscountErrors, PaymentsArchiveDiscountResponses, PaymentsCreateIntentData, PaymentsCreateIntentErrors, PaymentsCreateIntentResponses, PaymentsGenerateChargesData, PaymentsGenerateChargesErrors, PaymentsGenerateChargesResponses, PaymentsGetIntentData, PaymentsGetIntentErrors, PaymentsGetIntentResponses, PaymentsRecordPaymentData, PaymentsRecordPaymentErrors, PaymentsRecordPaymentResponses, PaymentsSetContractData, PaymentsSetContractErrors, PaymentsSetContractResponses, PaymentsSinovCompleteData, PaymentsSinovCompleteErrors, PaymentsSinovCompleteResponses, PaymentsStornoData, PaymentsStornoErrors, PaymentsStornoResponses, PaymentsStudentLedgerData, PaymentsStudentLedgerErrors, PaymentsStudentLedgerResponses, PaymentsStudentsData, PaymentsStudentsErrors, PaymentsStudentsResponses, PaymentsSummaryData, PaymentsSummaryResponses, PaymentsWebhookData, PaymentsWebhookErrors, PaymentsWebhookResponses, ScheduleAddEntryData, ScheduleAddEntryErrors, ScheduleAddEntryResponses, ScheduleArchiveEntryData, ScheduleArchiveEntryErrors, ScheduleArchiveEntryResponses, ScheduleEntriesData, ScheduleEntriesErrors, ScheduleEntriesResponses, ScheduleTeacherLoadData, ScheduleTeacherLoadResponses, ScheduleUpdateEntryData, ScheduleUpdateEntryErrors, ScheduleUpdateEntryResponses, SchoolArchiveClassData, SchoolArchiveClassErrors, SchoolArchiveClassResponses, SchoolArchiveStaffData, SchoolArchiveStaffErrors, SchoolArchiveStaffResponses, SchoolArchiveStudentData, SchoolArchiveStudentErrors, SchoolArchiveStudentResponses, SchoolArchiveSubjectData, SchoolArchiveSubjectErrors, SchoolArchiveSubjectResponses, SchoolClassesData, SchoolClassesResponses, SchoolCreateClassData, SchoolCreateClassErrors, SchoolCreateClassResponses, SchoolCreateGuardianData, SchoolCreateGuardianErrors, SchoolCreateGuardianResponses, SchoolCreateStaffData, SchoolCreateStaffErrors, SchoolCreateStaffResponses, SchoolCreateStudentData, SchoolCreateStudentErrors, SchoolCreateStudentResponses, SchoolCreateSubjectData, SchoolCreateSubjectErrors, SchoolCreateSubjectResponses, SchoolLinkGuardianData, SchoolLinkGuardianErrors, SchoolLinkGuardianResponses, SchoolMakePrimaryData, SchoolMakePrimaryErrors, SchoolMakePrimaryResponses, SchoolMoveStudentData, SchoolMoveStudentErrors, SchoolMoveStudentResponses, SchoolResetStaffPasswordData, SchoolResetStaffPasswordErrors, SchoolResetStaffPasswordResponses, SchoolRestoreStudentData, SchoolRestoreStudentErrors, SchoolRestoreStudentResponses, SchoolSetClassSubjectData, SchoolSetClassSubjectErrors, SchoolSetClassSubjectResponses, SchoolSetHomeroomData, SchoolSetHomeroomErrors, SchoolSetHomeroomResponses, SchoolSetStaffSubjectsData, SchoolSetStaffSubjectsErrors, SchoolSetStaffSubjectsResponses, SchoolStaffData, SchoolStaffResponses, SchoolStudentCardData, SchoolStudentCardErrors, SchoolStudentCardResponses, SchoolStudentGuardiansData, SchoolStudentGuardiansErrors, SchoolStudentGuardiansResponses, SchoolStudentsData, SchoolStudentsErrors, SchoolStudentsResponses, SchoolSubjectsData, SchoolSubjectsOfClassData, SchoolSubjectsOfClassErrors, SchoolSubjectsOfClassResponses, SchoolSubjectsResponses, SchoolUnlinkGuardianData, SchoolUnlinkGuardianErrors, SchoolUnlinkGuardianResponses, ServiceHealthData, ServiceHealthResponses, ServiceReadinessData, ServiceReadinessResponses, SurveysActiveData, SurveysActiveResponses, SurveysCreateData, SurveysCreateErrors, SurveysCreateResponses, SurveysListSurveysData, SurveysListSurveysResponses, SurveysRespondData, SurveysRespondErrors, SurveysRespondResponses, SurveysResultsData, SurveysResultsErrors, SurveysResultsResponses, SurveysSetStatusData, SurveysSetStatusErrors, SurveysSetStatusResponses, TestsAddQuestionData, TestsAddQuestionErrors, TestsAddQuestionResponses, TestsArchiveQuestionData, TestsArchiveQuestionErrors, TestsArchiveQuestionResponses, TestsArchiveTestData, TestsArchiveTestErrors, TestsArchiveTestResponses, TestsAvailableData, TestsAvailableErrors, TestsAvailableResponses, TestsCreateTestData, TestsCreateTestErrors, TestsCreateTestResponses, TestsMyTestsData, TestsMyTestsErrors, TestsMyTestsResponses, TestsQuestionsData, TestsQuestionsErrors, TestsQuestionsResponses, TestsResultsData, TestsResultsErrors, TestsResultsResponses, TestsSetStatusData, TestsSetStatusErrors, TestsSetStatusResponses, TestsStartData, TestsStartErrors, TestsStartResponses, TestsStudentAttemptsData, TestsStudentAttemptsErrors, TestsStudentAttemptsResponses, TestsSubmitData, TestsSubmitErrors, TestsSubmitResponses, WellbeingArchiveNoteData, WellbeingArchiveNoteErrors, WellbeingArchiveNoteResponses, WellbeingCreateNoteData, WellbeingCreateNoteErrors, WellbeingCreateNoteResponses, WellbeingNotesOfStudentData, WellbeingNotesOfStudentErrors, WellbeingNotesOfStudentResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -494,6 +494,152 @@ export const examsSetPlanStatus = <ThrowOnError extends boolean = false>(options
         ...options.headers
     }
 });
+
+/**
+ * Summary
+ *
+ * Jamlanma. Oʻquv boʻlimiga ham 403 — moliya alohida doira.
+ */
+export const paymentsSummary = <ThrowOnError extends boolean = false>(options?: Options<PaymentsSummaryData, ThrowOnError>): RequestResult<PaymentsSummaryResponses, unknown, ThrowOnError> => (options?.client ?? client).get<PaymentsSummaryResponses, unknown, ThrowOnError>({ url: '/api/v1/payments/summary', ...options });
+
+/**
+ * Students
+ */
+export const paymentsStudents = <ThrowOnError extends boolean = false>(options?: Options<PaymentsStudentsData, ThrowOnError>): RequestResult<PaymentsStudentsResponses, PaymentsStudentsErrors, ThrowOnError> => (options?.client ?? client).get<PaymentsStudentsResponses, PaymentsStudentsErrors, ThrowOnError>({ url: '/api/v1/payments/students', ...options });
+
+/**
+ * Student Ledger
+ *
+ * Daftar: qarzlar va toʻlovlar. Ota-ona faqat oʻz farzandiga (X-1).
+ */
+export const paymentsStudentLedger = <ThrowOnError extends boolean = false>(options: Options<PaymentsStudentLedgerData, ThrowOnError>): RequestResult<PaymentsStudentLedgerResponses, PaymentsStudentLedgerErrors, ThrowOnError> => (options.client ?? client).get<PaymentsStudentLedgerResponses, PaymentsStudentLedgerErrors, ThrowOnError>({ url: '/api/v1/payments/students/{student_id}', ...options });
+
+/**
+ * Set Contract
+ *
+ * Shartnoma summasi. Oʻtgan oylar qarzi qayta hisoblanmaydi.
+ */
+export const paymentsSetContract = <ThrowOnError extends boolean = false>(options: Options<PaymentsSetContractData, ThrowOnError>): RequestResult<PaymentsSetContractResponses, PaymentsSetContractErrors, ThrowOnError> => (options.client ?? client).put<PaymentsSetContractResponses, PaymentsSetContractErrors, ThrowOnError>({
+    url: '/api/v1/payments/students/{student_id}/contract',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Add Discount
+ */
+export const paymentsAddDiscount = <ThrowOnError extends boolean = false>(options: Options<PaymentsAddDiscountData, ThrowOnError>): RequestResult<PaymentsAddDiscountResponses, PaymentsAddDiscountErrors, ThrowOnError> => (options.client ?? client).post<PaymentsAddDiscountResponses, PaymentsAddDiscountErrors, ThrowOnError>({
+    url: '/api/v1/payments/students/{student_id}/discounts',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Archive Discount
+ */
+export const paymentsArchiveDiscount = <ThrowOnError extends boolean = false>(options: Options<PaymentsArchiveDiscountData, ThrowOnError>): RequestResult<PaymentsArchiveDiscountResponses, PaymentsArchiveDiscountErrors, ThrowOnError> => (options.client ?? client).post<PaymentsArchiveDiscountResponses, PaymentsArchiveDiscountErrors, ThrowOnError>({ url: '/api/v1/payments/discounts/{discount_id}/archive', ...options });
+
+/**
+ * Generate Charges
+ *
+ * Oylik qarzni yozish — idempotent, qayta bosilsa takrorlamaydi.
+ */
+export const paymentsGenerateCharges = <ThrowOnError extends boolean = false>(options: Options<PaymentsGenerateChargesData, ThrowOnError>): RequestResult<PaymentsGenerateChargesResponses, PaymentsGenerateChargesErrors, ThrowOnError> => (options.client ?? client).post<PaymentsGenerateChargesResponses, PaymentsGenerateChargesErrors, ThrowOnError>({
+    url: '/api/v1/payments/charges/generate',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Record Payment
+ *
+ * Qoʻlda toʻlov kiritish (naqd/oʻtkazma/terminal).
+ */
+export const paymentsRecordPayment = <ThrowOnError extends boolean = false>(options: Options<PaymentsRecordPaymentData, ThrowOnError>): RequestResult<PaymentsRecordPaymentResponses, PaymentsRecordPaymentErrors, ThrowOnError> => (options.client ?? client).post<PaymentsRecordPaymentResponses, PaymentsRecordPaymentErrors, ThrowOnError>({
+    url: '/api/v1/payments',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Storno
+ *
+ * TOL-07: tahrirlash yoʻq — faqat storno, sabab bilan.
+ */
+export const paymentsStorno = <ThrowOnError extends boolean = false>(options: Options<PaymentsStornoData, ThrowOnError>): RequestResult<PaymentsStornoResponses, PaymentsStornoErrors, ThrowOnError> => (options.client ?? client).post<PaymentsStornoResponses, PaymentsStornoErrors, ThrowOnError>({
+    url: '/api/v1/payments/{payment_id}/storno',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Create Intent
+ *
+ * Ota-ona «toʻlash»ni bosdi. Faqat oʻz farzandiga (X-1).
+ */
+export const paymentsCreateIntent = <ThrowOnError extends boolean = false>(options: Options<PaymentsCreateIntentData, ThrowOnError>): RequestResult<PaymentsCreateIntentResponses, PaymentsCreateIntentErrors, ThrowOnError> => (options.client ?? client).post<PaymentsCreateIntentResponses, PaymentsCreateIntentErrors, ThrowOnError>({
+    url: '/api/v1/payments/intents',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Sinov Complete
+ *
+ * Sinov «bank sahifasi» tugmasi.
+ *
+ * Imzo SERVERDA yasaladi va webhook mantigʻining oʻzidan oʻtadi —
+ * haqiqiy provayder keladigan yoʻlning aynan oʻzi sinovdan oʻtadi.
+ * Kalit brauzerga hech qachon chiqmaydi.
+ */
+export const paymentsSinovComplete = <ThrowOnError extends boolean = false>(options: Options<PaymentsSinovCompleteData, ThrowOnError>): RequestResult<PaymentsSinovCompleteResponses, PaymentsSinovCompleteErrors, ThrowOnError> => (options.client ?? client).post<PaymentsSinovCompleteResponses, PaymentsSinovCompleteErrors, ThrowOnError>({
+    url: '/api/v1/payments/intents/{intent_id}/sinov-complete',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Webhook
+ *
+ * Provayder callback'i — autentifikatsiyasiz, imzo bilan (X-9).
+ *
+ * Haqiqiy Payme/Click kelganda shu oʻzakka ularning imzo sxemasi
+ * ulanadi; idempotentlik va «summa oʻz yozuvimizdan» oʻzgarmaydi.
+ */
+export const paymentsWebhook = <ThrowOnError extends boolean = false>(options: Options<PaymentsWebhookData, ThrowOnError>): RequestResult<PaymentsWebhookResponses, PaymentsWebhookErrors, ThrowOnError> => (options.client ?? client).post<PaymentsWebhookResponses, PaymentsWebhookErrors, ThrowOnError>({
+    url: '/api/v1/payments/webhook/sinov',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Get Intent
+ */
+export const paymentsGetIntent = <ThrowOnError extends boolean = false>(options: Options<PaymentsGetIntentData, ThrowOnError>): RequestResult<PaymentsGetIntentResponses, PaymentsGetIntentErrors, ThrowOnError> => (options.client ?? client).get<PaymentsGetIntentResponses, PaymentsGetIntentErrors, ThrowOnError>({ url: '/api/v1/payments/intents/{intent_id}', ...options });
 
 /**
  * Years

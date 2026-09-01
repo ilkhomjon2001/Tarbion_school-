@@ -746,3 +746,14 @@ haqiqiy raqam yonida soxta raqam koʻrsatilmaydi — shuning uchun backend'i
 yoʻq boʻlimlar (reyting, eʼlonlar, imtihonlar, moliya) yo olib qoʻyildi,
 yo «modul ulanmagan» deb belgilandi. Maʼlumot qatlami naqshlari:
 `lib/student/api.ts`, `lib/director/api.ts` (adapter + `withAuth`).
+
+
+## 2026-09-01 — Toʻlov: haqiqiy provayder oʻrniga sinov provayderi
+
+Payme/Click hozir ulanmaydi (shartnoma yoʻq). Modul ikkiga ajratildi:
+hisob-kitob (shartnoma → oylik qarz → toʻlov → storno) provayderga
+umuman bogʻlanmagan; onlayn qism esa «sinov provayderi» bilan qurildi —
+HMAC imzoli webhook, idempotentlik, summa faqat intent yozuvidan (X-9).
+Haqiqiy integratsiyada faqat imzo sxemasi va URL almashadi. Standart
+shartnoma 3 500 000 soʻm/oy, oʻquv yili 9 oy (sentabr–may) — loyiha
+egasining qarori.

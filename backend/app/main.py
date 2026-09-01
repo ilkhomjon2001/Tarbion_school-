@@ -26,6 +26,7 @@ from app.api.v1 import hr as hr_router
 from app.api.v1 import journal as journal_router
 from app.api.v1 import notifications as notifications_router
 from app.api.v1 import parent as parent_router
+from app.api.v1 import payments as payments_router
 from app.api.v1 import schedule as schedule_router
 from app.api.v1 import school as school_router
 from app.api.v1 import surveys as surveys_router
@@ -111,6 +112,7 @@ app.include_router(documents_router.router, prefix="/api/v1")
 app.include_router(surveys_router.router, prefix="/api/v1")
 app.include_router(hr_router.router, prefix="/api/v1")
 app.include_router(exams_router.router, prefix="/api/v1")
+app.include_router(payments_router.router, prefix="/api/v1")
 app.include_router(academic_router.router, prefix=API_V1)
 app.include_router(director_router.router, prefix=API_V1)
 app.include_router(appeals_router.router, prefix=API_V1)
