@@ -84,3 +84,7 @@ temp/
 # Frontend chiqaradigan seed maʼlumoti (pnpm export:seed) — generatsiya
 # natijasi, deterministik. Repoda saqlanmaydi.
 backend/seed-data.json
+
+# Real ma'lumot fayllari repo'ga tushmasin (PII, repo ochiq!)
+*.csv
+*.xlsx
