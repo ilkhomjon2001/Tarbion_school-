@@ -1,127 +1,95 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
 import { ParentShell } from "@/components/parent/ParentShell";
 import { useChild } from "@/lib/parent/useChild";
-import { HOMEROOM } from "@/lib/school/staff";
 import {
-  authorRoleLabel,
-  noteAuthor,
-  notesFor,
+  fetchNotes,
+  KIND_LABELS,
   TONE_LABELS,
-  type WellbeingKind,
-  type WellbeingNote,
-  type WellbeingTone,
-} from "@/lib/school/wellbeing";
-
-const TABS: { id: WellbeingKind; label: string; hint: string }[] = [
-  {
-    id: "behavior",
-    label: "Tarbiyaviy holat",
-    hint: "Sinf rahbari va fan oʻqituvchilari kiritadi",
-  },
-  {
-    id: "psychology",
-    label: "Psixologik holat",
-    hint: "Maktab psixologi kiritadi",
-  },
-];
-
-const TONE_CLASSES: Record<WellbeingTone, string> = {
-  positive: "border-l-success bg-success-tint/40",
-  neutral: "border-l-info bg-info-tint/40",
-  attention: "border-l-warning bg-warning-tint/40",
-};
-
-const TONE_TEXT: Record<WellbeingTone, string> = {
-  positive: "text-success",
-  neutral: "text-info",
-  attention: "text-warning",
-};
+  type WellbeingNoteOut,
+} from "@/lib/wellbeing/api";
 
 /**
- * Tarbiyaviy va psixologik holat.
+ * Tarbiya va psixologiya — BAZADAN.
  *
- * TZ'da bu boʻlim yoʻq — loyiha egasining soʻrovi bilan qoʻshildi
- * (docs/DECISIONS.md). Maʼlumot nozik: backendda faqat vasiy, sinf
- * rahbari, psixolog va rahbariyat koʻra olishi soʻrov darajasida
- * cheklanishi shart (CLAUDE.md 6-qoida).
+ * Vasiy farzandi boʻyicha ikkala tur yozuvni ham koʻradi: tarbiyaviy
+ * (ustozlar) va psixologik (rahbariyat). Begona bolaning yozuvi
+ * serverda 403 bilan yopiq — bu yerda hech narsa filtrlanmaydi.
  */
+
+const TONE_STYLES: Record<string, string> = {
+  positive: "bg-success-tint text-success",
+  neutral: "bg-surface-muted text-foreground-muted",
+  attention: "bg-warning-tint text-warning",
+};
+
 export default function ParentWellbeingPage() {
-  const [child, setChild] = useChild();
-  const [tab, setTab] = useState<WellbeingKind>("behavior");
+  const [child, selectChild] = useChild();
+  const [notes, setNotes] = useState<WellbeingNoteOut[] | null>(null);
+  const [error, setError] = useState(false);
 
-  const notes = notesFor(child.id, tab);
-  const homeroomId = HOMEROOM[child.className] ?? null;
-  const activeTab = TABS.find((t) => t.id === tab)!;
+  useEffect(() => {
+    if (!child.id) return;
+    let alive = true;
+    setNotes(null);
+    fetchNotes(child.id)
+      .then((rows) => alive && setNotes(rows))
+      .catch(() => alive && setError(true));
+    return () => {
+      alive = false;
+    };
+  }, [child.id]);
 
   return (
-    <ParentShell title="Tarbiya va psixologiya" child={child} onChildChange={setChild}>
-      <div role="tablist" aria-label="Boʻlimlar" className="mb-3 flex gap-1 border-b border-border">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === t.id}
-            onClick={() => setTab(t.id)}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
-              tab === t.id
-                ? "border-brand text-brand-dark"
-                : "border-transparent text-foreground-muted hover:text-foreground"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+    <ParentShell title="Tarbiya va psixologiya" child={child} onChildChange={selectChild}>
+      <div className="flex flex-col gap-2">
+        <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-foreground-muted">
+          Bu yozuvlarni farzandingizning ustozlari va maktab mutaxassislari
+          kiritadi. Savol tugʻilsa «Murojaat» boʻlimi orqali yozing.
+        </p>
 
-      <p className="mb-4 text-xs text-foreground-muted">{activeTab.hint}</p>
-
-      {notes.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-surface-muted px-4 py-10 text-center">
-          <p className="text-sm font-medium text-foreground">Hozircha yozuv yoʻq</p>
-          <p className="mt-1 text-sm text-foreground-muted">
-            {tab === "behavior"
-              ? "Sinf rahbari yoki fan oʻqituvchisi izoh qoldirganda shu yerda koʻrinadi."
-              : "Psixolog suhbatdan keyin xulosa qoldirsa shu yerda koʻrinadi."}
+        {error ? (
+          <p className="rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">
+            Yozuvlarni olib boʻlmadi. Sahifani yangilab koʻring.
           </p>
-        </div>
-      ) : (
-        <ul className="flex flex-col gap-3">
-          {notes.map((note) => (
-            <NoteCard key={note.id} note={note} homeroomId={homeroomId} />
-          ))}
-        </ul>
-      )}
+        ) : notes === null ? (
+          <p className="text-sm text-foreground-muted">Yuklanmoqda…</p>
+        ) : notes.length === 0 ? (
+          <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-foreground-muted">
+            Hozircha yozuv yoʻq — bu yaxshi belgi.
+          </p>
+        ) : (
+          notes.map((n) => (
+            <article
+              key={n.id}
+              className="rounded-xl border border-border bg-surface p-4 shadow-sm"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="flex items-center gap-2">
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${TONE_STYLES[n.tone] ?? TONE_STYLES.neutral}`}
+                  >
+                    {TONE_LABELS[n.tone] ?? n.tone}
+                  </span>
+                  <span className="text-xs text-foreground-muted">
+                    {KIND_LABELS[n.kind] ?? n.kind}
+                  </span>
+                </span>
+                <span className="num text-xs text-foreground-muted">
+                  {new Date(n.created_at).toLocaleDateString("uz-UZ")}
+                </span>
+              </div>
+              <p className="mt-2 whitespace-pre-wrap text-sm text-foreground">{n.text}</p>
+              <p className="mt-2 text-xs text-foreground-muted">
+                {n.author_name}
+                {n.subject_name && ` · ${n.subject_name} oʻqituvchisi`}
+              </p>
+            </article>
+          ))
+        )}
+      </div>
     </ParentShell>
-  );
-}
-
-function NoteCard({ note, homeroomId }: { note: WellbeingNote; homeroomId: string | null }) {
-  const author = noteAuthor(note);
-  return (
-    <li className={`rounded-xl border border-border border-l-4 p-4 ${TONE_CLASSES[note.tone]}`}>
-      <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface text-xs font-semibold text-foreground-muted">
-            {author?.initials ?? "?"}
-          </span>
-          <div>
-            <p className="text-sm font-medium text-foreground">{author?.fullName ?? "Xodim"}</p>
-            <p className="text-xs text-foreground-muted">
-              {authorRoleLabel(note, homeroomId)}
-            </p>
-          </div>
-        </div>
-        <div className="text-right">
-          <p className={`text-xs font-medium ${TONE_TEXT[note.tone]}`}>
-            {TONE_LABELS[note.tone]}
-          </p>
-          <p className="text-[11px] text-foreground-muted">{note.createdAt}</p>
-        </div>
-      </div>
-      <p className="text-sm text-foreground">{note.text}</p>
-    </li>
   );
 }

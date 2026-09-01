@@ -72,8 +72,18 @@ from app.models.tests import (
     TestQuestion,
     TestStatus,
 )
+from app.models.wellbeing import (
+    TONE_LABELS_UZ,
+    WellbeingKind,
+    WellbeingNote,
+    WellbeingTone,
+)
 
 __all__ = [
+    "TONE_LABELS_UZ",
+    "WellbeingKind",
+    "WellbeingNote",
+    "WellbeingTone",
     "Announcement",
     "AnnouncementAudience",
     "AnnouncementClass",

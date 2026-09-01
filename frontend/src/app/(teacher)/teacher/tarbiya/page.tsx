@@ -1,232 +1,238 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { TeacherShell } from "@/components/teacher/TeacherShell";
-import { useMyTeaching, useTeacherMe } from "@/lib/teacher/me";
-import { fetchStudents } from "@/lib/school/api";
-import { HOMEROOM, staffById } from "@/lib/school/staff";
+import { fetchStudents, type StudentListRowOut } from "@/lib/school/api";
+import { useMyTeaching } from "@/lib/teacher/me";
 import {
-  authorRoleLabel,
+  archiveNote,
+  createNote,
+  fetchNotes,
+  KIND_LABELS,
   TONE_LABELS,
-  WELLBEING_NOTES,
-  type WellbeingNote,
-  type WellbeingTone,
-} from "@/lib/school/wellbeing";
-
-const TONES: WellbeingTone[] = ["positive", "neutral", "attention"];
-
-const TONE_CLASSES: Record<WellbeingTone, string> = {
-  positive: "border-l-success bg-success-tint/40",
-  neutral: "border-l-info bg-info-tint/40",
-  attention: "border-l-warning bg-warning-tint/40",
-};
+  type WellbeingNoteOut,
+} from "@/lib/wellbeing/api";
 
 /**
- * Tarbiyaviy izoh kiritish.
+ * Tarbiyaviy izoh — BAZADAN.
  *
- * TZ'da bu boʻlim yoʻq — loyiha egasining soʻrovi (docs/DECISIONS.md).
- * Izohni SINF RAHBARI va FAN OʻQITUVCHISI kiritadi; psixologik xulosani
- * faqat maktab psixologi yozadi, shuning uchun bu sahifada u yoʻq.
- *
- * DEMO: yozuv faqat sahifa holatida saqlanadi.
+ * Ustoz faqat oʻz sinflaridagi oʻquvchiga yozadi va bu SERVERDA
+ * tekshiriladi. Psixologik yozuv bu ekranda umuman yoʻq: uni faqat
+ * rahbariyat kiritadi va fan ustoziga u roʻyxatda ham kelmaydi.
  */
-export default function TeacherWellbeingPage() {
-  const me = useTeacherMe();
+
+const TONE_STYLES: Record<string, string> = {
+  positive: "bg-success-tint text-success",
+  neutral: "bg-surface-muted text-foreground-muted",
+  attention: "bg-warning-tint text-warning",
+};
+
+const inputClass =
+  "h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none transition-colors focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25";
+
+export default function WellbeingPage() {
   const teaching = useMyTeaching();
-  const classes = useMemo(() => teaching.classes.map((c) => c.name), [teaching.classes]);
-  const [notes, setNotes] = useState<WellbeingNote[]>(
-    WELLBEING_NOTES.filter((n) => n.kind === "behavior"),
-  );
-  const [className, setClassName] = useState(classes[0] ?? "");
+
+  const [classId, setClassId] = useState("");
+  const [students, setStudents] = useState<StudentListRowOut[]>([]);
   const [studentId, setStudentId] = useState("");
-  const [students, setStudents] = useState<{ id: string; fullName: string }[]>([]);
-  const [tone, setTone] = useState<WellbeingTone>("neutral");
-  const [subject, setSubject] = useState("");
+  const [notes, setNotes] = useState<WellbeingNoteOut[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const [tone, setTone] = useState("positive");
   const [text, setText] = useState("");
 
-  const subjects = useMemo(
-    () =>
-      teaching.slots.filter((s) => s.className === className).map((s) => s.subjectName),
-    [teaching.slots, className],
-  );
-  const asHomeroom = me.isHomeroom;
-
-  // Sinf oʻquvchilari serverdan. Kesim SOʻROV darajasida: ustoz oʻz
-  // sinfidan boshqasini soʻrasa server boʻsh roʻyxat qaytaradi (X-1).
-  const classId = teaching.classes.find((c) => c.name === className)?.id;
   useEffect(() => {
-    if (!classId) {
-      setStudents([]);
-      return;
-    }
+    if (!classId && teaching.classes.length > 0) setClassId(teaching.classes[0].id);
+  }, [teaching.classes, classId]);
+
+  useEffect(() => {
+    if (!classId) return;
     let alive = true;
     fetchStudents({ classId })
       .then((rows) => {
         if (!alive) return;
-        const list = rows.map((r) => ({ id: r.id, fullName: r.full_name }));
-        setStudents(list);
-        setStudentId((joriy) =>
-          list.some((s) => s.id === joriy) ? joriy : (list[0]?.id ?? ""),
-        );
+        setStudents(rows);
+        setStudentId(rows[0]?.id ?? "");
       })
-      .catch(() => alive && setStudents([]));
+      .catch(() => alive && setError("Oʻquvchilarni olib boʻlmadi."));
     return () => {
       alive = false;
     };
   }, [classId]);
-  const studentNotes = notes.filter((n) => n.childId === studentId);
 
-  function submit(event: React.FormEvent) {
-    event.preventDefault();
-    if (!text.trim() || !studentId) return;
-    setNotes((prev) => [
-      {
-        id: `wb-new-${Date.now()}`,
-        childId: studentId,
-        kind: "behavior",
-        authorId: me.user?.id ?? "",
-        subject: subject || undefined,
-        tone,
-        text: text.trim(),
-        createdAt: "Hozir",
-      },
-      ...prev,
-    ]);
-    setText("");
+  const yukla = useCallback(async () => {
+    if (!studentId) {
+      setNotes([]);
+      return;
+    }
+    setNotes(null);
+    try {
+      setNotes(await fetchNotes(studentId));
+      setError(null);
+    } catch {
+      setError("Yozuvlarni olib boʻlmadi.");
+      setNotes([]);
+    }
+  }, [studentId]);
+
+  useEffect(() => {
+    void yukla();
+  }, [yukla]);
+
+  async function saqla(e: React.FormEvent) {
+    e.preventDefault();
+    if (text.trim().length < 5 || !studentId) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await createNote({ studentId, kind: "behavior", tone, text: text.trim() });
+      setText("");
+      await yukla();
+    } catch {
+      setError("Yozuvni saqlab boʻlmadi.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function olibTashla(id: string) {
+    setBusy(true);
+    try {
+      await archiveNote(id);
+      await yukla();
+    } catch {
+      setError("Olib tashlab boʻlmadi.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
     <TeacherShell
       title="Tarbiyaviy izoh"
-      subtitle="Izoh ota-onaning kabinetida koʻrinadi — aniq va hurmat bilan yozing"
+      subtitle="Yozuv vasiyga, sinf rahbariga va rahbariyatga koʻrinadi"
     >
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <form onSubmit={submit} className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="wb-class" className="mb-1 block text-sm font-medium">Sinf</label>
-              <select
-                id="wb-class"
-                value={className}
-                onChange={(e) => {
-                  setClassName(e.target.value);
-                  setStudentId("");
-                  setSubject("");
-                }}
-                className="h-10 w-full rounded-lg border border-border bg-surface px-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
-              >
-                {classes.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="wb-student" className="mb-1 block text-sm font-medium">Oʻquvchi</label>
-              <select
-                id="wb-student"
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
-                className="h-10 w-full rounded-lg border border-border bg-surface px-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
-              >
-                {students.length === 0 && <option value="">Roʻyxat boʻsh</option>}
-                {students.map((s) => (
-                  <option key={s.id} value={s.id}>{s.fullName}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+      <div className="flex flex-col gap-4">
+        {error && (
+          <p className="rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">{error}</p>
+        )}
 
-          <div>
-            <label htmlFor="wb-subject" className="mb-1 block text-sm font-medium">
-              Qaysi sifatda yozyapsiz?
-            </label>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-foreground">Sinf</span>
             <select
-              id="wb-subject"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              className="h-10 w-full rounded-lg border border-border bg-surface px-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+              value={classId}
+              onChange={(e) => setClassId(e.target.value)}
+              className={inputClass}
             >
-              {asHomeroom && <option value="">Sinf rahbari sifatida</option>}
-              {subjects.map((s) => (
-                <option key={s} value={s}>{s} oʻqituvchisi sifatida</option>
+              {teaching.classes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
               ))}
             </select>
-          </div>
-
-          <fieldset>
-            <legend className="mb-1.5 text-sm font-medium">Umumiy baho</legend>
-            <div className="flex flex-wrap gap-2">
-              {TONES.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTone(t)}
-                  aria-pressed={tone === t}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
-                    tone === t
-                      ? "bg-brand text-brand-foreground"
-                      : "border border-border text-foreground-muted hover:bg-surface-muted"
-                  }`}
-                >
-                  {TONE_LABELS[t]}
-                </button>
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-foreground">Oʻquvchi</span>
+            <select
+              value={studentId}
+              onChange={(e) => setStudentId(e.target.value)}
+              className={inputClass}
+            >
+              {students.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.full_name}
+                </option>
               ))}
-            </div>
-          </fieldset>
+            </select>
+          </label>
+        </div>
 
-          <div>
-            <label htmlFor="wb-text" className="mb-1 block text-sm font-medium">Izoh</label>
-            <textarea
-              id="wb-text"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows={4}
-              placeholder="Nima kuzatdingiz, qanday choralar koʻrildi?"
-              className="w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none placeholder:text-foreground-muted/60 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
-            />
+        <form
+          onSubmit={saqla}
+          className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-sm"
+        >
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(TONE_LABELS).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setTone(id)}
+                aria-pressed={tone === id}
+                className={`focus-ring rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                  tone === id
+                    ? "border-brand bg-brand/10 text-brand-dark"
+                    : "border-border text-foreground-muted hover:bg-surface-muted"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-
-          <button
-            type="submit"
-            disabled={!text.trim() || !studentId}
-            className="h-10 rounded-lg bg-brand text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Izohni saqlash
-          </button>
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value.slice(0, 2000))}
+            rows={3}
+            placeholder="Masalan: sinf tadbirida faol qatnashdi, kichiklarga yordam berdi…"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none transition-colors placeholder:text-foreground-muted/70 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
+          />
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={text.trim().length < 5 || busy}
+              className="focus-ring inline-flex h-10 items-center rounded-lg bg-brand px-4 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark disabled:opacity-50"
+            >
+              Yozuvni saqlash
+            </button>
+          </div>
         </form>
 
-        <div>
-          <h2 className="mb-2 text-sm font-semibold text-foreground">
-            Oldingi izohlar {students.find((s) => s.id === studentId)?.fullName}
-          </h2>
-          {studentNotes.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border bg-surface-muted px-4 py-10 text-center text-sm text-foreground-muted">
-              Bu oʻquvchi uchun hali izoh yoʻq.
-            </div>
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold text-foreground">Oldingi yozuvlar</h2>
+          {notes === null ? (
+            <p className="text-sm text-foreground-muted">Yuklanmoqda…</p>
+          ) : notes.length === 0 ? (
+            <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-foreground-muted">
+              Bu oʻquvchi boʻyicha yozuv yoʻq.
+            </p>
           ) : (
-            <ul className="flex flex-col gap-2">
-              {studentNotes.map((note) => {
-                const author = staffById(note.authorId);
-                return (
-                  <li
-                    key={note.id}
-                    className={`rounded-xl border border-border border-l-4 p-3 ${TONE_CLASSES[note.tone]}`}
+            notes.map((n) => (
+              <article
+                key={n.id}
+                className="rounded-xl border border-border bg-surface p-4 shadow-sm"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${TONE_STYLES[n.tone] ?? TONE_STYLES.neutral}`}
                   >
-                    <div className="mb-1 flex items-center justify-between gap-2">
-                      <p className="text-xs font-medium text-foreground">
-                        {author?.shortName ?? "Ustoz"} ·{" "}
-                        {authorRoleLabel(note, HOMEROOM[className] ?? null)}
-                      </p>
-                      <p className="text-[11px] text-foreground-muted">{note.createdAt}</p>
-                    </div>
-                    <p className="text-sm text-foreground">{note.text}</p>
-                  </li>
-                );
-              })}
-            </ul>
+                    {TONE_LABELS[n.tone] ?? n.tone}
+                  </span>
+                  <span className="num text-xs text-foreground-muted">
+                    {new Date(n.created_at).toLocaleDateString("uz-UZ")}
+                  </span>
+                </div>
+                <p className="mt-2 whitespace-pre-wrap text-sm text-foreground">{n.text}</p>
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <p className="text-xs text-foreground-muted">
+                    {KIND_LABELS[n.kind] ?? n.kind} · {n.author_name}
+                    {n.subject_name && ` · ${n.subject_name}`}
+                  </p>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void olibTashla(n.id)}
+                    className="focus-ring rounded px-2 py-1 text-xs font-medium text-foreground-muted transition-colors hover:text-danger disabled:opacity-40"
+                  >
+                    Olib tashlash
+                  </button>
+                </div>
+              </article>
+            ))
           )}
-        </div>
+        </section>
       </div>
     </TeacherShell>
   );

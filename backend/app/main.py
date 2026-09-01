@@ -26,6 +26,7 @@ from app.api.v1 import parent as parent_router
 from app.api.v1 import schedule as schedule_router
 from app.api.v1 import school as school_router
 from app.api.v1 import tests as tests_router
+from app.api.v1 import wellbeing as wellbeing_router
 from app.core.config import settings
 from app.core.db import SessionDep, engine
 from app.core.exceptions import AppError, app_error_handler, unhandled_error_handler
@@ -101,6 +102,7 @@ API_V1 = "/api/v1"
 app.include_router(auth_router.router, prefix=API_V1)
 app.include_router(access_router.router, prefix=API_V1)
 app.include_router(announcements_router.router, prefix="/api/v1")
+app.include_router(wellbeing_router.router, prefix="/api/v1")
 app.include_router(academic_router.router, prefix=API_V1)
 app.include_router(director_router.router, prefix=API_V1)
 app.include_router(appeals_router.router, prefix=API_V1)

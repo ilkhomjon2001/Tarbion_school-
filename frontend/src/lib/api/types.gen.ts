@@ -3311,6 +3311,66 @@ export type ValidationError = {
     };
 };
 
+/**
+ * WellbeingNoteCreateIn
+ */
+export type WellbeingNoteCreateIn = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Tone
+     */
+    tone: string;
+    /**
+     * Text
+     */
+    text: string;
+    /**
+     * Subject Id
+     */
+    subject_id?: string | null;
+};
+
+/**
+ * WellbeingNoteOut
+ */
+export type WellbeingNoteOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Tone
+     */
+    tone: string;
+    /**
+     * Text
+     */
+    text: string;
+    /**
+     * Author Name
+     */
+    author_name: string;
+    /**
+     * Subject Name
+     */
+    subject_name: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
 export type AuthLoginData = {
     body: LoginIn;
     path?: never;
@@ -3847,6 +3907,93 @@ export type AnnouncementsArchiveResponses = {
 };
 
 export type AnnouncementsArchiveResponse = AnnouncementsArchiveResponses[keyof AnnouncementsArchiveResponses];
+
+export type WellbeingNotesOfStudentData = {
+    body?: never;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: never;
+    url: '/api/v1/wellbeing/students/{student_id}';
+};
+
+export type WellbeingNotesOfStudentErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type WellbeingNotesOfStudentError = WellbeingNotesOfStudentErrors[keyof WellbeingNotesOfStudentErrors];
+
+export type WellbeingNotesOfStudentResponses = {
+    /**
+     * Response Wellbeing Notes Of Student
+     *
+     * Successful Response
+     */
+    200: Array<WellbeingNoteOut>;
+};
+
+export type WellbeingNotesOfStudentResponse = WellbeingNotesOfStudentResponses[keyof WellbeingNotesOfStudentResponses];
+
+export type WellbeingCreateNoteData = {
+    body: WellbeingNoteCreateIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/wellbeing';
+};
+
+export type WellbeingCreateNoteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type WellbeingCreateNoteError = WellbeingCreateNoteErrors[keyof WellbeingCreateNoteErrors];
+
+export type WellbeingCreateNoteResponses = {
+    /**
+     * Successful Response
+     */
+    201: WellbeingNoteOut;
+};
+
+export type WellbeingCreateNoteResponse = WellbeingCreateNoteResponses[keyof WellbeingCreateNoteResponses];
+
+export type WellbeingArchiveNoteData = {
+    body?: never;
+    path: {
+        /**
+         * Note Id
+         */
+        note_id: string;
+    };
+    query?: never;
+    url: '/api/v1/wellbeing/{note_id}/archive';
+};
+
+export type WellbeingArchiveNoteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type WellbeingArchiveNoteError = WellbeingArchiveNoteErrors[keyof WellbeingArchiveNoteErrors];
+
+export type WellbeingArchiveNoteResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type WellbeingArchiveNoteResponse = WellbeingArchiveNoteResponses[keyof WellbeingArchiveNoteResponses];
 
 export type AcademicYearsData = {
     body?: never;
