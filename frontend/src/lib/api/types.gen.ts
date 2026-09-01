@@ -1238,6 +1238,60 @@ export type DocumentOut = {
 };
 
 /**
+ * EmployeeOut
+ */
+export type EmployeeOut = {
+    /**
+     * User Id
+     */
+    user_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Login
+     */
+    login: string;
+    /**
+     * Roles
+     */
+    roles: Array<string>;
+    /**
+     * Phone
+     */
+    phone: string | null;
+    /**
+     * Position
+     */
+    position: string;
+    /**
+     * Contract Type
+     */
+    contract_type: string;
+    /**
+     * Qualification
+     */
+    qualification: string;
+    /**
+     * Hired On
+     */
+    hired_on: string | null;
+    /**
+     * Base Salary
+     */
+    base_salary: number | null;
+    /**
+     * Note
+     */
+    note: string | null;
+    /**
+     * On Leave
+     */
+    on_leave: string | null;
+};
+
+/**
  * GenerationOut
  *
  * Darslar generatsiyasi natijasi (T-012).
@@ -1711,6 +1765,70 @@ export type JournalStudentOut = {
 };
 
 /**
+ * LeaveIn
+ */
+export type LeaveIn = {
+    /**
+     * User Id
+     */
+    user_id: string;
+    /**
+     * Leave Type
+     */
+    leave_type: string;
+    /**
+     * Starts On
+     */
+    starts_on: string;
+    /**
+     * Ends On
+     */
+    ends_on: string;
+    /**
+     * Note
+     */
+    note?: string | null;
+};
+
+/**
+ * LeaveOut
+ */
+export type LeaveOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * User Id
+     */
+    user_id: string;
+    /**
+     * Employee Name
+     */
+    employee_name: string;
+    /**
+     * Leave Type
+     */
+    leave_type: string;
+    /**
+     * Starts On
+     */
+    starts_on: string;
+    /**
+     * Ends On
+     */
+    ends_on: string;
+    /**
+     * Note
+     */
+    note: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
  * LessonAttendanceOut
  */
 export type LessonAttendanceOut = {
@@ -2044,6 +2162,36 @@ export type PermissionOut = {
      * Group
      */
     group: string;
+};
+
+/**
+ * ProfileIn
+ */
+export type ProfileIn = {
+    /**
+     * Position
+     */
+    position?: string;
+    /**
+     * Contract Type
+     */
+    contract_type?: string;
+    /**
+     * Qualification
+     */
+    qualification?: string;
+    /**
+     * Hired On
+     */
+    hired_on?: string | null;
+    /**
+     * Base Salary
+     */
+    base_salary?: number | null;
+    /**
+     * Note
+     */
+    note?: string | null;
 };
 
 /**
@@ -4588,6 +4736,127 @@ export type SurveysResultsResponses = {
 };
 
 export type SurveysResultsResponse = SurveysResultsResponses[keyof SurveysResultsResponses];
+
+export type HrEmployeesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/hr/employees';
+};
+
+export type HrEmployeesResponses = {
+    /**
+     * Response Hr Employees
+     *
+     * Successful Response
+     */
+    200: Array<EmployeeOut>;
+};
+
+export type HrEmployeesResponse = HrEmployeesResponses[keyof HrEmployeesResponses];
+
+export type HrUpdateProfileData = {
+    body: ProfileIn;
+    path: {
+        /**
+         * User Id
+         */
+        user_id: string;
+    };
+    query?: never;
+    url: '/api/v1/hr/employees/{user_id}/profile';
+};
+
+export type HrUpdateProfileErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type HrUpdateProfileError = HrUpdateProfileErrors[keyof HrUpdateProfileErrors];
+
+export type HrUpdateProfileResponses = {
+    /**
+     * Successful Response
+     */
+    200: EmployeeOut;
+};
+
+export type HrUpdateProfileResponse = HrUpdateProfileResponses[keyof HrUpdateProfileResponses];
+
+export type HrLeavesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/hr/leaves';
+};
+
+export type HrLeavesResponses = {
+    /**
+     * Response Hr Leaves
+     *
+     * Successful Response
+     */
+    200: Array<LeaveOut>;
+};
+
+export type HrLeavesResponse = HrLeavesResponses[keyof HrLeavesResponses];
+
+export type HrAddLeaveData = {
+    body: LeaveIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/hr/leaves';
+};
+
+export type HrAddLeaveErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type HrAddLeaveError = HrAddLeaveErrors[keyof HrAddLeaveErrors];
+
+export type HrAddLeaveResponses = {
+    /**
+     * Successful Response
+     */
+    201: LeaveOut;
+};
+
+export type HrAddLeaveResponse = HrAddLeaveResponses[keyof HrAddLeaveResponses];
+
+export type HrArchiveLeaveData = {
+    body?: never;
+    path: {
+        /**
+         * Leave Id
+         */
+        leave_id: string;
+    };
+    query?: never;
+    url: '/api/v1/hr/leaves/{leave_id}/archive';
+};
+
+export type HrArchiveLeaveErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type HrArchiveLeaveError = HrArchiveLeaveErrors[keyof HrArchiveLeaveErrors];
+
+export type HrArchiveLeaveResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type HrArchiveLeaveResponse = HrArchiveLeaveResponses[keyof HrArchiveLeaveResponses];
 
 export type AcademicYearsData = {
     body?: never;

@@ -40,6 +40,16 @@ from app.models.homework import (
     HomeworkSubmission,
     SubmissionStatus,
 )
+from app.models.hr import (
+    CONTRACT_TYPE_LABELS_UZ,
+    LEAVE_TYPE_LABELS_UZ,
+    QUALIFICATION_LABELS_UZ,
+    ContractType,
+    LeaveType,
+    Qualification,
+    StaffLeave,
+    StaffProfile,
+)
 from app.models.identity import (
     LoginAttempt,
     LoginLog,
@@ -94,6 +104,14 @@ from app.models.wellbeing import (
 )
 
 __all__ = [
+    "CONTRACT_TYPE_LABELS_UZ",
+    "ContractType",
+    "LEAVE_TYPE_LABELS_UZ",
+    "LeaveType",
+    "QUALIFICATION_LABELS_UZ",
+    "Qualification",
+    "StaffLeave",
+    "StaffProfile",
     "SURVEY_STATUS_LABELS_UZ",
     "Survey",
     "SurveyQuestion",

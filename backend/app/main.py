@@ -21,6 +21,7 @@ from app.api.v1 import audit as audit_router
 from app.api.v1 import auth as auth_router
 from app.api.v1 import director as director_router
 from app.api.v1 import documents as documents_router
+from app.api.v1 import hr as hr_router
 from app.api.v1 import journal as journal_router
 from app.api.v1 import notifications as notifications_router
 from app.api.v1 import parent as parent_router
@@ -107,6 +108,7 @@ app.include_router(announcements_router.router, prefix="/api/v1")
 app.include_router(wellbeing_router.router, prefix="/api/v1")
 app.include_router(documents_router.router, prefix="/api/v1")
 app.include_router(surveys_router.router, prefix="/api/v1")
+app.include_router(hr_router.router, prefix="/api/v1")
 app.include_router(academic_router.router, prefix=API_V1)
 app.include_router(director_router.router, prefix=API_V1)
 app.include_router(appeals_router.router, prefix=API_V1)
