@@ -275,3 +275,34 @@ Lekin bosh sahifa (dashboard) soxta moliya koʻrsatadi — "Toʻlovlar"dagi real
 
 **Alohida (rejadagi ishlar, audit doirasidan tashqari):** bot + notification_outbox (T-017–T-019),
 R2 fayl servisi, real toʻlov provayderlari, CRM spetsifikatsiyasi.
+
+---
+
+## 7. TUZATISHLAR HOLATI (2026-09-02 yangilandi)
+
+Audit topilmalari boʻyicha bajarilgan ishlar (commitlar: 82a0298…8f5d40d):
+
+**Yopildi — barcha 8 KRITIK va 14 YUQORI:** K1–K8, Y1–Y14 toʻliq tuzatildi
+(sessiya revoke, oʻquvchi-oʻzi topshirishi, baho shkalasi + unique indeks,
+jamlanma tushumi, tarixiy shartnoma, jadval↔darslar sinxroni, direktor
+formulalari `director_service` da, XSS escape, mock sahifalar butunlay
+olib tashlandi, tasdiqlar). Frontendda jonli mock maʼlumot QOLMADI —
+faqat izohlardagi tarixiy eslatmalar.
+
+**Yopildi — OʻRTA:** O1 (sababli maxrajdan chiqdi — DECISIONS.md),
+O2–O7, O9, O13–O19, O21, O23, O26, O29. Yangi modullar: CRM (lidlar,
+qoʻngʻiroqlar, shartnomalar roʻyxati), oshxona menyusi (OTA-08), maktab
+rekvizitlari, oʻquvchi reytingi (REY-01), «mening ustozlarim»,
+DAV-04 arizasi (murojaat sifatida).
+
+**Ochiq qoldi (ongli ravishda):**
+- O8 (arxivlangan oʻquvchi sinf tarixida) — davr-bogʻliq filtr keyinroq;
+- O10–O12 (jurnal kaliti, sana filtri, chorak chegarasi) — JUR-04 bilan;
+- O20 qisman (chorak bahosi «taxmini» JUR-04 gacha), O22 (eksport
+  backend orqali — X-13), O24 qisman (util dedupe), O25/O27 (env/hujjat
+  sinxroni), O28 (oʻquv yili UI);
+- PAST bandlarning koʻpi; P15 (refresh-rotatsiya testi, Playwright);
+- Telegram-bot/outbox (T-017–019), R2, real toʻlov provayderlari —
+  reja boʻyicha alohida bosqich. Ota-ona bildirishnoma sozlamalari va
+  oʻquvchi kontakt formasi bot/endpoint chiqqunicha halol «tayyorlanmoqda»
+  holatida.
