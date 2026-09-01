@@ -1,159 +1,220 @@
-import { Suspense } from "react";
-import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
-import { ChartSkeleton } from "@/components/ui/Skeleton";
-import { AreaLineChart, SimpleBarChart } from "@/components/director/charts";
-import { AttendanceByClass } from "@/components/director/AttendanceByClass";
-import { ExportReportButton } from "@/components/director/ExportReportButton";
-import { getDirectorReports } from "@/lib/director/fetchers";
-import type { AtRiskReason } from "@/lib/director/types";
+"use client";
 
-const RISK_LABELS: Record<AtRiskReason, string> = {
-  attendance: "Davomat",
-  grades: "Baho",
-};
+/**
+ * Hisobotlar — BAZADAN (Y11 tuzatildi).
+ *
+ * Avval bu sahifa butunlay mock generatorlar ustida edi (soxta trend,
+ * soxta reyting). Endi uch manba, hammasi server: umumiy koʻrsatkichlar
+ * (`director/overview`), sinflar kesimi (`director/classes`) va moliya
+ * jamlanmasi (`payments/summary`).
+ *
+ * CSV eksport ATAYLAB yoʻq: eksport ham audit jurnaliga tushishi shart
+ * (X-13), shuning uchun u keyin backend endpointi orqali qilinadi —
+ * brauzerda fayl yasab berish audit izini chetlab oʻtardi.
+ */
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ChartSkeleton, StatCardSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
+import { BarChartIcon } from "@/components/ui/icons";
+import { AreaLineChart } from "@/components/director/charts";
+import { messageOf } from "@/components/shared/LiveSession";
+import {
+  fetchClasses,
+  fetchOverview,
+  isAtRisk,
+  RISK_THRESHOLD,
+  type ClassRowOut,
+  type DirectorOverviewOut,
+} from "@/lib/director/api";
+import { fetchFinanceSummary, type FinanceSummaryOut } from "@/lib/payments/api";
+import { formatSom } from "@/lib/format";
+
+const DAYS = 30;
 
 export default function ReportsPage() {
+  const [overview, setOverview] = useState<DirectorOverviewOut | null>(null);
+  const [classes, setClasses] = useState<ClassRowOut[] | null>(null);
+  const [finance, setFinance] = useState<FinanceSummaryOut | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    void (async () => {
+      const [ov, cls, fin] = await Promise.allSettled([
+        fetchOverview(DAYS),
+        fetchClasses(),
+        fetchFinanceSummary(),
+      ]);
+      if (ov.status === "fulfilled") setOverview(ov.value);
+      if (cls.status === "fulfilled") setClasses(cls.value);
+      if (fin.status === "fulfilled") setFinance(fin.value);
+      if (ov.status === "rejected" && cls.status === "rejected") {
+        setError(messageOf(ov.reason));
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  const sortedClasses = [...(classes ?? [])].sort(
+    (a, b) => b.average_grade - a.average_grade,
+  );
+
   return (
     <div className="flex flex-col gap-5 p-4 md:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-h2 font-bold text-foreground">Hisobotlar va analitika</h1>
-          <p className="text-sm text-foreground-muted">
-            Baholar, davomat, toʻlov va xavf ostidagi oʻquvchilar boʻyicha koʻrsatkichlar
-          </p>
-        </div>
-        <Suspense fallback={null}>
-          <ExportSection />
-        </Suspense>
+      <div>
+        <h1 className="text-h2 font-bold text-foreground">Hisobotlar va analitika</h1>
+        <p className="text-sm text-foreground-muted">
+          Oxirgi {DAYS} kun · har bir raqam bazadan hisoblanadi
+        </p>
       </div>
-      <AttendanceByClass />
 
-      <Suspense fallback={<ReportsSkeleton />}>
-        <ReportsSection />
-      </Suspense>
-    </div>
-  );
-}
-
-function ReportsSkeleton() {
-  return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <ChartSkeleton key={i} />
-      ))}
-    </div>
-  );
-}
-
-async function ExportSection() {
-  const data = await getDirectorReports();
-  return <ExportReportButton data={data} />;
-}
-
-async function ReportsSection() {
-  const data = await getDirectorReports();
-  return (
-    <div className="animate-enter grid grid-cols-1 gap-5 lg:grid-cols-2">
-      <Card>
-        <h2 className="mb-1 text-base font-semibold text-foreground">
-          Davomat trendi (oxirgi 30 kun)
-        </h2>
-        <p className="mb-3 text-xs text-foreground-muted">
-          Darsga kelgan oʻquvchilar ulushi — maktab boʻyicha, har 5 kunda bir marta
+      {error && (
+        <p role="alert" className="rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">
+          {error}
         </p>
-        <AreaLineChart
-          points={data.attendanceTrend.map((p) => ({ label: p.dateLabel, value: p.percent }))}
-          ariaLabel="Davomat trendi"
-          hint="Har bir nuqta — shu kundagi maktab boʻyicha oʻrtacha davomat."
-        />
-      </Card>
+      )}
 
-      <Card>
-        <h2 className="mb-1 text-base font-semibold text-foreground">
-          Toʻlov yigʻilishi dinamikasi
-        </h2>
-        <p className="mb-3 text-xs text-foreground-muted">
-          Oy yakunida yigʻilgan summaning rejadagi summaga nisbati
-        </p>
-        <AreaLineChart
-          points={data.paymentTrend.map((p) => ({ label: p.monthLabel, value: p.collectedPercent }))}
-          colorVar="var(--color-info)"
-          ariaLabel="Toʻlov yigʻilishi dinamikasi"
-          hint="100% — barcha shartnomalar toʻliq toʻlangan. Qolgan qismi qarzdorlik."
-        />
-      </Card>
+      {loading ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <StatCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Stat
+            label="Oʻquvchilar"
+            value={overview ? overview.total_students.toLocaleString("uz-Latn") : "—"}
+            note={overview ? `${overview.total_classes} ta sinf` : "Maʼlumot kelmadi"}
+          />
+          <Stat
+            label="Davomat foizi"
+            value={overview ? `${overview.attendance_percent}%` : "—"}
+            note={overview ? `${overview.lessons_conducted.toLocaleString("uz-Latn")} ta dars` : "Maʼlumot kelmadi"}
+          />
+          <Stat
+            label="Oʻrtacha baho"
+            value={
+              overview && overview.average_grade > 0
+                ? overview.average_grade.toFixed(1)
+                : "—"
+            }
+            note="Barcha sinflar boʻyicha"
+          />
+          <Stat
+            label="Toʻlov tushumi"
+            value={finance ? formatSom(finance.paid) : "—"}
+            note={
+              finance ? `Qarzdorlik: ${formatSom(finance.debt)}` : "Maʼlumot kelmadi"
+            }
+          />
+        </div>
+      )}
 
-      <Card>
-        <h2 className="mb-1 text-base font-semibold text-foreground">Baholar taqsimoti</h2>
-        <p className="mb-3 text-xs text-foreground-muted">
-          Joriy chorakda qoʻyilgan baholar soni
-        </p>
-        <SimpleBarChart
-          bars={data.gradeDistribution.map((b) => ({ label: `"${b.label}" baho`, value: b.count }))}
-          hint="Oʻngdagi son — shu baho necha marta qoʻyilgani."
-        />
-      </Card>
+      {loading ? (
+        <ChartSkeleton />
+      ) : overview && overview.attendance_trend.length > 0 ? (
+        <Card className="animate-enter">
+          <h2 className="mb-1 text-base font-semibold text-foreground">
+            Davomat dinamikasi (oxirgi {DAYS} kun)
+          </h2>
+          <p className="mb-3 text-xs text-foreground-muted">
+            Darsga kelgan oʻquvchilar ulushi — maktab boʻyicha
+          </p>
+          <AreaLineChart
+            points={overview.attendance_trend.map((p) => ({
+              label: p.date.slice(5),
+              value: p.percent,
+            }))}
+            ariaLabel="Davomat dinamikasi"
+            hint="Har bir nuqta — shu kundagi oʻrtacha davomat."
+          />
+        </Card>
+      ) : null}
 
-      <Card>
-        <h2 className="mb-1 text-base font-semibold text-foreground">
-          Fanlar boʻyicha oʻrtacha baho
-        </h2>
-        <p className="mb-3 text-xs text-foreground-muted">
-          5 ballik tizimda, barcha sinflar boʻyicha
-        </p>
-        <SimpleBarChart
-          bars={data.subjectAverages.map((s) => ({ label: s.subject, value: s.average }))}
-          toneVar="var(--color-info)"
-          valueFormatter={(v) => v.toFixed(1)}
-          hint="Ustun uzunligi eng yuqori koʻrsatkichga nisbatan olingan."
-        />
-      </Card>
+      <section>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-base font-semibold text-foreground">Sinflar kesimi</h2>
+          <Link
+            href="/rahbar/sinflar"
+            className="focus-ring rounded text-sm font-medium text-brand-dark hover:underline"
+          >
+            Sinf ichidagi kesim →
+          </Link>
+        </div>
 
-      <Card>
-        <h2 className="mb-1 text-base font-semibold text-foreground">
-          Sinflar boʻyicha oʻzlashtirish reytingi
-        </h2>
-        <p className="mb-3 text-xs text-foreground-muted">
-          Eng yuqori oʻrtacha bahodan pastga qarab
-        </p>
-        <SimpleBarChart
-          bars={data.classRanking.map((c) => ({ label: c.className, value: c.averageGrade }))}
-          toneVar="var(--color-success)"
-          valueFormatter={(v) => v.toFixed(1)}
-          hint="Oʻrtacha baho davomat koʻrsatkichi asosida taxminlangan (demo maʼlumot)."
-        />
-      </Card>
-
-      <Card>
-        <h2 className="mb-3 text-base font-semibold text-foreground">
-          Xavf ostidagi oʻquvchilar
-        </h2>
-        {data.atRiskStudents.length === 0 ? (
-          <p className="text-sm text-foreground-muted">Hozircha xavf ostidagi oʻquvchi yoʻq.</p>
+        {loading ? (
+          <TableSkeleton rows={6} columns={5} />
+        ) : sortedClasses.length === 0 ? (
+          <EmptyState
+            icon={<BarChartIcon className="h-5 w-5" />}
+            title="Sinf maʼlumoti yoʻq"
+            description="Sinflar ochilib, davomat va baho kiritila boshlagach hisobot shu yerda chiqadi."
+          />
         ) : (
-          <ul className="flex flex-col gap-2">
-            {data.atRiskStudents.map((student) => (
-              <li
-                key={student.id}
-                className="flex items-start justify-between gap-3 rounded-lg bg-surface-muted px-3 py-2.5"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {student.fullName}
-                  </p>
-                  <p className="text-xs text-foreground-muted">
-                    {student.className} sinf · {student.detail}
-                  </p>
-                </div>
-                <Badge tone={student.reason === "attendance" ? "danger" : "warning"}>
-                  {RISK_LABELS[student.reason]}
-                </Badge>
-              </li>
-            ))}
-          </ul>
+          <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px] border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-surface-muted/60 text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
+                    <th className="px-4 py-3">Sinf</th>
+                    <th className="px-4 py-3">Sinf rahbari</th>
+                    <th className="px-4 py-3 text-right">Oʻquvchilar</th>
+                    <th className="px-4 py-3 text-right">Davomat</th>
+                    <th className="px-4 py-3 text-right">Oʻrtacha baho</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedClasses.map((cls) => (
+                    <tr
+                      key={cls.id}
+                      className="border-b border-border last:border-0 hover:bg-surface-muted/50"
+                    >
+                      <td className="px-4 py-3 font-medium text-foreground">{cls.name}</td>
+                      <td className="px-4 py-3 text-foreground-muted">
+                        {cls.homeroom_teacher_name ?? "—"}
+                      </td>
+                      <td className="num px-4 py-3 text-right text-foreground-muted">
+                        {cls.student_count}
+                      </td>
+                      <td
+                        className={`num px-4 py-3 text-right font-medium ${
+                          isAtRisk(cls.attendance_percent)
+                            ? "text-danger"
+                            : "text-foreground"
+                        }`}
+                      >
+                        {cls.attendance_percent}%
+                      </td>
+                      <td className="num px-4 py-3 text-right font-medium text-foreground">
+                        {cls.average_grade > 0 ? cls.average_grade.toFixed(1) : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="border-t border-border px-4 py-2.5 text-xs text-foreground-muted">
+              Davomati {RISK_THRESHOLD}% dan past sinf qizil bilan belgilanadi.
+              Eksport keyingi bosqichda server orqali qoʻshiladi — har bir yuklab
+              olish audit jurnaliga tushishi shart.
+            </p>
+          </div>
         )}
-      </Card>
+      </section>
     </div>
+  );
+}
+
+function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
+  return (
+    <Card className="animate-enter">
+      <p className="text-sm text-foreground-muted">{label}</p>
+      <p className="num mt-2 text-2xl font-bold text-foreground">{value}</p>
+      {note && <p className="mt-1 text-xs text-foreground-muted">{note}</p>}
+    </Card>
   );
 }

@@ -9,9 +9,10 @@ import { AdminSearch } from "@/components/admin/AdminSearch";
 import { ADMIN_NAV, isNavActive } from "@/components/admin/nav";
 import { NavBadge } from "@/components/shared/NavBadge";
 import { NotificationBell } from "@/components/shared/NotificationBell";
-import { useAdmin, useVisibleSections } from "@/lib/admin/store";
+import { useAccess } from "@/lib/access-api";
 import { currentRole, logout } from "@/lib/auth";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
+import { getUser } from "@/lib/session";
 
 /**
  * Joriy sessiyadagi rol. Brauzer xotirasidan oʻqiladi, shuning uchun
@@ -25,17 +26,24 @@ function useSessionRole(): UserRole | null {
 
 /**
  * Koʻrinadigan menyu — super admin yashirgan boʻlim roʻyxatdan chiqadi.
- * Bu HIMOYA EMAS (CLAUDE.md 7-qoida), faqat koʻrinishni boshqarish.
+ * Roʻyxat SERVERDAN (`auth/me` → sections, T-005). Bu HIMOYA EMAS
+ * (CLAUDE.md 7-qoida), faqat koʻrinishni boshqarish.
  */
 function useNav() {
-  const visible = useVisibleSections(useSessionRole());
-  return useMemo(() => ADMIN_NAV.filter((item) => visible.has(item.href)), [visible]);
+  const { sections, loading } = useAccess();
+  return useMemo(() => {
+    // Yuklanayotganda boʻsh roʻyxat — odam koʻrmasligi kerak boʻlgan
+    // boʻlim bir zumga ham koʻzga tashlanmasin.
+    if (loading) return [];
+    const visible = new Set(sections);
+    return ADMIN_NAV.filter((item) => visible.has(item.href));
+  }, [sections, loading]);
 }
 
 /** Chapdagi doimiy panel — faqat md dan yuqorida. */
 export function AdminSidebar() {
   const pathname = usePathname();
-  const { profile } = useAdmin();
+  const fullName = getUser()?.full_name ?? "Administrator";
   const role = useSessionRole();
   const nav = useNav();
 
@@ -85,14 +93,14 @@ export function AdminSidebar() {
           }`}
         >
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-semibold text-brand-foreground">
-            {initials(profile.fullName)}
+            {initials(fullName)}
           </span>
           <span className="min-w-0">
             <span className="block truncate text-sm font-medium text-foreground">
-              {profile.fullName}
+              {fullName}
             </span>
             <span className="block truncate text-xs text-foreground-muted">
-              {profile.position}
+              {role ? ROLE_LABELS[role] : "Administrator"}
             </span>
           </span>
         </Link>
@@ -111,7 +119,7 @@ export function AdminSidebar() {
 
 /** Yuqoridagi qidiruv paneli — md dan yuqorida. */
 export function AdminTopbar() {
-  const { profile } = useAdmin();
+  const fullName = getUser()?.full_name ?? "Administrator";
 
   return (
     <header className="sticky top-0 z-20 hidden items-center gap-4 border-b border-border bg-surface/95 px-6 py-3 backdrop-blur md:flex">
@@ -121,10 +129,10 @@ export function AdminTopbar() {
         <Link
           href="/admin/profil"
           aria-label="Profil"
-          title={profile.fullName}
+          title={fullName}
           className="focus-ring flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-semibold text-brand-foreground transition-opacity hover:opacity-90"
         >
-          {initials(profile.fullName)}
+          {initials(fullName)}
         </Link>
       </div>
     </header>

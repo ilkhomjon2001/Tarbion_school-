@@ -14,7 +14,7 @@
  *
  * Maʼlumot MIJOZ tomonida olinadi: token brauzer xotirasida, Server
  * Component uni koʻrmaydi. Bu tasodifiy emas — DECISIONS.md da BFF
- * qilmaslik qarori qabul qilingan, brauzer to‘g‘ridan-to‘g‘ri API ga
+ * qilmaslik qarori qabul qilingan, brauzer toʻgʻridan-toʻgʻri API ga
  * murojaat qiladi.
  *
  * Moliya koʻrsatkichlari bu yerda YOʻQ: bazada `payments` jadvali hali

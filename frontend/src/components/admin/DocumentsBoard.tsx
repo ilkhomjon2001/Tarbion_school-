@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
+import { ConfirmArchiveButton } from "@/components/admin/ConfirmArchiveButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ListSkeleton } from "@/components/ui/Skeleton";
@@ -180,15 +181,13 @@ export function DocumentsBoard() {
                   >
                     Berish
                   </button>
-                  <button
-                    type="button"
+                  <ConfirmArchiveButton
                     disabled={busy}
-                    title="Xato ochilgan soʻrovni olib tashlash"
-                    onClick={() => void amal(() => archiveDocument(d.id))}
+                    onConfirm={() => void amal(() => archiveDocument(d.id))}
+                    label="Bekor"
+                    question="Soʻrov olib tashlansinmi?"
                     className="focus-ring rounded px-2 py-1 text-xs font-medium text-foreground-muted transition-colors hover:text-danger disabled:opacity-40"
-                  >
-                    Bekor
-                  </button>
+                  />
                 </span>
               </article>
             ))}

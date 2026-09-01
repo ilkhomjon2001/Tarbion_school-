@@ -18,8 +18,8 @@ import {
   XIcon,
 } from "@/components/ui/icons";
 import { GlobalSearch } from "@/components/ui/GlobalSearch";
-import { DEMO_DIRECTOR } from "@/lib/director/data";
 import type { SearchIndexItem } from "@/lib/search";
+import { getUser } from "@/lib/session";
 
 const NAV_ITEMS = [
   { href: "/rahbar", label: "Bosh sahifa", icon: GridIcon },
@@ -34,6 +34,8 @@ const NAV_ITEMS = [
 export function DirectorMobileTopBar({ searchIndex }: { searchIndex: SearchIndexItem[] }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  // Ism SESSIYADAN (O17) — avval bu yerda demo direktor turardi.
+  const fullName = getUser()?.full_name ?? "—";
 
   return (
     <header className="flex items-center gap-2 border-b border-border bg-surface px-4 py-2.5 md:hidden">
@@ -55,7 +57,7 @@ export function DirectorMobileTopBar({ searchIndex }: { searchIndex: SearchIndex
       <div className="flex shrink-0 items-center gap-1">
         <NotificationBell />
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-semibold text-brand-foreground">
-          {initials(DEMO_DIRECTOR.fullName)}
+          {initials(fullName)}
         </span>
       </div>
 

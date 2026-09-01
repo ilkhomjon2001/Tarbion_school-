@@ -21,6 +21,7 @@
 import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
+import { ConfirmArchiveButton } from "@/components/admin/ConfirmArchiveButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ListSkeleton } from "@/components/ui/Skeleton";
@@ -607,14 +608,11 @@ function StaffRow({
                 </button>
               )}
               {canManage && (
-                <button
-                  type="button"
+                <ConfirmArchiveButton
                   disabled={busy}
-                  onClick={archive}
-                  className="focus-ring rounded px-2 py-1 text-xs font-medium text-danger hover:underline disabled:opacity-50"
-                >
-                  Arxivlash
-                </button>
+                  onConfirm={() => void archive()}
+                  question="Xodim arxivlansinmi?"
+                />
               )}
             </>
           )}

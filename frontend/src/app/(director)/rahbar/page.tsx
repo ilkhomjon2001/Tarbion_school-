@@ -3,9 +3,8 @@
 /**
  * Rahbariyat bosh sahifasi — BAZADAN (DIR-01).
  *
- * Moliya kartochkalari bu yerda YOʻQ: `payments` jadvali hali yaratilmagan
- * (T-046…T-048) va nol koʻrsatish «qarzdorlik yoʻq» degan yolgʻon boʻlardi.
- * Toʻlov moduli ulangach alohida blok qaytariladi.
+ * Moliya bloki ham serverdan (`payments/summary`, O18) — toʻlov moduli
+ * ulangani uchun endi haqiqiy tushum va qarzdorlik koʻrsatiladi.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -23,6 +22,8 @@ import { AreaLineChart } from "@/components/director/charts";
 import { messageOf } from "@/components/shared/LiveSession";
 import { fetchSummary } from "@/lib/appeals/api";
 import { fetchOverview, type DirectorOverviewOut } from "@/lib/director/api";
+import { fetchFinanceSummary, type FinanceSummaryOut } from "@/lib/payments/api";
+import { formatSom } from "@/lib/format";
 
 const PERIODS = [7, 30, 90] as const;
 
@@ -30,18 +31,21 @@ export default function DirectorHomePage() {
   const [days, setDays] = useState<number>(30);
   const [overview, setOverview] = useState<DirectorOverviewOut | null>(null);
   const [openAppeals, setOpenAppeals] = useState<number | null>(null);
+  const [finance, setFinance] = useState<FinanceSummaryOut | null>(null);
   const [error, setError] = useState("");
 
   const load = useCallback(async (period: number) => {
     setOverview(null);
     setError("");
     try {
-      const [data, appeals] = await Promise.all([
+      const [data, appeals, fin] = await Promise.all([
         fetchOverview(period),
         fetchSummary().catch(() => null),
+        fetchFinanceSummary().catch(() => null),
       ]);
       setOverview(data);
       setOpenAppeals(appeals ? appeals.new + appeals.open : null);
+      setFinance(fin);
     } catch (err) {
       setError(messageOf(err));
     }
@@ -178,11 +182,48 @@ export default function DirectorHomePage() {
 
         <Card className="animate-enter h-fit">
           <h2 className="mb-2 text-base font-semibold text-foreground">Moliya</h2>
-          <p className="text-sm text-foreground-muted">
-            Toʻlov moduli hali bazaga ulanmagan (T-046…T-048). Shartnoma, tushum
-            va qarzdorlik koʻrsatkichlari modul yozilgach shu yerda chiqadi —
-            ungacha soxta raqam koʻrsatilmaydi.
-          </p>
+          {finance === null ? (
+            <p className="text-sm text-foreground-muted">
+              Toʻlov jamlanmasini olib boʻlmadi.
+            </p>
+          ) : (
+            <dl className="flex flex-col gap-2 text-sm">
+              <div className="flex items-baseline justify-between gap-2">
+                <dt className="text-foreground-muted">Tushum</dt>
+                <dd className="num font-semibold text-foreground">
+                  {formatSom(finance.paid)}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-2">
+                <dt className="text-foreground-muted">Hisoblangan</dt>
+                <dd className="num font-medium text-foreground">
+                  {formatSom(finance.charged)}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-2">
+                <dt className="text-foreground-muted">Qarzdorlik</dt>
+                <dd
+                  className={`num font-semibold ${
+                    finance.debt > 0 ? "text-danger" : "text-success"
+                  }`}
+                >
+                  {formatSom(finance.debt)}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-2">
+                <dt className="text-foreground-muted">Qarzdorlar</dt>
+                <dd className="num font-medium text-foreground">
+                  {finance.debtors} nafar
+                </dd>
+              </div>
+            </dl>
+          )}
+          <Link
+            href="/rahbar/tolovlar"
+            className="focus-ring mt-3 inline-block rounded text-sm font-medium text-brand-dark hover:underline"
+          >
+            Toʻlovlar boʻlimini ochish →
+          </Link>
         </Card>
       </div>
     </div>

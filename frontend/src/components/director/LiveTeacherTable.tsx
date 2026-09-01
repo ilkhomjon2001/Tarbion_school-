@@ -9,6 +9,7 @@
  * (`/admin/sozlamalar` → Xodimlar) — u yerda haqiqiy hisob ochiladi.
  */
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeleton";
@@ -93,12 +94,15 @@ export function LiveTeacherTable() {
                   className="border-b border-border last:border-0 hover:bg-surface-muted/50"
                 >
                   <td className="px-4 py-3">
-                    <span className="flex items-center gap-2.5 font-medium text-foreground">
+                    <Link
+                      href={`/rahbar/ustozlar/${teacher.id}`}
+                      className="focus-ring flex items-center gap-2.5 rounded font-medium text-foreground hover:text-brand-dark hover:underline"
+                    >
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-tint text-xs font-semibold text-brand-dark">
                         {initials(teacher.full_name)}
                       </span>
                       {teacher.full_name}
-                    </span>
+                    </Link>
                   </td>
                   <td className="px-4 py-3 text-foreground-muted">
                     {teacher.subjects.join(", ") || "—"}

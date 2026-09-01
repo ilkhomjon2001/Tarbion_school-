@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
+import { ConfirmArchiveButton } from "@/components/admin/ConfirmArchiveButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ListSkeleton } from "@/components/ui/Skeleton";
 import { UsersIcon } from "@/components/ui/icons";
@@ -500,14 +501,13 @@ function LeavesTab({
                   {lv.note && ` · ${lv.note}`}
                 </p>
               </div>
-              <button
-                type="button"
+              <ConfirmArchiveButton
                 disabled={busy}
-                onClick={() => void olibTashla(lv.id)}
+                onConfirm={() => void olibTashla(lv.id)}
+                label="Olib tashlash"
+                question="Yozuv olib tashlansinmi?"
                 className="focus-ring rounded px-2 py-1 text-xs font-medium text-foreground-muted transition-colors hover:text-danger disabled:opacity-40"
-              >
-                Olib tashlash
-              </button>
+              />
             </article>
           ))}
         </div>

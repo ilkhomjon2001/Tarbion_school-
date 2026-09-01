@@ -17,6 +17,7 @@
 import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
+import { ConfirmArchiveButton } from "@/components/admin/ConfirmArchiveButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ListSkeleton } from "@/components/ui/Skeleton";
@@ -416,14 +417,13 @@ function HolidaysCard({
                 <span className="font-medium text-foreground">{h.title}</span>
               </span>
               {canEdit && (
-                <button
-                  type="button"
+                <ConfirmArchiveButton
                   disabled={busy}
-                  onClick={() => remove(h.id)}
+                  onConfirm={() => void remove(h.id)}
+                  label="Chiqarish"
+                  question="Taʼtil kuni chiqarilsinmi?"
                   className="focus-ring shrink-0 rounded px-1.5 py-0.5 text-xs font-medium text-danger transition-colors hover:underline disabled:opacity-50"
-                >
-                  Chiqarish
-                </button>
+                />
               )}
             </li>
           ))}

@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
+import { ConfirmArchiveButton } from "@/components/admin/ConfirmArchiveButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ListSkeleton, StatCardSkeleton } from "@/components/ui/Skeleton";
 import { WalletIcon } from "@/components/ui/icons";
@@ -679,14 +680,13 @@ function DiscountForm({
               <span className="num text-foreground">
                 {d.kind === "percent" ? `${d.value}%` : formatSom(d.value)} — {d.reason}
               </span>
-              <button
-                type="button"
+              <ConfirmArchiveButton
                 disabled={busy}
-                onClick={() => onArchive(d.id)}
+                onConfirm={() => onArchive(d.id)}
+                label="Bekor qilish"
+                question="Chegirma bekor qilinsinmi?"
                 className="focus-ring rounded px-1.5 py-0.5 text-xs text-foreground-muted hover:text-danger"
-              >
-                Bekor qilish
-              </button>
+              />
             </li>
           ))}
         </ul>
@@ -893,6 +893,22 @@ function RefundForm({
   );
 }
 
+/**
+ * HTML uchun xavfsiz matn (X-5 ruhida, XSS'ga qarshi).
+ *
+ * `document.write` ga ketadigan HAR BIR qiymat shu yerdan oʻtadi:
+ * oʻquvchi ismi yoki toʻlov izohiga `<script>` yozib qoʻygan odam
+ * kvitansiya oynasida kod bajara olmasin.
+ */
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 /** Kvitansiyani yangi oynada chop etish (TOL-04). */
 function printReceipt(r: {
   studentName: string;
@@ -905,8 +921,9 @@ function printReceipt(r: {
 }) {
   const oyna = window.open("", "_blank", "width=480,height=640");
   if (!oyna) return;
+  const e = escapeHtml;
   oyna.document.write(`<!doctype html>
-<html><head><meta charset="utf-8"><title>Kvitansiya ${r.receiptNo}</title>
+<html><head><meta charset="utf-8"><title>Kvitansiya ${e(r.receiptNo)}</title>
 <style>
   body { font-family: Georgia, serif; max-width: 420px; margin: 24px auto; color: #111; }
   h1 { font-size: 15px; text-align: center; margin: 0 0 2px; }
@@ -917,13 +934,13 @@ function printReceipt(r: {
   .imzo { margin-top: 28px; font-size: 12px; display: flex; justify-content: space-between; }
 </style></head><body>
 <h1>«Tarbion» xususiy umumtaʼlim maktabi</h1>
-<h2>Toʻlov kvitansiyasi № ${r.receiptNo}</h2>
+<h2>Toʻlov kvitansiyasi № ${e(r.receiptNo)}</h2>
 <table>
-  <tr><td>Oʻquvchi</td><td>${r.studentName} (${r.className})</td></tr>
-  <tr><td>Asos</td><td>${r.title}</td></tr>
-  <tr><td>Summa</td><td>${r.amount.toLocaleString("uz-UZ")} soʻm</td></tr>
-  <tr><td>Usul</td><td>${r.method}</td></tr>
-  <tr><td>Sana</td><td>${r.when}</td></tr>
+  <tr><td>Oʻquvchi</td><td>${e(r.studentName)} (${e(r.className)})</td></tr>
+  <tr><td>Asos</td><td>${e(r.title)}</td></tr>
+  <tr><td>Summa</td><td>${e(r.amount.toLocaleString("uz-UZ"))} soʻm</td></tr>
+  <tr><td>Usul</td><td>${e(r.method)}</td></tr>
+  <tr><td>Sana</td><td>${e(r.when)}</td></tr>
 </table>
 <div class="imzo"><span>Qabul qildi: ____________</span><span>Imzo: ____________</span></div>
 <script>window.print();</script>

@@ -19,7 +19,8 @@ import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ListSkeleton } from "@/components/ui/Skeleton";
-import { CalendarIcon, PlusIcon, XIcon } from "@/components/ui/icons";
+import { ConfirmArchiveButton } from "@/components/admin/ConfirmArchiveButton";
+import { CalendarIcon, PlusIcon } from "@/components/ui/icons";
 import {
   fetchCurrentYear,
   fetchTerms,
@@ -204,16 +205,13 @@ export function ScheduleBoard() {
                               </p>
                             )}
                             {canEdit && (
-                              <button
-                                type="button"
+                              <ConfirmArchiveButton
                                 disabled={busy}
-                                onClick={() => remove(entry.id)}
-                                aria-label={`${day.long}, ${period}-para darsini jadvaldan chiqarish`}
+                                onConfirm={() => void remove(entry.id)}
+                                label="Chiqarish"
+                                question="Dars jadvaldan chiqarilsinmi?"
                                 className="focus-ring mt-1 inline-flex items-center gap-0.5 rounded text-xs font-medium text-danger hover:underline disabled:opacity-50"
-                              >
-                                <XIcon className="h-3 w-3" />
-                                Chiqarish
-                              </button>
+                              />
                             )}
                           </div>
                         ) : canEdit ? (

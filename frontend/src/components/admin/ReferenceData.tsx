@@ -20,6 +20,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AcademicCalendarTab } from "@/components/admin/AcademicCalendarTab";
+import { ConfirmArchiveButton } from "@/components/admin/ConfirmArchiveButton";
 import { ScheduleBoard } from "@/components/admin/ScheduleBoard";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -331,19 +332,12 @@ function ClassesTab({ dir }: { dir: SchoolDirectory }) {
                       </button>
                     </td>
                     <td className="px-3 py-2.5 text-right">
-                      <button
-                        type="button"
+                      <ConfirmArchiveButton
                         disabled={busy}
-                        title={
-                          cls.student_count > 0
-                            ? "Sinfda oʻquvchi bor — avval koʻchiring"
-                            : "Sinfni arxivlash"
-                        }
-                        onClick={() => void amal(() => archiveClass(cls.id))}
+                        onConfirm={() => void amal(() => archiveClass(cls.id))}
+                        question="Sinf arxivlansinmi?"
                         className={archiveBtn}
-                      >
-                        Arxivlash
-                      </button>
+                      />
                     </td>
                   </tr>
                 ))}
@@ -679,15 +673,12 @@ function SubjectsTab({ dir }: { dir: SchoolDirectory }) {
                         )}
                       </td>
                       <td className="px-3 py-2.5 text-right">
-                        <button
-                          type="button"
+                        <ConfirmArchiveButton
                           disabled={busy}
-                          title="Jadvalda ishlatilayotgan fan arxivlanmaydi"
-                          onClick={() => void amal(() => archiveSubject(s.id))}
+                          onConfirm={() => void amal(() => archiveSubject(s.id))}
+                          question="Fan arxivlansinmi?"
                           className={archiveBtn}
-                        >
-                          Arxivlash
-                        </button>
+                        />
                       </td>
                     </tr>
                   );

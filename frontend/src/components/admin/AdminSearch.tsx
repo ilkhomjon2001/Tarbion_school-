@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SearchIcon } from "@/components/ui/icons";
-import { useAdmin } from "@/lib/admin/store";
-import { DOCUMENT_TYPE_LABELS } from "@/lib/admin/types";
+import { fetchStudents } from "@/lib/school/api";
 
 interface Hit {
   id: string;
@@ -14,8 +13,11 @@ interface Hit {
 }
 
 /**
- * Admin qidiruvi — do'kondagi jonli maʼlumot boʻyicha ishlaydi, alohida
- * indeks tuzilmaydi. Yangi qabul qilingan oʻquvchi darhol topiladi.
+ * Admin qidiruvi — BAZADAN (`school/students?q=`).
+ *
+ * Kesim serverda: qidiruv soʻrovi API ga ketadi, u esa faqat huquq
+ * doirasidagi oʻquvchilarni qaytaradi (X-1). Soʻrov 300 ms
+ * kechiktiriladi — har bosilgan harfga alohida soʻrov ketmasin.
  */
 export function AdminSearch({
   className = "",
@@ -24,53 +26,46 @@ export function AdminSearch({
   className?: string;
   compact?: boolean;
 }) {
-  const { students, applications, documents } = useAdmin();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [hits, setHits] = useState<Hit[]>([]);
+  const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const hits = useMemo<Hit[]>(() => {
-    const q = query.trim().toLowerCase();
-    if (q.length < 2) return [];
-
-    const studentHits: Hit[] = students
-      .filter(
-        (s) =>
-          s.fullName.toLowerCase().includes(q) ||
-          s.guardianName.toLowerCase().includes(q) ||
-          s.guardianPhone.replace(/\s/g, "").includes(q.replace(/\s/g, "")) ||
-          s.className.toLowerCase() === q,
-      )
-      .slice(0, 5)
-      .map((s) => ({
-        id: `st-${s.id}`,
-        label: `${s.fullName} · ${s.className}`,
-        category: "Oʻquvchi",
-        href: `/admin/oquvchilar?q=${encodeURIComponent(s.fullName)}`,
-      }));
-
-    const appHits: Hit[] = applications
-      .filter((a) => a.studentFullName.toLowerCase().includes(q))
-      .slice(0, 3)
-      .map((a) => ({
-        id: `ap-${a.id}`,
-        label: a.studentFullName,
-        category: "Ariza",
-        href: "/admin/qabul",
-      }));
-
-    const docHits: Hit[] = documents
-      .filter((d) => (d.number ?? "").toLowerCase().includes(q))
-      .slice(0, 3)
-      .map((d) => ({
-        id: `dc-${d.id}`,
-        label: `№ ${d.number} · ${DOCUMENT_TYPE_LABELS[d.type]}`,
-        category: "Maʼlumotnoma",
-        href: "/admin/malumotnomalar",
-      }));
-
-    return [...studentHits, ...appHits, ...docHits];
-  }, [query, students, applications, documents]);
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      setHits([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    let alive = true;
+    const timer = setTimeout(() => {
+      fetchStudents({ query: q })
+        .then((rows) => {
+          if (!alive) return;
+          setHits(
+            rows.slice(0, 8).map((s) => ({
+              id: s.id,
+              label: `${s.full_name}${s.class_name ? ` · ${s.class_name}` : ""}`,
+              category: s.is_archived ? "Arxivda" : "Oʻquvchi",
+              href: `/admin/oquvchilar?q=${encodeURIComponent(s.full_name)}`,
+            })),
+          );
+        })
+        .catch(() => {
+          if (alive) setHits([]);
+        })
+        .finally(() => {
+          if (alive) setLoading(false);
+        });
+    }, 300);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [query]);
 
   return (
     <div
@@ -93,8 +88,8 @@ export function AdminSearch({
           setOpen(true);
         }}
         onFocus={() => setOpen(true)}
-        placeholder="Oʻquvchi, ota-ona, telefon, hujjat №"
-        aria-label="Admin panelda qidirish"
+        placeholder="Oʻquvchini qidirish…"
+        aria-label="Oʻquvchini qidirish"
         className={`w-full min-w-0 rounded-lg border border-border bg-surface-muted text-sm text-foreground outline-none transition-colors placeholder:text-foreground-muted focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25 ${
           compact ? "py-1.5 pl-8 pr-2" : "py-2 pl-9 pr-3"
         }`}
@@ -102,7 +97,9 @@ export function AdminSearch({
 
       {open && query.trim().length >= 2 && (
         <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-80 overflow-y-auto rounded-lg border border-border bg-surface py-1 shadow-lg">
-          {hits.length === 0 ? (
+          {loading ? (
+            <p className="px-3 py-2 text-sm text-foreground-muted">Qidirilmoqda…</p>
+          ) : hits.length === 0 ? (
             <p className="px-3 py-2 text-sm text-foreground-muted">Hech narsa topilmadi</p>
           ) : (
             hits.map((hit) => (

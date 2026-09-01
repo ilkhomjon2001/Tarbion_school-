@@ -1,12 +1,25 @@
 "use client";
 
+/**
+ * Qabul (ADM-02) — toʻrt bosqichli sehrgar, BAZAGA yozadi.
+ *
+ * Demo «arizalar navbati» olib tashlandi: arizalar (CRM) moduli hali
+ * serverda yoʻq, shuning uchun qabul faqat boʻsh formadan boshlanadi.
+ * Har bir qadam haqiqiy API bilan tugaydi: `createStudent` →
+ * `createGuardian` → `setContract` (+ `addDiscount`).
+ *
+ * Bazaga yozilmaydigan maydonlar formada YOʻQ (jins, oldingi maktab,
+ * manzil, toʻlov kuni) — saqlanmaydigan narsani soʻrash aldamchilik
+ * boʻlardi. Backend sxemasi kengaygach qaytariladi.
+ */
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
-import { CheckIcon, PlusIcon } from "@/components/ui/icons";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { CheckIcon, ClipboardIcon, PlusIcon } from "@/components/ui/icons";
 import { formatSom } from "@/lib/format";
-import { ACADEMIC_YEAR, useAdmin, useAdminDispatch } from "@/lib/admin/store";
-import { APPLICATION_STATUS_LABELS, type Application } from "@/lib/admin/types";
+import { fetchCurrentYear } from "@/lib/academic/api";
 import {
   apiXato,
   createGuardian,
@@ -14,7 +27,7 @@ import {
   fetchClasses,
   type ClassOut,
 } from "@/lib/school/api";
-import { addDiscount, setContract } from "@/lib/payments/api";
+import { addDiscount, setContract, DEFAULT_MONTHLY_FEE } from "@/lib/payments/api";
 
 const STEPS = ["Oʻquvchi", "Ota-ona / vasiy", "Sinf va shartnoma", "Tasdiqlash"];
 
@@ -49,53 +62,45 @@ function splitFullName(full: string): {
   };
 }
 
-/** Boʻsh forma — "Ariza kutmasdan qoʻshish" uchun. */
-function emptyApplication(defaultClass: string): Application {
+/** Sehrgar ichidagi qoralama — faqat shu komponentda yashaydi. */
+interface EnrollDraft {
+  studentFullName: string;
+  birthDate: string;
+  guardianFullName: string;
+  guardianPhone: string;
+  guardianRelation: string;
+  className: string;
+  enrollDate: string;
+  monthlyFee: number;
+  discountPercent: number;
+  discountReason: string;
+  note: string;
+}
+
+function emptyDraft(defaultClass: string): EnrollDraft {
+  const today = new Date().toISOString().slice(0, 10);
   return {
-    id: "",
     studentFullName: "",
     birthDate: "",
-    gender: "erkak",
-    previousSchool: "",
     guardianFullName: "",
     guardianPhone: "+998 ",
     guardianRelation: "father",
-    address: "",
     className: defaultClass,
-    academicYear: ACADEMIC_YEAR,
-    enrollDate: "2026-09-02",
-    monthlyFee: 3_500_000,
+    enrollDate: today,
+    monthlyFee: DEFAULT_MONTHLY_FEE,
     discountPercent: 0,
     discountReason: "",
-    payDay: 5,
     note: "",
-    status: "new",
-    createdAt: "Qoʻlda kiritildi",
   };
 }
 
-/**
- * Qabul jarayoni ikki yoʻl bilan boshlanadi:
- *   1) kelib tushgan arizadan — shaxsiy maʼlumot allaqachon toʻlgan,
- *      shuning uchun 3-bosqichdan ochiladi;
- *   2) qoʻlda — toʻrtala bosqich boshidan toʻldiriladi (ota-ona
- *      maktabga oʻzi kelgan holat).
- */
-export function EnrollWizard({
-  startBlank = false,
-  fromLeadId,
-}: {
-  startBlank?: boolean;
-  /** Lidlar boʻlimidan kelgan boʻlsa — forma oldindan toʻldiriladi. */
-  fromLeadId?: string;
-}) {
+export function EnrollWizard({ startBlank = false }: { startBlank?: boolean }) {
   const router = useRouter();
-  const { applications, leads } = useAdmin();
-  const dispatch = useAdminDispatch();
 
   // Sinflar BAZADAN — sinf tanlanmasa oʻquvchi «sinfsiz» yaratiladi.
   const [classes, setClasses] = useState<ClassOut[]>([]);
   const [loadError, setLoadError] = useState("");
+  const [academicYear, setAcademicYear] = useState("—");
   useEffect(() => {
     void (async () => {
       try {
@@ -103,78 +108,60 @@ export function EnrollWizard({
       } catch (err) {
         setLoadError(apiXato(err, "Sinflar roʻyxatini olib boʻlmadi."));
       }
+      const year = await fetchCurrentYear().catch(() => null);
+      if (year) setAcademicYear(year.name);
     })();
   }, []);
 
-  const [draft, setDraft] = useState<Application | null>(() => {
-    if (!startBlank) return null;
-    const blank = emptyApplication("");
-    const lead = fromLeadId ? leads.find((l) => l.id === fromLeadId) : undefined;
-    if (!lead) return blank;
-    // Lidda bor maʼlumot koʻchiriladi, qolgani qoʻlda toʻldiriladi.
-    return {
-      ...blank,
-      studentFullName: lead.childName,
-      birthDate: `${lead.birthYear}-01-01`,
-      className: lead.targetClass,
-      guardianFullName: lead.parentName,
-      guardianPhone: lead.phone,
-      note: lead.note,
-      createdAt: `Liddan (${lead.createdAt})`,
-    };
-  });
-  const [step, setStep] = useState(startBlank ? 0 : 2);
+  const [draft, setDraft] = useState<EnrollDraft | null>(() =>
+    startBlank ? emptyDraft("") : null,
+  );
+  const [step, setStep] = useState(0);
   const [done, setDone] = useState<EnrollResult | null>(null);
   const [touched, setTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
 
-  const pending = applications.filter((a) => a.status === "new");
-
   /**
-   * Yakuniy qadam — BAZAGA yozadi: avval oʻquvchi, keyin vasiy hisobi.
-   * Vasiy paroli javobda BIR MARTA keladi va yakuniy ekranda koʻrsatiladi.
+   * Yakuniy qadam — BAZAGA yozadi: oʻquvchi → vasiy hisobi → shartnoma
+   * (→ chegirma). Vasiy paroli javobda BIR MARTA keladi va yakuniy
+   * ekranda koʻrsatiladi.
    *
    * Telefon boshqa hisobda boʻlsa server 409 qaytaradi va xabar kimligini
    * aytadi — bunday holda ikkinchi farzand oʻquvchi kartochkasidagi
    * «Mavjud hisobga bogʻlash» orqali qoʻshiladi.
    */
-  async function accept(application: Application) {
+  async function accept(d: EnrollDraft) {
     setSaving(true);
     setSaveError("");
     try {
-      const classId =
-        classes.find((c) => c.name === application.className)?.id ?? null;
+      const classId = classes.find((c) => c.name === d.className)?.id ?? null;
       const student = await createStudent({
-        ...splitFullName(application.studentFullName),
-        birth_date: application.birthDate || null,
+        ...splitFullName(d.studentFullName),
+        birth_date: d.birthDate || null,
         class_id: classId,
       });
       const guardian = await createGuardian(student.id, {
-        ...splitFullName(application.guardianFullName),
-        phone: application.guardianPhone.trim() || null,
-        relation: application.guardianRelation,
+        ...splitFullName(d.guardianFullName),
+        phone: d.guardianPhone.trim() || null,
+        relation: d.guardianRelation,
         is_primary: true,
       });
 
-      // Shartnoma ham BAZAGA yoziladi (TOL-01): joriy oyning 1-sanasidan.
-      // Chegirma foizi koʻrsatilgan boʻlsa u ham sabab bilan saqlanadi.
-      const hozir = new Date();
-      const oyBoshi = `${hozir.getFullYear()}-${String(hozir.getMonth() + 1).padStart(2, "0")}-01`;
-      await setContract(student.id, application.monthlyFee, oyBoshi, "Qabul sehrgaridan");
-      if (application.discountPercent > 0) {
+      // Shartnoma BAZAGA yoziladi (TOL-01): qabul oyining 1-sanasidan.
+      const startsOn = `${d.enrollDate.slice(0, 7)}-01`;
+      await setContract(
+        student.id,
+        d.monthlyFee,
+        startsOn,
+        d.note.trim() || "Qabul sehrgaridan",
+      );
+      if (d.discountPercent > 0) {
         await addDiscount(student.id, {
           kind: "percent",
-          value: application.discountPercent,
-          reason: "Qabulda kelishilgan chegirma",
-          starts_on: oyBoshi,
-        });
-      }
-      if (application.id) {
-        dispatch({
-          type: "ACCEPT_APPLICATION",
-          application,
-          applicationId: application.id,
+          value: d.discountPercent,
+          reason: d.discountReason.trim() || "Qabulda kelishilgan chegirma",
+          starts_on: startsOn,
         });
       }
       setDone({
@@ -190,21 +177,14 @@ export function EnrollWizard({
     }
   }
 
-  function startFromApplication(application: Application) {
-    setDraft({ ...application });
-    setStep(2);
-    setDone(null);
-    setTouched(false);
-  }
-
   function startBlankDraft() {
-    setDraft(emptyApplication(classes[0]?.name ?? ""));
+    setDraft(emptyDraft(classes[0]?.name ?? ""));
     setStep(0);
     setDone(null);
     setTouched(false);
   }
 
-  function update(patch: Partial<Application>) {
+  function update(patch: Partial<EnrollDraft>) {
     setDraft((prev) => (prev ? { ...prev, ...patch } : prev));
   }
 
@@ -225,7 +205,7 @@ export function EnrollWizard({
           <div>
             <h1 className="text-h2 font-bold text-foreground">Qabul</h1>
             <p className="text-sm text-foreground-muted">
-              Kelib tushgan arizani koʻrib chiqing yoki oʻquvchini qoʻlda kiriting
+              Yangi oʻquvchini bazaga kiritish va vasiy hisobini ochish
             </p>
           </div>
           <button
@@ -234,66 +214,15 @@ export function EnrollWizard({
             className="focus-ring inline-flex h-10 items-center gap-1.5 rounded-lg bg-brand px-3.5 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark"
           >
             <PlusIcon className="h-4 w-4" />
-            Ariza kutmasdan qoʻshish
+            Yangi qabul
           </button>
         </div>
 
-        {pending.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-surface-muted px-4 py-10 text-center">
-            <p className="text-sm font-medium text-foreground">Yangi ariza yoʻq</p>
-            <p className="mt-1 text-sm text-foreground-muted">
-              Ota-ona maktabga oʻzi kelgan boʻlsa, tepadagi tugma orqali qoʻlda kiriting.
-            </p>
-          </div>
-        ) : (
-          <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            {pending.map((application) => (
-              <li
-                key={application.id}
-                className="animate-enter rounded-xl border border-border bg-surface p-4 shadow-sm"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-foreground">
-                      {application.studentFullName}
-                    </p>
-                    <p className="text-xs text-foreground-muted">
-                      {application.className} · {application.previousSchool}
-                    </p>
-                  </div>
-                  <Badge tone="warning">{APPLICATION_STATUS_LABELS[application.status]}</Badge>
-                </div>
-                <dl className="mt-3 space-y-1 border-t border-border pt-3 text-xs">
-                  <Row label="Ota-ona">{application.guardianFullName}</Row>
-                  <Row label="Telefon">{application.guardianPhone}</Row>
-                  <Row label="Kelib tushdi">{application.createdAt}</Row>
-                </dl>
-                <div className="mt-3 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => startFromApplication(application)}
-                    className="focus-ring flex-1 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark"
-                  >
-                    Koʻrib chiqish
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      dispatch({
-                        type: "REJECT_APPLICATION",
-                        applicationId: application.id,
-                        reason: "Joy yoʻq",
-                      })
-                    }
-                    className="focus-ring rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground-muted transition-colors hover:border-danger hover:text-danger"
-                  >
-                    Rad etish
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+        <EmptyState
+          icon={<ClipboardIcon className="h-5 w-5" />}
+          title="Arizalar (CRM) boʻlimi tayyorlanmoqda"
+          description="Onlayn kelib tushadigan arizalar navbati keyingi bosqichda serverga ulanadi. Hozircha qabul «Yangi qabul» tugmasi orqali qoʻlda kiritiladi."
+        />
       </div>
     );
   }
@@ -325,11 +254,16 @@ export function EnrollWizard({
             {step === 0 && <StudentStep draft={draft} update={update} />}
             {step === 1 && <GuardianStep draft={draft} update={update} />}
             {step === 2 && (
-              <ContractStep draft={draft} update={update} classes={classes} />
+              <ContractStep
+                draft={draft}
+                update={update}
+                classes={classes}
+                academicYear={academicYear}
+              />
             )}
             {step === 3 && (
               <ConfirmStep
-                application={{ ...draft, monthlyFee: monthly }}
+                draft={{ ...draft, monthlyFee: monthly }}
                 classes={classes}
               />
             )}
@@ -415,14 +349,14 @@ export function EnrollWizard({
           </div>
         </div>
 
-        <RecapPanel application={draft} step={step} onEdit={setStep} />
+        <RecapPanel draft={draft} step={step} onEdit={setStep} />
       </div>
     </div>
   );
 }
 
 /** Bosqich boʻyicha majburiy maydonlar. */
-function validate(draft: Application, step: number): string[] {
+function validate(draft: EnrollDraft, step: number): string[] {
   const problems: string[] = [];
 
   if (step === 0) {
@@ -458,8 +392,8 @@ function StudentStep({
   draft,
   update,
 }: {
-  draft: Application;
-  update: (patch: Partial<Application>) => void;
+  draft: EnrollDraft;
+  update: (patch: Partial<EnrollDraft>) => void;
 }) {
   return (
     <>
@@ -486,35 +420,6 @@ function StudentStep({
             className={inputClass}
           />
         </Field>
-        <Field label="Jinsi">
-          <div className="flex gap-1 rounded-lg border border-border p-1">
-            {(["erkak", "ayol"] as const).map((g) => (
-              <button
-                key={g}
-                type="button"
-                onClick={() => update({ gender: g })}
-                aria-pressed={draft.gender === g}
-                className={`focus-ring flex-1 rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
-                  draft.gender === g
-                    ? "bg-brand text-brand-foreground"
-                    : "text-foreground-muted hover:bg-surface-muted"
-                }`}
-              >
-                {g === "erkak" ? "Erkak" : "Ayol"}
-              </button>
-            ))}
-          </div>
-        </Field>
-        <div className="sm:col-span-2">
-          <Field label="Oldingi taʼlim muassasasi">
-            <input
-              value={draft.previousSchool}
-              onChange={(e) => update({ previousSchool: e.target.value })}
-              placeholder="Birinchi sinfga kelayotgan boʻlsa — boʻsh qoldiring"
-              className={inputClass}
-            />
-          </Field>
-        </div>
       </div>
     </>
   );
@@ -524,8 +429,8 @@ function GuardianStep({
   draft,
   update,
 }: {
-  draft: Application;
-  update: (patch: Partial<Application>) => void;
+  draft: EnrollDraft;
+  update: (patch: Partial<EnrollDraft>) => void;
 }) {
   return (
     <>
@@ -567,16 +472,6 @@ function GuardianStep({
             ))}
           </select>
         </Field>
-        <div className="sm:col-span-2">
-          <Field label="Yashash manzili">
-            <input
-              value={draft.address}
-              onChange={(e) => update({ address: e.target.value })}
-              placeholder="Toshkent sh., Yunusobod t., 4-daha, 12-uy"
-              className={inputClass}
-            />
-          </Field>
-        </div>
       </div>
     </>
   );
@@ -586,10 +481,12 @@ function ContractStep({
   draft,
   update,
   classes,
+  academicYear,
 }: {
-  draft: Application;
-  update: (patch: Partial<Application>) => void;
+  draft: EnrollDraft;
+  update: (patch: Partial<EnrollDraft>) => void;
   classes: ClassOut[];
+  academicYear: string;
 }) {
   const chosen = classes.find((c) => c.name === draft.className);
 
@@ -600,7 +497,7 @@ function ContractStep({
       </h2>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Oʻquv yili">
-          <input value={ACADEMIC_YEAR} readOnly className={`${inputClass} bg-surface-muted`} />
+          <input value={academicYear} readOnly className={`${inputClass} bg-surface-muted`} />
         </Field>
         <Field label="Sinf">
           <select
@@ -626,16 +523,19 @@ function ContractStep({
             onChange={(e) => update({ enrollDate: e.target.value })}
             className={inputClass}
           />
+          <span className="mt-1 block text-xs text-foreground-muted">
+            Shartnoma shu oyning 1-sanasidan kuchga kiradi.
+          </span>
         </Field>
         <Field label="Oylik shartnoma summasi">
           <input
             type="number"
             value={draft.monthlyFee}
             onChange={(e) => update({ monthlyFee: Number(e.target.value) })}
-            className={inputClass}
+            className={`${inputClass} num`}
           />
           <span className="mt-1 block text-xs text-foreground-muted">
-            Sinf bosqichi boʻyicha standart summa
+            Soʻmda, tiyin yoʻq
           </span>
         </Field>
         <Field label="Chegirma">
@@ -647,19 +547,6 @@ function ContractStep({
             {[0, 10, 25, 50].map((p) => (
               <option key={p} value={p}>
                 {p === 0 ? "Yoʻq" : `${p}%`}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Toʻlov kuni">
-          <select
-            value={draft.payDay}
-            onChange={(e) => update({ payDay: Number(e.target.value) })}
-            className={inputClass}
-          >
-            {[5, 10, 15, 25].map((d) => (
-              <option key={d} value={d}>
-                Har oyning {d}-sanasi
               </option>
             ))}
           </select>
@@ -679,7 +566,7 @@ function ContractStep({
         )}
 
         <div className="sm:col-span-2">
-          <Field label="Qoʻshimcha izoh (ixtiyoriy)">
+          <Field label="Shartnoma izohi (ixtiyoriy)">
             <textarea
               value={draft.note}
               onChange={(e) => update({ note: e.target.value })}
@@ -739,51 +626,38 @@ function Stepper({ step, onGo }: { step: number; onGo: (target: number) => void 
   );
 }
 
-function ConfirmStep({
-  application,
-  classes,
-}: {
-  application: Application;
-  classes: ClassOut[];
-}) {
+function ConfirmStep({ draft, classes }: { draft: EnrollDraft; classes: ClassOut[] }) {
   const homeroomName =
-    classes.find((c) => c.name === application.className)?.homeroom_teacher ?? "—";
+    classes.find((c) => c.name === draft.className)?.homeroom_teacher ?? "—";
 
   return (
     <>
       <h2 className="mb-1 text-base font-semibold text-foreground">Tasdiqlash</h2>
       <p className="mb-4 text-sm text-foreground-muted">
-        Maʼlumotlarni tekshiring. Tasdiqlangach oʻquvchi {application.className} sinfiga
-        qoʻshiladi va vasiy uchun kabinet hisobi ochiladi.
-      </p>
-      <p className="mb-4 rounded-lg bg-warning-tint px-3 py-2 text-xs text-warning">
-        Toʻlov moduli hali ulanmagan: shartnoma summasi, chegirma va toʻlov kuni
-        hozircha bazaga yozilmaydi.
+        Maʼlumotlarni tekshiring. Tasdiqlangach oʻquvchi {draft.className} sinfiga
+        qoʻshiladi, shartnoma yoziladi va vasiy uchun kabinet hisobi ochiladi.
       </p>
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
-        <Row label="Oʻquvchi">{application.studentFullName}</Row>
-        <Row label="Tugʻilgan sana">{application.birthDate || "—"}</Row>
-        <Row label="Sinf">{application.className}</Row>
+        <Row label="Oʻquvchi">{draft.studentFullName}</Row>
+        <Row label="Tugʻilgan sana">{draft.birthDate || "—"}</Row>
+        <Row label="Sinf">{draft.className}</Row>
         <Row label="Sinf rahbari">{homeroomName}</Row>
-        <Row label="Qabul sanasi">{application.enrollDate}</Row>
-        <Row label="Oldingi maktab">{application.previousSchool || "—"}</Row>
+        <Row label="Qabul sanasi">{draft.enrollDate}</Row>
         <Row label="Ota-ona / vasiy">
-          {application.guardianFullName} ({relationLabel(application.guardianRelation)})
+          {draft.guardianFullName} ({relationLabel(draft.guardianRelation)})
         </Row>
-        <Row label="Telefon">{application.guardianPhone}</Row>
-        <Row label="Manzil">{application.address || "—"}</Row>
-        <Row label="Oylik toʻlov">{formatSom(application.monthlyFee)}</Row>
-        <Row label="Toʻlov kuni">Har oyning {application.payDay}-sanasi</Row>
-        {application.discountPercent > 0 && (
+        <Row label="Telefon">{draft.guardianPhone}</Row>
+        <Row label="Oylik toʻlov (chegirma bilan)">{formatSom(draft.monthlyFee)}</Row>
+        {draft.discountPercent > 0 && (
           <>
-            <Row label="Chegirma">{application.discountPercent}%</Row>
-            <Row label="Chegirma asosi">{application.discountReason}</Row>
+            <Row label="Chegirma">{draft.discountPercent}%</Row>
+            <Row label="Chegirma asosi">{draft.discountReason}</Row>
           </>
         )}
       </dl>
-      {application.note && (
+      {draft.note && (
         <p className="mt-3 rounded-lg bg-surface-muted px-3 py-2 text-sm text-foreground-muted">
-          {application.note}
+          {draft.note}
         </p>
       )}
     </>
@@ -791,11 +665,11 @@ function ConfirmStep({
 }
 
 function RecapPanel({
-  application,
+  draft,
   step,
   onEdit,
 }: {
-  application: Application;
+  draft: EnrollDraft;
   step: number;
   onEdit: (step: number) => void;
 }) {
@@ -806,17 +680,10 @@ function RecapPanel({
       <SectionHead index={1} label="Oʻquvchi" show={step > 0} onEdit={() => onEdit(0)} />
       {step > 0 ? (
         <div className="mt-1.5 rounded-lg bg-surface-muted p-3">
-          <p className="text-sm font-medium text-foreground">{application.studentFullName}</p>
+          <p className="text-sm font-medium text-foreground">{draft.studentFullName}</p>
           <dl className="mt-2 grid grid-cols-2 gap-2 text-xs">
-            <Row label="Tugʻilgan sana">{application.birthDate || "—"}</Row>
-            <Row label="Jinsi">{application.gender === "erkak" ? "Erkak" : "Ayol"}</Row>
+            <Row label="Tugʻilgan sana">{draft.birthDate || "—"}</Row>
           </dl>
-          {application.previousSchool && (
-            <p className="mt-2 border-t border-border pt-2 text-xs text-foreground-muted">
-              Oldingi taʼlim muassasasi
-              <span className="mt-0.5 block text-foreground">{application.previousSchool}</span>
-            </p>
-          )}
         </div>
       ) : (
         <Placeholder />
@@ -827,13 +694,12 @@ function RecapPanel({
       </div>
       {step > 1 ? (
         <div className="mt-1.5 rounded-lg bg-surface-muted p-3">
-          <p className="text-sm font-medium text-foreground">{application.guardianFullName}</p>
+          <p className="text-sm font-medium text-foreground">{draft.guardianFullName}</p>
           <span className="mt-1 inline-block">
-            <Badge tone="success">{relationLabel(application.guardianRelation)}</Badge>
+            <Badge tone="success">{relationLabel(draft.guardianRelation)}</Badge>
           </span>
           <dl className="mt-2 space-y-1.5 text-xs">
-            <Row label="Telefon raqami">{application.guardianPhone}</Row>
-            <Row label="Manzil">{application.address || "—"}</Row>
+            <Row label="Telefon raqami">{draft.guardianPhone}</Row>
           </dl>
         </div>
       ) : (
@@ -845,14 +711,14 @@ function RecapPanel({
       </div>
       {step > 2 ? (
         <div className="mt-1.5 rounded-lg bg-surface-muted p-3">
-          <p className="text-sm font-medium text-foreground">{application.className} sinf</p>
+          <p className="text-sm font-medium text-foreground">{draft.className} sinf</p>
           <dl className="mt-2 space-y-1.5 text-xs">
             <Row label="Oylik toʻlov">
               {formatSom(
-                Math.round((application.monthlyFee * (100 - application.discountPercent)) / 100),
+                Math.round((draft.monthlyFee * (100 - draft.discountPercent)) / 100),
               )}
             </Row>
-            <Row label="Qabul sanasi">{application.enrollDate}</Row>
+            <Row label="Qabul sanasi">{draft.enrollDate}</Row>
           </dl>
         </div>
       ) : (
