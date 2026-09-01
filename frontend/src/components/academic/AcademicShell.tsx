@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 
@@ -21,7 +21,7 @@ import {
   XIcon,
 } from "@/components/ui/icons";
 import { logout } from "@/lib/auth";
-import { ACADEMIC_HEAD } from "@/lib/school/staff";
+import { getUser } from "@/lib/session";
 
 const SUBTITLE = "Oʻquv boʻlimi";
 
@@ -90,19 +90,7 @@ export function AcademicSidebar() {
       </nav>
 
       <div className="border-t border-border p-3">
-        <div className="mb-2 flex items-center gap-2.5 px-2 py-1.5">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-semibold text-brand-foreground">
-            {ACADEMIC_HEAD.initials}
-          </span>
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-medium text-foreground">
-              {ACADEMIC_HEAD.shortName}
-            </span>
-            <span className="block truncate text-xs text-foreground-muted">
-              Oʻquv boʻlimi mudiri
-            </span>
-          </span>
-        </div>
+        <UserBox />
         <Link
           href="/login"
           onClick={() => logout()}
@@ -202,5 +190,37 @@ export function AcademicMobileTopBar() {
         </div>
       )}
     </header>
+  );
+}
+
+
+/** Sessiyadagi HAQIQIY foydalanuvchi — mock xodim emas. */
+function UserBox() {
+  const [name, setName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const u = getUser();
+    setName(u ? u.full_name : null);
+  }, []);
+
+  const initials = (name ?? "")
+    .split(" ")
+    .map((p) => p[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  return (
+    <div className="mb-2 flex items-center gap-2.5 px-2 py-1.5">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-semibold text-brand-foreground">
+        {initials || "?"}
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-medium text-foreground">
+          {name ?? "…"}
+        </span>
+        <span className="block truncate text-xs text-foreground-muted">Oʻquv boʻlimi</span>
+      </span>
+    </div>
   );
 }

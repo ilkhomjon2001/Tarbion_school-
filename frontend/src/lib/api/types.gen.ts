@@ -1292,6 +1292,141 @@ export type EmployeeOut = {
 };
 
 /**
+ * EnterResultsIn
+ */
+export type EnterResultsIn = {
+    /**
+     * Scores
+     */
+    scores: Array<ScoreItemIn>;
+};
+
+/**
+ * ExamCreateIn
+ */
+export type ExamCreateIn = {
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Class Id
+     */
+    class_id: string;
+    /**
+     * Exam Date
+     */
+    exam_date: string;
+};
+
+/**
+ * ExamOut
+ */
+export type ExamOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Subject Name
+     */
+    subject_name: string;
+    /**
+     * Class Id
+     */
+    class_id: string;
+    /**
+     * Class Name
+     */
+    class_name: string;
+    /**
+     * Exam Date
+     */
+    exam_date: string;
+    stats: ExamStatsOut;
+};
+
+/**
+ * ExamResultRowOut
+ */
+export type ExamResultRowOut = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Student Name
+     */
+    student_name: string;
+    /**
+     * Score
+     */
+    score: number | null;
+    /**
+     * Absent
+     */
+    absent: boolean;
+    /**
+     * Recorded
+     */
+    recorded: boolean;
+};
+
+/**
+ * ExamStatsOut
+ */
+export type ExamStatsOut = {
+    /**
+     * Entered
+     */
+    entered: number;
+    /**
+     * Absent
+     */
+    absent: number;
+    /**
+     * Average
+     */
+    average: number | null;
+    /**
+     * Highest
+     */
+    highest: number | null;
+    /**
+     * Lowest
+     */
+    lowest: number | null;
+    /**
+     * Pass Rate
+     */
+    pass_rate: number | null;
+};
+
+/**
  * GenerationOut
  *
  * Darslar generatsiyasi natijasi (T-012).
@@ -2165,6 +2300,80 @@ export type PermissionOut = {
 };
 
 /**
+ * PlanCreateIn
+ */
+export type PlanCreateIn = {
+    /**
+     * Teacher Id
+     */
+    teacher_id: string;
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Class Id
+     */
+    class_id: string;
+    /**
+     * Period
+     */
+    period: string;
+};
+
+/**
+ * PlanOut
+ */
+export type PlanOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Teacher Id
+     */
+    teacher_id: string;
+    /**
+     * Teacher Name
+     */
+    teacher_name: string;
+    /**
+     * Subject Name
+     */
+    subject_name: string;
+    /**
+     * Class Name
+     */
+    class_name: string;
+    /**
+     * Period
+     */
+    period: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Comment
+     */
+    comment: string | null;
+};
+
+/**
+ * PlanStatusIn
+ */
+export type PlanStatusIn = {
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Comment
+     */
+    comment?: string | null;
+};
+
+/**
  * ProfileIn
  */
 export type ProfileIn = {
@@ -2451,6 +2660,24 @@ export type ScheduleEntryUpdateIn = {
      * Room
      */
     room?: string | null;
+};
+
+/**
+ * ScoreItemIn
+ */
+export type ScoreItemIn = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Score
+     */
+    score?: number | null;
+    /**
+     * Absent
+     */
+    absent?: boolean;
 };
 
 /**
@@ -4857,6 +5084,219 @@ export type HrArchiveLeaveResponses = {
 };
 
 export type HrArchiveLeaveResponse = HrArchiveLeaveResponses[keyof HrArchiveLeaveResponses];
+
+export type ExamsListExamsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/exams';
+};
+
+export type ExamsListExamsResponses = {
+    /**
+     * Response Exams List Exams
+     *
+     * Successful Response
+     */
+    200: Array<ExamOut>;
+};
+
+export type ExamsListExamsResponse = ExamsListExamsResponses[keyof ExamsListExamsResponses];
+
+export type ExamsCreateExamData = {
+    body: ExamCreateIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/exams';
+};
+
+export type ExamsCreateExamErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ExamsCreateExamError = ExamsCreateExamErrors[keyof ExamsCreateExamErrors];
+
+export type ExamsCreateExamResponses = {
+    /**
+     * Successful Response
+     */
+    201: ExamOut;
+};
+
+export type ExamsCreateExamResponse = ExamsCreateExamResponses[keyof ExamsCreateExamResponses];
+
+export type ExamsSetStatusData = {
+    body?: never;
+    path: {
+        /**
+         * Exam Id
+         */
+        exam_id: string;
+    };
+    query: {
+        /**
+         * Status
+         */
+        status: string;
+    };
+    url: '/api/v1/exams/{exam_id}/status';
+};
+
+export type ExamsSetStatusErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ExamsSetStatusError = ExamsSetStatusErrors[keyof ExamsSetStatusErrors];
+
+export type ExamsSetStatusResponses = {
+    /**
+     * Successful Response
+     */
+    200: ExamOut;
+};
+
+export type ExamsSetStatusResponse = ExamsSetStatusResponses[keyof ExamsSetStatusResponses];
+
+export type ExamsResultsData = {
+    body?: never;
+    path: {
+        /**
+         * Exam Id
+         */
+        exam_id: string;
+    };
+    query?: never;
+    url: '/api/v1/exams/{exam_id}/results';
+};
+
+export type ExamsResultsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ExamsResultsError = ExamsResultsErrors[keyof ExamsResultsErrors];
+
+export type ExamsResultsResponses = {
+    /**
+     * Response Exams Results
+     *
+     * Successful Response
+     */
+    200: Array<ExamResultRowOut>;
+};
+
+export type ExamsResultsResponse = ExamsResultsResponses[keyof ExamsResultsResponses];
+
+export type ExamsEnterResultsData = {
+    body: EnterResultsIn;
+    path: {
+        /**
+         * Exam Id
+         */
+        exam_id: string;
+    };
+    query?: never;
+    url: '/api/v1/exams/{exam_id}/results';
+};
+
+export type ExamsEnterResultsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ExamsEnterResultsError = ExamsEnterResultsErrors[keyof ExamsEnterResultsErrors];
+
+export type ExamsEnterResultsResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type ExamsEnterResultsResponse = ExamsEnterResultsResponses[keyof ExamsEnterResultsResponses];
+
+export type ExamsListPlansData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/exams/plans';
+};
+
+export type ExamsListPlansResponses = {
+    /**
+     * Response Exams List Plans
+     *
+     * Successful Response
+     */
+    200: Array<PlanOut>;
+};
+
+export type ExamsListPlansResponse = ExamsListPlansResponses[keyof ExamsListPlansResponses];
+
+export type ExamsCreatePlanData = {
+    body: PlanCreateIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/exams/plans';
+};
+
+export type ExamsCreatePlanErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ExamsCreatePlanError = ExamsCreatePlanErrors[keyof ExamsCreatePlanErrors];
+
+export type ExamsCreatePlanResponses = {
+    /**
+     * Successful Response
+     */
+    201: PlanOut;
+};
+
+export type ExamsCreatePlanResponse = ExamsCreatePlanResponses[keyof ExamsCreatePlanResponses];
+
+export type ExamsSetPlanStatusData = {
+    body: PlanStatusIn;
+    path: {
+        /**
+         * Plan Id
+         */
+        plan_id: string;
+    };
+    query?: never;
+    url: '/api/v1/exams/plans/{plan_id}/status';
+};
+
+export type ExamsSetPlanStatusErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ExamsSetPlanStatusError = ExamsSetPlanStatusErrors[keyof ExamsSetPlanStatusErrors];
+
+export type ExamsSetPlanStatusResponses = {
+    /**
+     * Successful Response
+     */
+    200: PlanOut;
+};
+
+export type ExamsSetPlanStatusResponse = ExamsSetPlanStatusResponses[keyof ExamsSetPlanStatusResponses];
 
 export type AcademicYearsData = {
     body?: never;

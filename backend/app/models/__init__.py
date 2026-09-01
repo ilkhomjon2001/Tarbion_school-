@@ -30,6 +30,17 @@ from app.models.documents import (
     DocumentStatus,
     DocumentType,
 )
+from app.models.exams import (
+    EXAM_KIND_LABELS_UZ,
+    EXAM_STATUS_LABELS_UZ,
+    PLAN_STATUS_LABELS_UZ,
+    Exam,
+    ExamKind,
+    ExamResult,
+    ExamStatus,
+    LessonPlan,
+    PlanStatus,
+)
 from app.models.homework import (
     SCALE_MAX,
     SUBMISSION_LABELS_UZ,
@@ -104,6 +115,15 @@ from app.models.wellbeing import (
 )
 
 __all__ = [
+    "EXAM_KIND_LABELS_UZ",
+    "EXAM_STATUS_LABELS_UZ",
+    "Exam",
+    "ExamKind",
+    "ExamResult",
+    "ExamStatus",
+    "LessonPlan",
+    "PLAN_STATUS_LABELS_UZ",
+    "PlanStatus",
     "CONTRACT_TYPE_LABELS_UZ",
     "ContractType",
     "LEAVE_TYPE_LABELS_UZ",

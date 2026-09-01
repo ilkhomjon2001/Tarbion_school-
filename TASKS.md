@@ -490,7 +490,7 @@ Matnlar shablon jadvalida, o'rin egallovchi maydonlar bilan (`{student_name}` va
 
 ---
 
-### [ ] T-020 · E'lonlar va ommaviy yuborish
+### [~] T-020 · E'lonlar va ommaviy yuborish
 **TZ:** ADM-12, BOT-04
 **Kerak:** T-018
 **Frontend:** ✅ tayyor — `/teacher/elon` — auditoriya tanlash (butun maktab / sinf) va yuborishdan oldin qabul qiluvchilar soni. Eʼlon `/student/announcements` va `/ota-ona/elonlar` da koʻrinadi.
@@ -499,8 +499,10 @@ Matnlar shablon jadvalida, o'rin egallovchi maydonlar bilan (`{student_name}` va
 Admin e'lon chop etadi → tegishli foydalanuvchilarga outbox orqali yuboriladi.
 
 **Tayyor:**
-- [ ] Auditoriya tanlanadi va yuborishdan oldin qabul qiluvchilar soni ko'rsatiladi
-- [ ] E'lon kabinetlarda ham ko'rinadi (faqat Telegram emas)
+- [x] Auditoriya tanlanadi va yuborishdan oldin qabul qiluvchilar soni ko'rsatiladi —
+      son serverda, yozuvdagi hisob bilan bir xil yo'ldan chiqadi
+- [x] E'lon kabinetlarda ko'rinadi (o'quvchi, ota-ona) va T-018a
+      bildirishnomasiga tushadi. Telegramga yuborish T-018 outbox bilan keladi
 
 ---
 

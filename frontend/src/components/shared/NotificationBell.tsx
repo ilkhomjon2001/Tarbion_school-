@@ -35,6 +35,7 @@ const TONE: Record<NotificationKind, string> = {
   homework_new: "bg-info-tint text-info",
   homework_graded: "bg-brand-tint text-brand-dark",
   homework_returned: "bg-warning-tint text-warning",
+  announcement: "bg-brand-tint text-brand-dark",
 };
 
 export function NotificationBell({ className = "" }: { className?: string }) {

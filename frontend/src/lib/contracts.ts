@@ -291,7 +291,8 @@ export type NotificationKind =
   | "grade_new"
   | "homework_new"
   | "homework_graded"
-  | "homework_returned";
+  | "homework_returned"
+  | "announcement";
 
 export const NOTIFICATION_KINDS: NotificationKind[] = [
   "attendance_absent",
@@ -304,6 +305,7 @@ export const NOTIFICATION_KINDS: NotificationKind[] = [
   "homework_new",
   "homework_graded",
   "homework_returned",
+  "announcement",
 ];
 
 export const NOTIFICATION_KIND_LABELS: Record<NotificationKind, string> = {
@@ -317,4 +319,5 @@ export const NOTIFICATION_KIND_LABELS: Record<NotificationKind, string> = {
   homework_new: "Yangi uy vazifasi",
   homework_graded: "Vazifa baholandi",
   homework_returned: "Vazifa qaytarildi",
+  announcement: "Eʼlon",
 };
