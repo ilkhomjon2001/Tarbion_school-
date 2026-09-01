@@ -32,6 +32,7 @@ from app.schemas.school import (
     StaffCreatedOut,
     StaffCreateIn,
     StaffOut,
+    StudentTeacherOut,
     StaffSubjectsIn,
     StudentArchiveIn,
     StudentCardOut,
@@ -107,6 +108,23 @@ async def subjects_of_class(
     """Sinfda oʻqitiladigan fanlar va haftalik soati (ADM-03)."""
     rows = await school_service.class_subjects(session, class_id)
     return [ClassSubjectOut(subject_id=s.id, subject_name=s.name, weekly_hours=h) for s, h in rows]
+
+
+@router.get("/students/{student_id}/teachers", response_model=list[StudentTeacherOut])
+async def student_teachers(
+    student_id: uuid.UUID, user: CurrentUserDep, session: SessionDep
+) -> list[StudentTeacherOut]:
+    """Oʻquvchiga dars beradigan ustozlar — ism va fan, LOGINSIZ (X-6)."""
+    rows = await school_service.student_teachers(session, user, student_id)
+    return [
+        StudentTeacherOut(
+            teacher_id=r.teacher_id,
+            full_name=r.full_name,
+            subjects=r.subjects,
+            is_homeroom=r.is_homeroom,
+        )
+        for r in rows
+    ]
 
 
 @router.get("/staff", response_model=list[StaffOut])

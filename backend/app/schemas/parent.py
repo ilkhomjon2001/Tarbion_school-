@@ -19,6 +19,8 @@ class ChildOut(BaseModel):
     full_name: str
     short_name: str
     class_name: str
+    #: Maktabdan ketgan — faqat qarzi qolgan boʻlsa roʻyxatda koʻrinadi (O7).
+    is_archived: bool = False
     relation: str
 
 

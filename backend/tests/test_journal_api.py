@@ -489,3 +489,45 @@ async def test_begona_otaona_baholarni_kora_olmaydi(client: AsyncClient, world: 
     token = await _token(client, "jr.otaona")
     r = await client.get(f"/api/v1/journal/students/{world['ali'].id}/grades", headers=_auth(token))
     assert r.status_code == 403, r.text
+
+
+# ─────────────────────────── Reyting (REY-01) ───────────────────────────
+
+
+async def test_reyting_faqat_oz_ornini_beradi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Reyting: o'rin to'g'ri hisoblanadi, sinfdoshlar ma'lumoti sizmaydi (X-6)."""
+    token = await _token(client, "jr.ustoz")
+    await _mark(client, token, world, {world["ali"].id: "present", world["vali"].id: "present"})
+    r = await client.post(
+        f"/api/v1/journal/lessons/{world['lesson'].id}",
+        headers=_auth(token),
+        json={
+            "rows": [
+                {"student_id": str(world["ali"].id), "value": 5},
+                {"student_id": str(world["vali"].id), "value": 3},
+            ]
+        },
+    )
+    assert r.status_code == 200, r.text
+
+    rahbar = await _token(client, "jr.rahbar")
+    r = await client.get(
+        f"/api/v1/journal/students/{world['vali'].id}/rating", headers=_auth(rahbar)
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["rank"] == 2
+    assert body["total_students"] == 2
+    assert body["average"] == 3.0
+    # X-6: javobda faqat o'z ko'rsatkichlari — ismlar ro'yxati yo'q.
+    assert set(body) == {"rank", "total_students", "average", "attendance_percent"}
+
+
+async def test_begona_otaona_reytingni_kora_olmaydi(client: AsyncClient, world: dict) -> None:
+    token = await _token(client, "jr.otaona")
+    r = await client.get(
+        f"/api/v1/journal/students/{world['ali'].id}/rating", headers=_auth(token)
+    )
+    assert r.status_code == 403, r.text

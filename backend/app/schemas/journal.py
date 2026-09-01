@@ -170,3 +170,12 @@ class StudentHomeworkOut(BaseModel):
 
 class SubmitIn(BaseModel):
     answer_text: str | None = Field(default=None, max_length=10000)
+
+
+class StudentRatingOut(BaseModel):
+    """Sinf ichidagi oʻrin — faqat OʻZ koʻrsatkichlari (X-6)."""
+
+    rank: int | None
+    total_students: int
+    average: float | None
+    attendance_percent: float

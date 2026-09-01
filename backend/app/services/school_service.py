@@ -617,3 +617,74 @@ async def set_teacher_subjects(
         session, actor=actor, teacher_id=teacher_id, subject_ids=subject_ids, ip=ip
     )
     await session.commit()
+
+
+@dataclass(frozen=True, slots=True)
+class StudentTeacherRow:
+    """Oʻquvchiga dars beradigan ustoz — LOGINSIZ (X-6)."""
+
+    teacher_id: uuid.UUID
+    full_name: str
+    subjects: list[str]
+    is_homeroom: bool
+
+
+async def student_teachers(
+    session: AsyncSession, user: CurrentUser, student_id: uuid.UUID
+) -> list[StudentTeacherRow]:
+    """Oʻquvchi sinfida dars beradigan ustozlar — jadvaldan.
+
+    Oʻquvchi va ota-ona uchun: ism va fan yetarli, login/telefon YOʻQ
+    (X-6). Manba — joriy jadval (`schedule_entries`).
+    """
+    from app.services.access import assert_can_view_student
+
+    await assert_can_view_student(session, user, student_id)
+
+    student = await session.get(Student, student_id)
+    if student is None or student.class_id is None:
+        return []
+
+    from app.models import ScheduleEntry, Subject as Subj
+
+    rows = (
+        await session.execute(
+            select(User, Subj.name)
+            .join(ScheduleEntry, ScheduleEntry.teacher_id == User.id)
+            .join(Subj, Subj.id == ScheduleEntry.subject_id)
+            .where(
+                ScheduleEntry.class_id == student.class_id,
+                ScheduleEntry.is_archived.is_(False),
+                User.is_archived.is_(False),
+            )
+        )
+    ).all()
+
+    cls = await session.get(SchoolClass, student.class_id)
+    homeroom_id = cls.homeroom_teacher_id if cls else None
+
+    yigilgan: dict[uuid.UUID, StudentTeacherRow] = {}
+    fanlar: dict[uuid.UUID, set[str]] = {}
+    ismlar: dict[uuid.UUID, str] = {}
+    for u, fan in rows:
+        ismlar[u.id] = u.full_name
+        fanlar.setdefault(u.id, set()).add(fan)
+
+    # Sinf rahbari jadvalda dars bermasa ham roʻyxatda boʻlsin.
+    if homeroom_id is not None and homeroom_id not in ismlar:
+        rahbar = await session.get(User, homeroom_id)
+        if rahbar is not None and not rahbar.is_archived:
+            ismlar[homeroom_id] = rahbar.full_name
+            fanlar[homeroom_id] = set()
+
+    natija = [
+        StudentTeacherRow(
+            teacher_id=tid,
+            full_name=ismlar[tid],
+            subjects=sorted(fanlar.get(tid, set())),
+            is_homeroom=tid == homeroom_id,
+        )
+        for tid in ismlar
+    ]
+    natija.sort(key=lambda r: (not r.is_homeroom, r.full_name))
+    return natija

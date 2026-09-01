@@ -34,6 +34,8 @@ class ChildRow:
     short_name: str
     class_name: str
     relation: str
+    #: Maktabdan ketgan (qarzi qolgani uchun roʻyxatda turgan) farzand.
+    is_archived: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,6 +57,11 @@ async def my_children(session: AsyncSession, user: CurrentUser) -> list[ChildRow
 
     Faqat `guardians` jadvalidagi bogʻlanish orqali. Ota-ona boshqa
     yoʻl bilan bolaga yeta olmaydi.
+
+    O7 (audit): ARXIVLANGAN (maktabdan ketgan) farzand ham roʻyxatda
+    qoladi, lekin faqat balansi nolga teng boʻlmasa — qarzi qolgan
+    bolaning toʻlov sahifasiga ota-ona yetib borishi kerak. Hisobi
+    yopiq ketgan bola roʻyxatni bosmaydi.
     """
     rows = await session.execute(
         select(Student, SchoolClass.name, Guardian.relation)
@@ -63,21 +70,35 @@ async def my_children(session: AsyncSession, user: CurrentUser) -> list[ChildRow
         .where(
             Guardian.user_id == user.id,
             Guardian.is_archived.is_(False),
-            Student.is_archived.is_(False),
         )
         .order_by(Student.last_name, Student.first_name)
     )
-    return [
-        ChildRow(
-            student_id=s.id,
-            full_name=f"{s.last_name} {s.first_name}"
-            + (f" {s.middle_name}" if s.middle_name else ""),
-            short_name=s.first_name,
-            class_name=class_name,
-            relation=relation,
+    hamma = rows.all()
+
+    arxivdagilar = [s.id for s, _, _ in hamma if s.is_archived]
+    balanslar: dict[uuid.UUID, int] = {}
+    if arxivdagilar:
+        from app.services.payment_service import _totals
+
+        charged, paid = await _totals(session, arxivdagilar)
+        balanslar = {sid: paid.get(sid, 0) - charged.get(sid, 0) for sid in arxivdagilar}
+
+    natija = []
+    for s, class_name, relation in hamma:
+        if s.is_archived and balanslar.get(s.id, 0) == 0:
+            continue
+        natija.append(
+            ChildRow(
+                student_id=s.id,
+                full_name=f"{s.last_name} {s.first_name}"
+                + (f" {s.middle_name}" if s.middle_name else ""),
+                short_name=s.first_name,
+                class_name=class_name,
+                relation=relation,
+                is_archived=s.is_archived,
+            )
         )
-        for s, class_name, relation in rows.all()
-    ]
+    return natija
 
 
 async def child_attendance(

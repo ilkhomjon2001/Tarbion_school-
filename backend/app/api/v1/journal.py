@@ -14,6 +14,7 @@ from fastapi import APIRouter, Query, Request, Response, status
 from app.api.v1.deps import CurrentUserDep
 from app.core.db import SessionDep
 from app.schemas.journal import (
+    StudentRatingOut,
     ClassJournalOut,
     ClassJournalRowOut,
     GradeOut,
@@ -157,6 +158,23 @@ async def class_journal(
             )
             for r in j.rows
         ],
+    )
+
+
+@router.get("/students/{student_id}/rating", response_model=StudentRatingOut)
+async def student_rating(
+    student_id: uuid.UUID, user: CurrentUserDep, session: SessionDep
+) -> StudentRatingOut:
+    """Oʻquvchining sinf reytingidagi oʻrni (REY-01).
+
+    X-6: sinfdoshlar roʻyxati yoki ularning baholari QAYTMAYDI.
+    """
+    r = await grade_service.student_rating(session, user, student_id)
+    return StudentRatingOut(
+        rank=r.rank,
+        total_students=r.total_students,
+        average=r.average,
+        attendance_percent=r.attendance_percent,
     )
 
 

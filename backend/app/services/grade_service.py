@@ -723,3 +723,72 @@ async def class_average_by_subject(
         for fan, summa, vazn in (await session.execute(stmt)).all()
         if vazn
     }
+
+
+@dataclass(frozen=True, slots=True)
+class StudentRating:
+    """Oʻquvchining sinf ichidagi oʻrni (REY-01).
+
+    X-6: sinfdoshlar ismi va baholari QAYTMAYDI — faqat oʻz oʻrni,
+    sinf hajmi va oʻz koʻrsatkichlari. Reyting formulasi: vaznli,
+    5 ballik shkalaga normallashgan oʻrtacha baho (jurnal bilan bir
+    xil); baho teng boʻlsa davomat foizi ustun.
+    """
+
+    rank: int | None
+    total_students: int
+    average: float | None
+    attendance_percent: float
+
+
+async def student_rating(
+    session: AsyncSession, user: CurrentUser, student_id: uuid.UUID
+) -> StudentRating:
+    await assert_can_view_student(session, user, student_id)
+
+    student = await session.get(Student, student_id)
+    if student is None or student.class_id is None:
+        return StudentRating(rank=None, total_students=0, average=None, attendance_percent=0.0)
+
+    # Sinfdagi faol oʻquvchilarning oʻrtachasi — bitta soʻrovda.
+    rows = (
+        await session.execute(
+            select(
+                Grade.student_id,
+                func.sum(Grade.value * Grade.weight * 5.0 / Grade.max_value),
+                func.sum(Grade.weight),
+            )
+            .join(Student, Student.id == Grade.student_id)
+            .where(
+                Student.class_id == student.class_id,
+                Student.is_archived.is_(False),
+                Grade.is_archived.is_(False),
+            )
+            .group_by(Grade.student_id)
+        )
+    ).all()
+    averages = {sid: round(float(sv) / float(sw), 2) for sid, sv, sw in rows if sw}
+
+    total = (
+        await session.scalar(
+            select(func.count()).select_from(Student).where(
+                Student.class_id == student.class_id, Student.is_archived.is_(False)
+            )
+        )
+    ) or 0
+
+    from app.services import attendance_service
+
+    stat = await attendance_service.attendance_stats(session, user, student_id=student_id)
+
+    mine = averages.get(student_id)
+    if mine is None:
+        return StudentRating(
+            rank=None, total_students=total, average=None, attendance_percent=stat.percent
+        )
+
+    # Oʻrin: oʻrtachasi kattaroqlar soni + 1 (teng oʻrtacha — teng oʻrin).
+    rank = 1 + sum(1 for v in averages.values() if v > mine)
+    return StudentRating(
+        rank=rank, total_students=total, average=mine, attendance_percent=stat.percent
+    )

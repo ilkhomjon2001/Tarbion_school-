@@ -374,3 +374,30 @@ async def test_arxivlash_auditga_sabab_bilan_tushadi(
     assert yozuv is not None
     assert yozuv.new_value["reason"] == "Oilaviy sabab"
     assert yozuv.actor_id == world["superadmin"].id
+
+
+# ──────────────── O'quvchining ustozlari (X-6: loginsiz) ────────────────
+
+
+async def test_oquvchi_ustozlarini_koradi_loginsiz(
+    client: AsyncClient, world: dict
+) -> None:
+    """Jadvaldan ustozlar ro'yxati — har qatorda ism va fan bor, login YO'Q (X-6)."""
+    admin = await _token(client, "sch.admin")
+    r = await client.get(
+        f"/api/v1/school/students/{world['ali'].id}/teachers", headers=_auth(admin)
+    )
+    assert r.status_code == 200, r.text
+    for row in r.json():
+        assert set(row) == {"teacher_id", "full_name", "subjects", "is_homeroom"}
+
+
+async def test_begona_ota_ustozlar_royxatini_kora_olmaydi(
+    client: AsyncClient, world: dict
+) -> None:
+    """X-1: boshqa oilaning bolasi uchun ustozlar so'ralsa 403."""
+    begona = await _token(client, "sch.otaona_b")
+    r = await client.get(
+        f"/api/v1/school/students/{world['ali'].id}/teachers", headers=_auth(begona)
+    )
+    assert r.status_code == 403, r.text

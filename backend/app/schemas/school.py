@@ -207,3 +207,12 @@ class GuardianUnlinkIn(BaseModel):
     """Sabab majburiy: kirish huquqi yopiladi, keyin «nega» soʻraladi."""
 
     reason: str = Field(min_length=2, max_length=200)
+
+
+class StudentTeacherOut(BaseModel):
+    """Oʻquvchiga dars beradigan ustoz — ism va fan, LOGINSIZ (X-6)."""
+
+    teacher_id: uuid.UUID
+    full_name: str
+    subjects: list[str]
+    is_homeroom: bool

@@ -38,6 +38,7 @@ async def my_children(user: CurrentUserDep, session: SessionDep) -> list[ChildOu
             short_name=r.short_name,
             class_name=r.class_name,
             relation=r.relation,
+            is_archived=r.is_archived,
         )
         for r in rows
     ]

@@ -183,7 +183,14 @@ async def test_farzandlar_royxatida_shaxsiy_malumot_yoq(client: AsyncClient, wor
     resp = await client.get("/api/v1/parent/children", headers=_auth(token))
 
     maydonlar = set(resp.json()[0])
-    assert maydonlar == {"student_id", "full_name", "short_name", "class_name", "relation"}
+    assert maydonlar == {
+        "student_id",
+        "full_name",
+        "short_name",
+        "class_name",
+        "relation",
+        "is_archived",  # O7: qarzi qolgan ketgan farzand belgisi
+    }
 
 
 async def test_tokensiz_farzandlar_royxati_yopiq(client: AsyncClient, world: dict) -> None:
