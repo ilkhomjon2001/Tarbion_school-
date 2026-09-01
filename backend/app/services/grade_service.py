@@ -28,9 +28,11 @@ from dataclasses import dataclass
 from datetime import date
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import (
+    ConflictError,
     EditWindowClosedError,
     PermissionDeniedError,
     ValidationError,
@@ -428,7 +430,15 @@ async def set_lesson_grades(
         )
 
     await _notify_family(session, user, lesson, max_value, xabar_uchun)
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError as e:
+        # Y7: parallel ikki soʻrov bir oʻquvchiga bir darsda baho yozsa,
+        # ikkinchisi unique indeksga uriladi — 500 emas, aniq 409.
+        await session.rollback()
+        raise ConflictError(
+            "Baho boshqa oynada allaqachon qoʻyilgan — sahifani yangilang."
+        ) from e
     return await lesson_journal(session, user, lesson_id)
 
 
@@ -571,8 +581,10 @@ async def class_journal(
     for g, kun in rows:
         sanalar.add(kun)
         by_student.setdefault(g.student_id, {})[kun.isoformat()] = g.value
-        sum_v, sum_w = ogirlik.get(g.student_id, (0, 0))
-        ogirlik[g.student_id] = (sum_v + g.value * g.weight, sum_w + g.weight)
+        sum_v, sum_w = ogirlik.get(g.student_id, (0.0, 0))
+        # K1: 100 ballik baho (uy vazifasi) 5 ballik shkalaga keltiriladi —
+        # aks holda 85/100 jurnalda "85" sifatida qoʻshilib oʻrtachani buzardi.
+        ogirlik[g.student_id] = (sum_v + _normalized(g) * g.weight, sum_w + g.weight)
 
     koʻrsatiladi = await _can_see_average(session, user, class_id)
 
@@ -593,7 +605,21 @@ async def class_journal(
     )
 
 
-def _average(pair: tuple[int, int] | None) -> float | None:
+def _normalized(g: Grade) -> float:
+    """Bahoni 5 ballik shkalaga keltiradi (K1).
+
+    Jurnal oʻrtachasi BITTA shkalada boʻlishi shart: 100 ballik uy
+    vazifasi bahosi (masalan 85/100) xom holida qoʻshilsa, oʻquvchining
+    "oʻrtachasi" 20+ boʻlib chiqardi. `max_value >= 1` servisda
+    kafolatlangan.
+    """
+    scale = SCALE_MAX[GradingScale.FIVE.value]
+    if g.max_value == scale:
+        return float(g.value)
+    return g.value * scale / g.max_value
+
+
+def _average(pair: tuple[float, int] | None) -> float | None:
     """Vaznli oʻrtacha (JUR-03). Baho yoʻq boʻlsa `None` — 0 EMAS.
 
     0 "ikki oldi" degan maʼnoni berardi; baho qoʻyilmagani boshqa narsa.
@@ -644,9 +670,9 @@ async def student_grades(
 
     yigilgan: dict[uuid.UUID, dict[str, object]] = {}
     for g, kun, fan in (await session.execute(stmt)).all():
-        item = yigilgan.setdefault(g.subject_id, {"name": fan, "rows": [], "sum": 0, "weight": 0})
+        item = yigilgan.setdefault(g.subject_id, {"name": fan, "rows": [], "sum": 0.0, "weight": 0})
         item["rows"].append(_row(g, kun))  # type: ignore[union-attr]
-        item["sum"] = int(item["sum"]) + g.value * g.weight  # type: ignore[arg-type]
+        item["sum"] = float(item["sum"]) + _normalized(g) * g.weight  # type: ignore[arg-type]
         item["weight"] = int(item["weight"]) + g.weight  # type: ignore[arg-type]
 
     return [
@@ -654,7 +680,7 @@ async def student_grades(
             subject_id=sid,
             subject_name=str(v["name"]),
             grades=v["rows"],  # type: ignore[arg-type]
-            average=_average((int(v["sum"]), int(v["weight"]))),  # type: ignore[arg-type]
+            average=_average((float(v["sum"]), int(v["weight"]))),  # type: ignore[arg-type]
         )
         for sid, v in yigilgan.items()
     ]
@@ -675,7 +701,9 @@ async def class_average_by_subject(
     stmt = (
         select(
             Subject.name,
-            func.sum(Grade.value * Grade.weight),
+            # K1: shkala normalizatsiyasi SQLda ham — 100 ballik baho
+            # 5 ballikka keltiriladi (max_value >= 1 kafolatlangan).
+            func.sum(Grade.value * Grade.weight * 5.0 / Grade.max_value),
             func.sum(Grade.weight),
         )
         .join(Subject, Subject.id == Grade.subject_id)

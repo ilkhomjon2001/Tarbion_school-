@@ -107,7 +107,8 @@ async def overview(session: SessionDep, days: PeriodDays = 30) -> DirectorOvervi
         .where(Lesson.lesson_date.between(since, last_day))
     )
     average_grade = await session.scalar(
-        select(func.round(cast(func.avg(Grade.value), Numeric), 2)).where(
+        # K1: vaznli va shkala-normallashgan oʻrtacha — jurnal formulasi bilan bir xil.
+        select(func.round(cast(func.sum(Grade.value * Grade.weight * 5.0 / Grade.max_value) / func.sum(Grade.weight), Numeric), 2)).where(
             Grade.is_archived.is_(False)
         )
     )
@@ -156,7 +157,10 @@ async def classes(session: SessionDep) -> list[ClassRowOut]:
         .subquery()
     )
     grades = (
-        select(Lesson.class_id.label("class_id"), func.avg(Grade.value).label("avg_grade"))
+        select(
+            Lesson.class_id.label("class_id"),
+            (func.sum(Grade.value * Grade.weight * 5.0 / Grade.max_value) / func.sum(Grade.weight)).label("avg_grade"),
+        )
         .select_from(Grade)
         .join(Lesson, Lesson.id == Grade.lesson_id)
         .where(Grade.is_archived.is_(False))
@@ -217,7 +221,7 @@ async def teachers(session: SessionDep) -> list[TeacherRowOut]:
         select(
             Grade.teacher_id.label("teacher_id"),
             func.count().label("grade_count"),
-            func.avg(Grade.value).label("avg_value"),
+            (func.sum(Grade.value * Grade.weight * 5.0 / Grade.max_value) / func.sum(Grade.weight)).label("avg_value"),
         )
         .where(Grade.is_archived.is_(False))
         .group_by(Grade.teacher_id)

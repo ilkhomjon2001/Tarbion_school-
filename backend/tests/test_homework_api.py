@@ -461,3 +461,36 @@ async def test_topshirilmagan_vazifalar_filtri(client: AsyncClient, world: dict)
         params={"only_open": "true"},
     )
     assert r.json() == []
+
+
+async def test_yuz_ballik_baho_ortachani_buzmaydi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """K1 (audit): 100 ballik vazifa bahosi 5 ballik shkalaga keltiriladi.
+
+    80/100 jurnal oʻrtachasida 4.0 boʻlishi kerak, 80 emas — aks holda
+    ota-ona va direktor "oʻrtacha 20+" koʻrardi.
+    """
+    ustoz = await _token(client, "hw.ustoz")
+    hw = await _create(client, ustoz, world, max_score=100)
+
+    r = await client.get(f"/api/v1/journal/homework/{hw['id']}/submissions", headers=_auth(ustoz))
+    sub = next(x for x in r.json()["rows"] if x["full_name"] == "Abdullayev Ali")
+    r = await client.post(
+        f"/api/v1/journal/submissions/{sub['id']}/grade",
+        headers=_auth(ustoz),
+        json={"score": 80},
+    )
+    assert r.status_code == 200, r.text
+
+    # Ota-ona farzandining baholarini koʻradi (X-1 doirasida).
+    ota = await _token(client, "hw.ota_a")
+    r = await client.get(
+        f"/api/v1/journal/students/{world['ali'].id}/grades", headers=_auth(ota)
+    )
+    assert r.status_code == 200, r.text
+    fanlar = r.json()
+    mat = next(f for f in fanlar if f["subject_name"] == "Matematika")
+    assert mat["average"] is not None
+    assert mat["average"] <= 5, f"oʻrtacha 5 dan oshdi: {mat['average']}"
+    assert abs(mat["average"] - 4.0) < 0.01

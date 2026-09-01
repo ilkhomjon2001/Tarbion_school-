@@ -18,6 +18,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -161,6 +162,17 @@ class Grade(Entity):
     __table_args__ = (
         Index("ix_grades_student_subject", "student_id", "subject_id", "created_at"),
         Index("ix_grades_lesson", "lesson_id"),
+        # Y7: bir dars + bir oʻquvchi = bitta faol kundalik baho.
+        # Parallel soʻrov dublikat yozmasin — xotiradagi tekshiruv yetmaydi.
+        Index(
+            "uq_grades_lesson_student",
+            "lesson_id",
+            "student_id",
+            unique=True,
+            postgresql_where=text(
+                "NOT is_archived AND submission_id IS NULL AND lesson_id IS NOT NULL"
+            ),
+        ),
         CheckConstraint("value >= 0", name="grade_non_negative"),
     )
 
