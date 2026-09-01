@@ -15,6 +15,7 @@ from app.core.db import SessionDep
 from app.models import PaymentIntent
 from app.schemas.payments import (
     ContractIn,
+    CreditIn,
     DiscountIn,
     DiscountOut,
     FinanceSummaryOut,
@@ -22,7 +23,9 @@ from app.schemas.payments import (
     IntentCreateIn,
     IntentOut,
     LedgerRowOut,
+    MonthStatusOut,
     PaymentIn,
+    RefundIn,
     SinovCompleteIn,
     StornoIn,
     StudentFinanceOut,
@@ -47,6 +50,7 @@ def _finance_out(r: payment_service.StudentFinance) -> StudentFinanceOut:
         charged=r.charged,
         paid=r.paid,
         balance=r.balance,
+        is_archived=r.is_archived,
     )
 
 
@@ -72,7 +76,7 @@ async def student_ledger(
     student_id: uuid.UUID, user: CurrentUserDep, session: SessionDep
 ) -> StudentLedgerOut:
     """Daftar: qarzlar va toʻlovlar. Ota-ona faqat oʻz farzandiga (X-1)."""
-    finance, rows, discounts = await payment_service.student_ledger(
+    finance, rows, discounts, months = await payment_service.student_ledger(
         session, user, student_id
     )
     return StudentLedgerOut(
@@ -100,6 +104,17 @@ async def student_ledger(
                 ends_on=d.ends_on,
             )
             for d in discounts
+        ],
+        months=[
+            MonthStatusOut(
+                year=m.year,
+                month=m.month,
+                amount=m.amount,
+                covered=m.covered,
+                status=m.status,
+                overdue=m.overdue,
+            )
+            for m in months
         ],
     )
 
@@ -208,6 +223,48 @@ async def storno(
         session, actor=user, payment_id=payment_id, reason=payload.reason, ip=_client_ip(request)
     )
     return await student_ledger(yozuv.student_id, user, session)
+
+
+@router.post("/students/{student_id}/credits", response_model=StudentLedgerOut)
+async def add_credit(
+    student_id: uuid.UUID,
+    payload: CreditIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> StudentLedgerOut:
+    """Kredit-yozuv — qarzni sabab bilan kamaytirish (auditda)."""
+    await payment_service.add_credit(
+        session,
+        actor=user,
+        student_id=student_id,
+        amount=payload.amount,
+        reason=payload.reason,
+        year=payload.year,
+        month=payload.month,
+        ip=_client_ip(request),
+    )
+    return await student_ledger(student_id, user, session)
+
+
+@router.post("/students/{student_id}/refund", response_model=StudentLedgerOut)
+async def refund(
+    student_id: uuid.UUID,
+    payload: RefundIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> StudentLedgerOut:
+    """Avansni qaytarish — faqat musbat balansdan, izli yozuv bilan."""
+    await payment_service.refund(
+        session,
+        actor=user,
+        student_id=student_id,
+        amount=payload.amount,
+        reason=payload.reason,
+        ip=_client_ip(request),
+    )
+    return await student_ledger(student_id, user, session)
 
 
 # ─────────────────────── Onlayn (sinov provayderi) ───────────────────────

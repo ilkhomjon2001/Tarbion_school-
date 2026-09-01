@@ -107,6 +107,33 @@ class TuitionCharge(Entity):
     amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
 
+class TuitionCredit(Entity):
+    """Kredit-yozuv — qarzni sabab bilan KAMAYTIRISH.
+
+    Storno'ning qarz tomondagi ekvivalenti: oʻquvchi oy oʻrtasida
+    ketdi, kasallik tufayli uzoq qatnamadi va maktab yon berdi —
+    hammasi shu yozuv orqali, izli. Qarz yozuvining oʻzi qotgan
+    (2-buzilmas qoida), shuning uchun tuzatish alohida qatorda.
+
+    `year`/`month` berilsa aynan oʻsha oyga qoʻllanadi, boʻlmasa
+    umumiy balansga (eng eski qarzdan boshlab).
+    """
+
+    __tablename__ = "tuition_credits"
+    __table_args__ = (Index("ix_tuition_credits_student", "student_id", "is_archived"),)
+
+    student_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("students.id"), nullable=False
+    )
+    amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    reason: Mapped[str] = mapped_column(String(200), nullable=False)
+    year: Mapped[int | None] = mapped_column()
+    month: Mapped[int | None] = mapped_column()
+    created_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("users.id")
+    )
+
+
 class PaymentMethod(enum.StrEnum):
     NAQD = "naqd"
     OTKAZMA = "otkazma"

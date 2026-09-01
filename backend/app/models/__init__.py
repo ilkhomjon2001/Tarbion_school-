@@ -89,6 +89,7 @@ from app.models.payments import (
     PaymentMethod,
     TuitionCharge,
     TuitionContract,
+    TuitionCredit,
     TuitionDiscount,
 )
 from app.models.scheduling import Lesson, ScheduleEntry
@@ -138,6 +139,7 @@ __all__ = [
     "TUITION_MONTHS",
     "TuitionCharge",
     "TuitionContract",
+    "TuitionCredit",
     "TuitionDiscount",
     "EXAM_KIND_LABELS_UZ",
     "EXAM_STATUS_LABELS_UZ",

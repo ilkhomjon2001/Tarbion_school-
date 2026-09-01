@@ -105,6 +105,9 @@ export default function DirectorPaymentsPage() {
                     >
                       <td className="px-3 py-2.5 font-medium text-foreground">
                         {r.student_name}
+                        {r.is_archived && (
+                          <span className="ml-1.5 text-xs text-foreground-muted">(ketgan)</span>
+                        )}
                       </td>
                       <td className="px-3 py-2.5 text-foreground-muted">{r.class_name ?? "—"}</td>
                       <td className="num px-3 py-2.5 text-right text-foreground-muted">

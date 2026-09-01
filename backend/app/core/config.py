@@ -68,6 +68,8 @@ class Settings(BaseSettings):
     #: Sinov toʻlov provayderi webhook imzosi kaliti. Haqiqiy provayder
     #: kelganda uning kaliti alohida nom bilan qoʻshiladi.
     sinov_provider_key: str = "sinov-kalit-almashtiring"  # noqa: S105
+    #: Oylik toʻlov shu sanagacha kutiladi; undan keyin «kechikdi».
+    payment_due_day: int = 10
 
     # --- Cookie ---
     refresh_cookie_name: str = "tarbion_rt"

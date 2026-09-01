@@ -10,6 +10,7 @@ import {
   createIntent,
   fetchLedger,
   METHOD_LABELS,
+  MONTH_NAMES_UZ,
   type IntentOut,
   type StudentLedgerOut,
 } from "@/lib/payments/api";
@@ -162,6 +163,37 @@ export default function ParentPaymentsPage() {
               </button>
             </div>
           </div>
+        )}
+
+        {ledger && ledger.months.length > 0 && (
+          <section className="flex flex-col gap-1.5">
+            <h2 className="text-sm font-semibold text-foreground">Oylar boʻyicha</h2>
+            <div className="flex flex-wrap gap-1.5">
+              {ledger.months.map((m) => {
+                const uslub =
+                  m.status === "tolangan"
+                    ? "bg-success-tint text-success"
+                    : m.overdue
+                      ? "bg-danger-tint text-danger"
+                      : m.status === "qisman"
+                        ? "bg-warning-tint text-warning"
+                        : "bg-surface-muted text-foreground-muted";
+                return (
+                  <span
+                    key={`${m.year}-${m.month}`}
+                    className={`num inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${uslub}`}
+                  >
+                    {m.status === "tolangan" ? "✓" : m.status === "qisman" ? "◐" : "✗"}{" "}
+                    {MONTH_NAMES_UZ[m.month]}
+                    {m.overdue && " · kechikdi"}
+                  </span>
+                );
+              })}
+            </div>
+            <p className="text-xs text-foreground-muted">
+              Toʻlov muddati — har oyning 10-sanasigacha.
+            </p>
+          </section>
         )}
 
         <section className="flex flex-col gap-1.5">

@@ -12,12 +12,14 @@
  */
 
 import {
+  paymentsAddCredit,
   paymentsAddDiscount,
   paymentsArchiveDiscount,
   paymentsCreateIntent,
   paymentsGenerateCharges,
   paymentsGetIntent,
   paymentsRecordPayment,
+  paymentsRefund,
   paymentsSetContract,
   paymentsSinovComplete,
   paymentsStorno,
@@ -27,13 +29,32 @@ import {
 } from "@/lib/api/sdk.gen";
 import type {
   FinanceSummaryOut,
+  MonthStatusOut,
   IntentOut,
   StudentFinanceOut,
   StudentLedgerOut,
 } from "@/lib/api/types.gen";
 import { withAuth } from "@/lib/session";
 
-export type { FinanceSummaryOut, IntentOut, StudentFinanceOut, StudentLedgerOut };
+export type {
+  FinanceSummaryOut,
+  IntentOut,
+  MonthStatusOut,
+  StudentFinanceOut,
+  StudentLedgerOut,
+};
+
+export const MONTH_NAMES_UZ = [
+  "",
+  "Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun",
+  "Iyul", "Avgust", "Sentabr", "Oktabr", "Noyabr", "Dekabr",
+];
+
+export const MONTH_STATUS_LABELS: Record<string, string> = {
+  tolangan: "Toʻlangan",
+  qisman: "Qisman",
+  tolanmagan: "Toʻlanmagan",
+};
 
 export const DEFAULT_MONTHLY_FEE = 3_500_000;
 
@@ -146,4 +167,26 @@ export async function completeSinov(
 
 export async function fetchIntent(intentId: string): Promise<IntentOut> {
   return withAuth<IntentOut>(() => paymentsGetIntent({ path: { intent_id: intentId } }));
+}
+
+
+/** Kredit-yozuv: qarzni sabab bilan kamaytirish (auditda). */
+export async function addCredit(
+  studentId: string,
+  input: { amount: number; reason: string; year?: number | null; month?: number | null },
+): Promise<StudentLedgerOut> {
+  return withAuth<StudentLedgerOut>(() =>
+    paymentsAddCredit({ path: { student_id: studentId }, body: input }),
+  );
+}
+
+/** Avansni qaytarish — faqat musbat balansdan. */
+export async function refundPayment(
+  studentId: string,
+  amount: number,
+  reason: string,
+): Promise<StudentLedgerOut> {
+  return withAuth<StudentLedgerOut>(() =>
+    paymentsRefund({ path: { student_id: studentId }, body: { amount, reason } }),
+  );
 }

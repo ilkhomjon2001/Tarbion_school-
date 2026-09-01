@@ -42,6 +42,7 @@ from app.models import (
     Student,
     TuitionCharge,
     TuitionContract,
+    TuitionCredit,
     TuitionDiscount,
 )
 from app.services import audit_service, permissions
@@ -80,6 +81,20 @@ class StudentFinance:
     charged: int
     paid: int
     balance: int  # manfiy = qarz
+    #: Ketgan oʻquvchi — qarzi qolgan boʻlsa hisobotda «ketgan» belgisi bilan.
+    is_archived: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class MonthStatus:
+    """Bitta oyning holati — FIFO boʻyicha yopilgan qismi bilan."""
+
+    year: int
+    month: int
+    amount: int  # samarali qarz (kredit qoʻllangandan keyin)
+    covered: int  # toʻlovlar bilan yopilgan qismi
+    status: str  # tolangan | qisman | tolanmagan
+    overdue: bool  # muddat (10-sana) oʻtdi va toʻliq yopilmagan
 
 
 # ─────────────────────────── Kirish nazorati ───────────────────────────
@@ -403,12 +418,25 @@ async def record_payment(
     if method not in METHODS:
         raise ValidationError("Toʻlov usuli notoʻgʻri.")
 
+    # TOL-04: chek raqami berilmasa reyestr raqami beriladi — KV-<yil>-<tartib>.
+    raqam = (receipt_no or "").strip()
+    if not raqam:
+        yil = (paid_on or local_today()).year
+        soni = (
+            await session.scalar(
+                select(func.count(Payment.id)).where(
+                    Payment.receipt_no.like(f"KV-{yil}-%")
+                )
+            )
+        ) or 0
+        raqam = f"KV-{yil}-{soni + 1:04d}"
+
     payment = Payment(
         student_id=student_id,
         amount=amount,
         method=method,
         paid_on=paid_on or local_today(),
-        receipt_no=(receipt_no or "").strip() or None,
+        receipt_no=raqam,
         note=(note or "").strip() or None,
         recorded_by_id=actor.id,
         provider=provider,
@@ -498,7 +526,11 @@ async def storno(
 async def _totals(
     session: AsyncSession, student_ids: list[uuid.UUID]
 ) -> tuple[dict[uuid.UUID, int], dict[uuid.UUID, int]]:
-    """(hisoblangan, toʻlangan) — har oʻquvchi uchun, ikki soʻrovda."""
+    """(hisoblangan, toʻlangan) — har oʻquvchi uchun.
+
+    Kredit-yozuvlar hisoblanganni KAMAYTIRADI: qarz tomonning
+    tuzatishi, toʻlov emas.
+    """
     charged: dict[uuid.UUID, int] = {}
     rows = await session.execute(
         select(TuitionCharge.student_id, func.coalesce(func.sum(TuitionCharge.amount), 0))
@@ -510,6 +542,17 @@ async def _totals(
     )
     for sid, total in rows.all():
         charged[sid] = int(total)
+
+    rows = await session.execute(
+        select(TuitionCredit.student_id, func.coalesce(func.sum(TuitionCredit.amount), 0))
+        .where(
+            TuitionCredit.student_id.in_(student_ids),
+            TuitionCredit.is_archived.is_(False),
+        )
+        .group_by(TuitionCredit.student_id)
+    )
+    for sid, total in rows.all():
+        charged[sid] = max(0, charged.get(sid, 0) - int(total))
 
     paid: dict[uuid.UUID, int] = {}
     # Storno manfiy hisoblanadi: Σ(amount · (storno ? −1 : +1)).
@@ -531,10 +574,12 @@ async def finance_rows(
     """Barcha oʻquvchilar moliyasi (yoki faqat qarzdorlar)."""
     await assert_finance_admin(session, user)
 
+    # Arxivlanganlar ham olinadi: ketgan oʻquvchining qarzi hisobotdan
+    # yoʻqolmasligi kerak (1-domen qoidasi). Balansi nolga teng
+    # arxivlanganlar esa roʻyxatni bosmasin — pastda filtrlanadi.
     rows = await session.execute(
         select(Student, SchoolClass.name)
         .outerjoin(SchoolClass, SchoolClass.id == Student.class_id)
-        .where(Student.is_archived.is_(False))
         .order_by(Student.last_name, Student.first_name)
     )
     students = rows.all()
@@ -560,6 +605,8 @@ async def finance_rows(
         balans = p - c
         if only_debtors and balans >= 0:
             continue
+        if s.is_archived and balans == 0:
+            continue  # ketgan va hisobi yopiq — roʻyxatni bosmasin
         natija.append(
             StudentFinance(
                 student_id=s.id,
@@ -569,6 +616,7 @@ async def finance_rows(
                 charged=c,
                 paid=p,
                 balance=balans,
+                is_archived=s.is_archived,
             )
         )
     if only_debtors:
@@ -578,10 +626,13 @@ async def finance_rows(
 
 async def student_ledger(
     session: AsyncSession, user: CurrentUser, student_id: uuid.UUID
-) -> tuple[StudentFinance, list[LedgerRow], list[TuitionDiscount]]:
-    """Bitta oʻquvchining toʻliq daftari — qarzlar va toʻlovlar."""
+) -> tuple[StudentFinance, list[LedgerRow], list[TuitionDiscount], list[MonthStatus]]:
+    """Bitta oʻquvchining toʻliq daftari — qarzlar, toʻlovlar, oy kesimi."""
     await assert_can_view_student_finance(session, user, student_id)
-    student = await _get_student(session, student_id)
+    # Arxivlangan oʻquvchining daftari OʻQILADI — qarzi bor boʻlishi mumkin.
+    student = await session.get(Student, student_id)
+    if student is None:
+        raise NotFoundError("Oʻquvchi topilmadi.")
 
     class_name = None
     if student.class_id:
@@ -625,11 +676,16 @@ async def student_ledger(
         )
     for p in payments:
         if p.is_storno:
+            qaytarishmi = p.storno_of_id is None
             rows.append(
                 LedgerRow(
-                    kind="storno",
+                    kind="refund" if qaytarishmi else "storno",
                     when=p.paid_on,
-                    title=f"Storno: {p.storno_reason or ''}",
+                    title=(
+                        (p.storno_reason or "")
+                        if qaytarishmi
+                        else f"Storno: {p.storno_reason or ''}"
+                    ),
                     amount=p.amount,
                     payment_id=p.id,
                     method=p.method,
@@ -648,7 +704,31 @@ async def student_ledger(
                     stornod=p.id in stornolangan,
                 )
             )
+    credits = list(
+        (
+            await session.execute(
+                select(TuitionCredit)
+                .where(
+                    TuitionCredit.student_id == student_id,
+                    TuitionCredit.is_archived.is_(False),
+                )
+                .order_by(TuitionCredit.created_at)
+            )
+        ).scalars()
+    )
+    for k in credits:
+        rows.append(
+            LedgerRow(
+                kind="credit",
+                when=k.created_at.date(),
+                title=f"Kredit-yozuv: {k.reason}",
+                amount=-k.amount,
+            )
+        )
+
     rows.sort(key=lambda r: r.when)
+
+    months = _month_coverage(charges, payments, credits)
 
     charged, paid = await _totals(session, [student_id])
     c_total = charged.get(student_id, 0)
@@ -675,10 +755,176 @@ async def student_ledger(
             charged=c_total,
             paid=p_total,
             balance=p_total - c_total,
+            is_archived=student.is_archived,
         ),
         rows,
         discounts,
+        months,
     )
+
+
+def _month_coverage(
+    charges: list[TuitionCharge],
+    payments: list[Payment],
+    credits: list[TuitionCredit],
+) -> list[MonthStatus]:
+    """Oylar kesimi: qaysi oy toʻlangan, qaysi qisman, qaysi kechikdi.
+
+    Taqsimot FIFO: pul eng eski qarzdan boshlab yopib boriladi —
+    xuddi kassir daftarda qilganidek. Saqlashda hech narsa
+    oʻzgarmaydi, bu faqat KOʻRINISH: toʻlovlar oylarga bogʻlab
+    yozilmagani uchun hisob qatʼiy va bahssiz qoladi.
+
+    Muddat: oyning `payment_due_day`-sanasi (standart 10). Undan keyin
+    toʻliq yopilmagan oy «kechikdi» (overdue) hisoblanadi.
+    """
+    # 1) Har oyning samarali qarzi: maqsadli kreditlar oʻz oyiga.
+    effective: dict[tuple[int, int], int] = {}
+    for c in charges:
+        effective[(c.year, c.month)] = c.amount
+    pool_credit = 0
+    for k in credits:
+        kalit = (k.year, k.month) if k.year and k.month else None
+        if kalit is not None and kalit in effective:
+            olinadigan = min(k.amount, effective[kalit])
+            effective[kalit] -= olinadigan
+            pool_credit += k.amount - olinadigan
+        else:
+            pool_credit += k.amount
+
+    # 2) Umumiy hovuz: toʻlovlar (storno ayirilgan) + maqsadsiz kredit.
+    pool = pool_credit + sum(-p.amount if p.is_storno else p.amount for p in payments)
+    pool = max(pool, 0)
+
+    bugun = local_today()
+    natija: list[MonthStatus] = []
+    for c in sorted(charges, key=lambda x: (x.year, x.month)):
+        summa = effective[(c.year, c.month)]
+        yopildi = min(pool, summa)
+        pool -= yopildi
+        if summa == 0 or yopildi >= summa:
+            holat = "tolangan"
+        elif yopildi > 0:
+            holat = "qisman"
+        else:
+            holat = "tolanmagan"
+        muddat = date(c.year, c.month, settings.payment_due_day)
+        natija.append(
+            MonthStatus(
+                year=c.year,
+                month=c.month,
+                amount=summa,
+                covered=yopildi,
+                status=holat,
+                overdue=holat != "tolangan" and bugun > muddat,
+            )
+        )
+    return natija
+
+
+async def add_credit(
+    session: AsyncSession,
+    *,
+    actor: CurrentUser,
+    student_id: uuid.UUID,
+    amount: int,
+    reason: str,
+    year: int | None = None,
+    month: int | None = None,
+    ip: str | None = None,
+) -> TuitionCredit:
+    """Qarzni sabab bilan kamaytirish — storno'ning qarz tomondagi juft."""
+    await _assert_can_write(session, actor)
+    student = await session.get(Student, student_id)
+    if student is None:
+        raise NotFoundError("Oʻquvchi topilmadi.")
+    if amount <= 0:
+        raise ValidationError("Summa musbat boʻlsin.")
+    if len(reason.strip()) < 3:
+        raise ValidationError("Kredit-yozuv sababi koʻrsatilsin.")
+    if (year is None) != (month is None):
+        raise ValidationError("Yil va oy birga koʻrsatiladi.")
+
+    credit = TuitionCredit(
+        student_id=student_id,
+        amount=amount,
+        reason=reason.strip(),
+        year=year,
+        month=month,
+        created_by_id=actor.id,
+    )
+    session.add(credit)
+    await session.flush()
+
+    audit_service.record(
+        session,
+        object_type="tuition_credit",
+        object_id=credit.id,
+        action=AuditAction.CREATE,
+        old=None,
+        new={
+            "student_id": str(student_id),
+            "amount": amount,
+            "reason": credit.reason,
+            "target": f"{year}-{month}" if year else None,
+        },
+        actor_id=actor.id,
+        ip=ip,
+    )
+    await session.commit()
+    return credit
+
+
+async def refund(
+    session: AsyncSession,
+    *,
+    actor: CurrentUser,
+    student_id: uuid.UUID,
+    amount: int,
+    reason: str,
+    ip: str | None = None,
+) -> Payment:
+    """Avansni qaytarish — pul kassadan chiqdi, yozuv izli.
+
+    Faqat balans MUSBAT boʻlganda va undan oshmagan summaga: qarzdor
+    oilaga «qaytarish» boʻlmaydi. Texnik jihatdan bu storno-yozuv
+    (toʻlanganni kamaytiradi), lekin aniq sabab bilan.
+    """
+    await _assert_can_write(session, actor)
+    if amount <= 0:
+        raise ValidationError("Summa musbat boʻlsin.")
+    if len(reason.strip()) < 3:
+        raise ValidationError("Qaytarish sababi koʻrsatilsin.")
+
+    charged, paid = await _totals(session, [student_id])
+    balans = paid.get(student_id, 0) - charged.get(student_id, 0)
+    if amount > balans:
+        raise ConflictError("Qaytariladigan summa avansdan oshmasin.")
+
+    yozuv = Payment(
+        student_id=student_id,
+        amount=amount,
+        method=PaymentMethod.NAQD.value,
+        paid_on=local_today(),
+        is_storno=True,
+        storno_reason=f"Qaytarish: {reason.strip()}",
+        recorded_by_id=actor.id,
+    )
+    session.add(yozuv)
+    await session.flush()
+
+    audit_service.record(
+        session,
+        object_type="payment",
+        object_id=yozuv.id,
+        action=AuditAction.CREATE,
+        old=None,
+        new={"student_id": str(student_id), "refund": amount, "reason": reason.strip()},
+        actor_id=actor.id,
+        ip=ip,
+    )
+    await session.commit()
+    return yozuv
 
 
 async def summary(session: AsyncSession, user: CurrentUser) -> dict[str, int]:

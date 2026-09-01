@@ -1104,6 +1104,30 @@ export type ContractIn = {
 };
 
 /**
+ * CreditIn
+ *
+ * Kredit-yozuv: qarzni sabab bilan kamaytirish.
+ */
+export type CreditIn = {
+    /**
+     * Amount
+     */
+    amount: number;
+    /**
+     * Reason
+     */
+    reason: string;
+    /**
+     * Year
+     */
+    year?: number | null;
+    /**
+     * Month
+     */
+    month?: number | null;
+};
+
+/**
  * DayAttendanceOut
  *
  * Bitta kunning davomati.
@@ -2350,6 +2374,38 @@ export type MessageCreateIn = {
 };
 
 /**
+ * MonthStatusOut
+ *
+ * Bitta oyning holati — FIFO boʻyicha.
+ */
+export type MonthStatusOut = {
+    /**
+     * Year
+     */
+    year: number;
+    /**
+     * Month
+     */
+    month: number;
+    /**
+     * Amount
+     */
+    amount: number;
+    /**
+     * Covered
+     */
+    covered: number;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Overdue
+     */
+    overdue: boolean;
+};
+
+/**
  * NotificationKind
  *
  * Nima yuz berdi.
@@ -2758,6 +2814,22 @@ export type RecoveryCodesOut = {
      * Codes
      */
     codes: Array<string>;
+};
+
+/**
+ * RefundIn
+ *
+ * Avansni qaytarish — faqat musbat balansdan.
+ */
+export type RefundIn = {
+    /**
+     * Amount
+     */
+    amount: number;
+    /**
+     * Reason
+     */
+    reason: string;
 };
 
 /**
@@ -3211,6 +3283,10 @@ export type StudentFinanceOut = {
      * Balance
      */
     balance: number;
+    /**
+     * Is Archived
+     */
+    is_archived?: boolean;
 };
 
 /**
@@ -3276,6 +3352,10 @@ export type StudentLedgerOut = {
      * Discounts
      */
     discounts: Array<DiscountOut>;
+    /**
+     * Months
+     */
+    months: Array<MonthStatusOut>;
 };
 
 /**
@@ -5862,6 +5942,66 @@ export type PaymentsStornoResponses = {
 };
 
 export type PaymentsStornoResponse = PaymentsStornoResponses[keyof PaymentsStornoResponses];
+
+export type PaymentsAddCreditData = {
+    body: CreditIn;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: never;
+    url: '/api/v1/payments/students/{student_id}/credits';
+};
+
+export type PaymentsAddCreditErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PaymentsAddCreditError = PaymentsAddCreditErrors[keyof PaymentsAddCreditErrors];
+
+export type PaymentsAddCreditResponses = {
+    /**
+     * Successful Response
+     */
+    200: StudentLedgerOut;
+};
+
+export type PaymentsAddCreditResponse = PaymentsAddCreditResponses[keyof PaymentsAddCreditResponses];
+
+export type PaymentsRefundData = {
+    body: RefundIn;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: never;
+    url: '/api/v1/payments/students/{student_id}/refund';
+};
+
+export type PaymentsRefundErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PaymentsRefundError = PaymentsRefundErrors[keyof PaymentsRefundErrors];
+
+export type PaymentsRefundResponses = {
+    /**
+     * Successful Response
+     */
+    200: StudentLedgerOut;
+};
+
+export type PaymentsRefundResponse = PaymentsRefundResponses[keyof PaymentsRefundResponses];
 
 export type PaymentsCreateIntentData = {
     body: IntentCreateIn;

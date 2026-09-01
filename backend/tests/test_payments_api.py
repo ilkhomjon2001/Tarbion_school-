@@ -58,6 +58,7 @@ async def world(session: AsyncSession) -> dict:
 
     admin = await _user(session, roles, [RoleName.ADMIN.value], "pm.admin", "Adminov")
     session.add(UserPermission(user_id=admin.id, permission=Permission.PAYMENTS_MANAGE.value))
+    session.add(UserPermission(user_id=admin.id, permission=Permission.STUDENTS_MANAGE.value))
     await _user(session, roles, [RoleName.DIRECTOR.value], "pm.direktor", "Direktorov")
     await _user(session, roles, [RoleName.ACADEMIC.value], "pm.oquv", "Oquvboyev")
     ota = await _user(session, roles, [RoleName.PARENT.value], "pm.ota", "Otayev")
@@ -446,3 +447,177 @@ async def test_bekor_qilingan_intent_tolanmaydi(client: AsyncClient, world: dict
         json={"tx_id": intent_id, "status": "paid", "signature": imzo},
     )
     assert r.status_code == 409, r.text
+
+
+# ─────────────────── Oy kesimi, kredit, qaytarish, kvitansiya ───────────────────
+
+
+async def test_oy_kesimi_fifo(client: AsyncClient, world: dict) -> None:
+    """Pul eng eski qarzdan boshlab yopiladi: sentyabr toʻliq,
+    oktyabr qisman."""
+    token = await _token(client, "pm.admin")
+    # Shartnoma maydan boshlanadi — sentyabr va oktyabrni hisoblaymiz.
+    await _shartnoma(client, token, world["ali"].id)
+    for oy in (9, 10):
+        await client.post(
+            "/api/v1/payments/charges/generate",
+            headers=_auth(token),
+            json={"year": 2026, "month": oy},
+        )
+
+    # 5 mln toʻlandi: 3.5 sentyabrga, 1.5 oktyabrga.
+    r = await client.post(
+        "/api/v1/payments",
+        headers=_auth(token),
+        json={"student_id": str(world["ali"].id), "amount": 5_000_000, "method": "naqd"},
+    )
+    oylar = r.json()["months"]
+    assert [(m["month"], m["status"]) for m in oylar] == [(9, "tolangan"), (10, "qisman")]
+    assert oylar[1]["covered"] == 1_500_000
+
+
+async def test_muddat_otgan_oy_kechikdi(client: AsyncClient, world: dict) -> None:
+    """10-sanadan keyin toʻlanmagan oy «kechikdi» (overdue)."""
+    token = await _token(client, "pm.admin")
+    # Shartnoma 2026-may oldidan — may qarzini yozamiz: muddati
+    # 2026-05-10, bugungi sanadan (2026-09-01) oʻtgan.
+    r = await client.put(
+        f"/api/v1/payments/students/{world['ali'].id}/contract",
+        headers=_auth(token),
+        json={"monthly_fee": OYLIK, "starts_on": "2026-05-01"},
+    )
+    assert r.status_code == 200
+    await client.post(
+        "/api/v1/payments/charges/generate",
+        headers=_auth(token),
+        json={"year": 2026, "month": 5},
+    )
+    # Sentyabr esa hali muddati kelmagan (bugun 10-sanadan oldin boʻlsa).
+    r = await client.get(
+        f"/api/v1/payments/students/{world['ali'].id}", headers=_auth(token)
+    )
+    may = next(m for m in r.json()["months"] if m["month"] == 5)
+    assert may["status"] == "tolanmagan"
+    assert may["overdue"] is True
+
+
+async def test_kredit_yozuv(client: AsyncClient, world: dict, session: AsyncSession) -> None:
+    """Oʻquvchi ketdi — oxirgi oy qarzi sabab bilan kamaytiriladi."""
+    token = await _token(client, "pm.admin")
+    await _shartnoma(client, token, world["ali"].id)
+    await client.post(
+        "/api/v1/payments/charges/generate",
+        headers=_auth(token),
+        json={"year": 2026, "month": 9},
+    )
+
+    # Sababsiz kredit yoʻq.
+    r = await client.post(
+        f"/api/v1/payments/students/{world['ali'].id}/credits",
+        headers=_auth(token),
+        json={"amount": 1_750_000, "reason": ""},
+    )
+    assert r.status_code == 422
+
+    r = await client.post(
+        f"/api/v1/payments/students/{world['ali'].id}/credits",
+        headers=_auth(token),
+        json={
+            "amount": 1_750_000,
+            "reason": "20-sentyabrda oʻqishdan chiqdi — yarim oy",
+            "year": 2026,
+            "month": 9,
+        },
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["finance"]["charged"] == OYLIK - 1_750_000
+    sen = next(m for m in body["months"] if m["month"] == 9)
+    assert sen["amount"] == 1_750_000  # samarali qarz kamaydi
+
+    rows = (
+        (
+            await session.execute(
+                select(AuditLog).where(AuditLog.object_type == "tuition_credit")
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert len(rows) == 1
+    assert "yarim oy" in rows[0].new_value["reason"]
+
+
+async def test_qaytarish_faqat_avansdan(client: AsyncClient, world: dict) -> None:
+    """Avans qaytariladi; qarzdorga «qaytarish» yoʻq."""
+    token = await _token(client, "pm.admin")
+    await _shartnoma(client, token, world["ali"].id)
+
+    # Hech narsa hisoblanmagan, 1 mln avans bor.
+    await client.post(
+        "/api/v1/payments",
+        headers=_auth(token),
+        json={"student_id": str(world["ali"].id), "amount": 1_000_000, "method": "naqd"},
+    )
+
+    # Avansdan koʻp qaytarib boʻlmaydi.
+    r = await client.post(
+        f"/api/v1/payments/students/{world['ali'].id}/refund",
+        headers=_auth(token),
+        json={"amount": 2_000_000, "reason": "Ota-ona soʻradi"},
+    )
+    assert r.status_code == 409, r.text
+
+    r = await client.post(
+        f"/api/v1/payments/students/{world['ali'].id}/refund",
+        headers=_auth(token),
+        json={"amount": 1_000_000, "reason": "Oʻquvchi boshqa maktabga oʻtdi"},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["finance"]["balance"] == 0
+    assert any(x["kind"] == "refund" for x in r.json()["rows"])
+
+
+async def test_kvitansiya_raqami_avtomatik(client: AsyncClient, world: dict) -> None:
+    """TOL-04: chek raqami berilmasa KV-<yil>-<tartib> beriladi."""
+    token = await _token(client, "pm.admin")
+    await _shartnoma(client, token, world["ali"].id)
+
+    raqamlar = []
+    for _ in range(2):
+        r = await client.post(
+            "/api/v1/payments",
+            headers=_auth(token),
+            json={"student_id": str(world["ali"].id), "amount": 100_000, "method": "naqd"},
+        )
+        tolovlar = [x for x in r.json()["rows"] if x["kind"] == "payment"]
+        raqamlar.append(tolovlar[-1]["receipt_no"])
+
+    assert all(x and x.startswith("KV-") for x in raqamlar)
+    assert raqamlar[0] != raqamlar[1]
+
+
+async def test_arxivlangan_qarzdor_hisobotda_qoladi(
+    client: AsyncClient, world: dict
+) -> None:
+    """1-domen qoidasi: ketgan oʻquvchining qarzi yoʻqolmaydi."""
+    token = await _token(client, "pm.admin")
+    await _shartnoma(client, token, world["ali"].id)
+    await client.post(
+        "/api/v1/payments/charges/generate",
+        headers=_auth(token),
+        json={"year": 2026, "month": 9},
+    )
+
+    # Oʻquvchini arxivlaymiz (students.manage kerak — beramiz).
+    r = await client.post(
+        f"/api/v1/school/students/{world['ali'].id}/archive",
+        headers=_auth(token),
+        json={"reason": "Boshqa maktabga oʻtdi"},
+    )
+    assert r.status_code == 200, r.text
+
+    r = await client.get("/api/v1/payments/students?debtors=true", headers=_auth(token))
+    qarzdorlar = {x["student_name"]: x for x in r.json()}
+    assert "Otayev Ali" in qarzdorlar
+    assert qarzdorlar["Otayev Ali"]["is_archived"] is True

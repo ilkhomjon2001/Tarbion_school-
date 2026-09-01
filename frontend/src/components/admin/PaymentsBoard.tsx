@@ -18,6 +18,7 @@ import { ListSkeleton, StatCardSkeleton } from "@/components/ui/Skeleton";
 import { WalletIcon } from "@/components/ui/icons";
 import { formatSom } from "@/lib/format";
 import {
+  addCredit,
   addDiscount,
   archiveDiscount,
   DEFAULT_MONTHLY_FEE,
@@ -26,7 +27,9 @@ import {
   fetchLedger,
   generateCharges,
   METHOD_LABELS,
+  MONTH_NAMES_UZ,
   recordPayment,
+  refundPayment,
   setContract,
   stornoPayment,
   type FinanceSummaryOut,
@@ -189,7 +192,14 @@ export function AdminPaymentsBoard() {
                     onClick={() => setOpenId(r.student_id)}
                     className="cursor-pointer border-b border-border transition-colors last:border-0 hover:bg-surface-muted/50"
                   >
-                    <td className="px-3 py-2.5 font-medium text-brand-dark">{r.student_name}</td>
+                    <td className="px-3 py-2.5 font-medium text-brand-dark">
+                      {r.student_name}
+                      {r.is_archived && (
+                        <span className="ml-2">
+                          <Badge tone="neutral">Ketgan</Badge>
+                        </span>
+                      )}
+                    </td>
                     <td className="px-3 py-2.5 text-foreground-muted">{r.class_name ?? "—"}</td>
                     <td className="num px-3 py-2.5 text-right text-foreground-muted">
                       {r.monthly_fee === null ? (
@@ -245,7 +255,7 @@ function LedgerDrawer({
   const [ledger, setLedger] = useState<StudentLedgerOut | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [panel, setPanel] = useState<"tolov" | "shartnoma" | "chegirma" | null>(null);
+  const [panel, setPanel] = useState<"tolov" | "shartnoma" | "chegirma" | "kredit" | "qaytarish" | null>(null);
   const [stornoId, setStornoId] = useState<string | null>(null);
   const [stornoReason, setStornoReason] = useState("Summa xato kiritilgan");
 
@@ -334,7 +344,27 @@ function LedgerDrawer({
           >
             Chegirma
           </button>
+          <button
+            type="button"
+            onClick={() => setPanel(panel === "kredit" ? null : "kredit")}
+            className={ghostBtn}
+          >
+            Kredit-yozuv
+          </button>
+          {(fin?.balance ?? 0) > 0 && (
+            <button
+              type="button"
+              onClick={() => setPanel(panel === "qaytarish" ? null : "qaytarish")}
+              className={ghostBtn}
+            >
+              Avansni qaytarish
+            </button>
+          )}
         </div>
+
+        {ledger && ledger.months.length > 0 && (
+          <MonthsStrip months={ledger.months} />
+        )}
 
         {panel === "tolov" && (
           <PaymentForm
@@ -348,6 +378,21 @@ function LedgerDrawer({
             current={fin?.monthly_fee ?? null}
             busy={busy}
             onSubmit={(fee, startsOn) => void amal(() => setContract(studentId, fee, startsOn))}
+          />
+        )}
+        {panel === "kredit" && (
+          <CreditForm
+            busy={busy}
+            onSubmit={(input) => void amal(() => addCredit(studentId, input))}
+          />
+        )}
+        {panel === "qaytarish" && (
+          <RefundForm
+            busy={busy}
+            max={fin?.balance ?? 0}
+            onSubmit={(amount, reason) =>
+              void amal(() => refundPayment(studentId, amount, reason))
+            }
           />
         )}
         {panel === "chegirma" && (
@@ -401,14 +446,35 @@ function LedgerDrawer({
                 </div>
                 <div className="mt-0.5 flex items-center justify-between gap-2">
                   <span className="num text-xs text-foreground-muted">{r.when}</span>
-                  {r.kind === "payment" && !r.stornod && r.payment_id && (
-                    <button
-                      type="button"
-                      onClick={() => setStornoId(stornoId === r.payment_id ? null : r.payment_id)}
-                      className="focus-ring rounded px-1.5 py-0.5 text-xs font-medium text-foreground-muted hover:text-danger"
-                    >
-                      Storno
-                    </button>
+                  {r.kind === "payment" && r.payment_id && (
+                    <span className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          printReceipt({
+                            studentName: fin?.student_name ?? "",
+                            className: fin?.class_name ?? "",
+                            title: r.title,
+                            amount: -r.amount,
+                            method: r.method ?? "",
+                            receiptNo: r.receipt_no ?? "",
+                            when: r.when,
+                          })
+                        }
+                        className="focus-ring rounded px-1.5 py-0.5 text-xs font-medium text-brand-dark hover:underline"
+                      >
+                        Kvitansiya
+                      </button>
+                      {!r.stornod && (
+                        <button
+                          type="button"
+                          onClick={() => setStornoId(stornoId === r.payment_id ? null : r.payment_id)}
+                          className="focus-ring rounded px-1.5 py-0.5 text-xs font-medium text-foreground-muted hover:text-danger"
+                        >
+                          Storno
+                        </button>
+                      )}
+                    </span>
                   )}
                 </div>
                 {stornoId === r.payment_id && (
@@ -668,4 +734,199 @@ function DiscountForm({
       </form>
     </div>
   );
+}
+
+
+/** Oylar chiziqchasi: sentyabr ✓, oktyabr ◐, noyabr ✗ (kechikdi qizil). */
+function MonthsStrip({
+  months,
+}: {
+  months: { year: number; month: number; amount: number; covered: number; status: string; overdue: boolean }[];
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {months.map((m) => {
+        const uslub =
+          m.status === "tolangan"
+            ? "bg-success-tint text-success border-success/30"
+            : m.overdue
+              ? "bg-danger-tint text-danger border-danger/30"
+              : m.status === "qisman"
+                ? "bg-warning-tint text-warning border-warning/30"
+                : "bg-surface-muted text-foreground-muted border-border";
+        const belgi = m.status === "tolangan" ? "✓" : m.status === "qisman" ? "◐" : "✗";
+        return (
+          <span
+            key={`${m.year}-${m.month}`}
+            title={`${MONTH_NAMES_UZ[m.month]} ${m.year}: ${formatSom(m.covered)} / ${formatSom(m.amount)}${m.overdue ? " — kechikdi" : ""}`}
+            className={`num inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${uslub}`}
+          >
+            {belgi} {MONTH_NAMES_UZ[m.month]}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Kredit-yozuv: qarzni sabab bilan kamaytirish (kelishuv, ketish). */
+function CreditForm({
+  busy,
+  onSubmit,
+}: {
+  busy: boolean;
+  onSubmit: (input: { amount: number; reason: string; year?: number; month?: number }) => void;
+}) {
+  const now = new Date();
+  const [amount, setAmount] = useState("");
+  const [reason, setReason] = useState("");
+  const [targeted, setTargeted] = useState(true);
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (Number(amount) <= 0 || reason.trim().length < 3) return;
+        onSubmit({
+          amount: Number(amount),
+          reason: reason.trim(),
+          ...(targeted
+            ? { year: now.getFullYear(), month: now.getMonth() + 1 }
+            : {}),
+        });
+      }}
+      className="flex flex-col gap-2 rounded-lg border border-border p-3"
+    >
+      <p className="text-xs text-foreground-muted">
+        Qarzni sabab bilan kamaytirish — masalan, oʻquvchi oy oʻrtasida ketdi.
+        Qarz yozuvining oʻzi oʻzgarmaydi, tuzatish alohida qatorda va auditda.
+      </p>
+      <span className="flex gap-2">
+        <input
+          type="number"
+          min={1}
+          step={50000}
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="Summa (soʻm)"
+          aria-label="Kredit summasi"
+          className={`${inputClass} num`}
+        />
+        <label className="flex shrink-0 items-center gap-1.5 text-xs text-foreground">
+          <input
+            type="checkbox"
+            checked={targeted}
+            onChange={(e) => setTargeted(e.target.checked)}
+            className="h-4 w-4"
+          />
+          Joriy oyga
+        </label>
+      </span>
+      <input
+        value={reason}
+        onChange={(e) => setReason(e.target.value.slice(0, 200))}
+        placeholder="Sabab (majburiy)"
+        aria-label="Kredit sababi"
+        className={inputClass}
+      />
+      <button
+        type="submit"
+        disabled={busy || Number(amount) <= 0 || reason.trim().length < 3}
+        className={primaryBtn}
+      >
+        Kredit-yozuvni saqlash
+      </button>
+    </form>
+  );
+}
+
+/** Avansni qaytarish — faqat musbat balansdan. */
+function RefundForm({
+  busy,
+  max,
+  onSubmit,
+}: {
+  busy: boolean;
+  max: number;
+  onSubmit: (amount: number, reason: string) => void;
+}) {
+  const [amount, setAmount] = useState(String(max));
+  const [reason, setReason] = useState("");
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (Number(amount) <= 0 || reason.trim().length < 3) return;
+        onSubmit(Number(amount), reason.trim());
+      }}
+      className="flex flex-col gap-2 rounded-lg border border-border p-3"
+    >
+      <p className="text-xs text-foreground-muted">
+        Avans: <span className="num font-medium">{formatSom(max)}</span>. Undan
+        koʻp qaytarib boʻlmaydi.
+      </p>
+      <input
+        type="number"
+        min={1}
+        max={max}
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+        aria-label="Qaytariladigan summa"
+        className={`${inputClass} num`}
+      />
+      <input
+        value={reason}
+        onChange={(e) => setReason(e.target.value.slice(0, 200))}
+        placeholder="Sabab (majburiy)"
+        aria-label="Qaytarish sababi"
+        className={inputClass}
+      />
+      <button
+        type="submit"
+        disabled={busy || Number(amount) <= 0 || reason.trim().length < 3}
+        className={primaryBtn}
+      >
+        Qaytarishni yozish
+      </button>
+    </form>
+  );
+}
+
+/** Kvitansiyani yangi oynada chop etish (TOL-04). */
+function printReceipt(r: {
+  studentName: string;
+  className: string;
+  title: string;
+  amount: number;
+  method: string;
+  receiptNo: string;
+  when: string;
+}) {
+  const oyna = window.open("", "_blank", "width=480,height=640");
+  if (!oyna) return;
+  oyna.document.write(`<!doctype html>
+<html><head><meta charset="utf-8"><title>Kvitansiya ${r.receiptNo}</title>
+<style>
+  body { font-family: Georgia, serif; max-width: 420px; margin: 24px auto; color: #111; }
+  h1 { font-size: 15px; text-align: center; margin: 0 0 2px; }
+  h2 { font-size: 13px; text-align: center; font-weight: normal; margin: 0 0 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td { padding: 6px 4px; border-bottom: 1px dotted #999; }
+  td:last-child { text-align: right; font-weight: bold; }
+  .imzo { margin-top: 28px; font-size: 12px; display: flex; justify-content: space-between; }
+</style></head><body>
+<h1>«Tarbion» xususiy umumtaʼlim maktabi</h1>
+<h2>Toʻlov kvitansiyasi № ${r.receiptNo}</h2>
+<table>
+  <tr><td>Oʻquvchi</td><td>${r.studentName} (${r.className})</td></tr>
+  <tr><td>Asos</td><td>${r.title}</td></tr>
+  <tr><td>Summa</td><td>${r.amount.toLocaleString("uz-UZ")} soʻm</td></tr>
+  <tr><td>Usul</td><td>${r.method}</td></tr>
+  <tr><td>Sana</td><td>${r.when}</td></tr>
+</table>
+<div class="imzo"><span>Qabul qildi: ____________</span><span>Imzo: ____________</span></div>
+<script>window.print();</script>
+</body></html>`);
+  oyna.document.close();
 }

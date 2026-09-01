@@ -15,6 +15,19 @@ class StudentFinanceOut(BaseModel):
     paid: int
     #: Manfiy = qarz.
     balance: int
+    #: Ketgan oʻquvchi — qarzi bilan hisobotda qoladi.
+    is_archived: bool = False
+
+
+class MonthStatusOut(BaseModel):
+    """Bitta oyning holati — FIFO boʻyicha."""
+
+    year: int
+    month: int
+    amount: int
+    covered: int
+    status: str
+    overdue: bool
 
 
 class FinanceSummaryOut(BaseModel):
@@ -49,6 +62,23 @@ class StudentLedgerOut(BaseModel):
     finance: StudentFinanceOut
     rows: list[LedgerRowOut]
     discounts: list[DiscountOut]
+    months: list[MonthStatusOut]
+
+
+class CreditIn(BaseModel):
+    """Kredit-yozuv: qarzni sabab bilan kamaytirish."""
+
+    amount: int = Field(gt=0, le=1_000_000_000)
+    reason: str = Field(min_length=3, max_length=200)
+    year: int | None = Field(default=None, ge=2024, le=2100)
+    month: int | None = Field(default=None, ge=1, le=12)
+
+
+class RefundIn(BaseModel):
+    """Avansni qaytarish — faqat musbat balansdan."""
+
+    amount: int = Field(gt=0, le=1_000_000_000)
+    reason: str = Field(min_length=3, max_length=200)
 
 
 class ContractIn(BaseModel):
