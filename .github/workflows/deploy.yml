@@ -1,0 +1,186 @@
+name: Sinov · testlar va deploy
+
+# `main` ga har push'da: avval testlar, oʻtgach serverga.
+#
+# Nega ikki bosqich: build va deploy 5-8 daqiqa oladi va u tor IOPS li
+# VPS da ishlaydi. Yiqiladigan koddan buni talab qilish keraksiz yuk —
+# testlar avval GitHub yuguruvchisida oʻtadi.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Ketma-ket push'lar bir-birining ustiga chiqmasin: bir vaqtda ikkita
+# deploy `git reset --hard` va `pnpm build` ni aralashtirib yuborardi.
+concurrency:
+  group: tarbion-deploy
+  cancel-in-progress: false
+
+jobs:
+  # ─────────────────────────── Testlar ───────────────────────────
+
+  backend:
+    name: Backend · 363 test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        # Serverda 16 ishlaydi — CI ham oʻshanda sinasin, aks holda
+        # faqat ishlab chiqarishda chiqadigan farq topilmay qolardi.
+        image: postgres:16
+        env:
+          POSTGRES_USER: tarbion
+          POSTGRES_PASSWORD: tarbion
+          POSTGRES_DB: tarbion_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Bogʻliqliklar
+        run: uv sync --frozen
+
+      - name: Linter
+        run: uv run ruff check .
+
+      - name: Testlar
+        env:
+          DATABASE_URL: postgresql+asyncpg://tarbion:tarbion@localhost:5432/tarbion_test
+          TEST_DATABASE_URL: postgresql+asyncpg://tarbion:tarbion@localhost:5432/tarbion_test
+          # 32 belgidan uzun boʻlishi shart (config validatori).
+          JWT_SECRET: ci-uchun-vaqtinchalik-kalit-32-belgidan-uzun-2026
+          APP_ENV: development
+        run: uv run pytest -q
+
+  frontend:
+    name: Frontend · tip va build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: pnpm
+        run: corepack enable
+        env:
+          COREPACK_ENABLE_DOWNLOAD_PROMPT: 0
+
+      - name: Bogʻliqliklar
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Tiplar
+        run: corepack pnpm exec tsc --noEmit
+
+      - name: Kontrakt (backend enum'lari bilan moslik)
+        run: corepack pnpm check:contracts
+
+      - name: Build
+        run: corepack pnpm build
+
+  # ─────────────────────────── Deploy ───────────────────────────
+
+  deploy:
+    name: Serverga
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    # Faqat `main` ga push'da. `workflow_dispatch` da ham ishlaydi.
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: SSH kaliti
+        env:
+          KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy
+        env:
+          HOST: ${{ secrets.SERVER_HOST }}
+          USER: ${{ secrets.SERVER_USER }}
+        run: |
+          ssh -o ConnectTimeout=30 "$USER@$HOST" 'bash -s' <<'UZOQ'
+          set -Eeuo pipefail
+          export PATH="/root/.local/bin:/usr/local/bin:/usr/bin:/bin"
+          export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+          cd /opt/tarbion
+
+          ESKI=$(git rev-parse HEAD)
+          git fetch -q origin main
+          YANGI=$(git rev-parse origin/main)
+          echo "commit: $ESKI → $YANGI"
+
+          # ── Zaxira MIGRATSIYADAN OLDIN ──
+          # Migratsiya maʼlumotni oʻzgartiradi va uni qaytarib boʻlmaydi.
+          # Oxirgi 20 tasi saqlanadi.
+          mkdir -p /root/backups
+          BK=/root/backups/tarbion_$(date +%Y%m%d_%H%M%S).sql
+          if sudo -u postgres pg_dump tarbion > "$BK" 2>/dev/null; then
+            echo "zaxira: $BK ($(wc -c < "$BK") bayt)"
+          else
+            echo "OGOHLANTIRISH: zaxira olinmadi"
+          fi
+          ls -1t /root/backups/tarbion_*.sql 2>/dev/null | tail -n +21 | xargs -r rm -f
+
+          git merge --ff-only origin/main
+
+          qaytar() {
+            echo "XATO — $ESKI ga qaytarilmoqda"
+            cd /opt/tarbion && git reset --hard "$ESKI"
+            systemctl restart tarbion-api tarbion-web || true
+            exit 1
+          }
+          trap qaytar ERR
+
+          cd backend
+          uv sync -q
+          uv run python -c 'import app.main'
+          uv run alembic upgrade head
+
+          cd ../frontend
+          corepack pnpm install --frozen-lockfile --prefer-offline
+          corepack pnpm build
+
+          trap - ERR
+          systemctl restart tarbion-api tarbion-web
+          UZOQ
+
+      - name: Salomatlik tekshiruvi
+        run: |
+          # Xizmat koʻtarilishiga vaqt beramiz. Tekshiruv TASHQARIDAN,
+          # Caddy orqali — serverdan qilinsa TLS va proksi zanjiri
+          # sinovdan oʻtmay qolardi.
+          for i in $(seq 1 12); do
+            sleep 5
+            KOD=$(curl -s -o /dev/null -w '%{http_code}' -m 10 https://tarbion.robbitonline.uz/health/ready || echo 000)
+            VEB=$(curl -s -o /dev/null -w '%{http_code}' -m 10 https://tarbion.robbitonline.uz/login || echo 000)
+            echo "urinish $i · api=$KOD veb=$VEB"
+            if [ "$KOD" = "200" ] && [ "$VEB" = "200" ]; then
+              echo "deploy tayyor"
+              exit 0
+            fi
+          done
+          echo "sayt koʻtarilmadi"
+          exit 1
