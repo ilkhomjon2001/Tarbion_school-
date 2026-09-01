@@ -19,6 +19,7 @@ from app.api.v1 import appeals as appeals_router
 from app.api.v1 import attendance as attendance_router
 from app.api.v1 import audit as audit_router
 from app.api.v1 import auth as auth_router
+from app.api.v1 import crm as crm_router
 from app.api.v1 import director as director_router
 from app.api.v1 import documents as documents_router
 from app.api.v1 import exams as exams_router
@@ -111,6 +112,7 @@ app.include_router(wellbeing_router.router, prefix="/api/v1")
 app.include_router(documents_router.router, prefix="/api/v1")
 app.include_router(surveys_router.router, prefix="/api/v1")
 app.include_router(hr_router.router, prefix="/api/v1")
+app.include_router(crm_router.router, prefix="/api/v1")
 app.include_router(exams_router.router, prefix="/api/v1")
 app.include_router(payments_router.router, prefix="/api/v1")
 app.include_router(academic_router.router, prefix=API_V1)

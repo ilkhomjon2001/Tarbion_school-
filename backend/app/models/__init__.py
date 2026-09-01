@@ -24,6 +24,17 @@ from app.models.appeals import (
 from app.models.attendance import ATTENDANCE_LABELS_UZ, AttendanceRecord, AttendanceStatus
 from app.models.audit import AuditAction, AuditLog
 from app.models.base import AppendOnly, Base, Entity
+from app.models.crm import (
+    CALL_RESULT_LABELS_UZ,
+    LEAD_CLOSED_STATUSES,
+    LEAD_SOURCE_LABELS_UZ,
+    LEAD_STATUS_LABELS_UZ,
+    CallResult,
+    Lead,
+    LeadCall,
+    LeadSource,
+    LeadStatus,
+)
 from app.models.documents import (
     DOCUMENT_TYPE_LABELS_UZ,
     DocumentRequest,
@@ -190,6 +201,15 @@ __all__ = [
     "AuditAction",
     "AuditLog",
     "Base",
+    "CALL_RESULT_LABELS_UZ",
+    "CallResult",
+    "LEAD_CLOSED_STATUSES",
+    "LEAD_SOURCE_LABELS_UZ",
+    "LEAD_STATUS_LABELS_UZ",
+    "Lead",
+    "LeadCall",
+    "LeadSource",
+    "LeadStatus",
     "BellSchedule",
     "ClassSubject",
     "CONTACT_KIND_LABELS_UZ",

@@ -841,6 +841,50 @@ export type BellsIn = {
 };
 
 /**
+ * CallFeedOut
+ *
+ * Umumiy qoʻngʻiroqlar jurnali qatori — lid maʼlumoti bilan.
+ */
+export type CallFeedOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Lead Id
+     */
+    lead_id: string;
+    /**
+     * Called At
+     */
+    called_at: string;
+    /**
+     * Result
+     */
+    result: string;
+    /**
+     * Note
+     */
+    note: string | null;
+    /**
+     * Created By Name
+     */
+    created_by_name: string | null;
+    /**
+     * Lead Parent Name
+     */
+    lead_parent_name: string;
+    /**
+     * Lead Phone
+     */
+    lead_phone: string;
+    /**
+     * Lead Status
+     */
+    lead_status: string;
+};
+
+/**
  * ChangePasswordIn
  *
  * Parolni almashtirish (AUT-08).
@@ -884,6 +928,10 @@ export type ChildOut = {
      * Class Name
      */
     class_name: string;
+    /**
+     * Is Archived
+     */
+    is_archived?: boolean;
     /**
      * Relation
      */
@@ -1125,6 +1173,50 @@ export type CreditIn = {
      * Month
      */
     month?: number | null;
+};
+
+/**
+ * CrmContractOut
+ *
+ * Shartnomalar roʻyxati qatori — mavjud TuitionContract dan, faqat oʻqish.
+ */
+export type CrmContractOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Student Name
+     */
+    student_name: string;
+    /**
+     * Class Name
+     */
+    class_name: string | null;
+    /**
+     * Monthly Fee
+     */
+    monthly_fee: number;
+    /**
+     * Starts On
+     */
+    starts_on: string;
+    /**
+     * Is Archived
+     */
+    is_archived: boolean;
+    /**
+     * Note
+     */
+    note: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
 };
 
 /**
@@ -2075,6 +2167,208 @@ export type JournalStudentOut = {
      */
     block_reason: string | null;
     grade: GradeOut | null;
+};
+
+/**
+ * LeadCallIn
+ */
+export type LeadCallIn = {
+    /**
+     * Result
+     */
+    result: string;
+    /**
+     * Note
+     */
+    note?: string | null;
+    /**
+     * Called At
+     */
+    called_at?: string | null;
+};
+
+/**
+ * LeadCallOut
+ */
+export type LeadCallOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Lead Id
+     */
+    lead_id: string;
+    /**
+     * Called At
+     */
+    called_at: string;
+    /**
+     * Result
+     */
+    result: string;
+    /**
+     * Note
+     */
+    note: string | null;
+    /**
+     * Created By Id
+     */
+    created_by_id: string | null;
+    /**
+     * Created By Name
+     */
+    created_by_name: string | null;
+};
+
+/**
+ * LeadIn
+ */
+export type LeadIn = {
+    /**
+     * Parent Name
+     */
+    parent_name: string;
+    /**
+     * Phone
+     */
+    phone: string;
+    /**
+     * Child Name
+     */
+    child_name?: string | null;
+    /**
+     * Child Birth Year
+     */
+    child_birth_year?: number | null;
+    /**
+     * Source
+     */
+    source?: string;
+    /**
+     * Note
+     */
+    note?: string | null;
+    /**
+     * Assigned To Id
+     */
+    assigned_to_id?: string | null;
+};
+
+/**
+ * LeadOut
+ */
+export type LeadOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Parent Name
+     */
+    parent_name: string;
+    /**
+     * Phone
+     */
+    phone: string;
+    /**
+     * Child Name
+     */
+    child_name: string | null;
+    /**
+     * Child Birth Year
+     */
+    child_birth_year: number | null;
+    /**
+     * Source
+     */
+    source: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Note
+     */
+    note: string | null;
+    /**
+     * Assigned To Id
+     */
+    assigned_to_id: string | null;
+    /**
+     * Assigned To Name
+     */
+    assigned_to_name: string | null;
+    /**
+     * Student Id
+     */
+    student_id: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * LeadSummaryOut
+ *
+ * Dashboard uchun: har status boʻyicha faol lidlar soni.
+ */
+export type LeadSummaryOut = {
+    /**
+     * Counts
+     */
+    counts: {
+        [key: string]: number;
+    };
+    /**
+     * Total
+     */
+    total: number;
+};
+
+/**
+ * LeadUpdate
+ *
+ * PATCH — faqat berilgan maydonlar oʻzgaradi.
+ */
+export type LeadUpdate = {
+    /**
+     * Parent Name
+     */
+    parent_name?: string | null;
+    /**
+     * Phone
+     */
+    phone?: string | null;
+    /**
+     * Child Name
+     */
+    child_name?: string | null;
+    /**
+     * Child Birth Year
+     */
+    child_birth_year?: number | null;
+    /**
+     * Source
+     */
+    source?: string | null;
+    /**
+     * Status
+     */
+    status?: string | null;
+    /**
+     * Note
+     */
+    note?: string | null;
+    /**
+     * Assigned To Id
+     */
+    assigned_to_id?: string | null;
+    /**
+     * Student Id
+     */
+    student_id?: string | null;
 };
 
 /**
@@ -3395,6 +3689,30 @@ export type StudentMoveIn = {
 };
 
 /**
+ * StudentRatingOut
+ *
+ * Sinf ichidagi oʻrin — faqat OʻZ koʻrsatkichlari (X-6).
+ */
+export type StudentRatingOut = {
+    /**
+     * Rank
+     */
+    rank: number | null;
+    /**
+     * Total Students
+     */
+    total_students: number;
+    /**
+     * Average
+     */
+    average: number | null;
+    /**
+     * Attendance Percent
+     */
+    attendance_percent: number;
+};
+
+/**
  * StudentRowOut
  *
  * Roʻyxatdagi bitta oʻquvchi va uning holati.
@@ -3480,6 +3798,30 @@ export type StudentSubjectGradesOut = {
      * Average
      */
     average: number | null;
+};
+
+/**
+ * StudentTeacherOut
+ *
+ * Oʻquvchiga dars beradigan ustoz — ism va fan, LOGINSIZ (X-6).
+ */
+export type StudentTeacherOut = {
+    /**
+     * Teacher Id
+     */
+    teacher_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Subjects
+     */
+    subjects: Array<string>;
+    /**
+     * Is Homeroom
+     */
+    is_homeroom: boolean;
 };
 
 /**
@@ -5478,6 +5820,273 @@ export type HrArchiveLeaveResponses = {
 
 export type HrArchiveLeaveResponse = HrArchiveLeaveResponses[keyof HrArchiveLeaveResponses];
 
+export type CrmLeadsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Status
+         */
+        status?: string | null;
+        /**
+         * Q
+         */
+        q?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/crm/leads';
+};
+
+export type CrmLeadsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CrmLeadsError = CrmLeadsErrors[keyof CrmLeadsErrors];
+
+export type CrmLeadsResponses = {
+    /**
+     * Response Crm Leads
+     *
+     * Successful Response
+     */
+    200: Array<LeadOut>;
+};
+
+export type CrmLeadsResponse = CrmLeadsResponses[keyof CrmLeadsResponses];
+
+export type CrmCreateLeadData = {
+    body: LeadIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/crm/leads';
+};
+
+export type CrmCreateLeadErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CrmCreateLeadError = CrmCreateLeadErrors[keyof CrmCreateLeadErrors];
+
+export type CrmCreateLeadResponses = {
+    /**
+     * Successful Response
+     */
+    201: LeadOut;
+};
+
+export type CrmCreateLeadResponse = CrmCreateLeadResponses[keyof CrmCreateLeadResponses];
+
+export type CrmLeadsSummaryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/crm/leads/summary';
+};
+
+export type CrmLeadsSummaryResponses = {
+    /**
+     * Successful Response
+     */
+    200: LeadSummaryOut;
+};
+
+export type CrmLeadsSummaryResponse = CrmLeadsSummaryResponses[keyof CrmLeadsSummaryResponses];
+
+export type CrmUpdateLeadData = {
+    body: LeadUpdate;
+    path: {
+        /**
+         * Lead Id
+         */
+        lead_id: string;
+    };
+    query?: never;
+    url: '/api/v1/crm/leads/{lead_id}';
+};
+
+export type CrmUpdateLeadErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CrmUpdateLeadError = CrmUpdateLeadErrors[keyof CrmUpdateLeadErrors];
+
+export type CrmUpdateLeadResponses = {
+    /**
+     * Successful Response
+     */
+    200: LeadOut;
+};
+
+export type CrmUpdateLeadResponse = CrmUpdateLeadResponses[keyof CrmUpdateLeadResponses];
+
+export type CrmArchiveLeadData = {
+    body?: never;
+    path: {
+        /**
+         * Lead Id
+         */
+        lead_id: string;
+    };
+    query?: never;
+    url: '/api/v1/crm/leads/{lead_id}/archive';
+};
+
+export type CrmArchiveLeadErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CrmArchiveLeadError = CrmArchiveLeadErrors[keyof CrmArchiveLeadErrors];
+
+export type CrmArchiveLeadResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type CrmArchiveLeadResponse = CrmArchiveLeadResponses[keyof CrmArchiveLeadResponses];
+
+export type CrmLeadCallsData = {
+    body?: never;
+    path: {
+        /**
+         * Lead Id
+         */
+        lead_id: string;
+    };
+    query?: never;
+    url: '/api/v1/crm/leads/{lead_id}/calls';
+};
+
+export type CrmLeadCallsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CrmLeadCallsError = CrmLeadCallsErrors[keyof CrmLeadCallsErrors];
+
+export type CrmLeadCallsResponses = {
+    /**
+     * Response Crm Lead Calls
+     *
+     * Successful Response
+     */
+    200: Array<LeadCallOut>;
+};
+
+export type CrmLeadCallsResponse = CrmLeadCallsResponses[keyof CrmLeadCallsResponses];
+
+export type CrmAddCallData = {
+    body: LeadCallIn;
+    path: {
+        /**
+         * Lead Id
+         */
+        lead_id: string;
+    };
+    query?: never;
+    url: '/api/v1/crm/leads/{lead_id}/calls';
+};
+
+export type CrmAddCallErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CrmAddCallError = CrmAddCallErrors[keyof CrmAddCallErrors];
+
+export type CrmAddCallResponses = {
+    /**
+     * Successful Response
+     */
+    201: LeadCallOut;
+};
+
+export type CrmAddCallResponse = CrmAddCallResponses[keyof CrmAddCallResponses];
+
+export type CrmCallsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/crm/calls';
+};
+
+export type CrmCallsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CrmCallsError = CrmCallsErrors[keyof CrmCallsErrors];
+
+export type CrmCallsResponses = {
+    /**
+     * Response Crm Calls
+     *
+     * Successful Response
+     */
+    200: Array<CallFeedOut>;
+};
+
+export type CrmCallsResponse = CrmCallsResponses[keyof CrmCallsResponses];
+
+export type CrmContractsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Q
+         */
+        q?: string | null;
+    };
+    url: '/api/v1/crm/contracts';
+};
+
+export type CrmContractsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CrmContractsError = CrmContractsErrors[keyof CrmContractsErrors];
+
+export type CrmContractsResponses = {
+    /**
+     * Response Crm Contracts
+     *
+     * Successful Response
+     */
+    200: Array<CrmContractOut>;
+};
+
+export type CrmContractsResponse = CrmContractsResponses[keyof CrmContractsResponses];
+
 export type ExamsListExamsData = {
     body?: never;
     path?: never;
@@ -7382,6 +7991,36 @@ export type JournalClassJournalResponses = {
 
 export type JournalClassJournalResponse = JournalClassJournalResponses[keyof JournalClassJournalResponses];
 
+export type JournalStudentRatingData = {
+    body?: never;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: never;
+    url: '/api/v1/journal/students/{student_id}/rating';
+};
+
+export type JournalStudentRatingErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type JournalStudentRatingError = JournalStudentRatingErrors[keyof JournalStudentRatingErrors];
+
+export type JournalStudentRatingResponses = {
+    /**
+     * Successful Response
+     */
+    200: StudentRatingOut;
+};
+
+export type JournalStudentRatingResponse = JournalStudentRatingResponses[keyof JournalStudentRatingResponses];
+
 export type JournalStudentGradesData = {
     body?: never;
     path: {
@@ -7852,6 +8491,38 @@ export type SchoolSetClassSubjectResponses = {
 };
 
 export type SchoolSetClassSubjectResponse = SchoolSetClassSubjectResponses[keyof SchoolSetClassSubjectResponses];
+
+export type SchoolStudentTeachersData = {
+    body?: never;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/students/{student_id}/teachers';
+};
+
+export type SchoolStudentTeachersErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolStudentTeachersError = SchoolStudentTeachersErrors[keyof SchoolStudentTeachersErrors];
+
+export type SchoolStudentTeachersResponses = {
+    /**
+     * Response School Student Teachers
+     *
+     * Successful Response
+     */
+    200: Array<StudentTeacherOut>;
+};
+
+export type SchoolStudentTeachersResponse = SchoolStudentTeachersResponses[keyof SchoolStudentTeachersResponses];
 
 export type SchoolStaffData = {
     body?: never;
