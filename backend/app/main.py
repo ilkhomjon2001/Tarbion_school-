@@ -14,6 +14,7 @@ from sqlalchemy import text
 
 from app.api.v1 import academic as academic_router
 from app.api.v1 import access as access_router
+from app.api.v1 import announcements as announcements_router
 from app.api.v1 import appeals as appeals_router
 from app.api.v1 import attendance as attendance_router
 from app.api.v1 import audit as audit_router
@@ -99,6 +100,7 @@ app.add_exception_handler(Exception, unhandled_error_handler)
 API_V1 = "/api/v1"
 app.include_router(auth_router.router, prefix=API_V1)
 app.include_router(access_router.router, prefix=API_V1)
+app.include_router(announcements_router.router, prefix="/api/v1")
 app.include_router(academic_router.router, prefix=API_V1)
 app.include_router(director_router.router, prefix=API_V1)
 app.include_router(appeals_router.router, prefix=API_V1)

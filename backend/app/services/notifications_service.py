@@ -67,6 +67,10 @@ _SECTION: dict[str, dict[str, str]] = {
         "admin": "/admin/murojaatlar",
         "director": "/rahbar/murojaatlar",
     },
+    NotificationKind.ANNOUNCEMENT.value: {
+        "parent": "/ota-ona/elonlar",
+        "student": "/student/announcements",
+    },
     NotificationKind.APPEAL_CLOSED.value: {
         "parent": "/ota-ona/murojaat",
         "teacher": "/teacher/murojaat",

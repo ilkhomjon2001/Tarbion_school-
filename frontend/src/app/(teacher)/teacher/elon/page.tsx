@@ -1,357 +1,266 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { TeacherShell } from "@/components/teacher/TeacherShell";
-import { fetchClasses } from "@/lib/school/api";
-import { useMyTeaching } from "@/lib/teacher/me";
-import { classColor } from "@/lib/teacher/schedule";
-import { loadCollection, saveCollection } from "@/lib/teacher/store";
 import {
-  DEMO_ANNOUNCEMENTS,
-  type Announcement,
-  type AudienceKind,
-} from "@/lib/teacher/school-data";
+  archiveAnnouncement,
+  AUDIENCE_LABELS,
+  createAnnouncement,
+  fetchAnnouncements,
+  fetchTargets,
+  previewRecipients,
+  type AnnouncementOut,
+  type TargetsOut,
+} from "@/lib/announcements/api";
 
 /**
- * Eʼlonlar (ADM-12, BOT-04).
+ * Eʼlonlar (T-020, ADM-12) — BAZADAN.
  *
  * Ustoz eʼlonni ikki auditoriyaga bera oladi:
- *   sinf  — oʻzi dars beradigan yoki rahbarlik qiladigan sinfga
- *   fan   — oʻsha fandan dars beradigan barcha sinflarga
+ *   sinf — oʻzi dars beradigan yoki rahbarlik qiladigan sinfga;
+ *   fan  — oʻsha fandan dars beradigan barcha sinflariga.
  *
- * Yuborishdan OLDIN qabul qiluvchilar soni koʻrsatiladi — ADM-12 ning
- * qabul mezoni. Ustoz "21 kishiga ketadi" deb bilib turib bosadi.
+ * Yuborishdan OLDIN qabul qiluvchilar soni koʻrsatiladi (ADM-12) va bu
+ * son serverda hisoblanadi: haqiqiy adresatlar `guardians` jadvalidan
+ * chiqadi. «Butun maktab» varianti bu yerda ataylab YOʻQ — u
+ * `announcements.publish` huquqini talab qiladi va administratorniki.
  */
 
-/**
- * Sinf va fan roʻyxati ustozning OʻZ dars jadvalidan (`useMyTeaching`).
- *
- * Qabul qiluvchilar soni sinfdagi oʻquvchilar sonidan olinadi
- * (`/school/classes`). Bu taxminiy: haqiqiy adresatlar `guardians`
- * jadvalidan chiqadi va T-020 da serverda hisoblanadi — hozircha
- * ustozga "taxminan nechta oilaga ketadi" degan tasavvur beradi.
- */
+const inputClass =
+  "h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none transition-colors placeholder:text-foreground-muted/70 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25";
 
 export default function AnnouncementsPage() {
-  const { classes, subjects, slots } = useMyTeaching();
-  const [sizes, setSizes] = useState<Record<string, number>>({});
+  const [targets, setTargets] = useState<TargetsOut | null>(null);
+  const [items, setItems] = useState<AnnouncementOut[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const MY_CLASSES = classes.map((c) => c.name);
-  const MY_SUBJECTS = subjects.map((s) => s.name);
-
-  function recipientsFor(kind: AudienceKind, target: string): number {
-    if (kind === "class") return sizes[target] ?? 0;
-    const sinflar = new Set(
-      slots.filter((s) => s.subjectName === target).map((s) => s.className),
-    );
-    return [...sinflar].reduce((sum, c) => sum + (sizes[c] ?? 0), 0);
-  }
-
-  const [items, setItems] = useState<Announcement[]>(DEMO_ANNOUNCEMENTS);
-
-  useEffect(() => {
-    setItems(loadCollection("announcements", DEMO_ANNOUNCEMENTS));
-  }, []);
-
-  useEffect(() => {
-    let alive = true;
-    fetchClasses()
-      .then((rows) => {
-        if (!alive) return;
-        setSizes(Object.fromEntries(rows.map((c) => [c.name, c.student_count])));
-      })
-      .catch(() => undefined);
-    return () => {
-      alive = false;
-    };
-  }, []);
-  const [showForm, setShowForm] = useState(false);
-
-  function publish(a: Announcement) {
-    const next = [a, ...items];
-    setItems(next);
-    saveCollection("announcements", next);
-    setShowForm(false);
-  }
-
-  return (
-    <TeacherShell
-      title="Eʼlonlar"
-      subtitle={`${items.length} ta eʼlon yuborilgan`}
-      actions={
-        <button
-          type="button"
-          onClick={() => setShowForm((v) => !v)}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand px-3 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-        >
-          <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          Yangi eʼlon
-        </button>
-      }
-    >
-      {showForm && (
-        <AnnouncementForm
-          classNames={MY_CLASSES}
-          subjectNames={MY_SUBJECTS}
-          recipientsFor={recipientsFor}
-          onPublish={publish}
-          onCancel={() => setShowForm(false)}
-        />
-      )}
-
-      {items.length === 0 ? (
-        <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center">
-          <p className="text-base font-medium">Hali eʼlon berilmagan</p>
-          <p className="mt-1 text-sm text-foreground-muted">
-            Sinf yoki fan boʻyicha birinchi eʼloningizni yuboring.
-          </p>
-        </div>
-      ) : (
-        <ul className="space-y-3">
-          {items.map((a) => (
-            <li
-              key={a.id}
-              className={`rounded-xl border bg-surface p-4 ${
-                a.important ? "border-warning/40" : "border-border"
-              }`}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {a.kind === "class" ? (
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${classColor(a.target).block}`}
-                      >
-                        {a.target}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-medium text-foreground-muted">
-                        {a.target} · barcha sinflar
-                      </span>
-                    )}
-                    {a.important && (
-                      <span className="inline-flex items-center rounded-full bg-warning-tint px-2.5 py-0.5 text-xs font-medium text-warning">
-                        Muhim
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1.5 font-medium">{a.title}</p>
-                </div>
-
-                <span className="shrink-0 text-xs text-foreground-muted">{a.createdAt}</span>
-              </div>
-
-              <p className="mt-2 text-sm text-foreground-muted">{a.body}</p>
-
-              <p className="mt-3 flex items-center gap-1.5 border-t border-border pt-2.5 text-xs text-foreground-muted">
-                <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 12l5 5L20 6" />
-                </svg>
-                {a.recipients} ta vasiyga yetkazildi · kabinetda va Telegramda koʻrinadi
-              </p>
-            </li>
-          ))}
-        </ul>
-      )}
-    </TeacherShell>
-  );
-}
-
-/** ADM-12: auditoriya tanlanadi va qabul qiluvchilar soni oldindan koʻrsatiladi. */
-function AnnouncementForm({
-  classNames,
-  subjectNames,
-  recipientsFor,
-  onPublish,
-  onCancel,
-}: {
-  classNames: string[];
-  subjectNames: string[];
-  recipientsFor: (kind: AudienceKind, target: string) => number;
-  onPublish: (a: Announcement) => void;
-  onCancel: () => void;
-}) {
-  const [kind, setKind] = useState<AudienceKind>("class");
-  const [target, setTarget] = useState(classNames[0] ?? "");
+  const [kind, setKind] = useState<"class" | "subject">("class");
+  const [targetId, setTargetId] = useState("");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [important, setImportant] = useState(false);
-  const [confirming, setConfirming] = useState(false);
+  const [recipients, setRecipients] = useState<number | null>(null);
 
-  const options = kind === "class" ? classNames : subjectNames;
-  const recipients = useMemo(
-    () => recipientsFor(kind, target),
-    [kind, target, recipientsFor],
-  );
-  const valid = title.trim().length > 2 && body.trim().length > 5;
+  const yukla = useCallback(async () => {
+    try {
+      const [t, list] = await Promise.all([fetchTargets(), fetchAnnouncements()]);
+      setTargets(t);
+      setItems(list);
+      setError(null);
+    } catch {
+      setError("Maʼlumotni olib boʻlmadi. Sahifani yangilab koʻring.");
+      setItems([]);
+    }
+  }, []);
 
-  function switchKind(next: AudienceKind) {
-    setKind(next);
-    setTarget((next === "class" ? classNames[0] : subjectNames[0]) ?? "");
-    setConfirming(false);
-  }
+  useEffect(() => {
+    void yukla();
+  }, [yukla]);
 
-  function submit(event: React.FormEvent) {
-    event.preventDefault();
-    if (!valid) return;
-    // Yuborishdan oldin bir marta tasdiqlash — eʼlon qaytarib olinmaydi.
-    if (!confirming) {
-      setConfirming(true);
+  // Auditoriya oʻzgarsa birinchi variantni tanlaymiz.
+  useEffect(() => {
+    if (!targets) return;
+    const list = kind === "class" ? targets.classes : targets.subjects;
+    setTargetId(list[0]?.id ?? "");
+  }, [kind, targets]);
+
+  // ADM-12: tanlov oʻzgarishi bilan «nechta odamga ketadi» yangilanadi.
+  useEffect(() => {
+    if (!targetId) {
+      setRecipients(null);
       return;
     }
-    onPublish({
-      id: `a-${Date.now()}`,
-      kind,
-      target,
-      title: title.trim(),
-      body: body.trim(),
-      createdAt: new Date().toLocaleString("uz-UZ", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      recipients,
-      important,
-    });
+    let alive = true;
+    previewRecipients(kind, targetId)
+      .then((n) => alive && setRecipients(n))
+      .catch(() => alive && setRecipients(null));
+    return () => {
+      alive = false;
+    };
+  }, [kind, targetId]);
+
+  const options = kind === "class" ? (targets?.classes ?? []) : (targets?.subjects ?? []);
+  const valid = title.trim().length >= 2 && body.trim().length >= 2 && targetId !== "";
+
+  async function yubor(e: React.FormEvent) {
+    e.preventDefault();
+    if (!valid) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await createAnnouncement({
+        audience: kind,
+        targetId,
+        title: title.trim(),
+        body: body.trim(),
+        important,
+      });
+      setTitle("");
+      setBody("");
+      setImportant(false);
+      await yukla();
+    } catch {
+      setError("Eʼlonni yuborib boʻlmadi.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function olibTashla(id: string) {
+    setBusy(true);
+    try {
+      await archiveAnnouncement(id);
+      await yukla();
+    } catch {
+      setError("Olib tashlab boʻlmadi.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
-    <form onSubmit={submit} className="mb-5 rounded-xl border border-border bg-surface p-4">
-      <h2 className="text-sm font-semibold">Yangi eʼlon</h2>
+    <TeacherShell title="Eʼlonlar" subtitle="Sinf yoki fan boʻyicha oilalarga xabar">
+      <div className="flex flex-col gap-4">
+        {error && (
+          <p className="rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">{error}</p>
+        )}
 
-      <fieldset className="mt-3">
-        <legend className="mb-1.5 text-sm font-medium">Kimga yuboriladi</legend>
-        <div className="flex flex-wrap gap-2">
-          {(
-            [
-              ["class", "Sinfga"],
-              ["subject", "Fan boʻyicha barcha sinflarga"],
-            ] as const
-          ).map(([k, label]) => (
-            <button
-              key={k}
-              type="button"
-              aria-pressed={kind === k}
-              onClick={() => switchKind(k)}
-              className={`h-9 rounded-lg border px-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
-                kind === k
-                  ? "border-brand bg-brand-tint text-brand-dark"
-                  : "border-border bg-surface text-foreground-muted hover:bg-surface-muted"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </fieldset>
-
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <div>
-          <label htmlFor="an-target" className="mb-1.5 block text-sm font-medium">
-            {kind === "class" ? "Sinf" : "Fan"}
-          </label>
-          <select
-            id="an-target"
-            value={target}
-            onChange={(e) => {
-              setTarget(e.target.value);
-              setConfirming(false);
-            }}
-            className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
-          >
-            {options.map((o) => (
-              <option key={o}>{o}</option>
+        <form
+          onSubmit={yubor}
+          className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-sm"
+        >
+          <div className="flex flex-wrap gap-2">
+            {(["class", "subject"] as const).map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setKind(k)}
+                aria-pressed={kind === k}
+                className={`focus-ring rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                  kind === k
+                    ? "border-brand bg-brand/10 text-brand-dark"
+                    : "border-border text-foreground-muted hover:bg-surface-muted"
+                }`}
+              >
+                {AUDIENCE_LABELS[k]}
+              </button>
             ))}
-          </select>
-        </div>
+          </div>
 
-        <div className="flex items-end">
-          <label className="flex h-10 items-center gap-2 text-sm">
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-foreground">
+              {kind === "class" ? "Qaysi sinfga" : "Qaysi fandan"}
+            </span>
+            <select
+              value={targetId}
+              onChange={(e) => setTargetId(e.target.value)}
+              className={inputClass}
+            >
+              {options.length === 0 && <option value="">Jadvalingizda yoʻq</option>}
+              {options.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-foreground">Sarlavha</span>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value.slice(0, 160))}
+              placeholder="Masalan, Ertaga nazorat ishi"
+              className={inputClass}
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-foreground">Matn</span>
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value.slice(0, 4000))}
+              rows={4}
+              placeholder="Eʼlon matni…"
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none transition-colors placeholder:text-foreground-muted/70 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
+            />
+          </label>
+
+          <label className="flex items-center gap-2 text-sm text-foreground">
             <input
               type="checkbox"
               checked={important}
               onChange={(e) => setImportant(e.target.checked)}
-              className="h-4 w-4 rounded border-border accent-[var(--color-brand)]"
+              className="h-4 w-4 accent-[var(--color-brand,#2563eb)]"
             />
-            Muhim deb belgilash
+            Muhim eʼlon sifatida belgilash
           </label>
-        </div>
 
-        <div className="sm:col-span-2">
-          <label htmlFor="an-title" className="mb-1.5 block text-sm font-medium">
-            Sarlavha
-          </label>
-          <input
-            id="an-title"
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-              setConfirming(false);
-            }}
-            placeholder="Masalan: Ota-onalar majlisi — 5-sentabr"
-            className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none placeholder:text-foreground-muted/60 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
-          />
-        </div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-foreground-muted">
+              {recipients === null ? (
+                "Qabul qiluvchilar hisoblanmoqda…"
+              ) : (
+                <>
+                  <span className="num font-semibold text-foreground">{recipients}</span>{" "}
+                  kishiga yetkaziladi (vasiylar va oʻquvchi hisoblari)
+                </>
+              )}
+            </p>
+            <button
+              type="submit"
+              disabled={!valid || busy}
+              className="focus-ring inline-flex h-10 items-center rounded-lg bg-brand px-4 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark disabled:opacity-50"
+            >
+              Eʼlonni yuborish
+            </button>
+          </div>
+        </form>
 
-        <div className="sm:col-span-2">
-          <label htmlFor="an-body" className="mb-1.5 block text-sm font-medium">
-            Matn
-          </label>
-          <textarea
-            id="an-body"
-            rows={4}
-            value={body}
-            onChange={(e) => {
-              setBody(e.target.value);
-              setConfirming(false);
-            }}
-            placeholder="Eʼlon matnini yozing…"
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none placeholder:text-foreground-muted/60 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
-          />
-        </div>
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold text-foreground">Mening eʼlonlarim</h2>
+          {items === null ? (
+            <p className="text-sm text-foreground-muted">Yuklanmoqda…</p>
+          ) : items.length === 0 ? (
+            <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-foreground-muted">
+              Hali eʼlon bermagansiz.
+            </p>
+          ) : (
+            items.map((a) => (
+              <article
+                key={a.id}
+                className="rounded-xl border border-border bg-surface p-4 shadow-sm"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-foreground">
+                      {a.important && <span className="mr-1.5 text-danger">!</span>}
+                      {a.title}
+                    </h3>
+                    <p className="mt-0.5 text-xs text-foreground-muted">
+                      {a.class_names.length > 0 ? a.class_names.join(", ") : AUDIENCE_LABELS[a.audience]}
+                      {a.subject_name && ` · ${a.subject_name}`} ·{" "}
+                      <span className="num">{a.recipients_count}</span> kishiga ·{" "}
+                      {new Date(a.created_at).toLocaleDateString("uz-UZ")}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void olibTashla(a.id)}
+                    className="focus-ring rounded px-2 py-1 text-xs font-medium text-foreground-muted transition-colors hover:text-danger disabled:opacity-40"
+                  >
+                    Olib tashlash
+                  </button>
+                </div>
+                <p className="mt-2 whitespace-pre-wrap text-sm text-foreground">{a.body}</p>
+              </article>
+            ))
+          )}
+        </section>
       </div>
-
-      {/* ADM-12: yuborishdan oldin qabul qiluvchilar soni */}
-      <div
-        className={`mt-3 rounded-lg px-3 py-2.5 text-sm ${
-          confirming ? "bg-warning-tint text-warning" : "bg-surface-muted text-foreground-muted"
-        }`}
-      >
-        {confirming ? (
-          <>
-            <span className="font-medium">Tasdiqlang.</span> Eʼlon{" "}
-            <span className="font-medium">{recipients} ta vasiyga</span> yuboriladi
-            va qaytarib olinmaydi. Yuborish uchun tugmani yana bosing.
-          </>
-        ) : (
-          <>
-            Bu eʼlon <span className="font-medium text-foreground">{recipients} ta vasiyga</span>{" "}
-            yetib boradi — kabinetda va Telegram orqali.
-          </>
-        )}
-      </div>
-
-      <div className="mt-4 flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="inline-flex h-10 items-center rounded-lg border border-border px-4 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-        >
-          Bekor qilish
-        </button>
-        <button
-          type="submit"
-          disabled={!valid}
-          className="inline-flex h-10 items-center rounded-lg bg-brand px-4 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {confirming ? `Ha, ${recipients} kishiga yuborish` : "Eʼlonni yuborish"}
-        </button>
-      </div>
-    </form>
+    </TeacherShell>
   );
 }

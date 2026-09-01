@@ -46,7 +46,7 @@ export function buildSearchIndex({
       id: `ann-${item.id}`,
       label: item.title,
       category: "Eʼlon",
-      href: `/student/announcements/${item.id}`,
+      href: "/student/announcements",
     })),
   ];
 }

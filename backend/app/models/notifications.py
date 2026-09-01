@@ -48,6 +48,7 @@ class NotificationKind(enum.StrEnum):
     HOMEWORK_NEW = "homework_new"
     HOMEWORK_GRADED = "homework_graded"
     HOMEWORK_RETURNED = "homework_returned"
+    ANNOUNCEMENT = "announcement"
 
 
 #: Interfeys uchun turkum nomlari — frontend shu kodlarni oladi.
@@ -62,6 +63,7 @@ NOTIFICATION_KIND_LABELS_UZ: dict[str, str] = {
     NotificationKind.HOMEWORK_NEW.value: "Yangi uy vazifasi",
     NotificationKind.HOMEWORK_GRADED.value: "Vazifa baholandi",
     NotificationKind.HOMEWORK_RETURNED.value: "Vazifa qaytarildi",
+    NotificationKind.ANNOUNCEMENT.value: "Eʼlon",
 }
 
 

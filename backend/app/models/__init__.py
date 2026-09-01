@@ -5,6 +5,11 @@ shu yerda roʻyxatdan oʻtishi shart — aks holda jadval migratsiyaga tushmaydi
 """
 
 from app.models.academic import AcademicYear, BellSchedule, Holiday, Term
+from app.models.announcements import (
+    Announcement,
+    AnnouncementAudience,
+    AnnouncementClass,
+)
 from app.models.appeals import (
     APPEAL_STATUS_LABELS_UZ,
     APPEAL_TARGET_LABELS_UZ,
@@ -69,6 +74,9 @@ from app.models.tests import (
 )
 
 __all__ = [
+    "Announcement",
+    "AnnouncementAudience",
+    "AnnouncementClass",
     "AcademicYear",
     "APPEAL_STATUS_LABELS_UZ",
     "APPEAL_TARGET_LABELS_UZ",
