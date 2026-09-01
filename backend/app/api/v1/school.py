@@ -88,6 +88,7 @@ async def classes(user: CurrentUserDep, session: SessionDep) -> list[ClassOut]:
             name=c.name,
             academic_year=c.academic_year,
             homeroom_teacher=c.homeroom_teacher,
+            homeroom_teacher_id=c.homeroom_teacher_id,
             student_count=c.student_count,
         )
         for c in rows
@@ -378,6 +379,7 @@ async def _class_out(session: SessionDep, class_id: uuid.UUID) -> ClassOut:
         name=c.name,
         academic_year=c.academic_year,
         homeroom_teacher=c.homeroom_teacher,
+        homeroom_teacher_id=c.homeroom_teacher_id,
         student_count=c.student_count,
     )
 

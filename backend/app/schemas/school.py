@@ -22,6 +22,7 @@ class ClassOut(BaseModel):
     name: str
     academic_year: str
     homeroom_teacher: str | None
+    homeroom_teacher_id: uuid.UUID | None
     student_count: int
 
 

@@ -50,6 +50,9 @@ class ClassRow:
     name: str
     academic_year: str
     homeroom_teacher: str | None
+    # Ism koʻrsatish uchun, id esa tanlash uchun: interfeysda rahbar
+    # roʻyxatdan tanlanadi va tanlangani belgilangan boʻlishi kerak.
+    homeroom_teacher_id: uuid.UUID | None
     student_count: int
 
 
@@ -126,6 +129,7 @@ async def list_classes(session: AsyncSession) -> list[ClassRow]:
                 name=cls.name,
                 academic_year=year,
                 homeroom_teacher=f"{last} {first}" if last else None,
+                homeroom_teacher_id=cls.homeroom_teacher_id,
                 student_count=count,
             )
         )
