@@ -152,7 +152,14 @@ jobs:
           cd /opt/tarbion
 
           ESKI=$(git rev-parse HEAD)
-          git fetch -q origin main
+          # GitHub'dan tortish vaqti-vaqti bilan uziladi (datacenter IP
+          # cheklovi) — 3 urinish, oraliqda kutish bilan.
+          for urinish in 1 2 3; do
+            if git fetch -q origin main; then break; fi
+            if [ "$urinish" = 3 ]; then echo "git fetch 3 urinishda ham boʻlmadi"; exit 1; fi
+            echo "git fetch uzildi, $((urinish*10))s dan keyin qayta..."
+            sleep $((urinish*10))
+          done
           YANGI=$(git rev-parse origin/main)
           echo "commit: $ESKI → $YANGI"
 
