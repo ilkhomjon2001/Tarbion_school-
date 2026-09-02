@@ -53,6 +53,8 @@ from app.services.permissions import assert_permission
 class ClassRow:
     id: uuid.UUID
     name: str
+    #: Maktab bergan atama — «Al-Xorazmiy». Boʻlmasligi mumkin.
+    title: str | None
     academic_year: str
     homeroom_teacher: str | None
     # Ism koʻrsatish uchun, id esa tanlash uchun: interfeysda rahbar
@@ -132,6 +134,7 @@ async def list_classes(session: AsyncSession) -> list[ClassRow]:
             ClassRow(
                 id=cls.id,
                 name=cls.name,
+                title=cls.title,
                 academic_year=year,
                 homeroom_teacher=f"{last} {first}" if last else None,
                 homeroom_teacher_id=cls.homeroom_teacher_id,

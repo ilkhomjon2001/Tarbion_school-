@@ -43,6 +43,13 @@ class SchoolClass(Entity):
         PgUUID(as_uuid=True), ForeignKey("academic_years.id"), nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String(20), nullable=False)  # "11-A"
+    #: Sinfning atamasi — «Al-Xorazmiy», «Mirzo Ulugʻbek».
+    #:
+    #: `name` dan alohida, chunki ikkisi ikki ish qiladi: `name` — sinfning
+    #: bir maʼnoli belgisi (oʻquv yili ichida unikal, katta harfda,
+    #: jadvalda va hisobotlarda shu ishlatiladi), `title` — maktab bergan
+    #: nom. Atama almashishi mumkin, sinfning oʻzi esa oʻsha-oʻsha qoladi.
+    title: Mapped[str | None] = mapped_column(String(80))
     homeroom_teacher_id: Mapped[uuid.UUID | None] = mapped_column(
         PgUUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True
     )

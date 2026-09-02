@@ -96,6 +96,7 @@ async def classes(user: CurrentUserDep, session: SessionDep) -> list[ClassOut]:
         ClassOut(
             id=c.id,
             name=c.name,
+            title=c.title,
             academic_year=c.academic_year,
             homeroom_teacher=c.homeroom_teacher,
             homeroom_teacher_id=c.homeroom_teacher_id,
@@ -459,6 +460,7 @@ async def _class_out(session: SessionDep, class_id: uuid.UUID) -> ClassOut:
     return ClassOut(
         id=c.id,
         name=c.name,
+        title=c.title,
         academic_year=c.academic_year,
         homeroom_teacher=c.homeroom_teacher,
         homeroom_teacher_id=c.homeroom_teacher_id,
@@ -482,6 +484,7 @@ async def create_class(
         session,
         actor=user,
         name=payload.name,
+        title=payload.title,
         homeroom_teacher_id=payload.homeroom_teacher_id,
         ip=_client_ip(request),
     )

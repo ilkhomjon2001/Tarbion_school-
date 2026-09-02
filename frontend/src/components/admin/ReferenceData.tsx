@@ -177,15 +177,19 @@ function ClassesTab({ dir }: { dir: SchoolDirectory }) {
   const [adding, setAdding] = useState(false);
   const [grade, setGrade] = useState(5);
   const [parallel, setParallel] = useState("");
+  const [title, setTitle] = useState("");
   const [homeroom, setHomeroom] = useState("");
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [plan, setPlan] = useState<string | null>(null);
 
-  const newName = `${grade}-${parallel.trim().toUpperCase()}`;
-  const duplicate = parallel.trim().length > 0 && classes.some((c) => c.name === newName);
-  const valid = parallel.trim().length > 0 && !duplicate;
+  // Parallel harfi MAJBURIY EMAS: 0-sinf yoki yagona sinfda u boʻlmaydi
+  // va u holda nom «0-SINF» koʻrinishida yasaladi.
+  const p = parallel.trim().toUpperCase();
+  const newName = p ? `${grade}-${p}` : `${grade}-SINF`;
+  const duplicate = classes.some((c) => c.name === newName);
+  const valid = !duplicate;
 
   async function amal(f: () => Promise<unknown>) {
     setBusy(true);
@@ -223,8 +227,9 @@ function ClassesTab({ dir }: { dir: SchoolDirectory }) {
             e.preventDefault();
             if (!valid) return;
             void amal(async () => {
-              await createClass(newName, homeroom || null);
+              await createClass(newName, homeroom || null, title);
               setParallel("");
+              setTitle("");
               setAdding(false);
             });
           }}
@@ -237,7 +242,7 @@ function ClassesTab({ dir }: { dir: SchoolDirectory }) {
               onChange={(e) => setGrade(Number(e.target.value))}
               className={refInputClass}
             >
-              {Array.from({ length: 11 }, (_, i) => i + 1).map((n) => (
+              {Array.from({ length: 12 }, (_, i) => i).map((n) => (
                 <option key={n} value={n}>
                   {n}-sinf
                 </option>
@@ -249,7 +254,18 @@ function ClassesTab({ dir }: { dir: SchoolDirectory }) {
             <input
               value={parallel}
               onChange={(e) => setParallel(e.target.value.slice(0, 2))}
-              placeholder="A, B, V…"
+              placeholder="A, B, V… (majburiy emas)"
+              className={refInputClass}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-medium text-foreground">
+              Sinf atamasi
+            </span>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value.slice(0, 80))}
+              placeholder="Al-Xorazmiy"
               className={refInputClass}
             />
           </label>
@@ -310,7 +326,14 @@ function ClassesTab({ dir }: { dir: SchoolDirectory }) {
                     key={cls.id}
                     className="border-b border-border transition-colors last:border-0 hover:bg-surface-muted/50"
                   >
-                    <td className="px-3 py-2.5 font-medium text-foreground">{cls.name}</td>
+                    <td className="px-3 py-2.5 font-medium text-foreground">
+                      {cls.name}
+                      {cls.title && (
+                        <span className="ml-1.5 font-normal text-foreground-muted">
+                          {cls.title}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-3 py-2.5 text-foreground-muted">{stageOf(cls.name)}</td>
                     <td className="px-3 py-2.5">
                       <select

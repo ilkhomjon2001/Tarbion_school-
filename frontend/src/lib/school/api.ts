@@ -315,13 +315,25 @@ export async function archiveSubject(subjectId: string): Promise<SubjectOut> {
   );
 }
 
+/**
+ * Yangi sinf.
+ *
+ * `name` — sinfning belgisi («1-A»), oʻquv yili ichida unikal, server
+ * uni katta harfga oʻgiradi. `title` — maktab bergan atama
+ * («Al-Xorazmiy»), ixtiyoriy va oʻzgarmasdan saqlanadi.
+ */
 export async function createClass(
   name: string,
   homeroomTeacherId?: string | null,
+  title?: string | null,
 ): Promise<ClassOut> {
   return withAuth<ClassOut>(() =>
     schoolCreateClass({
-      body: { name, homeroom_teacher_id: homeroomTeacherId ?? null },
+      body: {
+        name,
+        title: title?.trim() || null,
+        homeroom_teacher_id: homeroomTeacherId ?? null,
+      },
     }),
   );
 }

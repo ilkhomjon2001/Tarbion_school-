@@ -20,6 +20,8 @@ class SubjectOut(BaseModel):
 class ClassOut(BaseModel):
     id: uuid.UUID
     name: str
+    #: Maktab bergan atama — «Al-Xorazmiy». Belgilanmagan boʻlishi mumkin.
+    title: str | None
     academic_year: str
     homeroom_teacher: str | None
     homeroom_teacher_id: uuid.UUID | None
@@ -142,6 +144,8 @@ class SubjectCreateIn(BaseModel):
 class ClassCreateIn(BaseModel):
     #: «11-A» koʻrinishida. Server katta harfga keltiradi.
     name: str = Field(min_length=2, max_length=20)
+    #: Maktab bergan atama — «Al-Xorazmiy». Ixtiyoriy.
+    title: str | None = Field(default=None, max_length=80)
     homeroom_teacher_id: uuid.UUID | None = None
 
 

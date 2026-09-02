@@ -173,10 +173,15 @@ async def create_class(
     *,
     actor: CurrentUser,
     name: str,
+    title: str | None = None,
     homeroom_teacher_id: uuid.UUID | None = None,
     ip: str | None = None,
 ) -> SchoolClass:
-    """Yangi sinf joriy oʻquv yilida (ADM-02)."""
+    """Yangi sinf joriy oʻquv yilida (ADM-02).
+
+    `name` — sinfning belgisi, oʻquv yili ichida unikal va katta harfda.
+    `title` — maktab bergan atama («Al-Xorazmiy»), majburiy emas.
+    """
     await assert_permission(session, actor, Permission.STUDENTS_MANAGE)
 
     from app.services.academic_service import current_year
@@ -184,6 +189,9 @@ async def create_class(
     tozalangan = name.strip().upper()
     if not tozalangan:
         raise ValidationError("Sinf nomi boʻsh boʻlmasin.")
+
+    # Atama katta harfga OʻGIRILMAYDI: u odam yozgan nom, belgi emas.
+    atama = (title or "").strip() or None
 
     year = await current_year(session)
     if year is None:
@@ -200,6 +208,8 @@ async def create_class(
         # `(academic_year_id, name)` unikal — arxivdagisini qaytaramiz.
         mavjud.is_archived = False
         mavjud.archived_at = None
+        if atama is not None:
+            mavjud.title = atama
         if homeroom_teacher_id is not None:
             await _grant_homeroom_role(session, homeroom_teacher_id)
             mavjud.homeroom_teacher_id = homeroom_teacher_id
@@ -222,6 +232,7 @@ async def create_class(
     cls = SchoolClass(
         academic_year_id=year.id,
         name=tozalangan,
+        title=atama,
         homeroom_teacher_id=homeroom_teacher_id,
     )
     session.add(cls)
@@ -232,7 +243,11 @@ async def create_class(
         object_type="class",
         object_id=cls.id,
         action=AuditAction.CREATE,
-        new={"name": cls.name, "homeroom_teacher_id": homeroom_teacher_id},
+        new={
+            "name": cls.name,
+            "title": cls.title,
+            "homeroom_teacher_id": homeroom_teacher_id,
+        },
         actor_id=actor.id,
         ip=ip,
     )
