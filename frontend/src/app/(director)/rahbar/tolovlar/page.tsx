@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { StudentDossier } from "@/components/admin/StudentDossier";
 import { StatCardSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
 import { formatSom } from "@/lib/format";
 import {
@@ -16,11 +17,16 @@ import {
  *
  * Direktor maʼlumot kiritmaydi: jamlanma va qarzdorlar roʻyxatini
  * koʻradi. Kiritish administrator kabinetida (`payments.manage`).
+ *
+ * Qarzdor qatori BOSILADI va oʻquvchining yigʻma kartochkasini ochadi.
+ * Ilgari bu yerda faqat ism va raqam turardi: rahbar «nega qarzdor,
+ * bu bola kim?» degan savolga javob topa olmasdi.
  */
 export default function DirectorPaymentsPage() {
   const [summary, setSummary] = useState<FinanceSummaryOut | null>(null);
   const [debtors, setDebtors] = useState<StudentFinanceOut[] | null>(null);
   const [error, setError] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -101,9 +107,10 @@ export default function DirectorPaymentsPage() {
                   {debtors.map((r) => (
                     <tr
                       key={r.student_id}
-                      className="border-b border-border last:border-0 hover:bg-surface-muted/50"
+                      onClick={() => setOpenId(r.student_id)}
+                      className="cursor-pointer border-b border-border transition-colors last:border-0 hover:bg-surface-muted/50"
                     >
-                      <td className="px-3 py-2.5 font-medium text-foreground">
+                      <td className="px-3 py-2.5 font-medium text-brand-dark">
                         {r.student_name}
                         {r.is_archived && (
                           <span className="ml-1.5 text-xs text-foreground-muted">(ketgan)</span>
@@ -127,6 +134,8 @@ export default function DirectorPaymentsPage() {
           </div>
         )}
       </section>
+
+      {openId && <StudentDossier studentId={openId} onClose={() => setOpenId(null)} />}
     </div>
   );
 }

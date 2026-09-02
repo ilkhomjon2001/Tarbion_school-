@@ -38,6 +38,7 @@ import {
   schoolLinkGuardian,
   schoolMakePrimary,
   schoolStudentCard,
+  schoolStudentDossier,
   schoolStudentGuardians,
   schoolUnlinkGuardian,
   schoolStudents,
@@ -53,6 +54,7 @@ import type {
   GuardianRowOut,
   ClassSubjectOut,
   StudentCardOut,
+  StudentDossierOut,
   PasswordResetOut,
   ScheduleEntryOut,
   StaffCreatedOut,
@@ -69,6 +71,7 @@ export type {
   GuardianRowOut,
   ClassSubjectOut,
   StudentCardOut,
+  StudentDossierOut,
   PasswordResetOut,
   ScheduleEntryOut,
   StaffCreatedOut,
@@ -378,6 +381,17 @@ export async function setClassSubject(
 export async function fetchStudentCard(studentId: string): Promise<StudentCardOut> {
   return withAuth<StudentCardOut>(() =>
     schoolStudentCard({ path: { student_id: studentId } }),
+  );
+}
+
+/**
+ * Yigʻma kartochka — faqat administrator va rahbariyat uchun.
+ * Boshqa rolga `403` qaytadi (X-3), shuning uchun chaqiruvchi uni
+ * «maʼlumot yoʻq» deb emas, «ruxsat yoʻq» deb koʻrsatishi kerak.
+ */
+export async function fetchStudentDossier(studentId: string): Promise<StudentDossierOut> {
+  return withAuth<StudentDossierOut>(() =>
+    schoolStudentDossier({ path: { student_id: studentId } }),
   );
 }
 

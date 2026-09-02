@@ -14,6 +14,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { StudentDossier } from "@/components/admin/StudentDossier";
 import { Badge } from "@/components/ui/Badge";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ListSkeleton } from "@/components/ui/Skeleton";
@@ -79,6 +80,7 @@ export function StudentCard({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const [dossier, setDossier] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [reason, setReason] = useState(ARCHIVE_REASONS[0]);
 
@@ -159,6 +161,19 @@ export function StudentCard({
 
         <div className="flex flex-col gap-4 p-4">
           {error && <p className="rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">{error}</p>}
+
+          {/* Bu kartochka TAHRIRLASH uchun. Davomat sabablari, tarbiya,
+              suhbatlar va toʻlov yigʻma kartochkada — u faqat oʻqiladi,
+              shuning uchun alohida. */}
+          {card !== null && (
+            <button
+              type="button"
+              onClick={() => setDossier(true)}
+              className="focus-ring rounded-lg border border-border px-3 py-2 text-sm font-medium text-brand-dark hover:bg-surface-muted"
+            >
+              Yigʻma kartochkani ochish
+            </button>
+          )}
 
           {loading ? (
             <ListSkeleton count={3} />
@@ -297,6 +312,8 @@ export function StudentCard({
           )}
         </div>
       </aside>
+
+      {dossier && <StudentDossier studentId={studentId} onClose={() => setDossier(false)} />}
     </div>
   );
 }

@@ -16,6 +16,13 @@ from app.api.v1.deps import CurrentUserDep
 from app.core.db import SessionDep
 from app.core.exceptions import NotFoundError
 from app.models import Guardian, User
+from app.schemas.dossier import (
+    DossierAbsenceOut,
+    DossierConversationOut,
+    DossierFinanceOut,
+    DossierMonthOut,
+    StudentDossierOut,
+)
 from app.schemas.school import (
     CafeteriaMenuIn,
     CafeteriaMenuOut,
@@ -46,7 +53,14 @@ from app.schemas.school import (
     SubjectCreateIn,
     SubjectOut,
 )
-from app.services import guardian_service, reference_service, school_service, user_service
+from app.schemas.wellbeing import WellbeingNoteOut
+from app.services import (
+    dossier_service,
+    guardian_service,
+    reference_service,
+    school_service,
+    user_service,
+)
 
 router = APIRouter(prefix="/school", tags=["school"])
 
@@ -76,6 +90,78 @@ def _card_out(card: school_service.StudentCard) -> StudentCardOut:
             )
             for g in card.guardians
         ],
+    )
+
+
+def _dossier_out(d: dossier_service.Dossier) -> StudentDossierOut:
+    s = d.card.student
+    return StudentDossierOut(
+        id=s.id,
+        full_name=s.full_name,
+        birth_date=s.birth_date,
+        class_name=d.card.class_name,
+        is_archived=s.is_archived,
+        guardians=[
+            GuardianOut(
+                user_id=g.user_id,
+                full_name=g.full_name,
+                relation=g.relation,
+                phone=g.phone,
+            )
+            for g in d.card.guardians
+        ],
+        year_name=d.year_name,
+        attendance_counts=d.attendance_counts,
+        absences=[
+            DossierAbsenceOut(
+                lesson_date=a.lesson_date,
+                period=a.period,
+                subject_name=a.subject_name,
+                status=a.status,
+                note=a.note,
+            )
+            for a in d.absences
+        ],
+        wellbeing=[
+            WellbeingNoteOut(
+                id=r.note.id,
+                kind=r.note.kind,
+                tone=r.note.tone,
+                text=r.note.text,
+                author_name=r.author_name,
+                subject_name=r.subject_name,
+                created_at=r.note.created_at,
+            )
+            for r in d.wellbeing
+        ],
+        conversations=[
+            DossierConversationOut(
+                id=c.id,
+                appeal_id=c.appeal_id,
+                created_at=c.created_at,
+                kind=c.kind,
+                summary=c.summary,
+                author_name=c.author_name,
+            )
+            for c in d.conversations
+        ],
+        finance=DossierFinanceOut(
+            monthly_fee=d.finance.monthly_fee,
+            charged=d.finance.charged,
+            paid=d.finance.paid,
+            balance=d.finance.balance,
+            months=[
+                DossierMonthOut(
+                    year=m.year,
+                    month=m.month,
+                    amount=m.amount,
+                    covered=m.covered,
+                    status=m.status,
+                    overdue=m.overdue,
+                )
+                for m in d.months
+            ],
+        ),
     )
 
 
@@ -246,6 +332,18 @@ async def student_card(
     qilardi).
     """
     return _card_out(await school_service.student_card(session, user, student_id))
+
+
+@router.get("/students/{student_id}/dossier", response_model=StudentDossierOut)
+async def student_dossier(
+    student_id: uuid.UUID, user: CurrentUserDep, session: SessionDep
+) -> StudentDossierOut:
+    """Yigʻma kartochka: davomat sabablari, tarbiya, suhbatlar, moliya.
+
+    Faqat administrator va rahbariyat (`dossier_service.DOSSIER_ROLES`).
+    Oʻquv boʻlimi kirmaydi — kartochkada toʻlov maʼlumoti bor.
+    """
+    return _dossier_out(await dossier_service.build(session, user, student_id))
 
 
 @router.post("/students", response_model=StudentCardOut, status_code=201)
