@@ -1,5 +1,6 @@
 import {
   BarChartIcon,
+  BellIcon,
   BookOpenIcon,
   ClipboardIcon,
   ClockIcon,
@@ -33,6 +34,7 @@ export const ADMIN_NAV = [
   { href: "/admin/kadrlar", label: "Kadrlar", icon: UserIcon },
   { href: "/admin/malumotnomalar", label: "Maʼlumotnomalar", icon: ClipboardIcon },
   { href: "/admin/murojaatlar", label: "Murojaatlar", icon: MessageSquareIcon },
+  { href: "/admin/elonlar", label: "Eʼlonlar", icon: BellIcon },
   { href: "/admin/sorovnomalar", label: "Soʻrovnomalar", icon: BarChartIcon },
   { href: "/admin/baza", label: "Maʼlumot bazasi", icon: BookOpenIcon },
   { href: "/admin/audit", label: "Audit jurnali", icon: ClockIcon },
