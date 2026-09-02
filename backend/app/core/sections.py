@@ -90,7 +90,8 @@ SECTIONS: list[Section] = [
     Section("/oquv-bolim", "Bosh sahifa", "academic", locked=True),
     Section("/oquv-bolim/imtihonlar", "Imtihonlar", "academic"),
     Section("/oquv-bolim/natijalar", "Natijalar", "academic"),
-    Section("/oquv-bolim/rejalar", "Dars rejalari", "academic"),
+    Section("/oquv-bolim/rejalar", "Reja tasdiqlash", "academic"),
+    Section("/oquv-bolim/metodika", "Metodik baza", "academic"),
     Section("/oquv-bolim/sifat", "Sifat nazorati", "academic"),
     Section("/oquv-bolim/ustozlar", "Ustozlar faoliyati", "academic"),
     # ── Administrator ──

@@ -35,6 +35,12 @@ from app.models.crm import (
     LeadSource,
     LeadStatus,
 )
+from app.models.curriculum import (
+    CURRICULUM_STATUS_LABELS_UZ,
+    PROGRAM_YEARS,
+    CurriculumPlan,
+    CurriculumStatus,
+)
 from app.models.documents import (
     DOCUMENT_TYPE_LABELS_UZ,
     DocumentRequest,
@@ -213,7 +219,11 @@ __all__ = [
     "LeadSource",
     "LeadStatus",
     "BellSchedule",
+    "CURRICULUM_STATUS_LABELS_UZ",
     "CafeteriaMenuItem",
+    "CurriculumPlan",
+    "CurriculumStatus",
+    "PROGRAM_YEARS",
     "ClassSubject",
     "CONTACT_KIND_LABELS_UZ",
     "ContactKind",

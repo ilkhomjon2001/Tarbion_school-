@@ -33,7 +33,8 @@ export const ACADEMIC_NAV = [
   { href: "/oquv-bolim", label: "Bosh sahifa", icon: GridIcon },
   { href: "/oquv-bolim/imtihonlar", label: "Imtihonlar", icon: ClipboardIcon },
   { href: "/oquv-bolim/natijalar", label: "Natijalar", icon: BarChartIcon },
-  { href: "/oquv-bolim/rejalar", label: "Dars rejalari", icon: BookOpenIcon },
+  { href: "/oquv-bolim/rejalar", label: "Reja tasdiqlash", icon: CheckSquareIcon },
+  { href: "/oquv-bolim/metodika", label: "Metodik baza", icon: BookOpenIcon },
   { href: "/oquv-bolim/sifat", label: "Sifat nazorati", icon: CheckSquareIcon },
   { href: "/oquv-bolim/ustozlar", label: "Ustozlar faoliyati", icon: GraduationCapIcon },
 ] as const;

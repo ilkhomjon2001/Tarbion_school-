@@ -85,7 +85,8 @@ export const SECTIONS: Section[] = [
   { id: "/oquv-bolim", label: "Bosh sahifa", cabinet: "academic", locked: true },
   { id: "/oquv-bolim/imtihonlar", label: "Imtihonlar", cabinet: "academic" },
   { id: "/oquv-bolim/natijalar", label: "Natijalar", cabinet: "academic" },
-  { id: "/oquv-bolim/rejalar", label: "Dars rejalari", cabinet: "academic" },
+  { id: "/oquv-bolim/rejalar", label: "Reja tasdiqlash", cabinet: "academic" },
+  { id: "/oquv-bolim/metodika", label: "Metodik baza", cabinet: "academic" },
   { id: "/oquv-bolim/sifat", label: "Sifat nazorati", cabinet: "academic" },
   { id: "/oquv-bolim/ustozlar", label: "Ustozlar faoliyati", cabinet: "academic" },
 

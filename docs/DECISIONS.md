@@ -807,3 +807,14 @@ bilan yozma shartnoma bor.
 
 Buning natijasida CLAUDE.md dagi X-14 qoidasi endi amalda emas — u yerda
 matn yangilanishi kerak, aks holda hujjat haqiqatga zid boʻlib qoladi.
+
+## 2026-09-02 · Metodik baza CRUD — Excel shablon oqimi, openpyxl qoʻshildi
+
+Egasining talabi: oʻquv boʻlimi dars rejalarini oʻzi ishlab chiqib
+yuklaydi. Oqim: sayt Excel shablon beradi → toʻldiriladi → import
+(QORALAMA, ogohlantirishlar bilan) → kartochkalarda koʻrib chiqish
+(ustoz koʻrinishining oʻzi) → «Joriy qilish» (eski joriy ARXIVga).
+`curriculum_plans` jadvali, darslar JSONB. Excel uchun **openpyxl**
+kutubxonasi qoʻshildi (import + shablon + eksport — boshqa yoʻl bilan
+xunuk boʻlardi). Robototexnika bazasi statik qoladi; ustoz kabinetida
+fan tanlagich ikkala manbani birlashtiradi.
