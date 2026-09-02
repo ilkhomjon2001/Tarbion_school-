@@ -14,11 +14,17 @@
  * Tezlik: katak tanlanganda klaviaturadan raqam bosish yetarli. Ustoz
  * 25 kishilik sinfga baho qoʻyayotganda sichqoncha bilan kichik
  * tugmalarni nishonga olib oʻtirmaydi.
+ *
+ * Saqlash QORALAMA orqali: bosishlar avval lokal yigʻiladi, pastdagi
+ * «Oʻzgarishlarni saqlash» bitta soʻrovda yuboradi. Shunda ustoz nechta
+ * baho hali saqlanmaganini aniq koʻradi va tarmoq xatosida hech narsa
+ * yoʻqolmaydi.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
+import { SaveBar } from "@/components/ui/SaveBar";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ListSkeleton } from "@/components/ui/Skeleton";
 import {
@@ -48,8 +54,11 @@ export function LessonGradeBook({
   const [journal, setJournal] = useState<LessonJournalOut | null>(initial ?? null);
   const [loading, setLoading] = useState(initial == null);
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [kind, setKind] = useState("current");
+  /** studentId → yangi qiymat (null = olib tashlash). Faqat FARQLAR. */
+  const [draft, setDraft] = useState<Record<string, number | null>>({});
+  const [savedAt, setSavedAt] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -76,18 +85,53 @@ export function LessonGradeBook({
     [journal],
   );
 
-  async function put(studentId: string, value: number | null) {
+  /** Bosish faqat qoralamani oʻzgartiradi — server «Saqlash»da. */
+  function pick(studentId: string, value: number | null) {
     if (journal === null) return;
-    setSaving(studentId);
+    const serverdagi =
+      journal.students.find((s) => s.student_id === studentId)?.grade?.value ?? null;
+    setDraft((prev) => {
+      const next = { ...prev };
+      if (value === serverdagi) delete next[studentId];
+      else next[studentId] = value;
+      return next;
+    });
+    setSavedAt(null);
+  }
+
+  const ozgarishlar = Object.keys(draft).length;
+
+  async function saqla() {
+    if (journal === null || ozgarishlar === 0 || saving) return;
+    setSaving(true);
     setError(null);
     try {
-      setJournal(await saveLessonGrades(lessonId, [{ student_id: studentId, value }], { kind }));
+      const rows = Object.entries(draft).map(([student_id, value]) => ({
+        student_id,
+        value,
+      }));
+      setJournal(await saveLessonGrades(lessonId, rows, { kind }));
+      setDraft({});
+      setSavedAt(
+        new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }),
+      );
     } catch (err) {
-      setError(apiXato(err, "Bahoni saqlab boʻlmadi."));
+      // Qoralama SAQLANIB qoladi — ustoz qayta urinadi, hech narsa yoʻqolmaydi.
+      setError(apiXato(err, "Baholarni saqlab boʻlmadi. Qayta urinib koʻring."));
     } finally {
-      setSaving(null);
+      setSaving(false);
     }
   }
+
+  // Saqlanmagan baho bilan sahifadan chiqishdan ogohlantirish.
+  useEffect(() => {
+    if (ozgarishlar === 0) return;
+    const guard = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", guard);
+    return () => window.removeEventListener("beforeunload", guard);
+  }, [ozgarishlar]);
 
   if (loading) return <ListSkeleton count={5} />;
   if (error && journal === null) return <ErrorState description={error} />;
@@ -134,16 +178,20 @@ export function LessonGradeBook({
         </p>
       )}
 
-      {error && (
-        <p className="rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">{error}</p>
-      )}
 
       <ul className="flex flex-col gap-1.5">
-        {journal.students.map((s) => (
+        {journal.students.map((s) => {
+          const ozgargan = s.student_id in draft;
+          const qiymat = ozgargan ? draft[s.student_id] : (s.grade?.value ?? null);
+          return (
           <li
             key={s.student_id}
-            className={`flex flex-wrap items-center gap-3 rounded-lg border px-3 py-2 ${
-              s.gradable ? "border-border bg-surface" : "border-border bg-surface-muted/60"
+            className={`flex flex-wrap items-center gap-3 rounded-lg border px-3 py-2 transition-colors ${
+              !s.gradable
+                ? "border-border bg-surface-muted/60"
+                : ozgargan
+                  ? "border-brand/50 bg-brand-tint/25"
+                  : "border-border bg-surface"
             }`}
           >
             <span className="min-w-0 flex-1">
@@ -162,17 +210,33 @@ export function LessonGradeBook({
             {s.gradable ? (
               <GradeButtons
                 max={journal.max_value}
-                value={s.grade?.value ?? null}
+                value={qiymat}
                 kind={s.grade?.kind ?? kind}
-                disabled={!journal.editable || saving === s.student_id}
-                onPick={(v) => void put(s.student_id, v)}
+                disabled={!journal.editable || saving}
+                onPick={(v) => pick(s.student_id, v)}
               />
             ) : (
               <span className="text-xs text-foreground-muted">{s.block_reason}</span>
             )}
           </li>
-        ))}
+          );
+        })}
       </ul>
+
+      {journal.editable && (
+        <SaveBar
+          sticky
+          ozgarishlar={ozgarishlar}
+          busy={saving}
+          savedAt={savedAt}
+          onSave={() => void saqla()}
+          xato={error}
+          onCancel={() => {
+            setDraft({});
+            setError(null);
+          }}
+        />
+      )}
 
       <p className="text-xs text-foreground-muted">
         Baho darsga bogʻlanadi — boshqa kunning bahosi bu yerdan oʻzgarmaydi. Har

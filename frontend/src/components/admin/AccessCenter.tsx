@@ -1,5 +1,6 @@
 "use client";
 
+import { SaveBar } from "@/components/ui/SaveBar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -237,13 +238,26 @@ function SectionPicker({
 }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const tanlangan = useMemo(() => new Set(user.sections), [user.sections]);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const serverdagi = useMemo(() => new Set(user.sections), [user.sections]);
+  /** null — oʻzgarish yoʻq (serverdagi holat koʻrsatiladi). */
+  const [draft, setDraft] = useState<Set<string> | null>(null);
+  const korsatilgan = draft ?? serverdagi;
+  const ozgarishlar =
+    draft === null
+      ? 0
+      : [...draft].filter((x) => !serverdagi.has(x)).length +
+        [...serverdagi].filter((x) => !draft.has(x)).length;
 
   async function apply(next: string[] | null) {
     setSaving(true);
     setError(null);
     try {
       onChange(await saveSections(user.user_id, next));
+      setDraft(null);
+      setSavedAt(
+        new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }),
+      );
     } catch (err) {
       setError(err instanceof SessionError ? err.message : "Saqlab boʻlmadi.");
     } finally {
@@ -251,11 +265,13 @@ function SectionPicker({
     }
   }
 
+  /** Faqat qoralamani oʻzgartiradi — server «Saqlash»da (aniq nazorat). */
   function toggle(id: string) {
-    const next = new Set(tanlangan);
+    const next = new Set(korsatilgan);
     if (next.has(id)) next.delete(id);
     else next.add(id);
-    void apply([...next]);
+    setDraft(next);
+    setSavedAt(null);
   }
 
   return (
@@ -278,14 +294,17 @@ function SectionPicker({
 
       <ul className="grid gap-1.5 sm:grid-cols-2">
         {sections.map((s) => {
-          const checked = tanlangan.has(s.id);
+          const checked = korsatilgan.has(s.id);
+          const ozgargan = draft !== null && serverdagi.has(s.id) !== checked;
           return (
             <li key={s.id}>
               <label
                 className={`flex items-center gap-2.5 rounded-lg border px-3 py-2 text-sm transition-colors ${
                   s.locked
                     ? "cursor-not-allowed border-border bg-surface-muted/50 text-foreground-muted"
-                    : "cursor-pointer border-border hover:bg-surface-muted/50"
+                    : ozgargan
+                      ? "cursor-pointer border-brand/50 bg-brand-tint/25"
+                      : "cursor-pointer border-border hover:bg-surface-muted/50"
                 }`}
               >
                 <input
@@ -307,11 +326,19 @@ function SectionPicker({
         })}
       </ul>
 
-      {error && (
-        <p role="alert" className="mt-2 text-sm text-danger">
-          {error}
-        </p>
-      )}
+      <div className="mt-2">
+        <SaveBar
+          ozgarishlar={ozgarishlar}
+          busy={saving}
+          savedAt={savedAt}
+          xato={error}
+          onSave={() => void apply([...korsatilgan])}
+          onCancel={() => {
+            setDraft(null);
+            setError(null);
+          }}
+        />
+      </div>
     </div>
   );
 }
@@ -327,7 +354,15 @@ function PermissionPicker({
 }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const berilgan = useMemo(() => new Set(user.permissions), [user.permissions]);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const serverdagi = useMemo(() => new Set(user.permissions), [user.permissions]);
+  const [draft, setDraft] = useState<Set<string> | null>(null);
+  const berilgan = draft ?? serverdagi;
+  const ozgarishlar =
+    draft === null
+      ? 0
+      : [...draft].filter((x) => !serverdagi.has(x)).length +
+        [...serverdagi].filter((x) => !draft.has(x)).length;
 
   const guruhlar = useMemo(() => {
     const out = new Map<string, PermissionOut[]>();
@@ -339,20 +374,26 @@ function PermissionPicker({
     return [...out.entries()];
   }, [registry]);
 
-  async function toggle(code: string) {
+  function toggle(code: string) {
     const next = new Set(berilgan);
     if (next.has(code)) next.delete(code);
     else next.add(code);
+    setDraft(next);
+    setSavedAt(null);
+  }
 
+  async function saqla() {
     setSaving(true);
     setError(null);
     try {
-      onChange(await savePermissions(user.user_id, [...next]));
+      onChange(await savePermissions(user.user_id, [...berilgan]));
+      setDraft(null);
+      setSavedAt(
+        new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }),
+      );
     } catch (err) {
       setError(
-        err instanceof SessionError
-          ? err.message
-          : "Huquqni saqlab boʻlmadi.",
+        err instanceof SessionError ? err.message : "Huquqlarni saqlab boʻlmadi.",
       );
     } finally {
       setSaving(false);
@@ -377,7 +418,13 @@ function PermissionPicker({
             <ul className="grid gap-1.5 sm:grid-cols-2">
               {items.map((p) => (
                 <li key={p.code}>
-                  <label className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-border px-3 py-2 text-sm transition-colors hover:bg-surface-muted/50">
+                  <label
+                    className={`flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                      draft !== null && serverdagi.has(p.code) !== berilgan.has(p.code)
+                        ? "border-brand/50 bg-brand-tint/25"
+                        : "border-border hover:bg-surface-muted/50"
+                    }`}
+                  >
                     <input
                       type="checkbox"
                       checked={berilgan.has(p.code)}
@@ -394,11 +441,20 @@ function PermissionPicker({
         ))}
       </div>
 
-      {error && (
-        <p role="alert" className="mt-2 text-sm text-danger">
-          {error}
-        </p>
-      )}
+      <div className="mt-2">
+        <SaveBar
+          sticky
+          ozgarishlar={ozgarishlar}
+          busy={saving}
+          savedAt={savedAt}
+          xato={error}
+          onSave={() => void saqla()}
+          onCancel={() => {
+            setDraft(null);
+            setError(null);
+          }}
+        />
+      </div>
     </div>
   );
 }
