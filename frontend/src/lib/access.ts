@@ -55,6 +55,7 @@ export const SECTIONS: Section[] = [
   { id: "/teacher/jadval", label: "Dars jadvali", cabinet: "teacher" },
   { id: "/teacher/vazifa", label: "Uy vazifasi", cabinet: "teacher" },
   { id: "/teacher/jurnal", label: "Sinf jurnali", cabinet: "teacher" },
+  { id: "/teacher/reja", label: "Dars rejasi", cabinet: "teacher" },
   { id: "/teacher/test", label: "Testlar", cabinet: "teacher" },
   { id: "/teacher/elon", label: "Eʼlonlar", cabinet: "teacher" },
   { id: "/teacher/murojaat", label: "Murojaatlar", cabinet: "teacher" },

@@ -63,6 +63,7 @@ SECTIONS: list[Section] = [
     Section("/teacher/jadval", "Dars jadvali", "teacher"),
     Section("/teacher/vazifa", "Uy vazifasi", "teacher"),
     Section("/teacher/jurnal", "Sinf jurnali", "teacher"),
+    Section("/teacher/reja", "Dars rejasi", "teacher"),
     Section("/teacher/test", "Testlar", "teacher"),
     Section("/teacher/elon", "Eʼlonlar", "teacher"),
     Section("/teacher/murojaat", "Murojaatlar", "teacher"),

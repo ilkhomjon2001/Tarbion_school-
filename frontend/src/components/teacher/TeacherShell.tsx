@@ -40,6 +40,7 @@ const NAV_GROUPS = [
     title: "Sinf va fan",
     items: [
       { href: "/teacher/jurnal", label: "Jurnal", icon: JournalIcon },
+      { href: "/teacher/reja", label: "Dars rejasi", icon: BookIcon },
       { href: "/teacher/test", label: "Testlar", icon: TestIcon },
       { href: "/teacher/elon", label: "Eʼlonlar", icon: MegaphoneIcon },
     ],
@@ -352,6 +353,15 @@ function ClipboardIcon() {
       <rect x="8" y="3" width="8" height="4" rx="1" />
       <path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2" />
       <path d="M9 12h6M9 16h4" />
+    </svg>
+  );
+}
+
+function BookIcon() {
+  return (
+    <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
     </svg>
   );
 }

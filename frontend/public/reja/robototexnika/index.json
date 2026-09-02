@@ -1,0 +1,27 @@
+{
+ "fan": "Robototexnika",
+ "yillar": {
+  "1-yil": {
+   "0-sinf": 84,
+   "1-sinf": 84,
+   "2-sinf": 84,
+   "3-sinf": 84,
+   "4-sinf": 84,
+   "5-sinf": 84,
+   "6-sinf": 84,
+   "7-sinf": 84,
+   "8-sinf": 84
+  },
+  "2-yil": {
+   "0-sinf": 84,
+   "1-sinf": 84,
+   "2-sinf": 103,
+   "3-sinf": 84,
+   "4-sinf": 84,
+   "5-sinf": 84,
+   "6-sinf": 84,
+   "7-sinf": 84,
+   "8-sinf": 84
+  }
+ }
+}
