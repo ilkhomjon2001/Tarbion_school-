@@ -142,6 +142,9 @@ TRUNCATE_ORDER = [
     "survey_scores",
     "survey_questions",
     "surveys",
+    # ── CRM ──
+    "lead_calls",
+    "leads",
     # ── Oʻquvchi atrofidagi yozuvlar ──
     "wellbeing_notes",
     "document_requests",
@@ -151,6 +154,8 @@ TRUNCATE_ORDER = [
     "teacher_subjects",
     "classes",
     "subjects",
+    "cafeteria_menu_items",
+    "school_settings",
     "bell_schedule",
     "holidays",
     "terms",
