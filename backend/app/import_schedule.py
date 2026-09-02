@@ -33,8 +33,9 @@ from sqlalchemy.orm import selectinload
 
 from app.core.db import SessionFactory, engine
 from app.core.exceptions import ConflictError
-from app.models import RoleName, ScheduleEntry, SchoolClass, Subject, User
-from app.services import academic_service, reference_service, schedule_service
+from app.import_school import CLASS_TITLES
+from app.models import AuditAction, RoleName, ScheduleEntry, SchoolClass, Subject, User
+from app.services import academic_service, audit_service, reference_service, schedule_service
 from app.services.access import CurrentUser
 
 # ───────────────────────── Jadval varagʻidan ─────────────────────────
@@ -214,15 +215,19 @@ async def main() -> None:
         if year is None:
             raise SystemExit("Joriy oʻquv yili belgilanmagan.")
 
+        # Nom REGISTRDAN mustaqil solishtiriladi. `create_class` nomni
+        # katta harfga oʻgiradi, lekin bazadagi eski sinflar boshqacha
+        # yozilgan boʻlishi mumkin («0-sinf») — jadval shu sababli
+        # tushmay qolmasin.
         sinflar = {
-            c.name: c
+            c.name.upper(): c
             for c in (
                 await session.execute(
                     select(SchoolClass).where(SchoolClass.academic_year_id == year.id)
                 )
             ).scalars()
         }
-        yetishmaydi = [s for s in SINFLAR if s not in sinflar]
+        yetishmaydi = [s for s in SINFLAR if s.upper() not in sinflar]
         if yetishmaydi:
             raise SystemExit(f"Sinf topilmadi: {', '.join(yetishmaydi)}")
 
@@ -230,9 +235,32 @@ async def main() -> None:
             f"{u.last_name} {u.first_name}": u.id
             for u in (await session.execute(select(User))).scalars()
         }
-        rahbar = {
-            nom: sinflar[nom].homeroom_teacher_id for nom in SINFLAR
-        }
+        rahbar = {nom: sinflar[nom.upper()].homeroom_teacher_id for nom in SINFLAR}
+
+        # ── Sinf atamalari ──
+        #
+        # Atama jadval varagʻining sarlavhasida turadi («Al-Xorazmiy
+        # 1-A sinf»), shuning uchun shu yerda toʻldiriladi. Faqat BOʻSH
+        # boʻlsa yoziladi: qoʻlda oʻzgartirilgan nom ustidan yozilmasin.
+        atama = 0
+        for nom, matn in CLASS_TITLES.items():
+            cls = sinflar.get(nom.upper())
+            if cls is None or cls.title:
+                continue
+            cls.title = matn
+            audit_service.record(
+                session,
+                object_type="class",
+                object_id=cls.id,
+                action=AuditAction.UPDATE,
+                old={"title": None},
+                new={"title": matn},
+                actor_id=actor.id,
+            )
+            atama += 1
+        if atama:
+            await session.commit()
+        print(f"Sinf atamasi: {atama} ta toʻldirildi")
 
         # ── Fanlar ──
         kerakli = {katakni_ajrat(k)[0] for kun in JADVAL.values() for q in kun for k in q}
@@ -269,7 +297,7 @@ async def main() -> None:
 
                 for i, katak in enumerate(qator):
                     sinf_nomi = SINFLAR[i]
-                    cls = sinflar[sinf_nomi]
+                    cls = sinflar[sinf_nomi.upper()]
                     if (cls.id, weekday, period) in bor:
                         otkazildi += 1
                         continue
