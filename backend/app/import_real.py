@@ -21,9 +21,9 @@ Nima yaratiladi:
 
 Barcha yangi hisoblar 5 xonali boshlangʻich parol bilan ochiladi va
 parollar FAQAT `--creds` fayliga yoziladi — stdout'ga chiqmaydi (X-10).
-Oʻquvchi/vasiy birinchi kirishda parolni majburiy almashtiradi; USTOZGA
-esa berilgan parol doimiy — almashtirish ixtiyoriy (egasining qarori,
-2026-09-02).
+Berilgan parol BARCHA rollar uchun doimiy — birinchi kirishda majburiy
+almashtirish yoʻq, xohlagan kishi /parol sahifasidan oʻzi almashtiradi
+(egasining qarori, 2026-09-02).
 """
 
 import argparse
@@ -333,7 +333,9 @@ async def run(xlsx: Path, creds_path: Path, do_wipe: bool) -> None:
                 last_name=last,
                 first_name=first,
                 middle_name=middle,
-                must_change_password=True,
+                # Egasining qarori (2026-09-02): berilgan parol doimiy,
+                # almashtirish ixtiyoriy — barcha rollar uchun.
+                must_change_password=False,
             )
             acc.roles = [roles[RoleName.STUDENT.value]]
             session.add(acc)
@@ -369,7 +371,7 @@ async def run(xlsx: Path, creds_path: Path, do_wipe: bool) -> None:
                     password_hash=hash_password(parol),
                     last_name=st.last_name,
                     first_name="oilasi",
-                    must_change_password=True,
+                    must_change_password=False,
                 )
                 parent.roles = [roles[RoleName.PARENT.value]]
                 session.add(parent)
