@@ -180,8 +180,12 @@ Havolani olgan har kim faylni oladi. Muddat 15 daqiqa, uzaytirilmaydi.
 Logga yozilmaydi, analitikaga yuborilmaydi. Bucket private.
 
 **X-8. Bot ham `access.py` dan o'tadi.**
-`telegram_id` bir marta deep-link token orqali bog'lanadi. Bot foydalanuvchidan
-kelgan `student_id` ni hech qachon ishonchli deb qabul qilmaydi.
+`telegram_id` bir marta **telefon raqami + bir martalik kod** orqali bog'lanadi
+(TZ, BOT-01). Raqam Telegram tomonidan tasdiqlanadi (contact tugmasi, va
+`contact.user_id` yuboruvchiga tengligi tekshiriladi), kod esa foydalanuvchi
+kabinetidan olinadi. Bitta Telegram akkaunt bitta odamga — bazada unikal.
+Bot foydalanuvchidan kelgan `student_id` ni hech qachon ishonchli deb qabul
+qilmaydi.
 
 **X-9. To'lov webhooki tekshiriladi.**
 Imzo/Basic auth tasdiqlanadi; summa callback'dan emas, **o'z yozuvimizdan**

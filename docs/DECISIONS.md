@@ -832,3 +832,31 @@ sizmaydi), ixtiyoriy almashtirish /parol sahifasida ochiq. Tavsiya:
 xodimlarga parolni almashtirish ogʻzaki tavsiya qilinsin; kelgusi
 importlarda boshlangʻich parolni kuchliroq formatga oʻtkazish mumkin
 (egasi xohlasa).
+
+
+## 2026-09-02 · Bot kodi `backend/app/bot/` da, `bot/` papkasida emas
+
+CLAUDE.md repo tuzilishida `bot/main.py` koʻrsatilgan. Amalda kod
+`backend/app/bot/` ga qoʻyildi: bot backend bilan bir xil modellar,
+`core/config.py`, `core/db.py` va `services/access.py` ni ishlatadi
+(X-8 talabi). Ildizdagi alohida papka ikkinchi muhit va ikkinchi
+bogʻliqliklar toʻplamini — yoki modellarning nusxasini — talab qilardi.
+Outbox worker'i ham shu sababdan `app/workers/` da turadi. `bot/README.md`
+shu yerga yoʻnaltiradi.
+
+## 2026-09-02 · Botga ulanish: telefon + kod (deep-link EMAS)
+
+CLAUDE.md X-8 va `bot/README.md` «deep-link token» deb yozilgan edi, TZ
+esa BOT-01 da aniq: «Vasiy telefon raqami va bir martalik kod orqali botga
+ulanadi». Ziddiyatda TZ ustun (CLAUDE.md ning oʻz qoidasi) — telefon + kod
+qilindi, X-8 matni tuzatildi.
+
+Ikkala omil boshqa narsani isbotlaydi: telefon (Telegram tasdiqlagan
+contact) SIM kartani, kod esa maktabdagi hisobning parolini bilishni.
+Faqat telefon boʻlsa, raqamni qayta olgan begona odam oilaning xabarlarini
+ola boshlardi.
+
+## 2026-09-02 · `aiogram 3` bogʻliqlik sifatida qoʻshildi
+
+CLAUDE.md stack'ida allaqachon tanlangan edi; T-017 da amalda kerak boʻldi.
+`backend/pyproject.toml` ga qoʻshildi — bot backend muhitida ishlaydi.

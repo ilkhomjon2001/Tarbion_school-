@@ -67,7 +67,10 @@ class User(Entity):
     middle_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
 
     email: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    telegram_id: Mapped[int | None] = mapped_column(nullable=True, index=True)
+    #: Telegram hisobi. UNIKAL: bitta Telegram akkaunt bitta odamga
+    #: bogʻlanadi (BOT-01). Aks holda bir akkaunt bir necha oilaning
+    #: xabarini olib turardi.
+    telegram_id: Mapped[int | None] = mapped_column(nullable=True, index=True, unique=True)
 
     is_active: Mapped[bool] = mapped_column(default=True, server_default="true", nullable=False)
     # Parol majburiy almashtirilishi kerakmi (hisob admin tomonidan yaratilganda).
@@ -330,3 +333,28 @@ class PasswordResetRequest(Entity):
         PgUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
     )
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class TelegramLinkCode(Entity):
+    """Telegram hisobini bogʻlash uchun bir martalik kod (T-017, BOT-01).
+
+    `password_reset_requests` ga qoʻshib yuborish mumkin edi — tuzilishi
+    deyarli bir xil. Qoʻshilmadi: oʻshanda «nechta parol tiklash soʻrovi
+    boʻldi» degan savolga javob berayotgan odam kanal boʻyicha filtrlashni
+    unutsa, notoʻgʻri raqam olardi. Jadval nomi nima saqlayotganini aytib
+    tursin.
+
+    Kod XESHLANGAN saqlanadi va urinishlar sanaladi: 6 raqam atigi million
+    variant.
+    """
+
+    __tablename__ = "telegram_link_codes"
+    __table_args__ = (Index("ix_tg_link_user", "user_id", "used_at"),)
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    code_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    attempts: Mapped[int] = mapped_column(default=0, server_default="0", nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

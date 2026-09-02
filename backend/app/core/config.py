@@ -69,6 +69,8 @@ class Settings(BaseSettings):
     #: xabarnoma worker'i ishga tushmaydi — navbat toʻlib boraveradi
     #: va token qoʻyilganda hammasi yetkaziladi, hech narsa yoʻqolmaydi.
     telegram_bot_token: str = ""
+    #: Bot manzili @ siz — interfeys «@nom ni oching» deb koʻrsatadi.
+    telegram_bot_username: str = ""
 
     #: Worker navbatni qanchada bir tekshiradi. Ilova B: «farzand
     #: darsga kelmadi» xabari davomat belgilangach 30 daqiqa ichida

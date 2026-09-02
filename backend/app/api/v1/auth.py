@@ -18,6 +18,7 @@ from app.core.config import settings
 from app.core.db import SessionDep
 from app.core.exceptions import AuthRequiredError
 from app.core.sections import cabinet_of, effective_sections
+from app.core.timeutil import utcnow
 from app.models import Permission, RoleName, SchoolClass, Student, User
 from app.schemas.auth import (
     ChangePasswordIn,
@@ -29,6 +30,8 @@ from app.schemas.auth import (
     ResetRequestIn,
     ResetRequestOut,
     ResetResolveOut,
+    TelegramCodeOut,
+    TelegramStatusOut,
     TokenOut,
     TwoFactorDisableIn,
     TwoFactorEnableIn,
@@ -42,6 +45,7 @@ from app.services import (
     auth_service,
     password_reset_service,
     permissions,
+    telegram_link_service,
     twofactor_service,
     user_service,
 )
@@ -373,3 +377,43 @@ async def reset_resolve(
         session, actor=user, request_id=request_id, ip=_client_ip(request)
     )
     return ResetResolveOut(login=login, password=parol)
+
+
+# ─────────────────── Telegram bogʻlash (T-017, BOT-01) ───────────────────
+
+
+@router.get("/telegram", response_model=TelegramStatusOut)
+async def telegram_status(user: CurrentUserDep, session: SessionDep) -> TelegramStatusOut:
+    db_user = await session.get(User, user.id)
+    if db_user is None:
+        raise AuthRequiredError
+    return TelegramStatusOut(
+        linked=db_user.telegram_id is not None,
+        bot_username=settings.telegram_bot_username or None,
+    )
+
+
+@router.post("/telegram/code", response_model=TelegramCodeOut)
+async def telegram_code(user: CurrentUserDep, session: SessionDep) -> TelegramCodeOut:
+    """Botga ulanish uchun bir martalik kod (BOT-01).
+
+    Kodni foydalanuvchi OʻZI oladi — bu maktabdagi hisobning parolini
+    bilishini isbotlaydi. Botdagi telefon esa SIM kartani isbotlaydi.
+    Ikkalasi birga kerak.
+    """
+    kod = await telegram_link_service.issue_code(session, user.id)
+    return TelegramCodeOut(
+        code=kod,
+        expires_at=utcnow() + telegram_link_service.CODE_TTL,
+        bot_username=settings.telegram_bot_username or None,
+    )
+
+
+@router.post("/telegram/unlink", status_code=status.HTTP_204_NO_CONTENT)
+async def telegram_unlink(user: CurrentUserDep, session: SessionDep) -> None:
+    """Bogʻlanishni kabinetdan uzadi. Telefon yoʻqolganda kerak boʻladi."""
+    db_user = await session.get(User, user.id)
+    if db_user is None:
+        raise AuthRequiredError
+    if db_user.telegram_id is not None:
+        await telegram_link_service.unlink(session, db_user.telegram_id)

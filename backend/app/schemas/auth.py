@@ -155,3 +155,21 @@ class ResetResolveOut(BaseModel):
 
     login: str
     password: str
+
+
+# ─────────────────── Telegram bogʻlash (T-017, BOT-01) ───────────────────
+
+
+class TelegramStatusOut(BaseModel):
+    linked: bool
+    #: Bot manzili — interfeys «@nom ni oching» deb koʻrsatadi.
+    #: Sozlanmagan boʻlsa `null` va interfeys bogʻlashni taklif qilmaydi.
+    bot_username: str | None
+
+
+class TelegramCodeOut(BaseModel):
+    """Bir martalik kod. FAQAT shu javobda koʻrinadi (X-10)."""
+
+    code: str
+    expires_at: datetime
+    bot_username: str | None

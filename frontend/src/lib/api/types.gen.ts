@@ -4726,6 +4726,40 @@ export type TeacherToRateOut = {
 };
 
 /**
+ * TelegramCodeOut
+ *
+ * Bir martalik kod. FAQAT shu javobda koʻrinadi (X-10).
+ */
+export type TelegramCodeOut = {
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * Expires At
+     */
+    expires_at: string;
+    /**
+     * Bot Username
+     */
+    bot_username: string | null;
+};
+
+/**
+ * TelegramStatusOut
+ */
+export type TelegramStatusOut = {
+    /**
+     * Linked
+     */
+    linked: boolean;
+    /**
+     * Bot Username
+     */
+    bot_username: string | null;
+};
+
+/**
  * TermIn
  */
 export type TermIn = {
@@ -5570,6 +5604,54 @@ export type AuthResetResolveResponses = {
 };
 
 export type AuthResetResolveResponse = AuthResetResolveResponses[keyof AuthResetResolveResponses];
+
+export type AuthTelegramStatusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/telegram';
+};
+
+export type AuthTelegramStatusResponses = {
+    /**
+     * Successful Response
+     */
+    200: TelegramStatusOut;
+};
+
+export type AuthTelegramStatusResponse = AuthTelegramStatusResponses[keyof AuthTelegramStatusResponses];
+
+export type AuthTelegramCodeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/telegram/code';
+};
+
+export type AuthTelegramCodeResponses = {
+    /**
+     * Successful Response
+     */
+    200: TelegramCodeOut;
+};
+
+export type AuthTelegramCodeResponse = AuthTelegramCodeResponses[keyof AuthTelegramCodeResponses];
+
+export type AuthTelegramUnlinkData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/telegram/unlink';
+};
+
+export type AuthTelegramUnlinkResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AuthTelegramUnlinkResponse = AuthTelegramUnlinkResponses[keyof AuthTelegramUnlinkResponses];
 
 export type AccessSectionsData = {
     body?: never;

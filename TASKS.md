@@ -416,19 +416,30 @@ pastda oylik foiz.
 
 ---
 
-### [ ] T-017 · Telegram bot: ulanish
+### [~] T-017 · Telegram bot: ulanish
 **TZ:** BOT-01
 **Kerak:** T-004
-**Frontend:** ⬜ yoʻq — `bot/` papkasi yaratilmagan.
+**Frontend:** ✅ tayyor — `/ota-ona/sozlamalar` → «Telegramga ulash»:
+qadamlar, kod olish, uzish.
 
 aiogram 3. `/start` → telefon raqamini so'raydi (contact tugmasi) →
 bazadagi vasiy bilan solishtiradi → tasdiq kodi → `telegram_id` saqlanadi.
 Raqam topilmasa aniq xabar: maktabga murojaat qilish kerakligi.
 
+**Backend:** ✅ `app/bot/` (aiogram 3), `telegram_link_service`,
+`telegram_link_codes` jadvali, `users.telegram_id` UNIKAL.
+`/api/v1/auth/telegram{,/code,/unlink}`. `contact.user_id` yuboruvchiga
+tengligi tekshiriladi — boshqa odamning kontakti bilan ulanib boʻlmaydi.
+Kod xeshlanadi, 15 daqiqa amal qiladi, 5 urinishdan keyin kuyadi. 17 ta test.
+
+**Qolgan:** `TELEGRAM_BOT_TOKEN` va `TELEGRAM_BOT_USERNAME` serverda
+sozlanmagan, `tarbion-bot` systemd xizmati yozilmagan. Token qoʻyilishi
+bilan T-006 (kod yuborish) va T-018 (xabar yetkazish) ham jonlanadi.
+
 **Tayyor:**
-- [ ] Ulangan foydalanuvchi `/start` bosса qayta ro'yxatdan o'tmaydi
-- [ ] Bir telegram akkaunt bitta vasiyga bog'lanadi
-- [ ] Uzish (`/uzish`) buyrug'i bor
+- [x] Ulangan foydalanuvchi `/start` bossa qayta ro'yxatdan o'tmaydi
+- [x] Bir telegram akkaunt bitta vasiyga bog'lanadi
+- [x] Uzish (`/uzish`) buyrug'i bor
 
 ---
 

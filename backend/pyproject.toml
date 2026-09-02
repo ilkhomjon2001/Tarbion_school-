@@ -18,6 +18,7 @@ dependencies = [
     # zoneinfo Asia/Tashkent ni topolmaydi va ilova ishga tushmaydi.
     "tzdata>=2024.2",
     "openpyxl>=3.1.5",
+    "aiogram>=3.31.0",
 ]
 
 [dependency-groups]

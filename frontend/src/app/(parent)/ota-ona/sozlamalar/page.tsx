@@ -1,6 +1,7 @@
 "use client";
 
 import { ParentShell } from "@/components/parent/ParentShell";
+import { TelegramLink } from "@/components/parent/TelegramLink";
 import { useChildren } from "@/lib/parent/useChild";
 
 /**
@@ -9,8 +10,8 @@ import { useChildren } from "@/lib/parent/useChild";
  * Avval bu sahifa mock edi: begona ismli farzandlar roʻyxati, soxta
  * "Telegram ulangan" holati va hech qayerga saqlanmaydigan bildirishnoma
  * tugmalari (audit K8). Endi faqat HAQIQIY narsalar koʻrsatiladi:
- * farzandlar backenddan, Telegram esa halol "hali ishga tushirilmagan"
- * holatida. Bildirishnoma sozlamalari bot bilan birga keladi (T-018).
+ * farzandlar backenddan, Telegram esa haqiqiy bogʻlanish (T-017):
+ * kod shu yerdan olinadi, telefon botda tasdiqlanadi.
  */
 export default function ParentSettingsPage() {
   const { child, children: farzandlar, select, loading, error } = useChildren();
@@ -45,17 +46,9 @@ export default function ParentSettingsPage() {
       siblings={farzandlar}
       onChildChange={select}
     >
-      {/* Telegram holati — halol: bot hali yoʻq */}
-      <div className="mb-5 rounded-xl border border-border bg-surface-muted/60 p-4">
-        <p className="font-medium text-foreground-muted">
-          Telegram-bot hali ishga tushirilmagan
-        </p>
-        <p className="mt-1 text-sm text-foreground-muted">
-          Bot ishga tushgach, davomat, baho va toʻlov haqidagi xabarlar
-          Telegram orqali keladi. Ulanish yoʻriqnomasi shu yerda paydo
-          boʻladi.
-        </p>
-      </div>
+      {/* Telegramga ulash (T-017). Bot sozlanmagan boʻlsa komponentning
+          oʻzi «hali ishga tushirilmagan» deb koʻrsatadi. */}
+      <TelegramLink />
 
       {/* Farzandlar — BAZADAN */}
       <section className="mb-5">
