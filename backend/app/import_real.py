@@ -58,8 +58,8 @@ from app.models import (
     UserPermission,
 )
 
-#: Seed bilan bir xil — admin.test paroli (foydalanuvchi biladi).
-ADMIN_PASSWORD = "Tarbion2026!"  # noqa: S105
+#: admin.test paroli ham TASODIFIY yaratiladi va faqat creds fayliga
+#: yoziladi — repo ochiq, kodga yozilgan parol hammaga koʻrinadi (X-10).
 
 #: Qoʻngʻiroqlar jadvali — 8 para (ADM-07 standart setka).
 BELLS: list[tuple[int, str, str]] = [
@@ -213,9 +213,10 @@ async def run(xlsx: Path, creds_path: Path, do_wipe: bool) -> None:
              "login": "super.admin", "parol": sa_parol, "telefon": ""}
         )
 
+        admin_parol = secrets.token_urlsafe(12)
         admin = User(
             login="admin.test",
-            password_hash=hash_password(ADMIN_PASSWORD),
+            password_hash=hash_password(admin_parol),
             last_name="Adminov",
             first_name="Admin",
             must_change_password=False,
@@ -233,7 +234,7 @@ async def run(xlsx: Path, creds_path: Path, do_wipe: bool) -> None:
             )
         creds.append(
             {"rol": "admin", "sinf": "", "ism": "Adminov Admin",
-             "login": "admin.test", "parol": ADMIN_PASSWORD, "telefon": ""}
+             "login": "admin.test", "parol": admin_parol, "telefon": ""}
         )
 
         # ── Oʻquv yili, choraklar, qoʻngʻiroqlar ──
