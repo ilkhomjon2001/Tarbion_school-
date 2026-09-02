@@ -13,6 +13,7 @@ bazadan hisoblanganda ham 88% chiqadi.
 Ishlatish:
     uv run python -m app.seed            # boʻsh bazaga yuklaydi
     uv run python -m app.seed --reset    # avval tozalab, keyin yuklaydi
+    uv run python -m app.seed --empty    # tozalaydi, demo yuklamaydi
 
 `--reset` FAQAT development uchun. U domen jadvallarini TRUNCATE qiladi —
 CLAUDE.md 1-qoidasi (hech narsa oʻchirilmaydi) ilovaga tegishli, bu esa
@@ -96,17 +97,54 @@ def pick(seed: int, low: int, high: int) -> int:
 # ───────────────────────── Tozalash ─────────────────────────
 
 # Bogʻliqlik tartibida — bola jadvallar oldin.
+#
+# Roʻyxat TOʻLIQ boʻlishi shart. `TRUNCATE ... CASCADE` bogʻlangan
+# jadvallarni oʻzi ham tozalaydi, lekin bunga tayanib boʻlmaydi:
+# `users` ga tashqi kalit bilan bogʻlanmagan yangi jadval sezdirmasdan
+# tozalanmay qoladi va keyingi yuklashda eski qatorlar yangisi bilan
+# aralashadi. `check_truncate_complete()` shu roʻyxat baza bilan mos
+# ekanini tekshiradi — yangi jadval qoʻshsangiz shu yerga ham yozing.
+#
+# `roles` ATAYIN yoʻq: bu maʼlumot emas, tizim reyestri. Uni
+# `ensure_roles()` qayta tiklaydi.
 TRUNCATE_ORDER = [
     "audit_log",
     "appeal_notes",
     "appeal_messages",
     "appeals",
+    # ── Baholash va testlar ──
+    "test_answers",
+    "test_attempts",
+    "test_options",
+    "test_questions",
+    "tests",
+    "exam_results",
+    "exams",
+    "lesson_plans",
     "grades",
     "attendance_records",
     "homework_submissions",
     "homework",
     "lessons",
     "schedule_entries",
+    # ── Moliya ──
+    "payment_intents",
+    "payments",
+    "tuition_credits",
+    "tuition_charges",
+    "tuition_discounts",
+    "tuition_contracts",
+    # ── Aloqa ──
+    "notifications",
+    "announcement_classes",
+    "announcements",
+    "survey_responses",
+    "survey_scores",
+    "survey_questions",
+    "surveys",
+    # ── Oʻquvchi atrofidagi yozuvlar ──
+    "wellbeing_notes",
+    "document_requests",
     "guardians",
     "students",
     "class_subjects",
@@ -117,6 +155,12 @@ TRUNCATE_ORDER = [
     "holidays",
     "terms",
     "academic_years",
+    # ── Kadrlar ──
+    "staff_leaves",
+    "staff_profiles",
+    # ── Hisob va kirish ──
+    "two_factor_recovery_codes",
+    "user_permissions",
     "login_log",
     "login_attempts",
     "refresh_tokens",
@@ -124,10 +168,45 @@ TRUNCATE_ORDER = [
     "users",
 ]
 
+#: Tozalashga TUSHMAYDIGAN jadvallar — maʼlumot emas, tizim tarkibi.
+TRUNCATE_SKIP = {"alembic_version", "roles"}
+
+
+async def check_truncate_complete(session: AsyncSession) -> None:
+    """`TRUNCATE_ORDER` baza bilan mosligini tekshiradi.
+
+    Yangi modul qoʻshilib, uning jadvali roʻyxatga yozilmasa —
+    tozalashdan keyin eski qatorlar qolib ketadi va yangi maʼlumot
+    ular bilan aralashadi. Buni sezish qiyin, shuning uchun tozalash
+    boshlanishidan OLDIN toʻxtatamiz.
+    """
+    bazada = set(
+        (
+            await session.execute(
+                text("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
+            )
+        ).scalars()
+    )
+    yetishmaydi = sorted(bazada - set(TRUNCATE_ORDER) - TRUNCATE_SKIP)
+    if yetishmaydi:
+        raise SystemExit(
+            "TRUNCATE_ORDER toʻliq emas. Bazada bor, roʻyxatda yoʻq: "
+            + ", ".join(yetishmaydi)
+            + ". Har birini `app/seed.py` dagi TRUNCATE_ORDER ga qoʻshing "
+            "(yoki tizim reyestri boʻlsa TRUNCATE_SKIP ga)."
+        )
+
+    ortiqcha = sorted(set(TRUNCATE_ORDER) - bazada)
+    if ortiqcha:
+        raise SystemExit(
+            "TRUNCATE_ORDER da bazada yoʻq jadval bor: " + ", ".join(ortiqcha)
+        )
+
 
 async def reset(session: AsyncSession) -> None:
     if settings.is_production:
         raise SystemExit("--reset ishlab chiqarishda ishlamaydi")
+    await check_truncate_complete(session)
     await session.execute(
         text("TRUNCATE " + ", ".join(TRUNCATE_ORDER) + " RESTART IDENTITY CASCADE")
     )
@@ -638,7 +717,23 @@ async def main() -> None:
 
     parser = argparse.ArgumentParser(description="Tarbion demo maʼlumotini yuklaydi")
     parser.add_argument("--reset", action="store_true", help="avval jadvallarni tozalash")
+    parser.add_argument(
+        "--empty",
+        action="store_true",
+        help="tozalaydi va demo yuklamaydi — haqiqiy maktab uchun boʻsh baza",
+    )
     args = parser.parse_args()
+
+    # Boʻsh baza: demo qatorlar umuman tushmaydi. Faqat rollar qoladi —
+    # ularsiz birinchi hisobni ham ochib boʻlmaydi.
+    if args.empty:
+        async with SessionFactory() as session:
+            await reset(session)
+            await ensure_roles(session)
+            await session.commit()
+        print("Baza boʻsh. Endi birinchi hisobni oching:")
+        print("  uv run python -m app.create_superadmin --last Familiya --first Ism")
+        return
 
     if not SEED_FILE.exists():
         raise SystemExit(
