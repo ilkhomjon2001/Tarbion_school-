@@ -221,6 +221,13 @@ export function TeacherShell({
                 </span>
               </span>
             </div>
+            <Link
+              href="/parol"
+              className="mt-1 flex h-9 w-full items-center gap-2 rounded-lg px-3 text-sm text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+            >
+              <KeyIcon />
+              Parolni almashtirish
+            </Link>
             <button
               type="button"
               onClick={() => void logout()}
@@ -345,6 +352,16 @@ function ClipboardIcon() {
       <rect x="8" y="3" width="8" height="4" rx="1" />
       <path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2" />
       <path d="M9 12h6M9 16h4" />
+    </svg>
+  );
+}
+
+function KeyIcon() {
+  return (
+    <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="7.5" cy="15.5" r="3.5" />
+      <path d="M10.5 12.5L20 3" />
+      <path d="M16 7l3 3" />
     </svg>
   );
 }

@@ -19,9 +19,11 @@ Nima yaratiladi:
   · oʻquvchilar (har biriga hisob), vasiylar (telefon boʻyicha — bir xil
     telefonli aka-ukalar BITTA vasiyga bogʻlanadi)
 
-Barcha yangi hisoblar 5 xonali boshlangʻich parol bilan ochiladi
-(`must_change_password=True`) va parollar FAQAT `--creds` fayliga
-yoziladi — stdout'ga chiqmaydi (X-10).
+Barcha yangi hisoblar 5 xonali boshlangʻich parol bilan ochiladi va
+parollar FAQAT `--creds` fayliga yoziladi — stdout'ga chiqmaydi (X-10).
+Oʻquvchi/vasiy birinchi kirishda parolni majburiy almashtiradi; USTOZGA
+esa berilgan parol doimiy — almashtirish ixtiyoriy (egasining qarori,
+2026-09-02).
 """
 
 import argparse
@@ -284,7 +286,9 @@ async def run(xlsx: Path, creds_path: Path, do_wipe: bool) -> None:
                 last_name=last,
                 first_name=first,
                 middle_name=middle,
-                must_change_password=True,
+                # Egasining qarori (2026-09-02): ustozga berilgan parol
+                # doimiy — almashtirish ixtiyoriy (/parol sahifasidan).
+                must_change_password=False,
             )
             acc.roles = [roles[RoleName.TEACHER.value]]
             if u["class"]:
