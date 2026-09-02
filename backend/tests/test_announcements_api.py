@@ -175,8 +175,17 @@ async def test_admin_butun_maktabga_beradi(client: AsyncClient, world: dict) -> 
         json={"audience": "school", "title": "Taʼtil boshlanishi", "body": "8-noyabrdan."},
     )
     assert r.status_code == 201, r.text
-    # Butun maktab: ikkala vasiy ham qamrovda.
-    assert r.json()["recipients_count"] == 2
+    # Butun maktab: ikkala vasiy + ikkala ustoz (xodimlar ham oladi).
+    assert r.json()["recipients_count"] == 4
+
+    # Ustoz maktab eʼlonini ROʻYXATDA koʻradi va BILDIRISHNOMA oladi.
+    ustoz = await _token(client, "an.ustoz")
+    lst = await client.get("/api/v1/announcements", headers=_auth(ustoz))
+    assert any(x["title"] == "Taʼtil boshlanishi" for x in lst.json())
+    xabarlar = await client.get("/api/v1/notifications", headers=_auth(ustoz))
+    body = xabarlar.json()
+    items = body if isinstance(body, list) else body.get("items", [])
+    assert any(i["kind"] == "announcement" for i in items)
     assert r.json()["class_names"] == []
 
 

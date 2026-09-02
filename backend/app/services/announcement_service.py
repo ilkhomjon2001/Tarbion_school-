@@ -32,11 +32,14 @@ from app.models import (
     AuditAction,
     NotificationKind,
     Permission,
+    Role,
+    RoleName,
     ScheduleEntry,
     SchoolClass,
     Student,
     Subject,
     User,
+    UserRole,
 )
 from app.services import audit_service, notifications_service, permissions
 from app.services.access import CurrentUser, homeroom_class_ids
@@ -188,6 +191,29 @@ async def create(
     students = await _students_of(session, class_ids)
     families = await notifications_service.family_recipients(session, students)
     recipients = [r for lst in families.values() for r in lst]
+
+    # Maktab eʼloni XODIMLARGA ham tegishli: faol ustozlar ham oladi
+    # (muallifdan tashqari — oʻziga oʻzi xabar kerak emas).
+    if audience == AnnouncementAudience.SCHOOL.value:
+        ustozlar = (
+            await session.execute(
+                select(User.id)
+                .join(UserRole, UserRole.user_id == User.id)
+                .join(Role, Role.id == UserRole.role_id)
+                .where(
+                    Role.name.in_(
+                        (RoleName.TEACHER.value, RoleName.HOMEROOM_TEACHER.value)
+                    ),
+                    User.is_archived.is_(False),
+                    User.id != actor.id,
+                )
+                .distinct()
+            )
+        ).scalars()
+        recipients += [
+            notifications_service.Recipient(user_id=uid) for uid in ustozlar
+        ]
+
     unique_count = len({r.user_id for r in recipients})
 
     ann = Announcement(
@@ -299,7 +325,7 @@ async def list_for(
 
     Kesim rolga qarab:
       rahbariyat — hammasi;
-      ustoz      — oʻzi berganlari (u oila emas, muallif);
+      ustoz      — oʻzi berganlari + butun maktab eʼlonlari;
       oʻquvchi / ota-ona — butun maktab + oʻz sinflari.
     """
     stmt = (
@@ -312,7 +338,11 @@ async def list_for(
     if user.is_staff_wide:
         pass
     elif user.is_teacher:
-        stmt = stmt.where(Announcement.author_id == user.id)
+        # Oʻzi berganlari + butun maktabga berilganlar (xodim sifatida).
+        stmt = stmt.where(
+            (Announcement.author_id == user.id)
+            | (Announcement.audience == AnnouncementAudience.SCHOOL.value)
+        )
     else:
         sinflar = await _visible_class_ids(session, user)
         maktabga = Announcement.audience == AnnouncementAudience.SCHOOL.value

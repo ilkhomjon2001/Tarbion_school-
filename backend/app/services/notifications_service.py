@@ -70,6 +70,7 @@ _SECTION: dict[str, dict[str, str]] = {
     NotificationKind.ANNOUNCEMENT.value: {
         "parent": "/ota-ona/elonlar",
         "student": "/student/announcements",
+        "teacher": "/teacher/elon",
     },
     NotificationKind.APPEAL_CLOSED.value: {
         "parent": "/ota-ona/murojaat",
