@@ -82,6 +82,25 @@ export function AuthGuard({
     };
   }, [router, role, pathname]);
 
-  if (!ready) return null;
+  // Tekshiruv tugamaguncha kabinet chizilmaydi. Ilgari bu yerda `null`
+  // qaytardik — natijada odam butunlay OQ ekranni koʻrib turardi: sahifa
+  // yuklanmadi deb oʻylab, qayta-qayta yangilardi. Endi kutish holati
+  // koʻrinadi (CLAUDE.md — komponent holatlari toʻliq boʻlsin).
+  if (!ready) {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-background"
+      >
+        <span
+          aria-hidden="true"
+          className="size-8 animate-spin rounded-full border-2 border-border border-t-brand motion-reduce:animate-none"
+        />
+        <p className="text-sm text-foreground-muted">Tekshirilmoqda…</p>
+      </div>
+    );
+  }
+
   return <>{children}</>;
 }
