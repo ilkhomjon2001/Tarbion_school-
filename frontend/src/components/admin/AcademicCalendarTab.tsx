@@ -25,6 +25,7 @@ import { CalendarIcon, ClockIcon, PlusIcon, SunriseIcon } from "@/components/ui/
 import {
   addHoliday,
   archiveHoliday,
+  createYear,
   saveBells,
   saveTerms,
   shortTime,
@@ -79,13 +80,7 @@ export function AcademicCalendarTab() {
   if (error) return <ErrorState description={error} />;
 
   if (year === null) {
-    return (
-      <EmptyState
-        icon={<CalendarIcon className="h-5 w-5" />}
-        title="Joriy oʻquv yili belgilanmagan"
-        description="Chorak sanalari, taʼtillar va dars vaqtlari oʻquv yiliga bogʻlanadi. Avval oʻquv yilini ochib, uni joriy deb belgilang."
-      />
-    );
+    return <FirstYearCard canEdit={canEdit} onCreated={reload} />;
   }
 
   return (
@@ -130,6 +125,147 @@ export function AcademicCalendarTab() {
       </div>
     </div>
   );
+}
+
+// ─────────────────────── Birinchi oʻquv yili ───────────────────────
+
+/**
+ * Joriy oʻquv yili yoʻq boʻlgandagi ekran.
+ *
+ * Bu shunchaki «boʻsh» holat emas, TUGUN: sinf ham, jadval ham, chorak
+ * ham joriy yilga bogʻlanadi — yilsiz maktabga birorta sinf qoʻshib
+ * boʻlmaydi. Shu sabab bu yerda maslahat emas, ochish formasi turadi.
+ *
+ * Sanalar sukut boʻyicha oʻzbek maktab yili boʻyicha taklif qilinadi
+ * (2-sentabr — 25-may), lekin tahrirlanadi: har maktab oʻzicha belgilaydi.
+ */
+function FirstYearCard({
+  canEdit,
+  onCreated,
+}: {
+  canEdit: boolean;
+  onCreated: () => void;
+}) {
+  const boshlangich = defaultYearRange();
+  const [name, setName] = useState(boshlangich.name);
+  const [startsOn, setStartsOn] = useState(boshlangich.startsOn);
+  const [endsOn, setEndsOn] = useState(boshlangich.endsOn);
+  const [busy, setBusy] = useState(false);
+  const [xato, setXato] = useState<string | null>(null);
+
+  const valid =
+    name.trim().length >= 4 && startsOn !== "" && endsOn !== "" && startsOn < endsOn;
+
+  async function submit() {
+    setBusy(true);
+    setXato(null);
+    try {
+      // `true` — darhol joriy deb belgilanadi. Birinchi yil uchun tanlov
+      // qoldirilmaydi: joriy emas yil hech narsani ochmaydi.
+      await createYear(name.trim(), startsOn, endsOn, true);
+      onCreated();
+    } catch (err) {
+      setXato(xatoMatni(err, "Oʻquv yilini ochib boʻlmadi."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!canEdit) {
+    return (
+      <EmptyState
+        icon={<CalendarIcon className="h-5 w-5" />}
+        title="Joriy oʻquv yili belgilanmagan"
+        description="Oʻquv yilini administrator ochadi. Ungacha sinf, jadval va chorak sanalari kiritilmaydi."
+      />
+    );
+  }
+
+  return (
+    <section className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+      <div className="mb-3 flex items-start gap-2.5">
+        <CalendarIcon className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">
+            Oʻquv yilini oching
+          </h2>
+          <p className="mt-1 text-xs text-foreground-muted">
+            Sinflar, dars jadvali va chorak sanalari oʻquv yiliga bogʻlanadi —
+            bu maktabdagi birinchi qadam. Yil ochilgach u darhol joriy deb
+            belgilanadi.
+          </p>
+        </div>
+      </div>
+
+      {xato && <p className="mb-2 text-xs text-danger">{xato}</p>}
+
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="min-w-[8rem] flex-1">
+          <span className="mb-1.5 block text-xs font-medium text-foreground">Nomi</span>
+          <input
+            type="text"
+            value={name}
+            placeholder="2026-2027"
+            onChange={(e) => setName(e.target.value.slice(0, 20))}
+            className={inputClass}
+          />
+        </label>
+        <label className="min-w-[9rem] flex-1">
+          <span className="mb-1.5 block text-xs font-medium text-foreground">
+            Boshlanishi
+          </span>
+          <input
+            type="date"
+            value={startsOn}
+            onChange={(e) => setStartsOn(e.target.value)}
+            className={inputClass}
+          />
+        </label>
+        <label className="min-w-[9rem] flex-1">
+          <span className="mb-1.5 block text-xs font-medium text-foreground">
+            Tugashi
+          </span>
+          <input
+            type="date"
+            value={endsOn}
+            onChange={(e) => setEndsOn(e.target.value)}
+            className={inputClass}
+          />
+        </label>
+        <button
+          type="button"
+          disabled={!valid || busy}
+          onClick={submit}
+          className={primaryButtonClass}
+        >
+          <PlusIcon className="h-4 w-4" />
+          {busy ? "Ochilmoqda…" : "Oʻquv yilini ochish"}
+        </button>
+      </div>
+
+      {!valid && (
+        <p className="mt-2 text-xs text-foreground-muted">
+          Nomi kamida 4 belgi, tugash sanasi boshlanishdan keyin boʻlsin.
+        </p>
+      )}
+    </section>
+  );
+}
+
+/**
+ * Taklif etiladigan oʻquv yili — joriy sanaga qarab.
+ *
+ * Iyungacha boʻlsa hali oʻtgan yilning yozi: yil `2025-2026` deb
+ * taklif qilinadi. Iyuldan keyin esa yangi yil boshlanadi.
+ */
+function defaultYearRange(): { name: string; startsOn: string; endsOn: string } {
+  const [y, m] = localToday().split("-").map(Number);
+  const bosh = m >= 7 ? y : y - 1;
+  return {
+    name: `${bosh}-${bosh + 1}`,
+    startsOn: `${bosh}-09-02`,
+    endsOn: `${bosh + 1}-05-25`,
+  };
 }
 
 // ─────────────────────────── Choraklar ───────────────────────────

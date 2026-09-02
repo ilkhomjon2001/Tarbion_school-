@@ -20,6 +20,7 @@ import {
   academicAddHoliday,
   academicArchiveHoliday,
   academicBells,
+  academicCreateYear,
   academicCurrentYear,
   academicHolidays,
   academicSetBells,
@@ -52,6 +53,31 @@ export async function fetchCurrentYear(): Promise<AcademicYearOut | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Yangi oʻquv yili (ADM-01).
+ *
+ * `makeCurrent` — yilni JORIY deb belgilaydi. Bu shunchaki bayroq emas:
+ * sinf, jadval va chorak joriy yilga bogʻlanadi, ya'ni joriy yil
+ * belgilanmaguncha maktabga birorta sinf ham qoʻshib boʻlmaydi.
+ */
+export async function createYear(
+  name: string,
+  startsOn: string,
+  endsOn: string,
+  makeCurrent: boolean,
+): Promise<AcademicYearOut> {
+  return withAuth<AcademicYearOut>(() =>
+    academicCreateYear({
+      body: {
+        name,
+        starts_on: startsOn,
+        ends_on: endsOn,
+        make_current: makeCurrent,
+      },
+    }),
+  );
 }
 
 // ─────────────────────────── Choraklar ───────────────────────────
