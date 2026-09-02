@@ -2,26 +2,98 @@
  "fan": "Robototexnika",
  "yillar": {
   "1-yil": {
-   "0-sinf": 84,
-   "1-sinf": 84,
-   "2-sinf": 84,
-   "3-sinf": 84,
-   "4-sinf": 84,
-   "5-sinf": 84,
-   "6-sinf": 84,
-   "7-sinf": 84,
-   "8-sinf": 84
+   "0-sinf": {
+    "darslar": 84,
+    "modellar": 45,
+    "rasmli": 72
+   },
+   "1-sinf": {
+    "darslar": 84,
+    "modellar": 59,
+    "rasmli": 72
+   },
+   "2-sinf": {
+    "darslar": 84,
+    "modellar": 35,
+    "rasmli": 72
+   },
+   "3-sinf": {
+    "darslar": 84,
+    "modellar": 52,
+    "rasmli": 72
+   },
+   "4-sinf": {
+    "darslar": 84,
+    "modellar": 50,
+    "rasmli": 72
+   },
+   "5-sinf": {
+    "darslar": 84,
+    "modellar": 84,
+    "rasmli": 0
+   },
+   "6-sinf": {
+    "darslar": 84,
+    "modellar": 84,
+    "rasmli": 0
+   },
+   "7-sinf": {
+    "darslar": 84,
+    "modellar": 84,
+    "rasmli": 0
+   },
+   "8-sinf": {
+    "darslar": 84,
+    "modellar": 84,
+    "rasmli": 0
+   }
   },
   "2-yil": {
-   "0-sinf": 84,
-   "1-sinf": 84,
-   "2-sinf": 103,
-   "3-sinf": 84,
-   "4-sinf": 84,
-   "5-sinf": 84,
-   "6-sinf": 84,
-   "7-sinf": 84,
-   "8-sinf": 84
+   "0-sinf": {
+    "darslar": 84,
+    "modellar": 72,
+    "rasmli": 72
+   },
+   "1-sinf": {
+    "darslar": 84,
+    "modellar": 72,
+    "rasmli": 72
+   },
+   "2-sinf": {
+    "darslar": 103,
+    "modellar": 72,
+    "rasmli": 72
+   },
+   "3-sinf": {
+    "darslar": 84,
+    "modellar": 0,
+    "rasmli": 0
+   },
+   "4-sinf": {
+    "darslar": 84,
+    "modellar": 0,
+    "rasmli": 0
+   },
+   "5-sinf": {
+    "darslar": 84,
+    "modellar": 84,
+    "rasmli": 0
+   },
+   "6-sinf": {
+    "darslar": 84,
+    "modellar": 84,
+    "rasmli": 0
+   },
+   "7-sinf": {
+    "darslar": 84,
+    "modellar": 84,
+    "rasmli": 0
+   },
+   "8-sinf": {
+    "darslar": 84,
+    "modellar": 83,
+    "rasmli": 0
+   }
   }
  }
 }

@@ -11,10 +11,17 @@
  * apostroflar 8-qoidaga keltirilgan).
  */
 
+export interface SinfStat {
+  darslar: number;
+  modellar: number;
+  /** Rasmli instruksiyasi bor darslar soni. */
+  rasmli: number;
+}
+
 export interface RejaIndex {
   fan: string;
-  /** yil → sinf → darslar soni. */
-  yillar: Record<string, Record<string, number>>;
+  /** yil → sinf → statistikasi. */
+  yillar: Record<string, Record<string, SinfStat>>;
 }
 
 export interface NazariyaBlok {
@@ -64,6 +71,10 @@ export interface Dars {
   title: string;
   model: string | null;
   type: string;
+  /** Instruksiya rasmi slugʼi — `rasmUrl()` bilan thumbnail. */
+  slug?: string | null;
+  /** Qurish instruksiyasidagi qadamlar soni. */
+  qadam?: number | null;
   maqsad?: string[];
   lugat?: string[];
   softSkill?: string;
@@ -99,6 +110,11 @@ export const TYPE_META: Record<string, { label: string; cls: string }> = {
 };
 
 const BASE = "/reja/robototexnika";
+
+/** Model thumbnail manzili (birinchi instruksiya qadami). */
+export function rasmUrl(slug: string): string {
+  return `${BASE}/rasm/${slug}.webp`;
+}
 
 export async function fetchRejaIndex(): Promise<RejaIndex> {
   const r = await fetch(`${BASE}/index.json`);
