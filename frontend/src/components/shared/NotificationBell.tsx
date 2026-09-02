@@ -69,7 +69,7 @@ export function NotificationBell({ className = "" }: { className?: string }) {
         aria-label={
           total > 0 ? `Bildirishnomalar — ${total} ta oʻqilmagan` : "Bildirishnomalar"
         }
-        className="focus-ring relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-surface-muted"
+        className="focus-ring relative flex size-11 shrink-0 items-center justify-center rounded-full text-foreground-muted transition-colors hover:bg-surface-muted active:bg-surface-muted sm:size-9"
       >
         <BellIcon className="h-5 w-5" />
         {total > 0 && (
@@ -80,21 +80,45 @@ export function NotificationBell({ className = "" }: { className?: string }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-40 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-border bg-surface shadow-lg">
-          <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
-            <p className="text-sm font-semibold text-foreground">Bildirishnomalar</p>
-            {total > 0 && (
+        <>
+          {/* Telefonda fon qorayadi — sheet ekanini bildiradi */}
+          <button
+            type="button"
+            aria-label="Yopish"
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-40 bg-foreground/30 sm:hidden"
+          />
+          <div
+            role="dialog"
+            aria-label="Bildirishnomalar"
+            className="fixed inset-x-0 bottom-0 z-50 max-h-[80dvh] overflow-hidden rounded-t-2xl border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] shadow-lg sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:z-40 sm:mt-2 sm:w-[min(22rem,calc(100vw-2rem))] sm:rounded-xl sm:border sm:pb-0"
+          >
+            <div className="flex items-center gap-2 border-b border-border py-1.5 pl-4 pr-2">
+              <p className="flex-1 text-sm font-semibold text-foreground">
+                Bildirishnomalar
+              </p>
+              {total > 0 && (
+                <button
+                  type="button"
+                  onClick={() => void markAllRead()}
+                  className="focus-ring flex h-11 items-center rounded-lg px-2 text-xs font-medium text-brand transition-colors hover:text-brand-dark sm:h-9"
+                >
+                  Hammasini oʻqilgan qilish
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => void markAllRead()}
-                className="focus-ring rounded text-xs font-medium text-brand transition-colors hover:text-brand-dark"
+                onClick={() => setOpen(false)}
+                className="focus-ring flex size-11 items-center justify-center rounded-lg text-foreground-muted hover:bg-surface-muted sm:hidden"
               >
-                Hammasini oʻqilgan deb belgilash
+                <span className="sr-only">Yopish</span>
+                <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
               </button>
-            )}
-          </div>
+            </div>
 
-          <div className="max-h-[24rem] overflow-y-auto">
+            <div className="max-h-[65dvh] overflow-y-auto sm:max-h-[24rem]">
             {loading && items.length === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-foreground-muted">
                 Yuklanmoqda…
@@ -121,8 +145,9 @@ export function NotificationBell({ className = "" }: { className?: string }) {
                 ))}
               </ul>
             )}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
