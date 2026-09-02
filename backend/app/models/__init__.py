@@ -94,6 +94,10 @@ from app.models.notifications import (
     NOTIFICATION_KIND_LABELS_UZ,
     Notification,
     NotificationKind,
+    NotificationOutbox,
+    NotificationPreference,
+    OutboxChannel,
+    OutboxStatus,
 )
 from app.models.payments import (
     DEFAULT_MONTHLY_FEE,
@@ -152,6 +156,8 @@ __all__ = [
     "DiscountKind",
     "IntentStatus",
     "PAYMENT_METHOD_LABELS_UZ",
+    "OutboxChannel",
+    "OutboxStatus",
     "Payment",
     "PaymentIntent",
     "PaymentMethod",
@@ -242,6 +248,8 @@ __all__ = [
     "NOTIFICATION_KIND_LABELS_UZ",
     "Notification",
     "NotificationKind",
+    "NotificationOutbox",
+    "NotificationPreference",
     "Permission",
     "RefreshToken",
     "Role",

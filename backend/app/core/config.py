@@ -65,6 +65,19 @@ class Settings(BaseSettings):
     # istasa yoqadi, faqat majburlanmaydi.
     require_two_factor: bool = True
 
+    #: Telegram bot tokeni (T-017, @BotFather beradi). Boʻsh boʻlsa
+    #: xabarnoma worker'i ishga tushmaydi — navbat toʻlib boraveradi
+    #: va token qoʻyilganda hammasi yetkaziladi, hech narsa yoʻqolmaydi.
+    telegram_bot_token: str = ""
+
+    #: Worker navbatni qanchada bir tekshiradi. Ilova B: «farzand
+    #: darsga kelmadi» xabari davomat belgilangach 30 daqiqa ichida
+    #: yetishi kerak — 30 soniya bu muddatga keng zaxira qoldiradi.
+    outbox_poll_seconds: int = 30
+
+    #: Bir siklda nechta xabar olinadi.
+    outbox_batch_size: int = 50
+
     #: Sinov toʻlov provayderi webhook imzosi kaliti. Haqiqiy provayder
     #: kelganda uning kaliti alohida nom bilan qoʻshiladi.
     sinov_provider_key: str = "sinov-kalit-almashtiring"  # noqa: S105

@@ -23,7 +23,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Index, String
+from sqlalchemy import DateTime, ForeignKey, Index, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -111,3 +111,107 @@ class Notification(Entity):
     )
 
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class OutboxStatus(enum.StrEnum):
+    """Tashqi xabarning holati.
+
+    `CANCELLED` — yuborilishidan oldin sabab yoʻqoldi. Masalan ustoz
+    davomatni «kelmadi» dan «keldi» ga tuzatdi: xabar hali navbatda
+    turgan boʻlsa uni yuborish notoʻgʻri boʻlardi.
+    """
+
+    PENDING = "pending"
+    SENT = "sent"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class OutboxChannel(enum.StrEnum):
+    """Qayerga yuboriladi (BOT-02).
+
+    Tizim ichidagi bildirishnoma bu yerda YOʻQ — u `Notification`
+    jadvalida, darhol yoziladi va yuborishni talab qilmaydi.
+    """
+
+    TELEGRAM = "telegram"
+
+
+class NotificationOutbox(Entity):
+    """Tashqariga yuboriladigan xabarlar navbati (T-018, BOT-02, BOT-06).
+
+    Kod xabarni TOʻGʻRIDAN-TOʻGʻRI yubormaydi — shu jadvalga yozadi.
+    Sabab: Telegram soʻrovi sekin va ishonchsiz. Davomat saqlash
+    tranzaksiyasi ichida yuborilsa, Telegram javob bermaganda butun
+    davomat yiqilardi. Bu yerda esa xabar yozilib qoladi va alohida
+    worker uni keyinroq yetkazadi.
+
+    Qayta urinish `send_after` orqali: xato boʻlsa vaqt oldinga suriladi
+    (backoff), uch urinishdan keyin `failed`. Yetkazilmagan xabar
+    yoʻqolmaydi — administrator uni koʻradi va qayta yuborishi mumkin
+    (BOT-06).
+    """
+
+    __tablename__ = "notification_outbox"
+    __table_args__ = (
+        # Worker'ning asosiy soʻrovi: navbatdagi, vaqti kelgan xabarlar.
+        Index("ix_outbox_navbat", "status", "send_after"),
+        # Administrator ekrani va BOT-07 (kunlik jamlash) uchun.
+        Index("ix_outbox_user_kind", "user_id", "kind", "created_at"),
+        # Sabab yoʻqolganda bekor qilish uchun.
+        Index("ix_outbox_object", "object_type", "object_id", "status"),
+    )
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+    )
+    kind: Mapped[str] = mapped_column(String(40), nullable=False)
+    channel: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default=OutboxChannel.TELEGRAM.value
+    )
+
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    body: Mapped[str] = mapped_column(String(1000), nullable=False)
+
+    status: Mapped[str] = mapped_column(
+        String(12),
+        nullable=False,
+        default=OutboxStatus.PENDING.value,
+        server_default=OutboxStatus.PENDING.value,
+        index=True,
+    )
+    #: Shu vaqtdan oldin yuborilmaydi. Kechiktirilgan xabar (kunlik
+    #: xulosa) va backoff uchun bitta maydon yetadi.
+    send_after: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    attempts: Mapped[int] = mapped_column(nullable=False, default=0, server_default="0")
+    last_error: Mapped[str | None] = mapped_column(String(300))
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    #: Sabab boʻlgan obyekt — davomat yozuvi, eʼlon. Sabab oʻzgarsa
+    #: navbatdagi xabar shu boʻyicha topib bekor qilinadi.
+    object_type: Mapped[str | None] = mapped_column(String(32))
+    object_id: Mapped[uuid.UUID | None] = mapped_column(PgUUID(as_uuid=True))
+
+
+class NotificationPreference(Entity):
+    """Foydalanuvchi qaysi turdagi xabarni oladi (T-018).
+
+    Yozuv faqat OʻCHIRILGAN turlar uchun yaratiladi: sukut boʻyicha
+    hamma tur yoqiq. Shunda yangi tur qoʻshilganda hech kimga qator
+    yozish kerak emas.
+
+    Ilova B da bir necha tur «majburiy» deb belgilangan (masalan tizimga
+    kirish maʼlumotlari) — ularni oʻchirib boʻlmaydi, buni servis
+    tekshiradi.
+    """
+
+    __tablename__ = "notification_preferences"
+    __table_args__ = (UniqueConstraint("user_id", "kind"),)
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+    )
+    kind: Mapped[str] = mapped_column(String(40), nullable=False)
+    enabled: Mapped[bool] = mapped_column(nullable=False, default=True, server_default="true")
