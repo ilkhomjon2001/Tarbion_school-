@@ -97,3 +97,7 @@ maxfiy/
 *.xlsx
 *.xls
 *.sb3
+
+# Telegram task inbox (tools/task_inbox.py) - xom guruh xabarlari.
+# Curated tasklar TASKS.md ga kochiriladi, xomi repoda saqlanmaydi.
+tools/inbox/
