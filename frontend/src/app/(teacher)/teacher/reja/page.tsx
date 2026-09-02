@@ -36,6 +36,8 @@ export default function RejaPage() {
   const [sinf, setSinf] = useState<string>("");
   const [reja, setReja] = useState<SinfReja | null>(null);
   const [qidiruv, setQidiruv] = useState("");
+  /** null — hammasi; aks holda chorak indeksi. */
+  const [chorakF, setChorakF] = useState<number | null>(null);
   const [xato, setXato] = useState(false);
 
   // Modal: tanlangan dars + fokusni qaytarish uchun trigger elementi.
@@ -62,6 +64,7 @@ export default function RejaPage() {
     let alive = true;
     setReja(null);
     setQidiruv("");
+    setChorakF(null);
     fetchSinfReja(yil, sinf)
       .then((r) => alive && setReja(r))
       .catch(() => alive && setXato(true));
@@ -159,14 +162,49 @@ export default function RejaPage() {
               )}
             </header>
 
-            <div className="mt-3">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <div
+                role="tablist"
+                aria-label="Chorak boʻyicha saralash"
+                className="scroll-x flex gap-1 rounded-xl bg-surface-muted p-1"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={chorakF === null}
+                  onClick={() => setChorakF(null)}
+                  className={`focus-ring h-9 shrink-0 rounded-lg px-3.5 text-sm font-semibold transition-colors ${
+                    chorakF === null
+                      ? "bg-surface text-brand-dark shadow-sm"
+                      : "text-foreground-muted hover:text-foreground"
+                  }`}
+                >
+                  Hammasi
+                </button>
+                {(reja?.choraklar ?? []).map((c, ci) => (
+                  <button
+                    key={c.nom}
+                    type="button"
+                    role="tab"
+                    aria-selected={chorakF === ci}
+                    onClick={() => setChorakF(ci)}
+                    className={`focus-ring h-9 shrink-0 rounded-lg px-3.5 text-sm font-semibold transition-colors ${
+                      chorakF === ci
+                        ? "bg-surface text-brand-dark shadow-sm"
+                        : "text-foreground-muted hover:text-foreground"
+                    }`}
+                  >
+                    {c.nom}
+                  </button>
+                ))}
+              </div>
               <input
                 type="search"
                 value={qidiruv}
                 onChange={(e) => setQidiruv(e.target.value)}
                 placeholder="Mavzu yoki model boʻyicha qidirish"
                 aria-label="Mavzu qidirish"
-                className="h-10 w-full rounded-xl border border-border bg-surface px-3.5 text-sm outline-none transition-colors placeholder:text-foreground-muted/60 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25 sm:max-w-md"
+                className="h-10 min-w-[13rem] flex-1 rounded-xl border border-border bg-surface px-3.5 text-sm outline-none transition-colors placeholder:text-foreground-muted/60 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25 sm:max-w-md"
               />
             </div>
 
@@ -175,7 +213,7 @@ export default function RejaPage() {
                 <ListSkeleton count={8} />
               </div>
             ) : (
-              <ChorakBoliklari reja={reja} qidiruv={qidiruv} onOchish={ochish} />
+              <ChorakBoliklari reja={reja} qidiruv={qidiruv} chorakF={chorakF} onOchish={ochish} />
             )}
           </div>
         </div>
@@ -193,10 +231,12 @@ export default function RejaPage() {
 function ChorakBoliklari({
   reja,
   qidiruv,
+  chorakF,
   onOchish,
 }: {
   reja: SinfReja;
   qidiruv: string;
+  chorakF: number | null;
   onOchish: (dars: Dars, raqam: number, el: HTMLElement) => void;
 }) {
   const soz = qidiruv.trim().toLowerCase();
@@ -213,8 +253,11 @@ function ChorakBoliklari({
             r.dars.title.toLowerCase().includes(soz) ||
             (r.dars.model ?? "").toLowerCase().includes(soz),
         );
-      return { nom: c.nom, jami: c.darslar.length, rows };
+      return { nom: c.nom, indeks: ci, jami: c.darslar.length, rows };
     })
+    // Chorak tanlangan boʻlsa faqat oʻsha; qidiruvda esa hamma chorakdan
+    // topilganlar koʻrsatiladi (tanlov ichida boʻsh qolsa ham).
+    .filter((b) => (chorakF === null ? true : b.indeks === chorakF))
     .filter((b) => b.rows.length > 0);
 
   if (bloklar.length === 0) {
