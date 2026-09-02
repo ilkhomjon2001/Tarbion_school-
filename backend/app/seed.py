@@ -208,15 +208,57 @@ async def check_truncate_complete(session: AsyncSession) -> None:
         )
 
 
+#: Oʻzgarmas jadvallar — T-021 ularga TRUNCATE trigger'i qoʻygan.
+#:
+#: Roʻyxatdan chiqarib boʻlmaydi: `audit_log.actor_id` → `users` ga
+#: tashqi kalit, ya'ni `TRUNCATE users CASCADE` uni baribir tortadi va
+#: trigger butun amalni rad etadi.
+IMMUTABLE_TABLES = ("audit_log", "login_log")
+
+
 async def reset(session: AsyncSession) -> None:
+    """Domen jadvallarini tozalaydi. FAQAT development.
+
+    `audit_log` va `login_log` da T-021 qoʻygan TRUNCATE trigger'i bor —
+    ishlab chiqarishda audit yozuvi oʻchirilmasligi kerak (CLAUDE.md
+    4-qoida). Ishlab chiqish bazasini tozalash uchun trigger vaqtincha
+    oʻchiriladi.
+
+    Hammasi BITTA tranzaksiyada: oʻchirish, tozalash, qaytarish. Oradagi
+    biror qadam yiqilsa tranzaksiya orqaga qaytadi va trigger umuman
+    oʻchirilmagan boʻlib qoladi — himoyasiz baza qolib ketmaydi.
+    """
     if settings.is_production:
         raise SystemExit("--reset ishlab chiqarishda ishlamaydi")
     await check_truncate_complete(session)
+
+    for jadval in IMMUTABLE_TABLES:
+        await session.execute(text(f"ALTER TABLE {jadval} DISABLE TRIGGER USER"))
+
     await session.execute(
         text("TRUNCATE " + ", ".join(TRUNCATE_ORDER) + " RESTART IDENTITY CASCADE")
     )
+
+    for jadval in IMMUTABLE_TABLES:
+        await session.execute(text(f"ALTER TABLE {jadval} ENABLE TRIGGER USER"))
+
     await session.commit()
-    print("  tozalandi: " + str(len(TRUNCATE_ORDER)) + " ta jadval")
+
+    # Himoya qaytganini TASDIQLAYMIZ. Bu «albatta ishlagandir» deb
+    # oʻtib ketiladigan joy emas: audit himoyasiz qolsa buni hech kim
+    # sezmaydi, keyingi safar esa yozuv jimgina oʻchib ketadi.
+    qolgan = (
+        await session.execute(
+            text(
+                "SELECT tgrelid::regclass::text FROM pg_trigger "
+                "WHERE NOT tgisinternal AND tgenabled = 'D'"
+            )
+        )
+    ).scalars().all()
+    if qolgan:
+        raise SystemExit(f"XAVF: trigger oʻchiq qoldi — {sorted(set(qolgan))}")
+
+    print(f"  tozalandi: {len(TRUNCATE_ORDER)} ta jadval, audit himoyasi joyida")
 
 
 # ───────────────────────── Yuklash ─────────────────────────
