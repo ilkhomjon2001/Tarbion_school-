@@ -312,7 +312,6 @@ function ProfileDrawer({
               <input
                 type="number"
                 min={0}
-                step={100000}
                 value={form.base_salary}
                 onChange={(e) => setForm({ ...form, base_salary: e.target.value })}
                 placeholder="Kiritilmagan"

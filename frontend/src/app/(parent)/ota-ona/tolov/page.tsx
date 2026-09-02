@@ -116,7 +116,6 @@ export default function ParentPaymentsPage() {
                   <input
                     type="number"
                     min={1000}
-                    step={50000}
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     className="num h-10 w-44 rounded-lg border border-border bg-surface px-3 text-sm outline-none focus-visible:border-brand"

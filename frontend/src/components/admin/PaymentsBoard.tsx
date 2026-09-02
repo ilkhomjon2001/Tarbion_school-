@@ -567,7 +567,6 @@ function PaymentForm({
           <input
             type="number"
             min={1}
-            step={50000}
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             className={`${inputClass} num`}
@@ -636,7 +635,6 @@ function ContractForm({
           <input
             type="number"
             min={1}
-            step={100000}
             value={fee}
             onChange={(e) => setFee(e.target.value)}
             className={`${inputClass} num`}
@@ -821,7 +819,6 @@ function CreditForm({
         <input
           type="number"
           min={1}
-          step={50000}
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="Summa (soʻm)"
