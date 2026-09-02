@@ -85,6 +85,14 @@ temp/
 # natijasi, deterministik. Repoda saqlanmaydi.
 backend/seed-data.json
 
-# Real ma'lumot fayllari repo'ga tushmasin (PII, repo ochiq!)
+# ── Haqiqiy maktab maʼlumoti ─────────────────────────────
+# Oʻquvchi roʻyxati, ustozlar, ota-ona telefonlari — voyaga
+# yetmaganlarning shaxsiy maʼlumoti. Repo ochiq: git tarixiga bir marta
+# tushsa qaytarib boʻlmaydi — klonlangan har joyda qoladi, GitHub'da
+# kesh va fork'larda saqlanadi (docs/XAVFSIZLIK.md, X-10).
+#
+# Import fayllarini `maxfiy/` ichida saqlang.
+maxfiy/
 *.csv
 *.xlsx
+*.xls
