@@ -789,3 +789,21 @@ Vasiylar telefon boʻyicha birlashtirildi (aka-ukalar bitta hisobda),
 apostroflar 8-qoidaga normalizatsiya qilindi. Barcha yangi hisoblar
 5 xonali vaqtinchalik parol + majburiy almashtirish bilan ochildi;
 parollar faqat lokal CSV faylda.
+
+## 2026-09-02 · X-14 (majburiy 2FA) oʻchirildi — egasining qarori
+
+Loyiha egasi administrator, direktor va rahbariyat hisoblariga ikki
+bosqichli tasdiqlash TALAB QILINMASLIGINI aytdi. `REQUIRE_TWO_FACTOR=false`
+— serverda allaqachon shunday edi, lokal muhit ham unga moslandi.
+
+Funksiyaning oʻzi joyida qoladi: xohlagan foydalanuvchi 2FA'ni yoqsa,
+unga kirishda kod soʻraladi. Faqat MAJBURIYLIK olib tashlandi.
+
+Ogohlantirish egaga aytildi: bundan keyin administrator yoki rahbar
+parolini bilgan har kim butun bazani — 98 voyaga yetmagan oʻquvchining
+ismi, sinfi va ota-onasi telefonini — ochadi. Egasining javobi: sayt
+faqat maktab rahbariyati uchun, qidiruvdan topilmaydi va har bir oila
+bilan yozma shartnoma bor.
+
+Buning natijasida CLAUDE.md dagi X-14 qoidasi endi amalda emas — u yerda
+matn yangilanishi kerak, aks holda hujjat haqiqatga zid boʻlib qoladi.
