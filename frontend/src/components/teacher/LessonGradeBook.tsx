@@ -186,7 +186,7 @@ export function LessonGradeBook({
           return (
           <li
             key={s.student_id}
-            className={`flex flex-wrap items-center gap-3 rounded-lg border px-3 py-2 transition-colors ${
+            className={`flex flex-col gap-2 rounded-lg border px-3 py-2 transition-colors sm:flex-row sm:items-center sm:gap-3 ${
               !s.gradable
                 ? "border-border bg-surface-muted/60"
                 : ozgargan
@@ -194,16 +194,14 @@ export function LessonGradeBook({
                   : "border-border bg-surface"
             }`}
           >
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-medium text-foreground">
+            <span className="flex min-w-0 flex-1 items-center gap-2">
+              <span className="min-w-0 text-sm font-medium text-foreground sm:truncate">
                 {s.full_name}
               </span>
               {s.attendance && s.attendance !== "present" && (
-                <span className="mt-0.5 inline-block">
-                  <Badge tone={s.attendance === "late" ? "warning" : "danger"}>
-                    {ATTENDANCE_LABELS[s.attendance as AttendanceStatus] ?? s.attendance}
-                  </Badge>
-                </span>
+                <Badge tone={s.attendance === "late" ? "warning" : "danger"}>
+                  {ATTENDANCE_LABELS[s.attendance as AttendanceStatus] ?? s.attendance}
+                </Badge>
               )}
             </span>
 
@@ -216,7 +214,9 @@ export function LessonGradeBook({
                 onPick={(v) => pick(s.student_id, v)}
               />
             ) : (
-              <span className="text-xs text-foreground-muted">{s.block_reason}</span>
+              !s.attendance && (
+                <span className="text-xs text-foreground-muted">Davomat belgilanmagan</span>
+              )
             )}
           </li>
           );
@@ -238,10 +238,6 @@ export function LessonGradeBook({
         />
       )}
 
-      <p className="text-xs text-foreground-muted">
-        Baho darsga bogʻlanadi — boshqa kunning bahosi bu yerdan oʻzgarmaydi. Har
-        oʻzgarish audit jurnaliga tushadi.
-      </p>
     </div>
   );
 }
@@ -285,7 +281,7 @@ function GradeButtons({
   }
 
   return (
-    <div ref={ref} onKeyDown={onKeyDown} className="flex shrink-0 items-center gap-1">
+    <div ref={ref} onKeyDown={onKeyDown} className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
       {options.map((n) => {
         const on = value === n;
         return (
@@ -296,7 +292,7 @@ function GradeButtons({
             aria-pressed={on}
             aria-label={`${n} baho`}
             onClick={() => onPick(on ? null : n)}
-            className={`focus-ring num h-9 w-9 rounded-lg border text-sm font-semibold transition-colors disabled:opacity-40 ${
+            className={`focus-ring num h-11 flex-1 rounded-lg border text-base font-semibold transition-colors active:scale-95 disabled:opacity-40 motion-reduce:active:scale-100 sm:h-10 sm:w-10 sm:flex-none sm:text-sm ${
               on
                 ? `border-transparent ${KIND_TONE[kind] ?? KIND_TONE.current}`
                 : "border-border text-foreground-muted hover:bg-surface-muted"

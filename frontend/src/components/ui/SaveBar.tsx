@@ -48,7 +48,7 @@ export function SaveBar({
             : "border-border bg-surface shadow-sm"
         }`}
       >
-        <p aria-live="polite" className="min-w-0 flex-1 text-sm">
+        <p aria-live="polite" className="w-full min-w-0 text-sm sm:w-auto sm:flex-1">
           {ozgarishlar > 0 ? (
             <span className="font-medium text-foreground">
               <span className="num">{ozgarishlar}</span> ta saqlanmagan oʻzgarish
@@ -71,7 +71,7 @@ export function SaveBar({
               type="button"
               onClick={onCancel}
               disabled={busy}
-              className="focus-ring h-10 shrink-0 rounded-lg border border-border px-3.5 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-muted disabled:opacity-50"
+              className="focus-ring h-11 flex-1 rounded-lg border border-border px-3.5 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-muted disabled:opacity-50 sm:h-10 sm:flex-none"
             >
               Bekor qilish
             </button>
@@ -79,7 +79,7 @@ export function SaveBar({
               type="button"
               onClick={onSave}
               disabled={busy}
-              className="focus-ring h-10 shrink-0 rounded-lg bg-brand px-4 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark disabled:opacity-50"
+              className="focus-ring h-11 flex-1 rounded-lg bg-brand px-4 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark disabled:opacity-50 sm:h-10 sm:flex-none"
             >
               {busy ? "Saqlanmoqda…" : "Oʻzgarishlarni saqlash"}
             </button>
