@@ -110,37 +110,82 @@ export function TeacherShell({
   );
   const [open, setOpen] = useState(false);
 
+  // Yigʻiladigan sidebar — faqat desktop (lg+). Holat localStorage'da
+  // saqlanadi; birinchi renderda animatsiya oʻchiq turadi, aks holda
+  // saqlangan «yigʻilgan» holat sahifa ochilishida «lip» etib yopilardi.
+  const [collapsed, setCollapsed] = useState(false);
+  const [animOn, setAnimOn] = useState(false);
+  useEffect(() => {
+    try {
+      setCollapsed(localStorage.getItem("tarbion.ustoz.sidebar") === "yigilgan");
+    } catch {
+      /* localStorage yopiq muhit — standart ochiq holat */
+    }
+    const t = setTimeout(() => setAnimOn(true), 50);
+    return () => clearTimeout(t);
+  }, []);
+  function toggleCollapsed() {
+    setCollapsed((prev) => {
+      try {
+        localStorage.setItem("tarbion.ustoz.sidebar", prev ? "ochiq" : "yigilgan");
+      } catch {
+        /* saqlanmasa ham ishlayveradi */
+      }
+      return !prev;
+    });
+  }
+  // lg: prefiksli sinflar faqat desktopga taʼsir qiladi — mobil menyu
+  // har doim toʻliq koʻrinishda ochiladi.
+  const lgW = collapsed ? "lg:w-[76px]" : "lg:w-[260px]";
+  const yashir = collapsed ? "lg:hidden" : "";
+
+
   return (
     <div className="min-h-screen bg-background">
       {/* --- Sidebar --- */}
       <aside
         aria-label="Asosiy navigatsiya"
-        className={`fixed inset-y-0 left-0 z-40 w-[260px] border-r border-border bg-surface transition-transform duration-200 lg:translate-x-0 ${
-          open ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed inset-y-0 left-0 z-40 w-[260px] border-r border-border bg-surface lg:translate-x-0 ${lgW} ${
+          animOn ? "transition-[width,transform] duration-200 motion-reduce:transition-none" : ""
+        } ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex h-full flex-col">
-          <div className="px-6 py-5">
-            <BrandLogo variant="wordmark" className="h-6 w-auto" subtitle="Ustoz kabineti" priority />
+          <div className={collapsed ? "px-6 py-5 lg:flex lg:justify-center lg:px-2" : "px-6 py-5"}>
+            <span className={yashir}>
+              <BrandLogo variant="wordmark" className="h-6 w-auto" subtitle="Ustoz kabineti" priority />
+            </span>
+            {collapsed && (
+              <span className="hidden lg:block">
+                <BrandLogo variant="mark" className="h-8 w-8" priority />
+              </span>
+            )}
           </div>
 
           <nav className="flex-1 overflow-y-auto px-3 pb-2">
             {groups.map((group) => (
               <div key={group.title} className="mb-4 last:mb-0">
-                <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wide text-foreground-muted/70">
+                <p
+                  className={`mb-1 px-3 text-[11px] font-semibold uppercase tracking-wide text-foreground-muted/70 ${yashir}`}
+                >
                   {group.title}
                 </p>
+                {collapsed && (
+                  <span aria-hidden className="mx-3 mb-2 hidden border-t border-border lg:block" />
+                )}
                 <ul className="space-y-1">
                   {group.items.map(({ href, label, icon: Icon, ...rest }) => {
                     const exact = "exact" in rest && rest.exact;
                     const active = exact ? pathname === href : pathname.startsWith(href);
                     return (
-                      <li key={href}>
+                      <li key={href} className="relative">
                         <Link
                           href={href}
                           onClick={() => setOpen(false)}
                           aria-current={active ? "page" : undefined}
-                          className={`flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+                          title={collapsed ? label : undefined}
+                          className={`group flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+                            collapsed ? "lg:justify-center lg:gap-0 lg:px-0" : ""
+                          } ${
                             active
                               ? "bg-brand-tint text-brand-dark"
                               : "text-foreground-muted hover:bg-surface-muted hover:text-foreground"
@@ -148,11 +193,21 @@ export function TeacherShell({
                         >
                           <span
                             aria-hidden
-                            className={`h-5 w-0.5 rounded-full ${active ? "bg-brand" : "bg-transparent"}`}
+                            className={`h-5 w-0.5 rounded-full ${active ? "bg-brand" : "bg-transparent"} ${
+                              collapsed ? "lg:absolute lg:left-0" : ""
+                            }`}
                           />
                           <Icon />
-                          {label}
-                          <NavBadge section={href} />
+                          <span className={`flex min-w-0 flex-1 items-center gap-3 ${yashir}`}>
+                            {label}
+                            <NavBadge section={href} />
+                          </span>
+                          {collapsed && (
+                            <span className="hidden lg:block">
+                              <NavBadge section={href} floating />
+                            </span>
+                          )}
+                          {collapsed && <Tooltip>{label}</Tooltip>}
                         </Link>
                       </li>
                     );
@@ -162,7 +217,7 @@ export function TeacherShell({
             ))}
 
             {/* Bugungi jadval — sidebardagi tez koʻrinish */}
-            <div className="mt-5 border-t border-border pt-4">
+            <div className={`mt-5 border-t border-border pt-4 ${yashir}`}>
               <div className="mb-2 flex items-center justify-between px-3">
                 <p className="text-xs font-medium uppercase tracking-wide text-foreground-muted">
                   Bugungi jadval
@@ -209,11 +264,31 @@ export function TeacherShell({
           </nav>
 
           <div className="border-t border-border p-3">
-            <div className="flex items-center gap-3 rounded-lg px-2 py-2">
+            {/* Yigʻish tugmasi — faqat desktop */}
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              aria-label={collapsed ? "Menyuni yoyish" : "Menyuni yigʻish"}
+              aria-expanded={!collapsed}
+              className={`group relative mb-1 hidden h-9 w-full items-center gap-2 rounded-lg px-3 text-sm text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand lg:flex ${
+                collapsed ? "lg:justify-center lg:px-0" : ""
+              }`}
+            >
+              <CollapseIcon collapsed={collapsed} />
+              <span className={yashir}>Menyuni yigʻish</span>
+              {collapsed && <Tooltip>Menyuni yoyish</Tooltip>}
+            </button>
+
+            <div
+              className={`flex items-center gap-3 rounded-lg px-2 py-2 ${
+                collapsed ? "lg:justify-center lg:px-0" : ""
+              }`}
+              title={collapsed ? me.fullName : undefined}
+            >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-tint text-sm font-semibold text-brand-dark">
                 {me.fullName.charAt(0) || "?"}
               </span>
-              <span className="min-w-0">
+              <span className={`min-w-0 ${yashir}`}>
                 <span className="block truncate text-sm font-medium">
                   {me.shortName || "…"}
                 </span>
@@ -224,18 +299,26 @@ export function TeacherShell({
             </div>
             <Link
               href="/parol"
-              className="mt-1 flex h-9 w-full items-center gap-2 rounded-lg px-3 text-sm text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              title={collapsed ? "Parolni almashtirish" : undefined}
+              className={`group relative mt-1 flex h-9 w-full items-center gap-2 rounded-lg px-3 text-sm text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+                collapsed ? "lg:justify-center lg:px-0" : ""
+              }`}
             >
               <KeyIcon />
-              Parolni almashtirish
+              <span className={yashir}>Parolni almashtirish</span>
+              {collapsed && <Tooltip>Parolni almashtirish</Tooltip>}
             </Link>
             <button
               type="button"
               onClick={() => void logout()}
-              className="mt-1 flex h-9 w-full items-center gap-2 rounded-lg px-3 text-sm text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              title={collapsed ? "Chiqish" : undefined}
+              className={`group relative mt-1 flex h-9 w-full items-center gap-2 rounded-lg px-3 text-sm text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+                collapsed ? "lg:justify-center lg:px-0" : ""
+              }`}
             >
               <LogoutIcon />
-              Chiqish
+              <span className={yashir}>Chiqish</span>
+              {collapsed && <Tooltip>Chiqish</Tooltip>}
             </button>
           </div>
         </div>
@@ -252,7 +335,11 @@ export function TeacherShell({
       )}
 
       {/* --- Kontent --- */}
-      <div className="lg:pl-[260px]">
+      <div
+        className={`${collapsed ? "lg:pl-[76px]" : "lg:pl-[260px]"} ${
+          animOn ? "transition-[padding] duration-200 motion-reduce:transition-none" : ""
+        }`}
+      >
         <header className="sticky top-0 z-20 flex min-h-16 flex-wrap items-center gap-3 border-b border-border bg-surface/95 px-4 py-3 backdrop-blur sm:px-6">
           <button
             type="button"
@@ -362,6 +449,41 @@ function BookIcon() {
     <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
       <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+    </svg>
+  );
+}
+
+/**
+ * Yigʻilgan sidebar uchun tooltip — hover va klaviatura fokusida
+ * ikonka yonida chiqadi. Kutubxona yoʻq, faqat CSS (group-hover).
+ */
+function Tooltip({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      role="tooltip"
+      className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-xs font-medium text-surface opacity-0 shadow-md transition-opacity duration-100 lg:block lg:group-hover:opacity-100 lg:group-focus-visible:opacity-100"
+    >
+      {children}
+    </span>
+  );
+}
+
+function CollapseIcon({ collapsed }: { collapsed: boolean }) {
+  return (
+    <svg
+      aria-hidden
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`transition-transform duration-200 motion-reduce:transition-none ${collapsed ? "rotate-180" : ""}`}
+    >
+      <path d="M11 17l-5-5 5-5" />
+      <path d="M18 17l-5-5 5-5" />
     </svg>
   );
 }
