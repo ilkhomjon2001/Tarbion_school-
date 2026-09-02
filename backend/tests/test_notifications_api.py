@@ -14,7 +14,7 @@ Va oqimning oʻzi: davomat belgilandi → oilada xabar, murojaatga javob
 yozildi → narigi tomonda xabar, oʻqildi → sanoq kamaydi.
 """
 
-from datetime import date, time, timedelta
+from datetime import date, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -22,7 +22,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
-from app.core.timeutil import combine_local, utcnow
+from app.core.timeutil import to_display, utcnow
 from app.models import (
     AcademicYear,
     Guardian,
@@ -61,10 +61,10 @@ async def _user(
 
 @pytest.fixture
 async def world(session: AsyncSession) -> dict[str, object]:
-    """Bitta sinf, ikki oila. Dars BUGUN — DAV-03 oynasi ochiq boʻlsin.
+    """Bitta sinf, ikki oila. Dars endigina tugagan — DAV-03 oynasi ochiq.
 
-    Sana qatʼiy yozilmaydi: 24 soatlik tahrirlash oynasi oʻtib ketsa
-    davomat saqlanmasdi va test kalendarga qarab yiqilardi.
+    Sana ham, soat ham qatʼiy yozilmaydi: ikkalasi ham testni kalendarga
+    va kunning vaqtiga bogʻlab qoʻyardi.
     """
     roles = await _roles(session)
 
@@ -85,7 +85,6 @@ async def world(session: AsyncSession) -> dict[str, object]:
         session, roles, [RoleName.STUDENT.value], "bild.oquvchi", "Aliyev"
     )
 
-    today = utcnow().date()
     year = AcademicYear(
         name="2026-2027", starts_on=date(2026, 8, 24), ends_on=date(2027, 5, 25), is_current=True
     )
@@ -119,15 +118,25 @@ async def world(session: AsyncSession) -> dict[str, object]:
         ]
     )
 
+    # Dars ENDIGINA tugagan boʻlsin — DAV-03 oynasi ochiq turishi kerak.
+    #
+    # Ilgari bu yerda qatʼiy `08:30` turardi va test kuniga bir necha soat
+    # yiqilardi: `utcnow().date()` UTC kunini beradi, `combine_local` esa
+    # uni Toshkent vaqtiga bogʻlaydi, ya'ni 03:30 UTC. Ertalab soat 03:30
+    # UTC gacha (Toshkentda 08:30) «bugungi» dars hali BOSHLANMAGAN
+    # boʻlib chiqardi, `can_teacher_edit` esa boshlanmagan darsni
+    # tahrirlashga yoʻl qoʻymaydi.
+    tugadi = utcnow() - timedelta(minutes=15)
+    boshlandi = tugadi - timedelta(minutes=45)
     lesson = Lesson(
         class_id=school_class.id,
         subject_id=math.id,
         teacher_id=teacher.id,
-        lesson_date=today,
+        lesson_date=to_display(boshlandi).date(),
         period=1,
         room="8-A",
-        starts_at=combine_local(today, time(8, 30)),
-        ends_at=combine_local(today, time(9, 15)),
+        starts_at=boshlandi,
+        ends_at=tugadi,
     )
     session.add(lesson)
 
