@@ -138,6 +138,9 @@ export function TeacherShell({
   // har doim toʻliq koʻrinishda ochiladi.
   const lgW = collapsed ? "lg:w-[76px]" : "lg:w-[260px]";
   const yashir = collapsed ? "lg:hidden" : "";
+  // Nom tashuvchi yozuvlar yigʻilganda VIZUAL yashirinadi, lekin screen
+  // reader uchun qoladi (WCAG 4.1.2 — accessible name yoʻqolmasin).
+  const nomYashir = collapsed ? "lg:sr-only" : "";
 
 
   return (
@@ -150,7 +153,11 @@ export function TeacherShell({
         } ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex h-full flex-col">
-          <div className={collapsed ? "px-6 py-5 lg:flex lg:justify-center lg:px-2" : "px-6 py-5"}>
+          <div
+            className={`flex items-center justify-between gap-2 py-5 pl-6 pr-3 ${
+              collapsed ? "lg:flex-col lg:gap-3 lg:px-2" : ""
+            }`}
+          >
             <span className={yashir}>
               <BrandLogo variant="wordmark" className="h-6 w-auto" subtitle="Ustoz kabineti" priority />
             </span>
@@ -159,9 +166,26 @@ export function TeacherShell({
                 <BrandLogo variant="mark" className="h-8 w-8" priority />
               </span>
             )}
+            {/* Yigʻish tugmasi — sidebar tepasida, faqat desktop */}
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              aria-expanded={!collapsed}
+              className="group relative hidden size-10 shrink-0 items-center justify-center rounded-lg text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand lg:flex"
+            >
+              <CollapseIcon collapsed={collapsed} />
+              <span className="sr-only">
+                {collapsed ? "Menyuni yoyish" : "Menyuni yigʻish"}
+              </span>
+              {collapsed && <Tooltip>Menyuni yoyish</Tooltip>}
+            </button>
           </div>
 
-          <nav className="flex-1 overflow-y-auto px-3 pb-2">
+          <nav
+            className={`flex-1 px-3 pb-2 ${
+              collapsed ? "overflow-y-auto lg:overflow-visible" : "overflow-y-auto"
+            }`}
+          >
             {groups.map((group) => (
               <div key={group.title} className="mb-4 last:mb-0">
                 <p
@@ -182,7 +206,6 @@ export function TeacherShell({
                           href={href}
                           onClick={() => setOpen(false)}
                           aria-current={active ? "page" : undefined}
-                          title={collapsed ? label : undefined}
                           className={`group flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
                             collapsed ? "lg:justify-center lg:gap-0 lg:px-0" : ""
                           } ${
@@ -198,9 +221,13 @@ export function TeacherShell({
                             }`}
                           />
                           <Icon />
-                          <span className={`flex min-w-0 flex-1 items-center gap-3 ${yashir}`}>
-                            {label}
-                            <NavBadge section={href} />
+                          <span className={nomYashir || "flex min-w-0 flex-1 items-center gap-3"}>
+                            {collapsed ? label : (
+                              <>
+                                {label}
+                                <NavBadge section={href} />
+                              </>
+                            )}
                           </span>
                           {collapsed && (
                             <span className="hidden lg:block">
@@ -264,21 +291,6 @@ export function TeacherShell({
           </nav>
 
           <div className="border-t border-border p-3">
-            {/* Yigʻish tugmasi — faqat desktop */}
-            <button
-              type="button"
-              onClick={toggleCollapsed}
-              aria-label={collapsed ? "Menyuni yoyish" : "Menyuni yigʻish"}
-              aria-expanded={!collapsed}
-              className={`group relative mb-1 hidden h-9 w-full items-center gap-2 rounded-lg px-3 text-sm text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand lg:flex ${
-                collapsed ? "lg:justify-center lg:px-0" : ""
-              }`}
-            >
-              <CollapseIcon collapsed={collapsed} />
-              <span className={yashir}>Menyuni yigʻish</span>
-              {collapsed && <Tooltip>Menyuni yoyish</Tooltip>}
-            </button>
-
             <div
               className={`flex items-center gap-3 rounded-lg px-2 py-2 ${
                 collapsed ? "lg:justify-center lg:px-0" : ""
@@ -299,25 +311,23 @@ export function TeacherShell({
             </div>
             <Link
               href="/parol"
-              title={collapsed ? "Parolni almashtirish" : undefined}
               className={`group relative mt-1 flex h-9 w-full items-center gap-2 rounded-lg px-3 text-sm text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
                 collapsed ? "lg:justify-center lg:px-0" : ""
               }`}
             >
               <KeyIcon />
-              <span className={yashir}>Parolni almashtirish</span>
+              <span className={nomYashir}>Parolni almashtirish</span>
               {collapsed && <Tooltip>Parolni almashtirish</Tooltip>}
             </Link>
             <button
               type="button"
               onClick={() => void logout()}
-              title={collapsed ? "Chiqish" : undefined}
               className={`group relative mt-1 flex h-9 w-full items-center gap-2 rounded-lg px-3 text-sm text-foreground-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
                 collapsed ? "lg:justify-center lg:px-0" : ""
               }`}
             >
               <LogoutIcon />
-              <span className={yashir}>Chiqish</span>
+              <span className={nomYashir}>Chiqish</span>
               {collapsed && <Tooltip>Chiqish</Tooltip>}
             </button>
           </div>
