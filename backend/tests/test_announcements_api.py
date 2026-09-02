@@ -353,8 +353,8 @@ async def test_rahbariyat_va_oquv_bolimi_maktabga_beradi(
     """Egasining qarori: maktab e'lonini admin/superadmin/rahbariyat/
     o'quv bo'limi rollari beradi; ustoz esa bera olmaydi."""
     roles = await _roles(session)
-    dir_u = await _user(session, roles, [RoleName.DIRECTOR.value], "an.dir", "Direktorov")
-    oq_u = await _user(session, roles, [RoleName.ACADEMIC.value], "an.oquv", "Oquvboshi")
+    await _user(session, roles, [RoleName.DIRECTOR.value], "an.dir", "Direktorov")
+    await _user(session, roles, [RoleName.ACADEMIC.value], "an.oquv", "Oquvboshi")
     await session.commit()
 
     for login in ("an.dir", "an.oquv"):
