@@ -1,6 +1,7 @@
 """Auth sxemalari (T-004). TZ: AUT-01, AUT-04."""
 
 import uuid
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -108,3 +109,49 @@ class TwoFactorStatusOut(BaseModel):
     #: Rol boʻyicha majburiymi (X-14).
     required: bool
     unused_recovery_codes: int
+
+
+# ─────────────────── Parolni tiklash (T-006, AUT-02) ───────────────────
+
+
+class ResetRequestIn(BaseModel):
+    """Tiklash soʻrovi: telefon YOKI login.
+
+    Ikkalasi ham ixtiyoriy, lekin bittasi boʻlishi shart. Ota-onada
+    telefon bor, xodimda esa faqat login — bitta ekran ikkalasiga ham
+    xizmat qiladi.
+    """
+
+    phone: str | None = Field(default=None, max_length=32)
+    login: str | None = Field(default=None, max_length=64)
+
+
+class ResetRequestOut(BaseModel):
+    """Javob HAR DOIM bir xil — raqam bazada bor-yoʻqligi oshkor boʻlmasin."""
+
+    message: str
+
+
+class ResetConfirmIn(BaseModel):
+    phone: str = Field(min_length=6, max_length=32)
+    code: str = Field(min_length=4, max_length=8)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class ResetQueueRowOut(BaseModel):
+    """Administrator navbatidagi soʻrov. Telefon MASKALANGAN (X-6)."""
+
+    id: uuid.UUID
+    user_id: uuid.UUID
+    full_name: str
+    login: str
+    roles: list[str]
+    phone_masked: str
+    created_at: datetime
+
+
+class ResetResolveOut(BaseModel):
+    """Yangi parol FAQAT shu javobda koʻrinadi — hech qayerda saqlanmaydi."""
+
+    login: str
+    password: str

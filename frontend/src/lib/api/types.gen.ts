@@ -3405,6 +3405,108 @@ export type RefundIn = {
 };
 
 /**
+ * ResetConfirmIn
+ */
+export type ResetConfirmIn = {
+    /**
+     * Phone
+     */
+    phone: string;
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * New Password
+     */
+    new_password: string;
+};
+
+/**
+ * ResetQueueRowOut
+ *
+ * Administrator navbatidagi soʻrov. Telefon MASKALANGAN (X-6).
+ */
+export type ResetQueueRowOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * User Id
+     */
+    user_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Login
+     */
+    login: string;
+    /**
+     * Roles
+     */
+    roles: Array<string>;
+    /**
+     * Phone Masked
+     */
+    phone_masked: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * ResetRequestIn
+ *
+ * Tiklash soʻrovi: telefon YOKI login.
+ *
+ * Ikkalasi ham ixtiyoriy, lekin bittasi boʻlishi shart. Ota-onada
+ * telefon bor, xodimda esa faqat login — bitta ekran ikkalasiga ham
+ * xizmat qiladi.
+ */
+export type ResetRequestIn = {
+    /**
+     * Phone
+     */
+    phone?: string | null;
+    /**
+     * Login
+     */
+    login?: string | null;
+};
+
+/**
+ * ResetRequestOut
+ *
+ * Javob HAR DOIM bir xil — raqam bazada bor-yoʻqligi oshkor boʻlmasin.
+ */
+export type ResetRequestOut = {
+    /**
+     * Message
+     */
+    message: string;
+};
+
+/**
+ * ResetResolveOut
+ *
+ * Yangi parol FAQAT shu javobda koʻrinadi — hech qayerda saqlanmaydi.
+ */
+export type ResetResolveOut = {
+    /**
+     * Login
+     */
+    login: string;
+    /**
+     * Password
+     */
+    password: string;
+};
+
+/**
  * RespondIn
  */
 export type RespondIn = {
@@ -5370,6 +5472,104 @@ export type AuthChangePasswordResponses = {
 };
 
 export type AuthChangePasswordResponse = AuthChangePasswordResponses[keyof AuthChangePasswordResponses];
+
+export type AuthResetRequestData = {
+    body: ResetRequestIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/password-reset/request';
+};
+
+export type AuthResetRequestErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AuthResetRequestError = AuthResetRequestErrors[keyof AuthResetRequestErrors];
+
+export type AuthResetRequestResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResetRequestOut;
+};
+
+export type AuthResetRequestResponse = AuthResetRequestResponses[keyof AuthResetRequestResponses];
+
+export type AuthResetConfirmData = {
+    body: ResetConfirmIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/password-reset/confirm';
+};
+
+export type AuthResetConfirmErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AuthResetConfirmError = AuthResetConfirmErrors[keyof AuthResetConfirmErrors];
+
+export type AuthResetConfirmResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type AuthResetConfirmResponse = AuthResetConfirmResponses[keyof AuthResetConfirmResponses];
+
+export type AuthResetQueueData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/auth/password-reset/queue';
+};
+
+export type AuthResetQueueResponses = {
+    /**
+     * Response Auth Reset Queue
+     *
+     * Successful Response
+     */
+    200: Array<ResetQueueRowOut>;
+};
+
+export type AuthResetQueueResponse = AuthResetQueueResponses[keyof AuthResetQueueResponses];
+
+export type AuthResetResolveData = {
+    body?: never;
+    path: {
+        /**
+         * Request Id
+         */
+        request_id: string;
+    };
+    query?: never;
+    url: '/api/v1/auth/password-reset/queue/{request_id}/resolve';
+};
+
+export type AuthResetResolveErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AuthResetResolveError = AuthResetResolveErrors[keyof AuthResetResolveErrors];
+
+export type AuthResetResolveResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResetResolveOut;
+};
+
+export type AuthResetResolveResponse = AuthResetResolveResponses[keyof AuthResetResolveResponses];
 
 export type AccessSectionsData = {
     body?: never;

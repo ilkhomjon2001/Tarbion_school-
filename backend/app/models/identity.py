@@ -275,3 +275,58 @@ class TwoFactorRecoveryCode(Entity):
     code_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     used_ip: Mapped[str | None] = mapped_column(INET)
+
+
+class ResetChannel(enum.StrEnum):
+    """Tiklash kodi qaysi yoʻl bilan yetkaziladi."""
+
+    #: Telegram orqali 6 raqamli kod (AUT-02).
+    TELEGRAM = "telegram"
+    #: Kanal yoʻq — administrator qoʻlda tiklaydi. Kod yaratilmaydi.
+    MANUAL = "manual"
+
+
+class PasswordResetRequest(Entity):
+    """Parolni tiklash soʻrovi (T-006, AUT-02).
+
+    Bitta jadval ikki yoʻlni ham saqlaydi: oʻz-oʻziga xizmat (Telegram
+    kodi) va administrator qoʻlda tiklashi. Ular bir xil hodisaning
+    ikki yechimi — ajratilsa «bu odam parolini nechta marta tikladi»
+    degan savolga ikki joydan javob izlashga toʻgʻri kelardi.
+
+    Kod XESHLANGAN saqlanadi: baza sizib chiqsa u bilan hisobni
+    egallab boʻlmasin. 6 raqam atigi million variant, shuning uchun
+    `attempts` ham bor — brut kuch bilan topishga urinish yopiladi.
+
+    Ishlatilgan soʻrov oʻchirilmaydi (CLAUDE.md 1-qoida): «qachon va
+    qaysi IP dan tiklandi» savoli javobsiz qolmasin.
+    """
+
+    __tablename__ = "password_reset_requests"
+    __table_args__ = (
+        # Cheklovni tekshirish: shu odamning oxirgi soʻrovi qachon edi.
+        Index("ix_reset_user_created", "user_id", "created_at"),
+        # Administrator navbati: hal qilinmagan qoʻlda tiklashlar.
+        Index("ix_reset_queue", "channel", "resolved_at", "used_at"),
+    )
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    channel: Mapped[str] = mapped_column(String(16), nullable=False)
+
+    #: `manual` da `None` — yuboradigan kanal yoʻq, kod ham yoʻq.
+    code_hash: Mapped[str | None] = mapped_column(String(255))
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    #: Notoʻgʻri kod kiritilgan urinishlar soni.
+    attempts: Mapped[int] = mapped_column(default=0, server_default="0", nullable=False)
+
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    requested_ip: Mapped[str | None] = mapped_column(INET)
+
+    #: Administrator hal qilgan boʻlsa — kim va qachon.
+    resolved_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

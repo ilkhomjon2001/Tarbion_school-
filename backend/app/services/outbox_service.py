@@ -45,9 +45,9 @@ MAX_ATTEMPTS = 3
 BACKOFF = (timedelta(minutes=1), timedelta(minutes=5), timedelta(minutes=30))
 
 #: Foydalanuvchi OʻCHIRA OLMAYDIGAN turlar (Ilova B — «majburiylaridan
-#: tashqari»). Hisob maʼlumotlarini olmaslikni tanlash mumkin emas:
-#: usiz odam tizimga umuman kira olmaydi.
-MAJBURIY_TURLAR = frozenset({"account_created"})
+#: tashqari»). Hisob maʼlumotlari va parolni tiklash kodini olmaslikni
+#: tanlash mumkin emas: usiz odam tizimga umuman kira olmaydi.
+MAJBURIY_TURLAR = frozenset({"account_created", "password_reset"})
 
 
 async def _yoqilganmi(session: AsyncSession, user_id: uuid.UUID, kind: str) -> bool:

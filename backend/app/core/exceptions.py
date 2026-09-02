@@ -109,6 +109,21 @@ class ValidationError(AppError):
     message = "Kiritilgan maʼlumot notoʻgʻri."
 
 
+class InvalidResetCodeError(AppError):
+    """Parolni tiklash kodi notoʻgʻri, eskirgan yoki ishlatilgan (AUT-02).
+
+    `ValidationError` emas: soʻrovning SHAKLI toʻgʻri, rad etilgan
+    narsa — kodning oʻzi. `422` bu farqni yashirardi.
+
+    Xabar ataylab umumiy va har holat uchun bir xil: ajratilsa hujumchi
+    qaysi raqamda faol soʻrov borligini bilib olardi.
+    """
+
+    status_code = status.HTTP_400_BAD_REQUEST
+    code = "notogri_kod"
+    message = "Kod notoʻgʻri yoki muddati oʻtgan."
+
+
 async def app_error_handler(_: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, AppError)
     body: dict[str, object] = {"code": exc.code, "message": exc.message}

@@ -158,10 +158,14 @@ async def create_user(
     return CreatedUser(user=user, initial_password=parol)
 
 
-async def _revoke_all_sessions(
+async def revoke_all_sessions(
     session: AsyncSession, user_id: uuid.UUID, *, reason: str
 ) -> None:
-    """Foydalanuvchining barcha faol refresh tokenlarini bekor qiladi."""
+    """Foydalanuvchining barcha faol refresh tokenlarini bekor qiladi.
+
+    Ochiq nom: parolni tiklash servisi ham shuni chaqiradi. Ikki joyda
+    ikkita nusxa boʻlsa, biri yangilanib ikkinchisi eskirib qolardi.
+    """
     await session.execute(
         update(RefreshToken)
         .where(RefreshToken.user_id == user_id, RefreshToken.revoked_at.is_(None))
@@ -196,7 +200,7 @@ async def change_own_password(
     # AUT-08: parol oʻzgardi — barcha qurilmalardagi sessiya tugatiladi.
     # Aks holda hisob egallanganda parol yangilansa ham oʻgʻirlangan
     # refresh token 30 kungacha ishlashda davom etardi.
-    await _revoke_all_sessions(session, user.id, reason="password_changed")
+    await revoke_all_sessions(session, user.id, reason="password_changed")
 
     # Parolning oʻzi hech qayerda yozilmaydi — `audit_service` maxsus
     # maydonlarni ***`ga almashtiradi, lekin biz ularni umuman yubormaymiz.
@@ -235,7 +239,7 @@ async def reset_password(
 
     # Tiklashda ham eski sessiyalar oʻladi — hisob egallangan boʻlsa,
     # yangi parol berilgach oʻgʻrining tokeni ishlamasligi kerak.
-    await _revoke_all_sessions(session, user.id, reason="password_reset")
+    await revoke_all_sessions(session, user.id, reason="password_reset")
 
     audit_service.record(
         session,

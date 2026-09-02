@@ -171,18 +171,30 @@ bo'yicha so'rovlar shu funksiyadan o'tadi.**
 
 ---
 
-### [ ] T-006 · Parolni tiklash
+### [~] T-006 · Parolni tiklash
 **TZ:** AUT-02
 **Kerak:** T-004, T-017
-**Frontend:** ⬜ yoʻq — Parolni tiklash ekrani yoʻq.
+**Frontend:** ✅ tayyor — `/parolni-tiklash` (telefon yoki login), login
+sahifasidagi «Parolni unutdingizmi?» shu yerga olib boradi. Administrator
+navbati `/admin` bosh sahifasida, soʻrov boʻlgandagina koʻrinadi.
 
 Telefon raqami bo'yicha bir martalik kod (6 raqam, 10 daqiqa) Telegram orqali
 yuboriladi. Bot ulanmagan bo'lsa — administrator qo'lda tiklaydi.
 
+**Backend:** ✅ `password_reset_requests` jadvali, `/api/v1/auth/password-reset/*`
+(request · confirm · queue · resolve). Kod argon2 bilan xeshlanadi, 5 notoʻgʻri
+urinishdan keyin soʻrov yopiladi, tiklashda barcha sessiyalar bekor qilinadi
+(AUT-08). Xabar `notification_outbox` orqali ketadi (T-018) va turi majburiy —
+foydalanuvchi uni oʻchira olmaydi. 18 ta test.
+
+**Qolgan:** hech kimda `telegram_id` yoʻq (T-017 qurilmagan), shuning uchun
+bugun HAMMA soʻrov administrator navbatiga tushadi. Kod yuborish T-017
+ulangan zahoti oʻz-oʻzidan ishlaydi — qoʻshimcha kod kerak emas.
+
 **Tayyor:**
-- [ ] Kod bir marta ishlaydi, ikkinchi urinishda bekor
-- [ ] Kod so'rovi bir raqam uchun 3 daqiqada 1 marta (rate limit)
-- [ ] Test: eski kod bilan tiklash `400`
+- [x] Kod bir marta ishlaydi, ikkinchi urinishda bekor
+- [x] Kod so'rovi bir raqam uchun 3 daqiqada 1 marta (rate limit)
+- [x] Test: eski kod bilan tiklash `400`
 
 ---
 

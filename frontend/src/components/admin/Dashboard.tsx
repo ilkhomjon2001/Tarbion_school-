@@ -12,6 +12,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ResetQueue } from "@/components/admin/ResetQueue";
 import { Card } from "@/components/ui/Card";
 import { StatCardSkeleton } from "@/components/ui/Skeleton";
 import {
@@ -80,6 +81,9 @@ export function AdminDashboard() {
           {error}
         </p>
       )}
+
+      {/* Parolni tiklash navbati — soʻrov boʻlmasa umuman koʻrinmaydi. */}
+      <ResetQueue />
 
       {loading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

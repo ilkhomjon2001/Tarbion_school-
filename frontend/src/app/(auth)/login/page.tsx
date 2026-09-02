@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -274,12 +276,12 @@ export default function LoginPage() {
                   </span>
                 </span>
               </label>
-              <button
-                type="button"
+              <Link
+                href="/parolni-tiklash"
                 className="shrink-0 text-sm text-brand-dark underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
               >
                 Parolni unutdingizmi?
-              </button>
+              </Link>
             </div>
 
             <button
@@ -295,7 +297,7 @@ export default function LoginPage() {
           <p className="mt-6 rounded-lg bg-surface-muted px-3 py-2 text-xs leading-relaxed text-foreground-muted">
             Login va parolni maktab administratori beradi. Login{" "}
             <code className="rounded bg-surface px-1">familiya.ism</code> koʻrinishida.
-            Parolni unutsangiz administratorga murojaat qiling.
+            Parolni unutsangiz «Parolni unutdingizmi?» havolasidan tiklang.
           </p>
         </div>
       </div>

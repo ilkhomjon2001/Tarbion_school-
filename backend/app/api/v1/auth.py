@@ -8,6 +8,8 @@ cookie'da ketadi (DECISIONS.md). JavaScript uni koʻrmaydi, shuning uchun
 XSS bilan oʻgʻirlab boʻlmaydi.
 """
 
+import uuid
+
 from fastapi import APIRouter, Request, Response, status
 from sqlalchemy import select
 
@@ -22,6 +24,11 @@ from app.schemas.auth import (
     LoginIn,
     RecoveryCodesIn,
     RecoveryCodesOut,
+    ResetConfirmIn,
+    ResetQueueRowOut,
+    ResetRequestIn,
+    ResetRequestOut,
+    ResetResolveOut,
     TokenOut,
     TwoFactorDisableIn,
     TwoFactorEnableIn,
@@ -31,7 +38,13 @@ from app.schemas.auth import (
     TwoFactorVerifyIn,
     UserOut,
 )
-from app.services import auth_service, permissions, twofactor_service, user_service
+from app.services import (
+    auth_service,
+    password_reset_service,
+    permissions,
+    twofactor_service,
+    user_service,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -286,3 +299,77 @@ async def change_password(
         new_password=payload.new_password,
         ip=_client_ip(request),
     )
+
+
+# ─────────────────── Parolni tiklash (T-006, AUT-02) ───────────────────
+
+#: Soʻrovga qaytariladigan yagona javob. Raqam topildimi-yoʻqmi —
+#: farqi yoʻq: aks holda begona odam raqamlarni sinab, qaysi oila
+#: maktabda ekanini aniqlab olardi.
+_RESET_JAVOB = (
+    "Agar bu maʼlumot tizimda mavjud boʻlsa, tiklash yoʻriqnomasi yuborildi. "
+    "Xabar kelmasa maktab administratoriga murojaat qiling."
+)
+
+
+@router.post("/password-reset/request", response_model=ResetRequestOut)
+async def reset_request(
+    payload: ResetRequestIn, request: Request, session: SessionDep
+) -> ResetRequestOut:
+    """Tiklash soʻrovi — telefon yoki login boʻyicha. Autentifikatsiyasiz.
+
+    Telefon: Telegram ulangan boʻlsa 6 raqamli kod yuboriladi.
+    Login yoki Telegramsiz hisob: soʻrov administrator navbatiga tushadi.
+    """
+    if payload.phone:
+        await password_reset_service.request_by_phone(
+            session, phone=payload.phone, ip=_client_ip(request)
+        )
+    elif payload.login:
+        await password_reset_service.request_by_login(
+            session, login=payload.login, ip=_client_ip(request)
+        )
+    return ResetRequestOut(message=_RESET_JAVOB)
+
+
+@router.post("/password-reset/confirm", status_code=status.HTTP_204_NO_CONTENT)
+async def reset_confirm(
+    payload: ResetConfirmIn, request: Request, session: SessionDep
+) -> None:
+    """Kod bilan yangi parol oʻrnatiladi. Barcha sessiyalar bekor qilinadi."""
+    await password_reset_service.confirm(
+        session,
+        phone=payload.phone,
+        code=payload.code,
+        new_password=payload.new_password,
+        ip=_client_ip(request),
+    )
+
+
+@router.get("/password-reset/queue", response_model=list[ResetQueueRowOut])
+async def reset_queue(user: CurrentUserDep, session: SessionDep) -> list[ResetQueueRowOut]:
+    """Administrator navbati. Huquq: `users.reset_password`."""
+    rows = await password_reset_service.pending(session, user)
+    return [
+        ResetQueueRowOut(
+            id=r.id,
+            user_id=r.user_id,
+            full_name=r.full_name,
+            login=r.login,
+            roles=r.roles,
+            phone_masked=r.phone_masked,
+            created_at=r.created_at,
+        )
+        for r in rows
+    ]
+
+
+@router.post("/password-reset/queue/{request_id}/resolve", response_model=ResetResolveOut)
+async def reset_resolve(
+    request_id: uuid.UUID, request: Request, user: CurrentUserDep, session: SessionDep
+) -> ResetResolveOut:
+    """Administrator yangi parol beradi. Parol FAQAT shu javobda koʻrinadi."""
+    login, parol = await password_reset_service.resolve(
+        session, actor=user, request_id=request_id, ip=_client_ip(request)
+    )
+    return ResetResolveOut(login=login, password=parol)

@@ -31,7 +31,12 @@ let configured = false;
 /** Bir vaqtda bitta yangilash — parallel 401 lar bitta soʻrovni kutadi. */
 let refreshing: Promise<boolean> | null = null;
 
-function configure(): void {
+/**
+ * Klientni bir marta sozlaydi. Ochiq: parolni tiklash sahifasi
+ * autentifikatsiyasiz chaqiradi, lekin `baseUrl` va cookie sozlamasi
+ * unga ham kerak.
+ */
+export function configureClient(): void {
   if (configured) return;
   configured = true;
 
@@ -73,7 +78,7 @@ export type LoginResult =
   | { kind: "2fa"; challenge: string; recoveryAvailable: boolean };
 
 export async function login(login: string, password: string): Promise<LoginResult> {
-  configure();
+  configureClient();
   const { data, error } = await authLogin({ body: { login, password } });
   if (error || !data) {
     throw new SessionError(messageOf(error), statusOf(error));
@@ -105,7 +110,7 @@ export async function verifyTwoFactor(
   challenge: string,
   code: string,
 ): Promise<UserOut> {
-  configure();
+  configureClient();
   const { data, error } = await authTwoFactorVerify({
     body: { challenge_token: challenge, code },
   });
@@ -124,7 +129,7 @@ export async function verifyTwoFactor(
  * oddiy «kirilmagan» holat, chaqiruvchi login sahifasiga yoʻnaltiradi.
  */
 export async function restore(): Promise<boolean> {
-  configure();
+  configureClient();
   if (refreshing) return refreshing;
 
   refreshing = (async () => {
@@ -145,7 +150,7 @@ export async function restore(): Promise<boolean> {
 }
 
 export async function logout(): Promise<void> {
-  configure();
+  configureClient();
 
   // Mahalliy holat AVVAL tozalanadi. Chaqiruv joylari `logout()` ni
   // kutmasdan `/login` ga oʻtadi — server javobini kutib tursak, oʻsha
@@ -172,7 +177,7 @@ export async function logout(): Promise<void> {
 export async function withAuth<T>(
   call: () => Promise<{ data?: T; error?: unknown; response?: Response }>,
 ): Promise<T> {
-  configure();
+  configureClient();
 
   let result = await call();
   if (result.response?.status === 401 && (await restore())) {
