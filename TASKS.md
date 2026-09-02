@@ -420,7 +420,7 @@ Raqam topilmasa aniq xabar: maktabga murojaat qilish kerakligi.
 
 ---
 
-### [ ] T-018 · Xabarnoma yadrosi (outbox + worker)
+### [~] T-018 · Xabarnoma yadrosi (outbox + worker)
 **TZ:** BOT-02, BOT-06, BOT-07
 **Kerak:** T-017
 **Frontend:** 🟡 qisman — Frontendda eslatma yuborish tugmasi bor (`/admin/tolovlar` → «Eslatma», bot yoki SMS tanlanadi) va yozuv audit jurnaliga tushadi. Outbox jadvali va worker — backend ishi.
@@ -432,9 +432,17 @@ Alohida worker sikli yuboradi, xatoda 3 marta qayta uriniladi (backoff bilan).
 `notification_preferences` — foydalanuvchi qaysi turlarni olishini tanlaydi.
 
 **Tayyor:**
-- [ ] Telegram tushib qolsa xabar yo'qolmaydi, navbatda qoladi
-- [ ] Yetkazilmagan xabarlar admin panelida ko'rinadi va qayta yuborish mumkin
+- [x] Telegram tushib qolsa xabar yo'qolmaydi, navbatda qoladi
+- [~] Yetkazilmagan xabarlar admin panelida ko'rinadi va qayta yuborish mumkin
+  — `outbox_service.retry()` tayyor, admin ekrani qolgan
 - [ ] Bir foydalanuvchiga bir turdagi xabar kuniga bir marta jamlanadi (BOT-07)
+  — TZ da 2-BOSQICH, ataylab kiritilmadi
+
+**Qilingan (72cd416):** `notification_outbox` + `notification_preferences`
+modellari, `outbox_service` (navbat, backoff, bekor qilish, qayta
+yuborish), `app/workers/outbox.py` sikli, Telegram kanali, 17 test.
+**Qolgan:** T-017 (bot ulanishi — `telegram_id` ni toʻldiradi),
+T-019 (hodisalarni navbatga ulash), administrator ekrani.
 
 ---
 
