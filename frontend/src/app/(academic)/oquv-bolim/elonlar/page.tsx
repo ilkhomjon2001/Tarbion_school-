@@ -2,6 +2,6 @@
 
 import { AnnouncementsManager } from "@/components/shared/AnnouncementsManager";
 
-export default function AdminAnnouncementsPage() {
+export default function AcademicAnnouncementsPage() {
   return <AnnouncementsManager />;
 }

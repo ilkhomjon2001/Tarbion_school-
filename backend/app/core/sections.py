@@ -83,6 +83,7 @@ SECTIONS: list[Section] = [
     Section("/rahbar/jadval", "Dars jadvali", "director"),
     Section("/rahbar/sinflar", "Sinflar", "director"),
     Section("/rahbar/murojaatlar", "Murojaatlar", "director"),
+    Section("/rahbar/elonlar", "Eʼlonlar", "director"),
     Section("/rahbar/ustozlar", "Ustozlar", "director"),
     Section("/rahbar/tolovlar", "Toʻlovlar", "director"),
     Section("/rahbar/hisobotlar", "Hisobotlar", "director"),
@@ -92,6 +93,7 @@ SECTIONS: list[Section] = [
     Section("/oquv-bolim/natijalar", "Natijalar", "academic"),
     Section("/oquv-bolim/rejalar", "Reja tasdiqlash", "academic"),
     Section("/oquv-bolim/metodika", "Metodik baza", "academic"),
+    Section("/oquv-bolim/elonlar", "Eʼlonlar", "academic"),
     Section("/oquv-bolim/sifat", "Sifat nazorati", "academic"),
     Section("/oquv-bolim/ustozlar", "Ustozlar faoliyati", "academic"),
     # ── Administrator ──

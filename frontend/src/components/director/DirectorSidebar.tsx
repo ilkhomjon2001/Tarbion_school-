@@ -6,6 +6,7 @@ import { NavBadge } from "@/components/shared/NavBadge";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import {
   BarChartIcon,
+  BellIcon,
   GraduationCapIcon,
   GridIcon,
   CalendarIcon,
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { href: "/rahbar/jadval", label: "Dars jadvali", icon: CalendarIcon },
   { href: "/rahbar/sinflar", label: "Sinflar", icon: UsersIcon },
   { href: "/rahbar/murojaatlar", label: "Murojaatlar", icon: MessageSquareIcon },
+  { href: "/rahbar/elonlar", label: "Eʼlonlar", icon: BellIcon },
   { href: "/rahbar/ustozlar", label: "Ustozlar", icon: GraduationCapIcon },
   { href: "/rahbar/tolovlar", label: "Toʻlovlar", icon: WalletIcon },
   { href: "/rahbar/hisobotlar", label: "Hisobotlar", icon: BarChartIcon },

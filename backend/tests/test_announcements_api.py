@@ -345,3 +345,31 @@ async def test_arxivlash_faqat_muallif_yoki_rahbariyat(
     a = await _token(client, "an.ota.a")
     r = await client.get("/api/v1/announcements", headers=_auth(a))
     assert r.json() == []
+
+
+async def test_rahbariyat_va_oquv_bolimi_maktabga_beradi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Egasining qarori: maktab e'lonini admin/superadmin/rahbariyat/
+    o'quv bo'limi rollari beradi; ustoz esa bera olmaydi."""
+    roles = await _roles(session)
+    dir_u = await _user(session, roles, [RoleName.DIRECTOR.value], "an.dir", "Direktorov")
+    oq_u = await _user(session, roles, [RoleName.ACADEMIC.value], "an.oquv", "Oquvboshi")
+    await session.commit()
+
+    for login in ("an.dir", "an.oquv"):
+        t = await _token(client, login)
+        r = await client.post(
+            "/api/v1/announcements",
+            headers=_auth(t),
+            json={"audience": "school", "title": f"{login} e'loni", "body": "Sinov."},
+        )
+        assert r.status_code == 201, (login, r.text)
+
+    ustoz = await _token(client, "an.ustoz")
+    r = await client.post(
+        "/api/v1/announcements",
+        headers=_auth(ustoz),
+        json={"audience": "school", "title": "Ustoz urinishi", "body": "Bo'lmasin."},
+    )
+    assert r.status_code == 403, r.text

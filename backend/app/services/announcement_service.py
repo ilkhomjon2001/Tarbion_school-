@@ -99,9 +99,13 @@ async def _resolve_target(
     Boʻsh toʻplam = butun maktab (faqat `school` uchun).
     """
     if audience == AnnouncementAudience.SCHOOL.value:
-        # Butun maktabga faqat maxsus huquq bilan — ustoz «hammaga»
-        # eʼlon berolmaydi, aks holda eʼlonlar taxtasi shovqinga aylanadi.
-        await permissions.assert_permission(session, user, Permission.ANNOUNCEMENTS_PUBLISH)
+        # Butun maktabga: admin, superadmin, rahbariyat va oʻquv boʻlimi
+        # (egasining qarori) — yoki alohida berilgan huquq bilan. Ustoz
+        # «hammaga» eʼlon berolmaydi, aks holda taxta shovqinga aylanadi.
+        if not user.is_staff_wide:
+            await permissions.assert_permission(
+                session, user, Permission.ANNOUNCEMENTS_PUBLISH
+            )
         return set()
 
     if audience == AnnouncementAudience.CLASS.value:

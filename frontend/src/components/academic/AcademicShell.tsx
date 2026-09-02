@@ -11,6 +11,7 @@ import { NotificationBell } from "@/components/shared/NotificationBell";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 import {
   BarChartIcon,
+  BellIcon,
   BookOpenIcon,
   CheckSquareIcon,
   ClipboardIcon,
@@ -35,6 +36,7 @@ export const ACADEMIC_NAV = [
   { href: "/oquv-bolim/natijalar", label: "Natijalar", icon: BarChartIcon },
   { href: "/oquv-bolim/rejalar", label: "Reja tasdiqlash", icon: CheckSquareIcon },
   { href: "/oquv-bolim/metodika", label: "Metodik baza", icon: BookOpenIcon },
+  { href: "/oquv-bolim/elonlar", label: "Eʼlonlar", icon: BellIcon },
   { href: "/oquv-bolim/sifat", label: "Sifat nazorati", icon: CheckSquareIcon },
   { href: "/oquv-bolim/ustozlar", label: "Ustozlar faoliyati", icon: GraduationCapIcon },
 ] as const;

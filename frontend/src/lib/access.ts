@@ -77,6 +77,7 @@ export const SECTIONS: Section[] = [
   { id: "/rahbar/jadval", label: "Dars jadvali", cabinet: "director" },
   { id: "/rahbar/sinflar", label: "Sinflar", cabinet: "director" },
   { id: "/rahbar/murojaatlar", label: "Murojaatlar", cabinet: "director" },
+  { id: "/rahbar/elonlar", label: "Eʼlonlar", cabinet: "director" },
   { id: "/rahbar/ustozlar", label: "Ustozlar", cabinet: "director" },
   { id: "/rahbar/tolovlar", label: "Toʻlovlar", cabinet: "director" },
   { id: "/rahbar/hisobotlar", label: "Hisobotlar", cabinet: "director" },
@@ -87,6 +88,7 @@ export const SECTIONS: Section[] = [
   { id: "/oquv-bolim/natijalar", label: "Natijalar", cabinet: "academic" },
   { id: "/oquv-bolim/rejalar", label: "Reja tasdiqlash", cabinet: "academic" },
   { id: "/oquv-bolim/metodika", label: "Metodik baza", cabinet: "academic" },
+  { id: "/oquv-bolim/elonlar", label: "Eʼlonlar", cabinet: "academic" },
   { id: "/oquv-bolim/sifat", label: "Sifat nazorati", cabinet: "academic" },
   { id: "/oquv-bolim/ustozlar", label: "Ustozlar faoliyati", cabinet: "academic" },
 
