@@ -653,7 +653,9 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
   - Frontend: 🟡 qisman — CSV eksport va brauzer orqali PDF bor, Excel yoʻq
 - [ ] T-054 · Ikki bosqichli tasdiqlash — AUT-09
   - Frontend: ⬜ yoʻq
-- [ ] T-055 · Foydalanuvchi va administrator qo'llanmalari — NFR-16
+- [~] T-055 · Foydalanuvchi va administrator qo'llanmalari — NFR-16
+  - Ustoz qoʻllanmasi: ✅ `docs/USTOZ-QOLLANMA.md`
+  - Administrator, ota-ona va oʻquvchi qoʻllanmalari: qolgan
   - Frontend: ⬜ yoʻq
 - [ ] T-056 · Yakuniy qabul va topshirish
   - Frontend: ⬜ yoʻq
