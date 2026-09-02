@@ -35,6 +35,8 @@ export default function RejaPage() {
   const [sinf, setSinf] = useState<string>("");
   const [reja, setReja] = useState<SinfReja | null>(null);
   const [ochiq, setOchiq] = useState<string | null>(null);
+  const [chorak, setChorak] = useState(0);
+  const [qidiruv, setQidiruv] = useState("");
   const [xato, setXato] = useState(false);
 
   useEffect(() => {
@@ -57,6 +59,8 @@ export default function RejaPage() {
     let alive = true;
     setReja(null);
     setOchiq(null);
+    setChorak(0);
+    setQidiruv("");
     fetchSinfReja(yil, sinf)
       .then((r) => alive && setReja(r))
       .catch(() => alive && setXato(true));
@@ -113,16 +117,13 @@ export default function RejaPage() {
                           type="button"
                           onClick={() => setSinf(s)}
                           aria-current={faol ? "true" : undefined}
-                          className={`focus-ring flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                          className={`focus-ring flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
                             faol
                               ? "border-brand bg-brand-tint text-brand-dark"
                               : "border-transparent text-foreground-muted hover:bg-surface-muted hover:text-foreground"
                           }`}
                         >
                           {s}
-                          <span className="num text-xs opacity-60">
-                            {index?.yillar[yil]?.[s]}
-                          </span>
                         </button>
                       </li>
                     );
@@ -143,45 +144,125 @@ export default function RejaPage() {
                 description="Bu sinf uchun dars rejasi hali kiritilmagan."
               />
             ) : (
-              <div className="flex flex-col gap-5">
-                {reja.choraklar.map((chorak, ci) => {
-                  let raqam = reja.choraklar
-                    .slice(0, ci)
-                    .reduce((a, c) => a + c.darslar.length, 0);
-                  return (
-                    <section key={chorak.nom}>
-                      <h2 className="mb-2 flex items-baseline gap-2 text-sm font-bold uppercase tracking-wide text-foreground-muted">
-                        {chorak.nom}
-                        <span className="num text-xs font-medium normal-case tracking-normal">
-                          {chorak.darslar.length} dars
-                        </span>
-                      </h2>
-                      <ol className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
-                        {chorak.darslar.map((dars, di) => {
-                          raqam += 1;
-                          const id = `${chorak.nom}-${di}`;
-                          return (
-                            <DarsQator
-                              key={id}
-                              raqam={raqam}
-                              dars={dars}
-                              ochiq={ochiq === id}
-                              onToggle={() =>
-                                setOchiq((prev) => (prev === id ? null : id))
-                              }
-                            />
-                          );
-                        })}
-                      </ol>
-                    </section>
-                  );
-                })}
+              <div className="flex flex-col gap-3">
+                {/* Chorak tablari + qidiruv: 84 qator bitta lentada emas —
+                    bir vaqtda bitta chorak; qidiruv esa hamma chorakda izlaydi. */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div
+                    role="tablist"
+                    aria-label="Choraklar"
+                    className="flex gap-1 rounded-xl bg-surface-muted p-1"
+                  >
+                    {reja.choraklar.map((c, ci) => (
+                      <button
+                        key={c.nom}
+                        type="button"
+                        role="tab"
+                        aria-selected={qidiruv === "" && chorak === ci}
+                        onClick={() => {
+                          setChorak(ci);
+                          setQidiruv("");
+                          setOchiq(null);
+                        }}
+                        className={`focus-ring h-9 rounded-lg px-3.5 text-sm font-semibold transition-colors ${
+                          qidiruv === "" && chorak === ci
+                            ? "bg-surface text-brand-dark shadow-sm"
+                            : "text-foreground-muted hover:text-foreground"
+                        }`}
+                      >
+                        {c.nom}
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    type="search"
+                    value={qidiruv}
+                    onChange={(e) => setQidiruv(e.target.value)}
+                    placeholder="Mavzu yoki model boʻyicha qidirish"
+                    aria-label="Mavzu qidirish"
+                    className="h-9 min-w-[14rem] flex-1 rounded-lg border border-border bg-surface px-3 text-sm outline-none transition-colors placeholder:text-foreground-muted/60 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
+                  />
+                </div>
+
+                <RejaRoyxati
+                  reja={reja}
+                  chorak={chorak}
+                  qidiruv={qidiruv}
+                  ochiq={ochiq}
+                  setOchiq={setOchiq}
+                />
               </div>
             )}
           </div>
         </div>
       )}
     </TeacherShell>
+  );
+}
+
+function RejaRoyxati({
+  reja,
+  chorak,
+  qidiruv,
+  ochiq,
+  setOchiq,
+}: {
+  reja: SinfReja;
+  chorak: number;
+  qidiruv: string;
+  ochiq: string | null;
+  setOchiq: (f: (prev: string | null) => string | null) => void;
+}) {
+  const soz = qidiruv.trim().toLowerCase();
+  const bloklar = reja.choraklar
+    .map((c, ci) => {
+      const boshi = reja.choraklar
+        .slice(0, ci)
+        .reduce((a, x) => a + x.darslar.length, 0);
+      const rows = c.darslar
+        .map((d, di) => ({ dars: d, raqam: boshi + di + 1, id: `${c.nom}-${di}` }))
+        .filter(
+          (r) =>
+            soz === "" ||
+            r.dars.title.toLowerCase().includes(soz) ||
+            (r.dars.model ?? "").toLowerCase().includes(soz),
+        );
+      return { nom: c.nom, rows };
+    })
+    .filter((b, ci) => (soz === "" ? ci === chorak : b.rows.length > 0));
+
+  if (bloklar.length === 0) {
+    return (
+      <EmptyState
+        title="Hech narsa topilmadi"
+        description={`«${qidiruv}» boʻyicha mavzu yoʻq. Boshqa soʻz bilan qidirib koʻring.`}
+      />
+    );
+  }
+
+  return (
+    <>
+      {bloklar.map((b) => (
+        <section key={b.nom}>
+          {soz !== "" && (
+            <h2 className="mb-1.5 mt-2 text-xs font-bold uppercase tracking-wide text-foreground-muted">
+              {b.nom} · {b.rows.length} ta topildi
+            </h2>
+          )}
+          <ol className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+            {b.rows.map((r) => (
+              <DarsQator
+                key={r.id}
+                raqam={r.raqam}
+                dars={r.dars}
+                ochiq={ochiq === r.id}
+                onToggle={() => setOchiq((prev) => (prev === r.id ? null : r.id))}
+              />
+            ))}
+          </ol>
+        </section>
+      ))}
+    </>
   );
 }
 
@@ -202,6 +283,10 @@ function DarsQator({
     label: dars.type,
     cls: "bg-surface-muted text-foreground-muted",
   };
+  // Nazorat/loyiha sarlavhalarida tafsilot « — » dan keyin keladi — uni
+  // ikkinchi (muted) qatorga tushiramiz, sarlavha kesilib qolmasin.
+  const [sarlavha, ...tafsilotQismi] = dars.title.split(" — ");
+  const tafsilot = tafsilotQismi.join(" — ") || null;
 
   return (
     <li className="border-b border-border last:border-0">
@@ -217,12 +302,10 @@ function DarsQator({
           {raqam}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium text-foreground">
-            {dars.title}
-          </span>
-          {dars.model && (
-            <span className="block truncate text-xs text-foreground-muted">
-              Model: {dars.model}
+          <span className="block text-sm font-medium text-foreground">{sarlavha}</span>
+          {(tafsilot ?? dars.model) && (
+            <span className="block text-xs text-foreground-muted">
+              {tafsilot ?? `Model: ${dars.model}`}
             </span>
           )}
         </span>
