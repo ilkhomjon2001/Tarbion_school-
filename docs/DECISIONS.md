@@ -818,3 +818,17 @@ yuklaydi. Oqim: sayt Excel shablon beradi → toʻldiriladi → import
 kutubxonasi qoʻshildi (import + shablon + eksport — boshqa yoʻl bilan
 xunuk boʻlardi). Robototexnika bazasi statik qoladi; ustoz kabinetida
 fan tanlagich ikkala manbani birlashtiradi.
+
+## 2026-09-02 · Majburiy parol almashtirish oʻchirildi (qabul qilingan xatar)
+
+Egasining qarori: barcha rollar uchun berilgan boshlangʻich parol
+doimiy — birinchi kirishda majburiy almashtirish YOʻQ (maktabda parol
+tarqatish jarayonini soddalashtirish uchun). Xavfsizlik tekshiruvi buni
+nazorat regressiyasi deb belgiladi — xatar ongli qabul qilindi.
+
+Yumshatuvchi omillar: login-bloklash (5 xato → 15 daqiqa; IP boʻyicha
+15 turli login), staff roʻyxati oddiy foydalanuvchiga yopiq (loginlar
+sizmaydi), ixtiyoriy almashtirish /parol sahifasida ochiq. Tavsiya:
+xodimlarga parolni almashtirish ogʻzaki tavsiya qilinsin; kelgusi
+importlarda boshlangʻich parolni kuchliroq formatga oʻtkazish mumkin
+(egasi xohlasa).
