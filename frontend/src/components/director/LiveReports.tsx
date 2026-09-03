@@ -3,11 +3,9 @@
 /**
  * Jonli hisobot — barcha raqam BAZADAN.
  *
- * Nega alohida sahifa: qolgan rahbariyat sahifalari (davomat, baho,
- * imtihon) hali mock ustida ishlaydi va ular maktab rahbariga
- * koʻrsatiladi — hammasini bir kechada koʻchirish prototipni ishlamay
- * qoldirardi. Sahifalar bittalab koʻchiriladi; murojaatlar allaqachon
- * oʻtdi (`components/shared/LiveAppeals.tsx`).
+ * Nega alohida sahifa: bir vaqtlar qolgan rahbariyat sahifalari mock
+ * ustida ishlardi va ular bittalab koʻchirildi. Hozir hammasi bazada;
+ * bu sahifa esa bitta ekranda umumiy kesim beradi.
  *
  * Sessiya (kirish, tokenni tiklash, 401) shu yerda emas —
  * `components/shared/LiveSession.tsx` da, barcha kabinetlar uchun bir xil.
@@ -17,8 +15,8 @@
  * qilmaslik qarori qabul qilingan, brauzer toʻgʻridan-toʻgʻri API ga
  * murojaat qiladi.
  *
- * Moliya koʻrsatkichlari bu yerda YOʻQ: bazada `payments` jadvali hali
- * yaratilmagan. Nol koʻrsatish «qarzdorlik yoʻq» degan yolgʻon boʻlardi.
+ * Moliya bu yerda YOʻQ — u `/rahbar/tolovlar` da, kanallar kesimi va
+ * shartnoma qamrovi bilan birga.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -190,10 +188,17 @@ function Reports() {
                       <td className="num px-3 py-2.5 text-foreground-muted">
                         {row.student_count}
                       </td>
-                      <td className="px-3 py-2.5">
-                        <span className={`num ${toneOf(row.attendance_percent)}`}>
+                      <td className="px-3 py-2.5 align-top">
+                        <span
+                          className={`num block ${toneOf(row.attendance_percent, row.attendance_records)}`}
+                        >
                           {row.attendance_percent}%
                         </span>
+                        {row.attendance_records === 0 && (
+                          <span className="block text-xs leading-tight text-foreground-muted">
+                            Hali belgilanmagan
+                          </span>
+                        )}
                       </td>
                       <td className="num px-3 py-2.5 text-foreground-muted">
                         {row.average_grade}
@@ -301,7 +306,15 @@ function toPoints(trend: DirectorOverviewOut["attendance_trend"]): TrendPoint[] 
   }));
 }
 
-function toneOf(percent: number): string {
+/**
+ * Foiz rangi. `records` — foiz nechta yozuvdan chiqqani.
+ *
+ * Yozuv boʻlmasa rang NEYTRAL: «0%» qizil boʻlib turgani rahbarga
+ * «sinf darsga kelmayapti» deb koʻrinardi, aslida hali davomat
+ * belgilanmagan edi.
+ */
+function toneOf(percent: number, records: number): string {
+  if (records === 0) return "text-foreground-muted";
   if (percent >= 90) return "text-success";
   if (percent >= 80) return "text-warning";
   return "text-danger";
