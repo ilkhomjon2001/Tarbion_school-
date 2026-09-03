@@ -93,7 +93,11 @@ export default function ReportsPage() {
           <Stat
             label="Davomat foizi"
             value={overview ? `${overview.attendance_percent}%` : "—"}
-            note={overview ? `${overview.lessons_conducted.toLocaleString("uz-Latn")} ta dars` : "Maʼlumot kelmadi"}
+            note={
+              overview
+                ? `${overview.lessons_with_attendance.toLocaleString("uz-Latn")}/${overview.lessons_planned.toLocaleString("uz-Latn")} darsda belgilangan`
+                : "Maʼlumot kelmadi"
+            }
           />
           <Stat
             label="Oʻrtacha baho"

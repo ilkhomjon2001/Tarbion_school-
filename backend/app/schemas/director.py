@@ -25,7 +25,14 @@ class DirectorOverviewOut(BaseModel):
     # Davr boʻyicha davomat foizi — kelgan (present + late) ulushi.
     attendance_percent: float
     average_grade: float
-    lessons_conducted: int
+    #: Jadval boʻyicha darslar soni — «oʻtilgan» EMAS.
+    lessons_planned: int
+    #: Shulardan davomat belgilangani. Dars oʻtilganining yagona izi
+    #: shu: jadvalda turgani dars boʻlganini bildirmaydi.
+    lessons_with_attendance: int
+    #: Davomat foizi nechta yozuvdan hisoblangani — kichik sonda foiz
+    #: tasodifiy chiqadi va buni interfeys ochiq aytadi.
+    attendance_records: int
     attendance_trend: list[AttendancePoint]
 
 
@@ -45,7 +52,8 @@ class TeacherRowOut(BaseModel):
     subjects: list[str]
     homeroom_class_name: str | None
     weekly_hours: int
-    lessons_conducted: int
+    #: Jadval boʻyicha BUGUNGACHA boʻlishi kerak boʻlgan darslar.
+    lessons_planned: int
     average_grade_given: float
     grades_given: int
 
@@ -57,5 +65,5 @@ class TeacherRowOut(BaseModel):
     exams_held: int
     homework_given: int
     #: Ustoz darslaridan nechtasida davomat belgilangan.
-    #: `lessons_conducted` bilan birga intizom koʻrsatkichi.
+    #: `lessons_planned` bilan birga intizom koʻrsatkichi.
     lessons_with_attendance: int

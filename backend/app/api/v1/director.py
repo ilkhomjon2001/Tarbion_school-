@@ -55,7 +55,9 @@ async def overview(session: SessionDep, days: PeriodDays = 30) -> DirectorOvervi
         total_classes=data.total_classes,
         attendance_percent=data.attendance_percent,
         average_grade=data.average_grade,
-        lessons_conducted=data.lessons_conducted,
+        lessons_planned=data.lessons_planned,
+        lessons_with_attendance=data.lessons_with_attendance,
+        attendance_records=data.attendance_records,
         attendance_trend=[
             AttendancePoint(date=day.isoformat(), percent=pct) for day, pct in data.trend
         ],
@@ -89,7 +91,7 @@ async def teachers(session: SessionDep) -> list[TeacherRowOut]:
             subjects=r.subjects,
             homeroom_class_name=r.homeroom_class_name,
             weekly_hours=r.weekly_hours,
-            lessons_conducted=r.lessons_conducted,
+            lessons_planned=r.lessons_planned,
             average_grade_given=r.average_grade_given,
             grades_given=r.grades_given,
             exams_held=r.exams_held,

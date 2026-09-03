@@ -1460,9 +1460,17 @@ export type DirectorOverviewOut = {
      */
     average_grade: number;
     /**
-     * Lessons Conducted
+     * Lessons Planned
      */
-    lessons_conducted: number;
+    lessons_planned: number;
+    /**
+     * Lessons With Attendance
+     */
+    lessons_with_attendance: number;
+    /**
+     * Attendance Records
+     */
+    attendance_records: number;
     /**
      * Attendance Trend
      */
@@ -5055,9 +5063,9 @@ export type TeacherRowOut = {
      */
     weekly_hours: number;
     /**
-     * Lessons Conducted
+     * Lessons Planned
      */
-    lessons_conducted: number;
+    lessons_planned: number;
     /**
      * Average Grade Given
      */

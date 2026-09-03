@@ -121,20 +121,17 @@ export default function TeacherProfilePage() {
           zeroNote="Jadvalda darsi yoʻq"
         />
         <Stat
-          label="Oʻtilgan darslar"
-          value={teacher.lessons_conducted}
-          // Ilgari bu yerda «Davomat belgilangan darslar» deb yozilgan
-          // edi — bu NOTOʻGʻRI: sanoq jadvaldagi hamma darsni oladi.
-          // Davomat endi alohida katakda.
-          note="Jadval boʻyicha"
-          zeroNote="Hali dars oʻtilmagan"
+          label="Jadvaldagi darslar"
+          value={teacher.lessons_planned}
+          note="Bugungacha, jadval boʻyicha"
+          zeroNote="Bugungacha darsi boʻlmagan"
         />
         <Stat
-          label="Davomat belgilangan"
+          label="Oʻtilgan darslar"
           value={teacher.lessons_with_attendance}
           note={
-            teacher.lessons_conducted > 0
-              ? `${teacher.lessons_conducted} darsdan`
+            teacher.lessons_planned > 0
+              ? `Jadvaldagi ${teacher.lessons_planned} tadan`
               : undefined
           }
           zeroNote="Hali davomat belgilanmagan"

@@ -147,7 +147,7 @@ function Reports() {
             <Stat
               label="Davomat"
               value={`${data.overview.attendance_percent}%`}
-              hint={`${data.overview.lessons_conducted} ta dars boʻyicha`}
+              hint={`${data.overview.lessons_with_attendance}/${data.overview.lessons_planned} darsda belgilangan`}
             />
             <Stat
               label="Oʻrtacha baho"
@@ -218,7 +218,7 @@ function Reports() {
                   <tr className="border-b border-border bg-surface-muted/60 text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
                     <th className="px-3 py-3">Ustoz</th>
                     <th className="px-3 py-3">Haftalik soat</th>
-                    <th className="px-3 py-3">Oʻtilgan dars</th>
+                    <th className="px-3 py-3">Jadvaldagi dars</th>
                     <th className="px-3 py-3">Qoʻyilgan baho</th>
                     <th className="px-3 py-3">Rahbarlik</th>
                   </tr>
@@ -244,7 +244,7 @@ function Reports() {
                         )}
                       </td>
                       <td className="num px-3 py-2.5 text-foreground-muted">
-                        {row.lessons_conducted}
+                        {row.lessons_planned}
                       </td>
                       <td className="px-3 py-2.5 text-foreground-muted">
                         <span className="num">{row.grades_given}</span> ta · oʻrtacha{" "}

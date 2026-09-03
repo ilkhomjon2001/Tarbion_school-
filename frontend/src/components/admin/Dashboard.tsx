@@ -187,7 +187,9 @@ export function AdminDashboard() {
                 {overview.attendance_percent}%
               </p>
               <p className="mt-1 text-sm text-foreground-muted">
-                {overview.lessons_conducted.toLocaleString("uz-Latn")} ta dars oʻtildi ·{" "}
+                {overview.lessons_with_attendance.toLocaleString("uz-Latn")} ta darsda
+                davomat belgilandi (jadvalda{" "}
+                {overview.lessons_planned.toLocaleString("uz-Latn")} ta) ·{" "}
                 {overview.total_teachers} ustoz
               </p>
             </>

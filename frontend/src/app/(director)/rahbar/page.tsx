@@ -55,6 +55,13 @@ export default function DirectorHomePage() {
     void load(30);
   }, [load]);
 
+  // Davomat qamrovi: jadvaldagi darslarning necha foizida davomat
+  // belgilangan. Foizning ishonchliligi shunga bogʻliq.
+  const qamrov =
+    overview && overview.lessons_planned > 0
+      ? Math.round((overview.lessons_with_attendance / overview.lessons_planned) * 100)
+      : 0;
+
   return (
     <div className="flex flex-col gap-5 p-4 md:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -113,15 +120,23 @@ export default function DirectorHomePage() {
             icon={<GraduationCapIcon className="h-5 w-5" />}
             label="Jami oʻqituvchilar"
             value={String(overview.total_teachers)}
-            note="Barcha fanlar boʻyicha"
+            note={`Oxirgi ${days} kun ichida darsi bor`}
             href="/rahbar/ustozlar"
           />
+          {/* Foiz nechta yozuvdan chiqqani KOʻRINSIN: 48 ta yozuvdan
+              hisoblangan «92%» bilan 10 000 tadan hisoblangani bir xil
+              ishonch bermaydi, ekranda esa ikkalasi bir xil koʻrinardi. */}
           <KpiCard
             index={2}
             icon={<UsersIcon className="h-5 w-5" />}
             label="Davomat foizi"
             value={`${overview.attendance_percent}%`}
-            note={`Oxirgi ${days} kun`}
+            note={
+              overview.attendance_records === 0
+                ? "Hali davomat belgilanmagan"
+                : `${overview.attendance_records.toLocaleString("uz-Latn")} ta yozuv · ${qamrov}% darsda belgilangan`
+            }
+            noteTone={qamrov < 50 ? "warning" : "neutral"}
             href="/rahbar/sinflar"
           />
           <KpiCard
@@ -131,12 +146,16 @@ export default function DirectorHomePage() {
             value={overview.average_grade > 0 ? overview.average_grade.toFixed(1) : "—"}
             note="Barcha sinflar boʻyicha"
           />
+          {/* Ilgari bu katak jadvaldagi darslarni sanab «Oʻtilgan
+              darslar» deb koʻrsatardi. Jadvalda turgani dars
+              oʻtilganini bildirmaydi — oʻtilganining yagona izi
+              davomat belgilanishi. Endi ikkala son ham koʻrinadi. */}
           <KpiCard
             index={4}
             icon={<CheckSquareIcon className="h-5 w-5" />}
             label="Oʻtilgan darslar"
-            value={overview.lessons_conducted.toLocaleString("uz-Latn")}
-            note={`Oxirgi ${days} kun`}
+            value={overview.lessons_with_attendance.toLocaleString("uz-Latn")}
+            note={`Jadvalda ${overview.lessons_planned.toLocaleString("uz-Latn")} ta · oxirgi ${days} kun`}
           />
           <KpiCard
             index={5}

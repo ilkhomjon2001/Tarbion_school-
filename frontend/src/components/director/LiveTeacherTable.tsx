@@ -56,7 +56,9 @@ export function LiveTeacherTable() {
         <div>
           <h1 className="text-h2 font-bold text-foreground">Ustozlar roʻyxati</h1>
           <p className="text-sm text-foreground-muted">
-            Yuklama, davomat intizomi, baho, imtihon va uy vazifasi — bazadan
+            Yuklama, oʻtilgan dars, baho, imtihon va uy vazifasi — bazadan.
+            «Oʻtilgan» — davomat belgilangan dars: jadvalda turgani
+            darsning boʻlganini bildirmaydi.
           </p>
         </div>
         <select
@@ -83,8 +85,8 @@ export function LiveTeacherTable() {
                 <th className="px-4 py-3">Fan(lar)</th>
                 <th className="px-4 py-3">Rahbarlik sinfi</th>
                 <th className="px-4 py-3 text-right">Yuklama (soat/hafta)</th>
+                <th className="px-4 py-3 text-right">Jadvaldagi dars</th>
                 <th className="px-4 py-3 text-right">Oʻtilgan dars</th>
-                <th className="px-4 py-3 text-right">Davomat belgilangan</th>
                 <th className="px-4 py-3 text-right">Oʻrtacha baho</th>
                 <th className="px-4 py-3 text-right">Imtihon</th>
                 <th className="px-4 py-3 text-right">Uy vazifasi</th>
@@ -118,14 +120,15 @@ export function LiveTeacherTable() {
                     zeroNote="Jadvalda darsi yoʻq"
                   />
                   <Kpi
-                    value={teacher.lessons_conducted}
-                    zeroNote="Hali dars oʻtilmagan"
+                    value={teacher.lessons_planned}
+                    note="Bugungacha"
+                    zeroNote="Bugungacha darsi boʻlmagan"
                   />
                   <Kpi
                     value={teacher.lessons_with_attendance}
                     note={
-                      teacher.lessons_conducted > 0
-                        ? `${teacher.lessons_conducted} darsdan`
+                      teacher.lessons_planned > 0
+                        ? `${teacher.lessons_planned} tadan`
                         : undefined
                     }
                     zeroNote="Hali davomat belgilanmagan"

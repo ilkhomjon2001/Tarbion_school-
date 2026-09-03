@@ -68,7 +68,16 @@ class OverviewData:
     total_classes: int
     attendance_percent: float
     average_grade: float
-    lessons_conducted: int
+    #: Jadval boʻyicha davr ichidagi darslar. «Oʻtilgan» EMAS: jadvalda
+    #: turgani dars oʻtilganini bildirmaydi.
+    lessons_planned: int
+    #: Shulardan nechtasida davomat belgilangan — dars haqiqatan
+    #: oʻtilganining yagona izi.
+    lessons_with_attendance: int
+    #: Davomat foizi nechta yozuvdan hisoblangani. Oʻquv yili boshida
+    #: bu son juda kichik boʻladi va foiz tasodifiy chiqadi — rahbar
+    #: buni koʻrib turishi kerak.
+    attendance_records: int
     #: (sana, foiz) — trend nuqtalari.
     trend: list[tuple[date, float]]
 
@@ -87,16 +96,37 @@ async def overview(session: AsyncSession, *, days: int = 30) -> OverviewData:
     # Ustoz — darsi bor FAOL xodim. Rol boʻyicha sanash notoʻgʻri boʻlardi:
     # yuklamasi yoʻq xodim ham «ustoz» roli bilan yuradi; ishdan ketgan
     # (arxivlangan) ustoz esa sanalmaydi.
+    # Ustoz — DAVR ICHIDA darsi bor faol xodim. Davr filtri ilgari yoʻq
+    # edi: rahbar «7 kun» ni tanlaydi, qolgan hamma raqam qisqaradi,
+    # ustozlar soni esa butun yil boʻyicha qotib turardi.
     total_teachers = await session.scalar(
         select(func.count(distinct(Lesson.teacher_id)))
         .select_from(Lesson)
         .join(User, User.id == Lesson.teacher_id)
-        .where(Lesson.is_archived.is_(False), User.is_archived.is_(False))
+        .where(
+            Lesson.is_archived.is_(False),
+            User.is_archived.is_(False),
+            Lesson.lesson_date.between(since, bugun),
+        )
     )
-    lessons_conducted = await session.scalar(
+    lessons_planned = await session.scalar(
         select(func.count())
         .select_from(Lesson)
         .where(Lesson.is_archived.is_(False), Lesson.lesson_date.between(since, bugun))
+    )
+    # Davomat belgilangan darslar — «oʻtilgan dars» ning yagona izi.
+    # DISTINCT: bitta darsda 25 ta yozuv boʻladi.
+    lessons_with_attendance = await session.scalar(
+        select(func.count(distinct(Lesson.id)))
+        .select_from(AttendanceRecord)
+        .join(Lesson, Lesson.id == AttendanceRecord.lesson_id)
+        .where(*_ATTENDANCE_CLEAN, Lesson.lesson_date.between(since, bugun))
+    )
+    attendance_records = await session.scalar(
+        select(func.count())
+        .select_from(AttendanceRecord)
+        .join(Lesson, Lesson.id == AttendanceRecord.lesson_id)
+        .where(*_ATTENDANCE_CLEAN, Lesson.lesson_date.between(since, bugun))
     )
     attendance_percent = await session.scalar(
         select(_attendance_percent)
@@ -139,7 +169,9 @@ async def overview(session: AsyncSession, *, days: int = 30) -> OverviewData:
         total_classes=total_classes or 0,
         attendance_percent=float(attendance_percent or 0),
         average_grade=float(average_grade or 0),
-        lessons_conducted=lessons_conducted or 0,
+        lessons_planned=lessons_planned or 0,
+        lessons_with_attendance=lessons_with_attendance or 0,
+        attendance_records=attendance_records or 0,
         trend=[(day, float(pct or 0)) for day, pct in trend_rows],
     )
 
@@ -229,7 +261,10 @@ class TeacherRowData:
     subjects: list[str]
     homeroom_class_name: str | None
     weekly_hours: int
-    lessons_conducted: int
+    #: Jadval boʻyicha BUGUNGACHA boʻlishi kerak boʻlgan darslar.
+    #: Kelajakdagi darslar kirmaydi — ular butun yilga oldindan
+    #: generatsiya qilinadi va sanoqni bir necha barobar oshirardi.
+    lessons_planned: int
     average_grade_given: float
     grades_given: int
 
@@ -253,8 +288,17 @@ async def teachers(session: AsyncSession) -> list[TeacherRowData]:
     davomida oʻzgargan boʻlsa, eski slotlar yuklamani oshirib
     koʻrsatmaydi (jadval sahifasidagi `teacher_load` bilan bir manba).
     """
+    bugun = local_today()
+    # Ikki sanoq bitta soʻrovda: `any` — ustozni roʻyxatga kiritish
+    # uchun (jadvalida dars bormi), `past` — koʻrsatkich uchun. Agar
+    # roʻyxat ham faqat oʻtgan darslarga qurilsa, dushanbadan boshlanadigan
+    # ustoz yakshanba kuni roʻyxatdan yoʻqolardi.
     lessons = (
-        select(Lesson.teacher_id.label("teacher_id"), func.count().label("conducted"))
+        select(
+            Lesson.teacher_id.label("teacher_id"),
+            func.count().label("any_count"),
+            func.count().filter(Lesson.lesson_date <= bugun).label("past"),
+        )
         .where(Lesson.is_archived.is_(False))
         .group_by(Lesson.teacher_id)
         .subquery()
@@ -332,7 +376,7 @@ async def teachers(session: AsyncSession) -> list[TeacherRowData]:
                 subjects.c.names,
                 homeroom.c.class_name,
                 func.coalesce(weekly.c.weekly, 0),
-                func.coalesce(lessons.c.conducted, 0),
+                func.coalesce(lessons.c.past, 0),
                 func.round(cast(func.coalesce(given.c.avg_value, 0.0), Numeric), 2),
                 func.coalesce(given.c.grade_count, 0),
                 func.coalesce(exams.c.cnt, 0),
@@ -364,7 +408,7 @@ async def teachers(session: AsyncSession) -> list[TeacherRowData]:
             subject_names,
             class_name,
             haftalik,
-            conducted,
+            otgan,
             avg_value,
             grade_count,
             exam_count,
@@ -379,7 +423,7 @@ async def teachers(session: AsyncSession) -> list[TeacherRowData]:
                 subjects=sorted(subject_names or []),
                 homeroom_class_name=class_name,
                 weekly_hours=haftalik or 0,
-                lessons_conducted=conducted or 0,
+                lessons_planned=otgan or 0,
                 average_grade_given=float(avg_value or 0),
                 grades_given=grade_count or 0,
                 exams_held=exam_count or 0,

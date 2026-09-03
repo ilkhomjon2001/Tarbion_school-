@@ -73,7 +73,7 @@ export function AcademicTeachersBoard() {
                   <th className="px-3 py-3">Fanlari</th>
                   <th className="px-3 py-3">Sinf rahbari</th>
                   <th className="px-3 py-3 text-right">Haftalik soat</th>
-                  <th className="px-3 py-3 text-right">Oʻtkazgan darsi</th>
+                  <th className="px-3 py-3 text-right">Jadvaldagi darsi</th>
                   <th className="px-3 py-3 text-right">Qoʻygan bahosi</th>
                 </tr>
               </thead>
@@ -94,7 +94,7 @@ export function AcademicTeachersBoard() {
                       {t.weekly_hours}
                     </td>
                     <td className="num px-3 py-2.5 text-right text-foreground-muted">
-                      {t.lessons_conducted}
+                      {t.lessons_planned}
                     </td>
                     <td className="num px-3 py-2.5 text-right text-foreground-muted">
                       {t.grades_given}

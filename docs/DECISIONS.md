@@ -910,3 +910,30 @@ oʻtilmagan mavzuga vazifa berilmaydi. Sarlavha maydoni qoldi —
 
 Muqobil — `lesson_id` ni majburiy qilish — rad etildi: eski vazifalar
 bogʻlanmagan va ular roʻyxatdan tushib qolardi (1-domen qoidasi).
+
+## 2026-09-03 · `lessons_conducted` → `lessons_planned`
+
+Maydon jadvaldagi darslarni sanardi, nomi va ekrandagi yorligʻi esa
+«oʻtilgan» derdi. Farq katta: jadval butun oʻquv yiliga oldindan
+generatsiya qilinadi, shu sabab ustozning «oʻtilgan darslari» ichida
+KELAJAKDAGI darslar ham bor edi.
+
+Endi ikkita alohida son: `lessons_planned` (jadval boʻyicha, bugungacha)
+va `lessons_with_attendance` (davomat belgilangan). Ikkinchisi —
+darsning haqiqatan oʻtilganini koʻrsatadigan yagona iz, chunki davomat
+belgilanmasa ota-onaga xabar ham ketmaydi.
+
+Ustozlar roʻyxati baribir BUTUN jadvaldan quriladi (INNER JOIN oʻzgarmadi):
+aks holda dushanbadan boshlanadigan ustoz yakshanba kuni roʻyxatdan
+yoʻqolardi.
+
+## 2026-09-03 · Davomat foizi yonida yozuvlar soni koʻrsatiladi
+
+48 ta yozuvdan hisoblangan «92%» bilan 10 000 tadan hisoblangani
+ekranda bir xil koʻrinardi. Endi katak tagida yozuvlar soni va qamrov
+(jadvaldagi darslarning necha foizida davomat belgilangan) turadi,
+qamrov 50% dan past boʻlsa izoh ogohlantirish rangida.
+
+Muqobil — qamrov past boʻlsa foizni umuman koʻrsatmaslik — rad etildi:
+rahbar «tizim ishlamayapti» deb oʻylardi. Raqamni koʻrsatib, ishonch
+darajasini yoniga yozish toʻgʻriroq.

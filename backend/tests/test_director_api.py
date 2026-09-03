@@ -186,7 +186,7 @@ async def test_overview_counts_come_from_database(
     assert body["total_students"] == 2
     assert body["total_classes"] == 1
     assert body["total_teachers"] == 1
-    assert body["lessons_conducted"] == 1
+    assert body["lessons_planned"] == 1
     # Ikki yozuvdan biri «keldi» → 50%.
     assert body["attendance_percent"] == 50.0
     assert body["average_grade"] == 4.0
@@ -221,10 +221,10 @@ async def test_overview_period_window_excludes_older_lessons(
     token = await _token(client, "sinov.director")
 
     wide = await client.get("/api/v1/director/overview", params={"days": 60}, headers=_auth(token))
-    assert wide.json()["lessons_conducted"] == 2
+    assert wide.json()["lessons_planned"] == 2
 
     narrow = await client.get("/api/v1/director/overview", params={"days": 7}, headers=_auth(token))
-    assert narrow.json()["lessons_conducted"] == 1
+    assert narrow.json()["lessons_planned"] == 1
 
 
 async def test_classes_row_has_attendance_and_homeroom(
@@ -253,7 +253,7 @@ async def test_teachers_lists_only_staff_with_lessons(
     rows = resp.json()
     assert len(rows) == 1
     assert rows[0]["homeroom_class_name"] == "8-A"
-    assert rows[0]["lessons_conducted"] == 1
+    assert rows[0]["lessons_planned"] == 1
     assert rows[0]["grades_given"] == 1
     assert rows[0]["average_grade_given"] == 4.0
 
@@ -321,7 +321,7 @@ async def test_teachers_faoliyat_korsatkichlari(
     assert ustoz["homework_given"] == 0
 
     # Bitta dars, oʻsha darsda davomat belgilangan.
-    assert ustoz["lessons_conducted"] == 1
+    assert ustoz["lessons_planned"] == 1
     assert ustoz["lessons_with_attendance"] == 1
 
 
@@ -368,3 +368,110 @@ async def test_ortacha_ball_davr_ichida(
 
     assert qisqa["average_grade"] == 0.0, "eski baho qisqa davrga tushmasligi kerak"
     assert uzun["average_grade"] == 4.0, "uzun davrda esa hisobga olinsin"
+
+
+# ──────── «Oʻtilgan dars» va davr qamrovi (loyiha egasining soʻrovi) ────────
+#
+# Uchta jimgina xato tuzatildi (2026-09-03):
+#   · ustozlar soni davr filtriga boʻysunmasdi;
+#   · ustozning «oʻtilgan darslari» butun yilga oldindan generatsiya
+#     qilingan darslarni, jumladan KELAJAKDAGILARNI ham sanardi;
+#   · davomat foizi nechta yozuvdan hisoblangani koʻrinmasdi.
+
+
+async def _kelajak_darsi(session: AsyncSession, school: dict, *, kun_keyin: int) -> Lesson:
+    """Jadval butun yilga generatsiya qilinadi — kelajakdagi dars odatiy holat."""
+    ustoz = school["teacher"]
+    sinf = (await session.execute(select(SchoolClass))).scalars().first()
+    fan = (await session.execute(select(Subject))).scalars().first()
+    kun = local_today() + timedelta(days=kun_keyin)
+    lesson = Lesson(
+        class_id=sinf.id,
+        subject_id=fan.id,
+        teacher_id=ustoz.id,
+        lesson_date=kun,
+        period=2,
+        starts_at=combine_local(kun, time(8, 30)),
+        ends_at=combine_local(kun, time(9, 15)),
+    )
+    session.add(lesson)
+    await session.flush()
+    return lesson
+
+
+async def test_ustoz_hisobi_davrga_boysunadi(
+    client: AsyncClient, school: dict[str, object], session: AsyncSession
+) -> None:
+    """Ustozlar soni ham tanlangan davr ichida sanaladi.
+
+    Fiksturadagi yagona dars kecha boʻlgan. 1 kunlik davr — faqat
+    bugun — ichida darsi bor ustoz yoʻq.
+    """
+    token = await _token(client, "sinov.director")
+
+    keng = await client.get(
+        "/api/v1/director/overview", params={"days": 30}, headers=_auth(token)
+    )
+    assert keng.json()["total_teachers"] == 1
+
+    tor = await client.get("/api/v1/director/overview", params={"days": 1}, headers=_auth(token))
+    assert tor.json()["total_teachers"] == 0
+
+
+async def test_overviewda_otilgan_va_rejadagi_dars_ajratiladi(
+    client: AsyncClient, school: dict[str, object]
+) -> None:
+    token = await _token(client, "sinov.director")
+    body = (await client.get("/api/v1/director/overview", headers=_auth(token))).json()
+
+    assert body["lessons_planned"] == 1
+    # Davomat belgilangan — dars haqiqatan oʻtilgani shundan bilinadi.
+    assert body["lessons_with_attendance"] == 1
+    # Foiz ikkita yozuvdan hisoblangan; rahbar buni koʻrib turishi kerak.
+    assert body["attendance_records"] == 2
+
+
+async def test_kelajakdagi_dars_ustoz_hisobiga_kirmaydi(
+    client: AsyncClient, school: dict[str, object], session: AsyncSession
+) -> None:
+    """Jadval butun yilga tuziladi — «oʻtilgan dars» ni oshirib yubormasin."""
+    token = await _token(client, "sinov.director")
+    oldin = (await client.get("/api/v1/director/teachers", headers=_auth(token))).json()
+    assert oldin[0]["lessons_planned"] == 1
+
+    await _kelajak_darsi(session, school, kun_keyin=7)
+
+    keyin = (await client.get("/api/v1/director/teachers", headers=_auth(token))).json()
+    assert keyin[0]["lessons_planned"] == 1, "kelajakdagi dars sanalib ketdi"
+
+
+async def test_faqat_kelajakdagi_darsi_bor_ustoz_royxatdan_yoqolmaydi(
+    client: AsyncClient, school: dict[str, object], session: AsyncSession
+) -> None:
+    """Roʻyxat jadvaldan, koʻrsatkich esa oʻtgan darslardan.
+
+    Aks holda dushanbadan boshlanadigan ustoz yakshanba kuni
+    ustozlar roʻyxatidan butunlay yoʻqolardi.
+    """
+    roles = await _roles(session)
+    yangi = await _user(session, roles, RoleName.TEACHER.value, "sinov.teacher2")
+    sinf = (await session.execute(select(SchoolClass))).scalars().first()
+    fan = (await session.execute(select(Subject))).scalars().first()
+    kun = local_today() + timedelta(days=3)
+    session.add(
+        Lesson(
+            class_id=sinf.id,
+            subject_id=fan.id,
+            teacher_id=yangi.id,
+            lesson_date=kun,
+            period=3,
+            starts_at=combine_local(kun, time(10, 0)),
+            ends_at=combine_local(kun, time(10, 45)),
+        )
+    )
+    await session.flush()
+
+    token = await _token(client, "sinov.director")
+    rows = (await client.get("/api/v1/director/teachers", headers=_auth(token))).json()
+    qator = next(r for r in rows if r["id"] == str(yangi.id))
+    assert qator["lessons_planned"] == 0
