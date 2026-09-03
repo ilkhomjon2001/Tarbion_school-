@@ -56,7 +56,7 @@ export function LiveTeacherTable() {
         <div>
           <h1 className="text-h2 font-bold text-foreground">Ustozlar roʻyxati</h1>
           <p className="text-sm text-foreground-muted">
-            Yuklama, oʻtilgan darslar va qoʻyilgan baholar — bazadan
+            Yuklama, davomat intizomi, baho, imtihon va uy vazifasi — bazadan
           </p>
         </div>
         <select
@@ -76,7 +76,7 @@ export function LiveTeacherTable() {
 
       <div className="overflow-hidden rounded-xl border border-border bg-surface">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-sm">
+          <table className="w-full min-w-[980px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-border bg-surface-muted/60 text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
                 <th className="px-4 py-3">Familiya Ism</th>
@@ -84,7 +84,10 @@ export function LiveTeacherTable() {
                 <th className="px-4 py-3">Rahbarlik sinfi</th>
                 <th className="px-4 py-3 text-right">Yuklama (soat/hafta)</th>
                 <th className="px-4 py-3 text-right">Oʻtilgan dars</th>
+                <th className="px-4 py-3 text-right">Davomat belgilangan</th>
                 <th className="px-4 py-3 text-right">Oʻrtacha baho</th>
+                <th className="px-4 py-3 text-right">Imtihon</th>
+                <th className="px-4 py-3 text-right">Uy vazifasi</th>
               </tr>
             </thead>
             <tbody>
@@ -110,15 +113,34 @@ export function LiveTeacherTable() {
                   <td className="px-4 py-3 text-foreground-muted">
                     {teacher.homeroom_class_name ?? <span className="italic">Yoʻq</span>}
                   </td>
-                  <td className="num px-4 py-3 text-right text-foreground-muted">
-                    {teacher.weekly_hours}
-                  </td>
-                  <td className="num px-4 py-3 text-right text-foreground-muted">
-                    {teacher.lessons_conducted}
-                  </td>
-                  <td className="num px-4 py-3 text-right font-medium text-foreground">
-                    {teacher.grades_given > 0 ? teacher.average_grade_given.toFixed(1) : "—"}
-                  </td>
+                  <Kpi
+                    value={teacher.weekly_hours}
+                    zeroNote="Jadvalda darsi yoʻq"
+                  />
+                  <Kpi
+                    value={teacher.lessons_conducted}
+                    zeroNote="Hali dars oʻtilmagan"
+                  />
+                  <Kpi
+                    value={teacher.lessons_with_attendance}
+                    note={
+                      teacher.lessons_conducted > 0
+                        ? `${teacher.lessons_conducted} darsdan`
+                        : undefined
+                    }
+                    zeroNote="Hali davomat belgilanmagan"
+                  />
+                  <Kpi
+                    value={teacher.grades_given > 0 ? teacher.average_grade_given : 0}
+                    format={(v) => v.toFixed(1)}
+                    note={
+                      teacher.grades_given > 0 ? `${teacher.grades_given} ta baho` : undefined
+                    }
+                    zeroNote="Hali baho qoʻyilmagan"
+                    strong
+                  />
+                  <Kpi value={teacher.exams_held} zeroNote="Hali imtihon olinmagan" />
+                  <Kpi value={teacher.homework_given} zeroNote="Hali vazifa berilmagan" />
                 </tr>
               ))}
             </tbody>
@@ -139,7 +161,60 @@ export function LiveTeacherTable() {
           <span>Yangi ustoz administrator kabinetida qoʻshiladi</span>
         </div>
       </div>
+
+      {/* Nolning maʼnosi bir xil emas: «ishlamayapti» ham, «hali
+          navbati kelmagan» ham boʻlishi mumkin. Ustundagi izoh aynan
+          shuni ajratadi — usiz rahbar nolni baho deb oʻqiydi. */}
+      <p className="mt-2 text-xs text-foreground-muted">
+        Nol koʻrsatkich ustunda izoh bilan koʻrsatiladi: u ustozning
+        bahosi emas, faoliyat hali boshlanmaganini bildiradi. Oʻquv yili
+        boshida bu tabiiy holat.
+      </p>
     </div>
+  );
+}
+
+/**
+ * Bitta KPI katagi.
+ *
+ * Nol qiymat YASHIRILMAYDI va «—» bilan almashtirilmaydi (loyiha
+ * egasining soʻrovi, 2026-09-03). Chiziqcha «maʼlumot yoʻq» degan
+ * maʼnoni beradi va rahbar uni buzuq deb oʻylaydi; nol esa aniq
+ * fakt — faqat sababini aytish kerak.
+ */
+function Kpi({
+  value,
+  note,
+  zeroNote,
+  format,
+  strong,
+}: {
+  value: number;
+  note?: string;
+  zeroNote: string;
+  format?: (v: number) => string;
+  strong?: boolean;
+}) {
+  const bosh = value === 0;
+  return (
+    <td className="px-4 py-3 text-right align-top">
+      <span
+        className={`num block ${
+          bosh
+            ? "text-foreground-muted"
+            : strong
+              ? "font-medium text-foreground"
+              : "text-foreground-muted"
+        }`}
+      >
+        {format ? format(value) : value}
+      </span>
+      {(bosh || note) && (
+        <span className="mt-0.5 block text-xs leading-tight text-foreground-muted">
+          {bosh ? zeroNote : note}
+        </span>
+      )}
+    </td>
   );
 }
 

@@ -115,42 +115,103 @@ export default function TeacherProfilePage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat
           label="Haftalik yuklama"
-          value={`${teacher.weekly_hours} soat`}
+          value={teacher.weekly_hours}
+          suffix=" soat"
           note="Dars jadvalidan"
+          zeroNote="Jadvalda darsi yoʻq"
         />
         <Stat
           label="Oʻtilgan darslar"
-          value={teacher.lessons_conducted.toLocaleString("uz-Latn")}
-          note="Davomat belgilangan darslar"
+          value={teacher.lessons_conducted}
+          // Ilgari bu yerda «Davomat belgilangan darslar» deb yozilgan
+          // edi — bu NOTOʻGʻRI: sanoq jadvaldagi hamma darsni oladi.
+          // Davomat endi alohida katakda.
+          note="Jadval boʻyicha"
+          zeroNote="Hali dars oʻtilmagan"
+        />
+        <Stat
+          label="Davomat belgilangan"
+          value={teacher.lessons_with_attendance}
+          note={
+            teacher.lessons_conducted > 0
+              ? `${teacher.lessons_conducted} darsdan`
+              : undefined
+          }
+          zeroNote="Hali davomat belgilanmagan"
         />
         <Stat
           label="Qoʻyilgan baholar"
-          value={teacher.grades_given.toLocaleString("uz-Latn")}
+          value={teacher.grades_given}
           note="Jurnal boʻyicha"
+          zeroNote="Hali baho qoʻyilmagan"
         />
         <Stat
           label="Oʻrtacha baho"
-          value={
-            teacher.grades_given > 0 ? teacher.average_grade_given.toFixed(1) : "—"
-          }
+          value={teacher.grades_given > 0 ? teacher.average_grade_given : 0}
+          format={(v) => v.toFixed(1)}
           note="Ustoz qoʻygan baholar boʻyicha"
+          zeroNote="Hali baho qoʻyilmagan"
+        />
+        <Stat
+          label="Imtihonlar"
+          value={teacher.exams_held}
+          note="Oʻtkazilgan imtihon va nazorat ishlari"
+          zeroNote="Hali imtihon olinmagan"
+        />
+        <Stat
+          label="Uy vazifasi"
+          value={teacher.homework_given}
+          note="Berilgan vazifalar"
+          zeroNote="Hali vazifa berilmagan"
         />
       </div>
 
       <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-foreground-muted">
-        Ustozning dars jadvali va sinf kesimidagi batafsil hisobot keyingi
-        bosqichda qoʻshiladi.
+        Nol koʻrsatkich ustozning bahosi emas — u faoliyat hali
+        boshlanmaganini bildiradi va katak tagida sababi yozilgan. Oʻquv
+        yili boshida bu tabiiy holat.
       </p>
     </div>
   );
 }
 
-function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
+/**
+ * KPI katagi.
+ *
+ * Nol YASHIRILMAYDI va «—» bilan almashtirilmaydi (loyiha egasining
+ * soʻrovi, 2026-09-03): chiziqcha «maʼlumot yoʻq» degan taassurot
+ * qoldiradi va rahbar sahifani buzuq deb oʻylaydi. Nol esa aniq
+ * fakt — faqat sababi yozilishi kerak.
+ */
+function Stat({
+  label,
+  value,
+  note,
+  zeroNote,
+  suffix = "",
+  format,
+}: {
+  label: string;
+  value: number;
+  note?: string;
+  zeroNote: string;
+  suffix?: string;
+  format?: (v: number) => string;
+}) {
+  const bosh = value === 0;
+  const matn = format ? format(value) : value.toLocaleString("uz-Latn");
   return (
     <Card className="animate-enter">
       <p className="text-sm text-foreground-muted">{label}</p>
-      <p className="num mt-2 text-2xl font-bold text-foreground">{value}</p>
-      {note && <p className="mt-1 text-xs text-foreground-muted">{note}</p>}
+      <p
+        className={`num mt-2 text-2xl font-bold ${
+          bosh ? "text-foreground-muted" : "text-foreground"
+        }`}
+      >
+        {matn}
+        {suffix}
+      </p>
+      <p className="mt-1 text-xs text-foreground-muted">{bosh ? zeroNote : (note ?? "")}</p>
     </Card>
   );
 }

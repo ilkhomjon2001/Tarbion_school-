@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
-from app.core.timeutil import combine_local, local_today
+from app.core.timeutil import combine_local, local_today, utcnow
 from app.models import (
     AcademicYear,
     AttendanceRecord,
@@ -296,3 +296,75 @@ async def test_me_returns_current_user(client: AsyncClient, school: dict[str, ob
     assert resp.status_code == 200
     assert resp.json()["roles"] == [RoleName.DIRECTOR.value]
     uuid.UUID(resp.json()["id"])
+
+
+# ─────────── Faoliyat koʻrsatkichlari (DIR-04, 2026-09-03 soʻrovi) ───────────
+
+
+async def test_teachers_faoliyat_korsatkichlari(
+    client: AsyncClient, school: dict[str, object]
+) -> None:
+    """Nol koʻrsatkich ham QAYTADI — interfeys uni izoh bilan koʻrsatadi.
+
+    Ilgari bu maydonlar umuman yoʻq edi va rahbar «ustoz imtihon
+    oldimi, vazifa berdimi» degan savolga javob topa olmasdi.
+    """
+    token = await _token(client, "sinov.director")
+    rows = (
+        await client.get("/api/v1/director/teachers", headers=_auth(token))
+    ).json()
+    ustoz = rows[0]
+
+    # Fiksturada imtihon ham, vazifa ham yoʻq — nol boʻlishi KERAK,
+    # maydon yoʻqolib ketishi emas.
+    assert ustoz["exams_held"] == 0
+    assert ustoz["homework_given"] == 0
+
+    # Bitta dars, oʻsha darsda davomat belgilangan.
+    assert ustoz["lessons_conducted"] == 1
+    assert ustoz["lessons_with_attendance"] == 1
+
+
+async def test_davomat_belgilangan_dars_bir_marta_sanaladi(
+    client: AsyncClient, school: dict[str, object], session: AsyncSession
+) -> None:
+    """Bitta darsda 25 ta davomat yozuvi boʻladi — dars BIR marta sanalsin."""
+    token = await _token(client, "sinov.director")
+    rows = (
+        await client.get("/api/v1/director/teachers", headers=_auth(token))
+    ).json()
+    # Fiksturada bitta darsda IKKITA davomat yozuvi bor.
+    assert rows[0]["lessons_with_attendance"] == 1
+
+
+async def test_ortacha_ball_davr_ichida(
+    client: AsyncClient, school: dict[str, object], session: AsyncSession
+) -> None:
+    """Oʻrtacha ball ham tanlangan davrga boʻysunadi.
+
+    Ilgari bu koʻrsatkichda sana filtri yoʻq edi: rahbar 7 kunni
+    tanlaganda davomat oʻzgarardi, oʻrtacha ball esa butun tarix
+    boʻyicha qotib turardi — ikki koʻrsatkich yonma-yon turib turli
+    davrni bildirardi.
+    """
+    from sqlalchemy import update
+
+    from app.models import Grade
+
+    token = await _token(client, "sinov.director")
+
+    # Bahoni 60 kun orqaga suramiz.
+    await session.execute(
+        update(Grade).values(created_at=utcnow() - timedelta(days=60))
+    )
+    await session.flush()
+
+    qisqa = (
+        await client.get("/api/v1/director/overview?days=7", headers=_auth(token))
+    ).json()
+    uzun = (
+        await client.get("/api/v1/director/overview?days=90", headers=_auth(token))
+    ).json()
+
+    assert qisqa["average_grade"] == 0.0, "eski baho qisqa davrga tushmasligi kerak"
+    assert uzun["average_grade"] == 4.0, "uzun davrda esa hisobga olinsin"

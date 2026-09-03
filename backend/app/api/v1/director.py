@@ -92,6 +92,9 @@ async def teachers(session: SessionDep) -> list[TeacherRowOut]:
             lessons_conducted=r.lessons_conducted,
             average_grade_given=r.average_grade_given,
             grades_given=r.grades_given,
+            exams_held=r.exams_held,
+            homework_given=r.homework_given,
+            lessons_with_attendance=r.lessons_with_attendance,
         )
         for r in await director_service.teachers(session)
     ]

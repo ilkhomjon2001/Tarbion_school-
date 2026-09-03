@@ -22,11 +22,13 @@ from datetime import date, timedelta
 from sqlalchemy import Numeric, cast, distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.timeutil import local_today
+from app.core.timeutil import local_day_bounds, local_today
 from app.models import (
     AttendanceRecord,
     AttendanceStatus,
+    Exam,
     Grade,
+    Homework,
     Lesson,
     ScheduleEntry,
     SchoolClass,
@@ -102,8 +104,22 @@ async def overview(session: AsyncSession, *, days: int = 30) -> OverviewData:
         .join(Lesson, Lesson.id == AttendanceRecord.lesson_id)
         .where(*_ATTENDANCE_CLEAN, Lesson.lesson_date.between(since, bugun))
     )
+    # Oʻrtacha ball ham DAVR ichida. Ilgari bu yerda sana filtri
+    # YOʻQ edi: sahifada davr tanlagichi bor (7/30/90 kun), davomat
+    # oʻzgarardi, oʻrtacha ball esa butun tarix boʻyicha qotib turardi.
+    # Ikkita koʻrsatkich yonma-yon turib turli davrni bildirishi —
+    # rahbar sezmaydigan, lekin xulosani buzadigan xato.
+    #
+    # Filtr `created_at` boʻyicha: baho QAChON QOʻYILGANI. Darsga
+    # bogʻlash notoʻgʻri boʻlardi — chorak va yillik bahoda `lesson_id`
+    # boʻsh va ular butunlay tushib qolardi.
+    davr_boshi, _ = local_day_bounds(since)
+    _, davr_oxiri = local_day_bounds(bugun)
     average_grade = await session.scalar(
-        select(func.round(cast(_avg_grade, Numeric), 2)).where(Grade.is_archived.is_(False))
+        select(func.round(cast(_avg_grade, Numeric), 2)).where(
+            Grade.is_archived.is_(False),
+            Grade.created_at.between(davr_boshi, davr_oxiri),
+        )
     )
 
     trend_rows = (
@@ -217,6 +233,18 @@ class TeacherRowData:
     average_grade_given: float
     grades_given: int
 
+    # ── Faoliyat koʻrsatkichlari (loyiha egasining soʻrovi, 2026-09-03) ──
+    #
+    # Hammasi SANOQ, foiz emas: nol sanoq «hali boshlanmagan» degani va
+    # buni interfeys izoh bilan koʻrsatadi. Foiz boʻlsa nol maxrajda
+    # «0%» chiqib, ustoz yomon ishlayotgandek koʻrinardi.
+    exams_held: int
+    homework_given: int
+    #: Ustoz darslaridan nechtasida davomat BELGILANGAN. Bu intizom
+    #: koʻrsatkichi: dars oʻtilgan, lekin davomat yozilmagan boʻlsa
+    #: ota-onaga xabar ham ketmaydi (DAV-05).
+    lessons_with_attendance: int
+
 
 async def teachers(session: AsyncSession) -> list[TeacherRowData]:
     """DIR-04: ustozlar faoliyati.
@@ -269,6 +297,30 @@ async def teachers(session: AsyncSession) -> list[TeacherRowData]:
         .group_by(SchoolClass.homeroom_teacher_id)
         .subquery()
     )
+    exams = (
+        select(Exam.created_by_id.label("teacher_id"), func.count().label("cnt"))
+        .where(Exam.is_archived.is_(False))
+        .group_by(Exam.created_by_id)
+        .subquery()
+    )
+    hw = (
+        select(Homework.teacher_id.label("teacher_id"), func.count().label("cnt"))
+        .where(Homework.is_archived.is_(False))
+        .group_by(Homework.teacher_id)
+        .subquery()
+    )
+    # DISTINCT dars: bitta darsda 25 ta davomat yozuvi boʻladi, bizga
+    # esa «nechta darsda belgilangan» kerak.
+    marked = (
+        select(
+            Lesson.teacher_id.label("teacher_id"),
+            func.count(distinct(Lesson.id)).label("cnt"),
+        )
+        .join(AttendanceRecord, AttendanceRecord.lesson_id == Lesson.id)
+        .where(Lesson.is_archived.is_(False), AttendanceRecord.is_archived.is_(False))
+        .group_by(Lesson.teacher_id)
+        .subquery()
+    )
 
     rows = (
         await session.execute(
@@ -283,6 +335,9 @@ async def teachers(session: AsyncSession) -> list[TeacherRowData]:
                 func.coalesce(lessons.c.conducted, 0),
                 func.round(cast(func.coalesce(given.c.avg_value, 0.0), Numeric), 2),
                 func.coalesce(given.c.grade_count, 0),
+                func.coalesce(exams.c.cnt, 0),
+                func.coalesce(hw.c.cnt, 0),
+                func.coalesce(marked.c.cnt, 0),
             )
             .select_from(User)
             # INNER JOIN: darsi yoʻq xodim ustozlar roʻyxatida chiqmaydi.
@@ -291,6 +346,9 @@ async def teachers(session: AsyncSession) -> list[TeacherRowData]:
             .outerjoin(subjects, subjects.c.teacher_id == User.id)
             .outerjoin(homeroom, homeroom.c.teacher_id == User.id)
             .outerjoin(given, given.c.teacher_id == User.id)
+            .outerjoin(exams, exams.c.teacher_id == User.id)
+            .outerjoin(hw, hw.c.teacher_id == User.id)
+            .outerjoin(marked, marked.c.teacher_id == User.id)
             .where(User.is_archived.is_(False))
             .order_by(User.last_name, User.first_name)
         )
@@ -309,6 +367,9 @@ async def teachers(session: AsyncSession) -> list[TeacherRowData]:
             conducted,
             avg_value,
             grade_count,
+            exam_count,
+            hw_count,
+            marked_count,
         ) = row
         out.append(
             TeacherRowData(
@@ -321,6 +382,9 @@ async def teachers(session: AsyncSession) -> list[TeacherRowData]:
                 lessons_conducted=conducted or 0,
                 average_grade_given=float(avg_value or 0),
                 grades_given=grade_count or 0,
+                exams_held=exam_count or 0,
+                homework_given=hw_count or 0,
+                lessons_with_attendance=marked_count or 0,
             )
         )
     return out

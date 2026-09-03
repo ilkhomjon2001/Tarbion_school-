@@ -48,3 +48,14 @@ class TeacherRowOut(BaseModel):
     lessons_conducted: int
     average_grade_given: float
     grades_given: int
+
+    # ── Faoliyat koʻrsatkichlari (DIR-04) ──
+    #
+    # Hammasi SANOQ. Nol — «hali boshlanmagan», va interfeys uni
+    # aynan shunday izohlaydi: nol foiz «yomon ishlayapti» degan
+    # notoʻgʻri taassurot qoldirardi.
+    exams_held: int
+    homework_given: int
+    #: Ustoz darslaridan nechtasida davomat belgilangan.
+    #: `lessons_conducted` bilan birga intizom koʻrsatkichi.
+    lessons_with_attendance: int
