@@ -30,12 +30,28 @@ class MonthStatusOut(BaseModel):
     overdue: bool
 
 
+class MethodTotalOut(BaseModel):
+    """Bitta toʻlov kanali boʻyicha yigʻindi (TOL-05).
+
+    `label` SERVERDAN keladi: kanal nomi bitta joyda — model
+    enum'ida — yozilsin, frontend uni qaytadan oʻylab topmasin.
+    """
+
+    method: str
+    label: str
+    count: int
+    total: int
+
+
 class FinanceSummaryOut(BaseModel):
     charged: int
     paid: int
     debt: int
     debtors: int
     students_with_contract: int
+    #: Kanallar kesimi. Toʻlovi yoʻq kanal ham nol bilan qaytadi —
+    #: «Visa orqali hech narsa kelmadi» ham javob.
+    by_method: list[MethodTotalOut]
 
 
 class LedgerRowOut(BaseModel):

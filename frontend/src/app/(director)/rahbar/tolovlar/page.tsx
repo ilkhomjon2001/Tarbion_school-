@@ -82,6 +82,66 @@ export default function DirectorPaymentsPage() {
         )}
       </div>
 
+      {/* Tushum QAYSI KANALDAN kelgani (loyiha egasining soʻrovi,
+          2026-09-03). Umumiy summa oʻzi kassani bank koʻchirmasi
+          bilan solishtirishga yaramaydi: naqd qancha, karta qancha —
+          alohida kerak. */}
+      <section>
+        <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-sm font-semibold text-foreground">Tushum kanallari</h2>
+          {summary && (
+            <span className="num text-xs text-foreground-muted">
+              Jami: {formatSom(summary.paid)}
+            </span>
+          )}
+        </div>
+
+        {summary === null ? (
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+              {summary.by_method.map((m) => (
+                <div
+                  key={m.method}
+                  className={`rounded-xl border p-4 ${
+                    m.total > 0
+                      ? "border-border bg-surface shadow-sm"
+                      : "border-dashed border-border bg-surface-muted/40"
+                  }`}
+                >
+                  <p className="text-xs font-medium uppercase tracking-wide text-foreground-muted">
+                    {m.label}
+                  </p>
+                  <p
+                    className={`num mt-1 text-lg font-bold ${
+                      m.total > 0 ? "text-foreground" : "text-foreground-muted"
+                    }`}
+                  >
+                    {formatSom(m.total)}
+                  </p>
+                  {/* Nol ham javob: «bu kanaldan hech narsa kelmadi».
+                      Qatorni yashirish esa savol tugʻdirardi. */}
+                  <p className="mt-0.5 text-xs text-foreground-muted">
+                    {m.count > 0
+                      ? `${m.count} ta toʻlov`
+                      : "Bu kanal orqali toʻlov boʻlmagan"}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-foreground-muted">
+              Storno qilingan toʻlov oʻz kanalidan chiqariladi — yigʻindi
+              kassadagi haqiqiy summani koʻrsatadi.
+            </p>
+          </>
+        )}
+      </section>
+
       <section>
         <h2 className="mb-2 text-sm font-semibold text-foreground">Qarzdorlar</h2>
         {debtors === null ? (

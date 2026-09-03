@@ -136,18 +136,48 @@ class TuitionCredit(Entity):
 
 
 class PaymentMethod(enum.StrEnum):
+    """Toʻlov qanday kelgani.
+
+    Kartalar BRENDI boʻyicha ajratilgan (loyiha egasining soʻrovi,
+    2026-09-03). Ilgari hammasi bitta `terminal` edi va rahbar
+    «qancha Humo, qancha Visa» degan savolga javob ololmasdi —
+    bu esa kassa hisobini bank koʻchirmasi bilan solishtirishda
+    kerak boʻladi.
+    """
+
     NAQD = "naqd"
+    HUMO = "humo"
+    UZCARD = "uzcard"
+    VISA = "visa"
     OTKAZMA = "otkazma"
-    TERMINAL = "terminal"
     ONLAYN = "onlayn"
+
+    #: ESKI qiymat. Yangi yozuvda tanlanmaydi, lekin enum'da QOLADI:
+    #: hech narsa oʻchirilmaydi (1-domen qoidasi) va eski yozuvlar
+    #: hisobotdan tushib qolmasligi kerak.
+    TERMINAL = "terminal"
 
 
 PAYMENT_METHOD_LABELS_UZ: dict[str, str] = {
     PaymentMethod.NAQD.value: "Naqd",
+    PaymentMethod.HUMO.value: "Humo",
+    PaymentMethod.UZCARD.value: "Uzcard",
+    PaymentMethod.VISA.value: "Visa",
     PaymentMethod.OTKAZMA.value: "Bank oʻtkazmasi",
-    PaymentMethod.TERMINAL.value: "Terminal",
     PaymentMethod.ONLAYN.value: "Onlayn",
+    PaymentMethod.TERMINAL.value: "Terminal (eski)",
 }
+
+#: Yangi toʻlov kiritishda tanlanadigan usullar — tartibi bilan.
+#: `TERMINAL` bu yerda YOʻQ: u tarixiy qiymat.
+PAYMENT_METHODS_SELECTABLE: tuple[str, ...] = (
+    PaymentMethod.NAQD.value,
+    PaymentMethod.HUMO.value,
+    PaymentMethod.UZCARD.value,
+    PaymentMethod.VISA.value,
+    PaymentMethod.OTKAZMA.value,
+    PaymentMethod.ONLAYN.value,
+)
 
 
 class Payment(Entity):

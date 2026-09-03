@@ -1957,6 +1957,10 @@ export type FinanceSummaryOut = {
      * Students With Contract
      */
     students_with_contract: number;
+    /**
+     * By Method
+     */
+    by_method: Array<MethodTotalOut>;
 };
 
 /**
@@ -2997,6 +3001,33 @@ export type MessageCreateIn = {
      * Body
      */
     body: string;
+};
+
+/**
+ * MethodTotalOut
+ *
+ * Bitta toʻlov kanali boʻyicha yigʻindi (TOL-05).
+ *
+ * `label` SERVERDAN keladi: kanal nomi bitta joyda — model
+ * enum'ida — yozilsin, frontend uni qaytadan oʻylab topmasin.
+ */
+export type MethodTotalOut = {
+    /**
+     * Method
+     */
+    method: string;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Count
+     */
+    count: number;
+    /**
+     * Total
+     */
+    total: number;
 };
 
 /**
@@ -4995,6 +5026,18 @@ export type TeacherRowOut = {
      * Grades Given
      */
     grades_given: number;
+    /**
+     * Exams Held
+     */
+    exams_held: number;
+    /**
+     * Homework Given
+     */
+    homework_given: number;
+    /**
+     * Lessons With Attendance
+     */
+    lessons_with_attendance: number;
 };
 
 /**

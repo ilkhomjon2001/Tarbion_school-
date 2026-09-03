@@ -58,10 +58,20 @@ export const MONTH_STATUS_LABELS: Record<string, string> = {
 
 export const DEFAULT_MONTHLY_FEE = 3_500_000;
 
+/**
+ * Toʻlov kanallari — `backend/app/models/payments.py` dagi
+ * `PaymentMethod` ning aksi. Tartib ham oʻsha yerdagidek.
+ *
+ * `terminal` ATAYLAB yoʻq: u eski qiymat va yangi toʻlovda
+ * tanlanmaydi. Eski yozuvlar hisobotda oʻz nomi bilan koʻrinadi —
+ * u nom serverdan keladi (`by_method[].label`).
+ */
 export const METHOD_LABELS: Record<string, string> = {
   naqd: "Naqd",
+  humo: "Humo",
+  uzcard: "Uzcard",
+  visa: "Visa",
   otkazma: "Bank oʻtkazmasi",
-  terminal: "Terminal",
   onlayn: "Onlayn",
 };
 

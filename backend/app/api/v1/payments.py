@@ -6,6 +6,7 @@ servisda: moliya administratori (admin/direktor/superadmin), yozish
 `payments.manage`, ota-ona faqat oʻz farzandiga.
 """
 
+import dataclasses
 import uuid
 
 from fastapi import APIRouter, Request
@@ -23,6 +24,7 @@ from app.schemas.payments import (
     IntentCreateIn,
     IntentOut,
     LedgerRowOut,
+    MethodTotalOut,
     MonthStatusOut,
     PaymentIn,
     RefundIn,
@@ -60,7 +62,15 @@ def _finance_out(r: payment_service.StudentFinance) -> StudentFinanceOut:
 @router.get("/summary", response_model=FinanceSummaryOut)
 async def summary(user: CurrentUserDep, session: SessionDep) -> FinanceSummaryOut:
     """Jamlanma. Oʻquv boʻlimiga ham 403 — moliya alohida doira."""
-    return FinanceSummaryOut(**await payment_service.summary(session, user))
+    data = await payment_service.summary(session, user)
+    return FinanceSummaryOut(
+        charged=data.charged,
+        paid=data.paid,
+        debt=data.debt,
+        debtors=data.debtors,
+        students_with_contract=data.students_with_contract,
+        by_method=[MethodTotalOut(**dataclasses.asdict(m)) for m in data.by_method],
+    )
 
 
 @router.get("/students", response_model=list[StudentFinanceOut])
@@ -195,7 +205,7 @@ async def record_payment(
     user: CurrentUserDep,
     session: SessionDep,
 ) -> StudentLedgerOut:
-    """Qoʻlda toʻlov kiritish (naqd/oʻtkazma/terminal)."""
+    """Qoʻlda toʻlov kiritish: naqd, Humo, Uzcard, Visa, bank oʻtkazmasi."""
     await payment_service.record_payment(
         session,
         actor=user,

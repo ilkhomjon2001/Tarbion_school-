@@ -31,6 +31,8 @@ from app.core.exceptions import (
 )
 from app.core.timeutil import local_today, to_display
 from app.models import (
+    PAYMENT_METHOD_LABELS_UZ,
+    PAYMENT_METHODS_SELECTABLE,
     TUITION_MONTHS,
     AuditAction,
     DiscountKind,
@@ -980,19 +982,84 @@ async def refund(
     return yozuv
 
 
-async def summary(session: AsyncSession, user: CurrentUser) -> dict[str, int]:
-    """Jamlanma: hisoblangan, tushum, qarz, qarzdorlar soni."""
+@dataclass(frozen=True, slots=True)
+class MethodTotal:
+    """Bitta toʻlov kanali boʻyicha yigʻindi."""
+
+    method: str
+    label: str
+    count: int
+    total: int
+
+
+@dataclass(frozen=True, slots=True)
+class SummaryData:
+    charged: int
+    paid: int
+    debt: int
+    debtors: int
+    students_with_contract: int
+    #: Kanallar boʻyicha kesim. Toʻlov boʻlmagan kanal ham QOLADI
+    #: (nol bilan) — «Visa orqali hech narsa kelmadi» degan xulosa
+    #: ham maʼlumot, qatorning yoʻqligi esa savol tugʻdiradi.
+    by_method: list[MethodTotal]
+
+
+async def _by_method(session: AsyncSession) -> list[MethodTotal]:
+    """Kanallar kesimi. Storno MINUS bilan hisoblanadi.
+
+    Storno yozuvi aslining usulini nusxalaydi (`storno()` ga qara),
+    shuning uchun bekor qilingan toʻlov aynan oʻz kanalidan chiqadi —
+    naqd storno Humo yigʻindisini kamaytirib yubormaydi.
+    """
+    rows = (
+        await session.execute(
+            select(
+                Payment.method,
+                func.count(),
+                func.coalesce(
+                    func.sum(
+                        case((Payment.is_storno, -Payment.amount), else_=Payment.amount)
+                    ),
+                    0,
+                ),
+            )
+            .where(Payment.is_archived.is_(False))
+            .group_by(Payment.method)
+        )
+    ).all()
+    topilgan = {usul: (soni, int(jami)) for usul, soni, jami in rows}
+
+    # Tartib qatʼiy: interfeys har safar bir xil koʻrinsin.
+    tartib = list(PAYMENT_METHODS_SELECTABLE)
+    # Eski kanal faqat yozuvi BOR boʻlsa qoʻshiladi.
+    tartib += [u for u in topilgan if u not in tartib]
+
+    return [
+        MethodTotal(
+            method=usul,
+            label=PAYMENT_METHOD_LABELS_UZ.get(usul, usul),
+            count=topilgan.get(usul, (0, 0))[0],
+            total=topilgan.get(usul, (0, 0))[1],
+        )
+        for usul in tartib
+    ]
+
+
+async def summary(session: AsyncSession, user: CurrentUser) -> SummaryData:
+    """Jamlanma: hisoblangan, tushum, qarz, qarzdorlar soni va kanallar."""
     await assert_finance_admin(session, user)
     # Y1: jamlanma TOʻLIQ toʻplamdan — hisobi yopiq ketgan oʻquvchilar
     # roʻyxatda koʻrinmasa ham, tushumi kassadan yoʻqolmaydi.
     rows = await finance_rows(session, user, include_settled_archived=True)
-    return {
-        "charged": sum(r.charged for r in rows),
-        "paid": sum(r.paid for r in rows),
-        "debt": sum(-r.balance for r in rows if r.balance < 0),
-        "debtors": sum(1 for r in rows if r.balance < 0),
-        "students_with_contract": sum(1 for r in rows if r.monthly_fee is not None),
-    }
+    return SummaryData(
+        charged=sum(r.charged for r in rows),
+        paid=sum(r.paid for r in rows),
+        debt=sum(-r.balance for r in rows if r.balance < 0),
+        debtors=sum(1 for r in rows if r.balance < 0),
+        students_with_contract=sum(1 for r in rows if r.monthly_fee is not None),
+        by_method=await _by_method(session),
+    )
 
 
 # ─────────────────────────── Onlayn (sinov provayderi) ───────────────────────────

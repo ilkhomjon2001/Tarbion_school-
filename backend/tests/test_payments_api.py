@@ -723,3 +723,84 @@ async def test_oy_ortasidan_boshlangan_shartnoma_osha_oyni_hisoblamaydi(
         json={"year": 2026, "month": 10},
     )
     assert r.json()["created"] == 1
+
+
+# ─────────────────── Kanallar kesimi (TOL-05) ───────────────────
+
+
+async def test_jamlanmada_kanallar_kesimi(client: AsyncClient, world: dict) -> None:
+    """Loyiha egasining soʻrovi (2026-09-03): umumiy summa yetarli emas,
+    naqd/Humo/Uzcard/Visa/oʻtkazma alohida koʻrinsin."""
+    token = await _token(client, "pm.admin")
+    await _shartnoma(client, token, world["ali"].id)
+
+    for usul, summa in (("naqd", 1_000_000), ("humo", 2_000_000), ("humo", 500_000)):
+        r = await client.post(
+            "/api/v1/payments",
+            headers=_auth(token),
+            json={"student_id": str(world["ali"].id), "amount": summa, "method": usul},
+        )
+        assert r.status_code == 201, r.text
+
+    kesim = (
+        await client.get("/api/v1/payments/summary", headers=_auth(token))
+    ).json()["by_method"]
+    jadval = {x["method"]: x for x in kesim}
+
+    assert jadval["naqd"]["total"] == 1_000_000
+    assert jadval["naqd"]["count"] == 1
+    assert jadval["humo"]["total"] == 2_500_000
+    assert jadval["humo"]["count"] == 2
+    # Nomi SERVERDAN keladi — frontend uni oʻzi oʻylab topmaydi.
+    assert jadval["humo"]["label"] == "Humo"
+
+
+async def test_tolovsiz_kanal_ham_korinadi(client: AsyncClient, world: dict) -> None:
+    """«Visa orqali hech narsa kelmadi» ham javob — qator yoʻqolmasin."""
+    token = await _token(client, "pm.admin")
+    kesim = (
+        await client.get("/api/v1/payments/summary", headers=_auth(token))
+    ).json()["by_method"]
+    usullar = [x["method"] for x in kesim]
+
+    assert usullar == ["naqd", "humo", "uzcard", "visa", "otkazma", "onlayn"]
+    assert all(x["total"] == 0 for x in kesim)
+
+
+async def test_storno_oz_kanalidan_chiqadi(client: AsyncClient, world: dict) -> None:
+    """Bekor qilingan Humo toʻlovi naqd yigʻindisini kamaytirmasin."""
+    token = await _token(client, "pm.admin")
+    await _shartnoma(client, token, world["ali"].id)
+
+    for usul in ("naqd", "humo"):
+        r = await client.post(
+            "/api/v1/payments",
+            headers=_auth(token),
+            json={"student_id": str(world["ali"].id), "amount": 1_000_000, "method": usul},
+        )
+        assert r.status_code == 201, r.text
+
+    daftar = (
+        await client.get(
+            f"/api/v1/payments/students/{world['ali'].id}", headers=_auth(token)
+        )
+    ).json()
+    humo_id = next(
+        r["payment_id"] for r in daftar["rows"] if r.get("method") == "humo"
+    )
+
+    r = await client.post(
+        f"/api/v1/payments/{humo_id}/storno",
+        headers=_auth(token),
+        json={"reason": "Xato kiritilgan"},
+    )
+    assert r.status_code == 200, r.text
+
+    jadval = {
+        x["method"]: x
+        for x in (
+            await client.get("/api/v1/payments/summary", headers=_auth(token))
+        ).json()["by_method"]
+    }
+    assert jadval["humo"]["total"] == 0
+    assert jadval["naqd"]["total"] == 1_000_000

@@ -106,6 +106,7 @@ from app.models.notifications import (
 from app.models.payments import (
     DEFAULT_MONTHLY_FEE,
     PAYMENT_METHOD_LABELS_UZ,
+    PAYMENT_METHODS_SELECTABLE,
     TUITION_MONTHS,
     DiscountKind,
     IntentStatus,
@@ -159,6 +160,7 @@ __all__ = [
     "DEFAULT_MONTHLY_FEE",
     "DiscountKind",
     "IntentStatus",
+    "PAYMENT_METHODS_SELECTABLE",
     "PAYMENT_METHOD_LABELS_UZ",
     "OutboxChannel",
     "OutboxStatus",
