@@ -16,6 +16,7 @@ import {
   journalClassJournal,
   journalCreateHomework,
   journalGradeSubmission,
+  journalHomeworkLessons,
   journalLessonJournal,
   journalMyHomework,
   journalReturnSubmission,
@@ -27,6 +28,7 @@ import {
 } from "@/lib/api/sdk.gen";
 import type {
   ClassJournalOut,
+  HomeworkLessonOut,
   HomeworkOut,
   LessonJournalOut,
   StudentHomeworkOut,
@@ -34,10 +36,12 @@ import type {
   SubmissionListOut,
   SubmissionOut,
 } from "@/lib/api/types.gen";
+import { formatDate } from "@/lib/format";
 import { withAuth } from "@/lib/session";
 
 export type {
   ClassJournalOut,
+  HomeworkLessonOut,
   HomeworkOut,
   LessonJournalOut,
   StudentHomeworkOut,
@@ -161,9 +165,29 @@ export async function fetchHomework(classId?: string): Promise<HomeworkOut[]> {
   );
 }
 
+/**
+ * Oʻtilgan darslar — vazifa qaysi mavzuga berilayotganini tanlash uchun
+ * (UYV-01). Server faqat vaqti kelib boʻlgan darslarni qaytaradi.
+ */
+export async function fetchHomeworkLessons(
+  classId: string,
+  subjectId: string,
+): Promise<HomeworkLessonOut[]> {
+  return withAuth<HomeworkLessonOut[]>(() =>
+    journalHomeworkLessons({ query: { class_id: classId, subject_id: subjectId } }),
+  );
+}
+
+/** «3-sentabr · 2-para» — dars tanlagichdagi yorliq. */
+export function lessonLabel(lesson: HomeworkLessonOut): string {
+  return `${formatDate(lesson.lesson_date)} · ${lesson.period}-para`;
+}
+
 export type HomeworkInput = {
   class_id: string;
   subject_id: string;
+  /** Qaysi oʻtilgan darsga — sarlavha shu darsning mavzusidan olinadi. */
+  lesson_id?: string | null;
   title: string;
   description?: string;
   /** ISO datetime. Server oʻtgan sanani rad etadi. */

@@ -18,7 +18,7 @@ oʻquvchi va ota-ona faqat oʻzinikini (X-1).
 
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -60,6 +60,10 @@ class HomeworkRow:
     class_name: str
     subject_id: uuid.UUID
     subject_name: str
+    #: Vazifa QAYSI oʻtilgan darsga tegishli (UYV-01).
+    lesson_id: uuid.UUID | None
+    #: Oʻsha darsning mavzusi — jurnalga yozilgani.
+    topic: str | None
     title: str
     description: str
     due_at: datetime
@@ -69,6 +73,22 @@ class HomeworkRow:
     total_count: int
     submitted_count: int
     graded_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class LessonOptionRow:
+    """Vazifa bogʻlash uchun oʻtilgan dars (UYV-01).
+
+    «Oʻtilgan» — vaqti kelib boʻlgan dars. Kelajakdagi dars roʻyxatga
+    tushmaydi: hali oʻtilmagan mavzuga vazifa berilmaydi.
+    """
+
+    id: uuid.UUID
+    lesson_date: date
+    period: int
+    topic: str | None
+    #: Davomat belgilanganmi — mavzu odatda oʻsha paytda yoziladi.
+    attendance_marked: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,13 +136,21 @@ async def _counts(
     return {hid: (jami, topshirdi, baholandi) for hid, jami, topshirdi, baholandi in rows}
 
 
-def _row(hw: Homework, class_name: str, subject_name: str, c: tuple[int, int, int]) -> HomeworkRow:
+def _row(
+    hw: Homework,
+    class_name: str,
+    subject_name: str,
+    topic: str | None,
+    c: tuple[int, int, int],
+) -> HomeworkRow:
     return HomeworkRow(
         id=hw.id,
         class_id=hw.class_id,
         class_name=class_name,
         subject_id=hw.subject_id,
         subject_name=subject_name,
+        lesson_id=hw.lesson_id,
+        topic=topic,
         title=hw.title,
         description=hw.description or "",
         due_at=hw.due_at,
@@ -144,9 +172,13 @@ async def teacher_homework(
 ) -> list[HomeworkRow]:
     """Ustozning bergan vazifalari — eng yangisi birinchi (UYV-06)."""
     stmt = (
-        select(Homework, SchoolClass.name, Subject.name)
+        select(Homework, SchoolClass.name, Subject.name, Lesson.topic)
         .join(SchoolClass, SchoolClass.id == Homework.class_id)
         .join(Subject, Subject.id == Homework.subject_id)
+        # LEFT JOIN: eski vazifalar darsga bogʻlanmagan boʻlishi mumkin
+        # (bogʻlash keyin joriy qilindi) — ular roʻyxatdan tushib
+        # qolmasin.
+        .outerjoin(Lesson, Lesson.id == Homework.lesson_id)
         .where(Homework.is_archived.is_(False))
         .order_by(Homework.due_at.desc())
         .limit(limit)
@@ -157,11 +189,11 @@ async def teacher_homework(
         stmt = stmt.where(Homework.class_id == class_id)
 
     rows = (await session.execute(stmt)).all()
-    counts = await _counts(session, [hw.id for hw, _, _ in rows])
+    counts = await _counts(session, [hw.id for hw, _, _, _ in rows])
 
     return [
-        _row(hw, cls_name, subj_name, counts.get(hw.id, (0, 0, 0)))
-        for hw, cls_name, subj_name in rows
+        _row(hw, cls_name, subj_name, topic, counts.get(hw.id, (0, 0, 0)))
+        for hw, cls_name, subj_name, topic in rows
     ]
 
 
@@ -198,6 +230,60 @@ async def _notify_family(
         object_id=object_id,
         actor_id=user.id,
     )
+
+
+async def lessons_for_homework(
+    session: AsyncSession,
+    user: CurrentUser,
+    *,
+    class_id: uuid.UUID,
+    subject_id: uuid.UUID,
+    limit: int = 40,
+) -> list[LessonOptionRow]:
+    """Vazifa bogʻlash uchun oʻtilgan darslar — eng yangisi birinchi.
+
+    Ustoz vazifa sarlavhasini oʻylab topmasin: roʻyxatdan oʻtilgan
+    darsni tanlaydi va mavzu jurnaldagi yozuvdan olinadi. Shu sabab
+    faqat VAQTI KELIB BOʻLGAN darslar qaytariladi.
+
+    Kirish: shu sinfda shu fandan dars berayotgan ustoz (X-1) —
+    tekshiruv `assert_teaches_class_subject` da, soʻrov darajasida
+    sinf va fan bilan chegaralangan.
+    """
+    from app.services.grade_service import assert_teaches_class_subject
+
+    await assert_teaches_class_subject(session, user, class_id, subject_id)
+
+    rows = (
+        await session.execute(
+            select(
+                Lesson.id,
+                Lesson.lesson_date,
+                Lesson.period,
+                Lesson.topic,
+                Lesson.attendance_marked_at,
+            )
+            .where(
+                Lesson.class_id == class_id,
+                Lesson.subject_id == subject_id,
+                Lesson.is_archived.is_(False),
+                Lesson.starts_at <= utcnow(),
+            )
+            .order_by(Lesson.lesson_date.desc(), Lesson.period.desc())
+            .limit(limit)
+        )
+    ).all()
+
+    return [
+        LessonOptionRow(
+            id=lesson_id,
+            lesson_date=kun,
+            period=para,
+            topic=topic,
+            attendance_marked=belgilangan is not None,
+        )
+        for lesson_id, kun, para, topic, belgilangan in rows
+    ]
 
 
 async def create_homework(
@@ -240,10 +326,25 @@ async def create_homework(
     if subject is None or subject.is_archived:
         raise NotFoundError("Fan topilmadi.")
 
+    # Vazifa OʻTILGAN darsga bogʻlanadi (UYV-01). Dars sinf va fan
+    # boʻyicha mos kelishi shart: aks holda ustoz oʻz sinfining boshqa
+    # fanidagi darsini biriktirib, mavzuni chalkashtirib yuborardi.
+    mavzu: str | None = None
     if lesson_id is not None:
         lesson = await session.get(Lesson, lesson_id)
-        if lesson is None or lesson.class_id != class_id:
+        if (
+            lesson is None
+            or lesson.is_archived
+            or lesson.class_id != class_id
+            or lesson.subject_id != subject_id
+        ):
             raise NotFoundError("Dars topilmadi.")
+        # Hali oʻtilmagan darsga vazifa berilmaydi — «oʻtilgan mavzu»
+        # degani shu. Kelajakdagi dars roʻyxatda ham koʻrinmaydi,
+        # lekin tekshiruv SERVERDA boʻlsin (7-qoida).
+        if lesson.starts_at > utcnow():
+            raise ValidationError("Bu dars hali oʻtilmagan — vazifa keyinroq beriladi.")
+        mavzu = lesson.topic
 
     homework = Homework(
         lesson_id=lesson_id,
@@ -303,7 +404,7 @@ async def create_homework(
 
     await session.commit()
 
-    return _row(homework, cls.name, subject.name, (len(students), 0, 0))
+    return _row(homework, cls.name, subject.name, mavzu, (len(students), 0, 0))
 
 
 async def archive_homework(

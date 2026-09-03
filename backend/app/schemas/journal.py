@@ -94,12 +94,25 @@ class StudentSubjectGradesOut(BaseModel):
 # ─────────────────────────── Uy vazifasi ───────────────────────────
 
 
+class HomeworkLessonOut(BaseModel):
+    """Vazifa bogʻlash uchun oʻtilgan dars (UYV-01)."""
+
+    id: uuid.UUID
+    lesson_date: date
+    period: int
+    topic: str | None
+    attendance_marked: bool
+
+
 class HomeworkOut(BaseModel):
     id: uuid.UUID
     class_id: uuid.UUID
     class_name: str
     subject_id: uuid.UUID
     subject_name: str
+    lesson_id: uuid.UUID | None
+    #: Vazifa bogʻlangan darsning mavzusi — roʻyxatda koʻrsatiladi.
+    topic: str | None
     title: str
     description: str
     due_at: datetime

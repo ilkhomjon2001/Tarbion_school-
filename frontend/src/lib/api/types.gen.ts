@@ -2366,6 +2366,34 @@ export type HomeworkCreateIn = {
 };
 
 /**
+ * HomeworkLessonOut
+ *
+ * Vazifa bogʻlash uchun oʻtilgan dars (UYV-01).
+ */
+export type HomeworkLessonOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Lesson Date
+     */
+    lesson_date: string;
+    /**
+     * Period
+     */
+    period: number;
+    /**
+     * Topic
+     */
+    topic: string | null;
+    /**
+     * Attendance Marked
+     */
+    attendance_marked: boolean;
+};
+
+/**
  * HomeworkOut
  */
 export type HomeworkOut = {
@@ -2389,6 +2417,14 @@ export type HomeworkOut = {
      * Subject Name
      */
     subject_name: string;
+    /**
+     * Lesson Id
+     */
+    lesson_id: string | null;
+    /**
+     * Topic
+     */
+    topic: string | null;
     /**
      * Title
      */
@@ -9562,6 +9598,42 @@ export type JournalCreateHomeworkResponses = {
 };
 
 export type JournalCreateHomeworkResponse = JournalCreateHomeworkResponses[keyof JournalCreateHomeworkResponses];
+
+export type JournalHomeworkLessonsData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Class Id
+         */
+        class_id: string;
+        /**
+         * Subject Id
+         */
+        subject_id: string;
+    };
+    url: '/api/v1/journal/homework/lessons';
+};
+
+export type JournalHomeworkLessonsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type JournalHomeworkLessonsError = JournalHomeworkLessonsErrors[keyof JournalHomeworkLessonsErrors];
+
+export type JournalHomeworkLessonsResponses = {
+    /**
+     * Response Journal Homework Lessons
+     *
+     * Successful Response
+     */
+    200: Array<HomeworkLessonOut>;
+};
+
+export type JournalHomeworkLessonsResponse = JournalHomeworkLessonsResponses[keyof JournalHomeworkLessonsResponses];
 
 export type JournalArchiveHomeworkData = {
     body?: never;

@@ -25,8 +25,11 @@ import {
   apiXato,
   createHomework,
   fetchHomework,
+  fetchHomeworkLessons,
   formatDue,
+  lessonLabel,
   localInputToIso,
+  type HomeworkLessonOut,
   type HomeworkOut,
 } from "@/lib/teacher/journal-api";
 
@@ -128,6 +131,11 @@ export default function HomeworkListPage() {
                         </span>
                       </div>
                       <p className="mt-1.5 font-medium">{hw.title}</p>
+                      {hw.topic && hw.topic !== hw.title && (
+                        <p className="mt-0.5 text-sm text-foreground-muted">
+                          Mavzu: {hw.topic}
+                        </p>
+                      )}
                       {hw.description && (
                         <p className="mt-0.5 line-clamp-1 text-sm text-foreground-muted">
                           {hw.description}
@@ -183,7 +191,18 @@ export default function HomeworkListPage() {
   );
 }
 
-/** UYV-01: matn, muddat, maksimal ball. */
+/**
+ * UYV-01: vazifa OʻTILGAN DARSGA beriladi.
+ *
+ * Loyiha egasining soʻrovi (2026-09-03): ilgari ustoz sarlavhani oʻzi
+ * oʻylab topardi («5-mashq»), va vazifa qaysi mavzuga tegishli ekani
+ * hech qayerda qolmasdi — oʻquvchi ham, ota-ona ham, rahbar ham buni
+ * bogʻlay olmasdi. Endi ustoz oʻtilgan darsni tanlaydi, sarlavha esa
+ * jurnalga yozilgan mavzudan olinadi va kerak boʻlsa aniqlashtiriladi.
+ *
+ * Darslar roʻyxati SERVERDAN va faqat vaqti kelib boʻlganlari — hali
+ * oʻtilmagan mavzuga vazifa berilmaydi (tekshiruv serverda ham bor).
+ */
 function NewHomeworkForm({
   slots,
   onClose,
@@ -194,7 +213,12 @@ function NewHomeworkForm({
   onCreated: () => void;
 }) {
   const [pick, setPick] = useState(0);
+  const [lessons, setLessons] = useState<HomeworkLessonOut[] | null>(null);
+  const [lessonId, setLessonId] = useState("");
   const [title, setTitle] = useState("");
+  // Ustoz sarlavhani oʻzi tahrirladimi. Tahrirlagan boʻlsa, dars
+  // almashtirilganda yozgani oʻchib ketmasin.
+  const [titleTouched, setTitleTouched] = useState(false);
   const [description, setDescription] = useState("");
   const [due, setDue] = useState(() => defaultDue());
   const [maxScore, setMaxScore] = useState(5);
@@ -203,22 +227,66 @@ function NewHomeworkForm({
   const [error, setError] = useState<string | null>(null);
 
   const slot = slots[pick];
-  const valid = slot !== undefined && title.trim().length > 1 && due !== "";
 
   const labels = useMemo(
     () => slots.map((s) => `${s.className} · ${s.subjectName}`),
     [slots],
   );
 
+  const classId = slot?.classId;
+  const subjectId = slot?.subjectId;
+
+  // Sinf/fan almashsa — oʻtilgan darslar qaytadan olinadi.
+  useEffect(() => {
+    if (classId === undefined || subjectId === undefined) return;
+    let alive = true;
+    setLessons(null);
+    setLessonId("");
+    setError(null);
+
+    fetchHomeworkLessons(classId, subjectId)
+      .then((rows) => {
+        if (!alive) return;
+        setLessons(rows);
+        // Eng oxirgi oʻtilgan dars — odatda vazifa aynan shunga
+        // beriladi. Ustoz kerak boʻlsa boshqasini tanlaydi.
+        const birinchi = rows[0];
+        if (birinchi) {
+          setLessonId(birinchi.id);
+          setTitle((oldingi) => (oldingi.trim() === "" ? (birinchi.topic ?? "") : oldingi));
+        }
+      })
+      .catch((err) => {
+        if (!alive) return;
+        setLessons([]);
+        setError(apiXato(err, "Oʻtilgan darslarni olib boʻlmadi."));
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [classId, subjectId]);
+
+  const lesson = lessons?.find((l) => l.id === lessonId) ?? null;
+  const valid =
+    slot !== undefined && lessonId !== "" && title.trim().length > 1 && due !== "";
+
+  function chooseLesson(id: string) {
+    setLessonId(id);
+    const tanlangan = lessons?.find((l) => l.id === id);
+    if (tanlangan?.topic && !titleTouched) setTitle(tanlangan.topic);
+  }
+
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (!valid) return;
+    if (!valid || slot === undefined) return;
     setSaving(true);
     setError(null);
     try {
       await createHomework({
         class_id: slot.classId,
         subject_id: slot.subjectId,
+        lesson_id: lessonId,
         title: title.trim(),
         description: description.trim(),
         due_at: localInputToIso(due),
@@ -249,7 +317,9 @@ function NewHomeworkForm({
       <h2 className="mb-3 text-sm font-semibold">Yangi uy vazifasi</h2>
 
       {error && (
-        <p className="mb-3 rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">{error}</p>
+        <p role="alert" className="mb-3 rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">
+          {error}
+        </p>
       )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -268,12 +338,52 @@ function NewHomeworkForm({
           </select>
         </label>
 
+        <div className="sm:col-span-2">
+          <span className="mb-1.5 block text-xs font-medium text-foreground">Oʻtilgan dars</span>
+
+          {lessons === null ? (
+            <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-foreground-muted">
+              Darslar yuklanmoqda…
+            </p>
+          ) : lessons.length === 0 ? (
+            // Real holat: oʻquv yili boshida hali dars oʻtilmagan. Soxta
+            // variant koʻrsatgandan koʻra sababini aytish toʻgʻri —
+            // ustoz nima qilishini biladi.
+            <p className="rounded-lg border border-warning/40 bg-warning-tint px-3 py-2 text-sm text-foreground">
+              Bu sinfda bu fandan hali dars oʻtilmagan. Vazifa oʻtilgan mavzuga
+              beriladi — avval dars oʻtilsin, mavzu esa davomat sahifasida yoziladi.
+            </p>
+          ) : (
+            <>
+              <select
+                value={lessonId}
+                onChange={(e) => chooseLesson(e.target.value)}
+                className={inputClass}
+              >
+                {lessons.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {lessonLabel(l)} — {l.topic ?? "mavzu yozilmagan"}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1.5 text-xs text-foreground-muted">
+                {lesson !== null && lesson.topic === null
+                  ? "Bu darsning mavzusi jurnalga yozilmagan — davomat sahifasida yozib qoʻying, keyingi safar sarlavha oʻzi toʻladi."
+                  : "Sarlavha shu darsning mavzusidan olindi."}
+              </p>
+            </>
+          )}
+        </div>
+
         <label className="sm:col-span-2">
           <span className="mb-1.5 block text-xs font-medium text-foreground">Sarlavha</span>
           <input
             value={title}
-            onChange={(e) => setTitle(e.target.value.slice(0, 200))}
-            placeholder="Masalan: 5-mashq, 1–10 misollar"
+            onChange={(e) => {
+              setTitle(e.target.value.slice(0, 200));
+              setTitleTouched(true);
+            }}
+            placeholder="Mavzu asosidagi topshiriq — masalan: Kasrlarni qoʻshish, 5-mashq"
             className={inputClass}
           />
         </label>

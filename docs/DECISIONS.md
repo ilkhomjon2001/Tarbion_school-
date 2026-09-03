@@ -895,3 +895,18 @@ kalit esa ataylab serverdan tashqarida. Shifrlangan nusxa tez
 qaytishga yaramaydi. Evaziga `umask 077` va saqlanadigan nusxa soni
 20 dan 5 ga tushirildi — diskda ochiq PII kamroq va kamroq vaqt
 yotadi.
+
+## 2026-09-03 · Uy vazifasi oʻtilgan darsga bogʻlanadi
+
+Ilgari ustoz vazifaga oʻzi oʻylab topgan nom qoʻyardi («5-mashq») va
+vazifa qaysi mavzuga tegishli ekani hech qayerda qolmasdi. Endi ustoz
+oʻtilgan darsni tanlaydi (`homework.lesson_id`), sarlavha esa
+jurnaldagi mavzudan (`lessons.topic`) toʻladi.
+
+Tanlash roʻyxatiga faqat vaqti kelib boʻlgan darslar kiradi va bu
+SERVERDA tekshiriladi (`starts_at <= now`, sinf va fan mos): hali
+oʻtilmagan mavzuga vazifa berilmaydi. Sarlavha maydoni qoldi —
+«Kasrlarni qoʻshish, 5-mashq» kabi aniqlashtirish kerak boʻladi.
+
+Muqobil — `lesson_id` ni majburiy qilish — rad etildi: eski vazifalar
+bogʻlanmagan va ular roʻyxatdan tushib qolardi (1-domen qoidasi).

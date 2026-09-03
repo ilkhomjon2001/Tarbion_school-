@@ -23,6 +23,7 @@ from app.models import (
     Guardian,
     Homework,
     HomeworkSubmission,
+    Lesson,
     Role,
     RoleName,
     ScheduleEntry,
@@ -494,3 +495,125 @@ async def test_yuz_ballik_baho_ortachani_buzmaydi(
     assert mat["average"] is not None
     assert mat["average"] <= 5, f"oʻrtacha 5 dan oshdi: {mat['average']}"
     assert abs(mat["average"] - 4.0) < 0.01
+
+
+# ──────────────── Oʻtilgan mavzu asosida vazifa (UYV-01) ────────────────
+#
+# Loyiha egasining soʻrovi (2026-09-03): ustoz vazifaga oʻzi oʻylab
+# topgan nom qoʻymasin — oʻtilgan darsni tanlasin, mavzu jurnaldan
+# olinsin.
+
+
+async def _dars(
+    session: AsyncSession,
+    world: dict,
+    *,
+    soat_oldin: int,
+    topic: str | None = None,
+    subject: object = None,
+    period: int = 1,
+) -> Lesson:
+    """Berilgan vaqtda boshlanadigan dars. Manfiy `soat_oldin` — kelajak."""
+    boshi = utcnow() - timedelta(hours=soat_oldin)
+    lesson = Lesson(
+        class_id=world["class"].id,
+        subject_id=(subject or world["math"]).id,
+        teacher_id=world["ustoz"].id,
+        lesson_date=boshi.date(),
+        period=period,
+        starts_at=boshi,
+        ends_at=boshi + timedelta(minutes=45),
+        topic=topic,
+    )
+    session.add(lesson)
+    await session.flush()
+    return lesson
+
+
+async def test_otilgan_darslar_royxati_kelajakdagini_bermaydi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    otgan = await _dars(session, world, soat_oldin=24, topic="Kasrlar")
+    await _dars(session, world, soat_oldin=-24, topic="Darajalar", period=2)
+
+    token = await _token(client, "hw.ustoz")
+    r = await client.get(
+        "/api/v1/journal/homework/lessons",
+        headers=_auth(token),
+        params={"class_id": str(world["class"].id), "subject_id": str(world["math"].id)},
+    )
+    assert r.status_code == 200, r.text
+    rows = r.json()
+    assert [x["id"] for x in rows] == [str(otgan.id)]
+    assert rows[0]["topic"] == "Kasrlar"
+
+
+async def test_begona_ustoz_darslar_royxatini_ololmaydi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """X-2: bu fandan bu sinfda dars bermaydigan ustozga `403`."""
+    await _dars(session, world, soat_oldin=24, topic="Kasrlar")
+
+    token = await _token(client, "hw.begona")
+    r = await client.get(
+        "/api/v1/journal/homework/lessons",
+        headers=_auth(token),
+        params={"class_id": str(world["class"].id), "subject_id": str(world["math"].id)},
+    )
+    assert r.status_code == 403, r.text
+
+
+async def test_vazifa_darsga_boglanadi_va_mavzu_qaytadi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    lesson = await _dars(session, world, soat_oldin=3, topic="Oddiy kasrlarni qoʻshish")
+
+    token = await _token(client, "hw.ustoz")
+    hw = await _create(client, token, world, lesson_id=str(lesson.id))
+    assert hw["lesson_id"] == str(lesson.id)
+    assert hw["topic"] == "Oddiy kasrlarni qoʻshish"
+
+    # Roʻyxatda ham mavzu koʻrinadi — sarlavha ostida.
+    r = await client.get("/api/v1/journal/homework", headers=_auth(token))
+    assert r.json()[0]["topic"] == "Oddiy kasrlarni qoʻshish"
+
+
+async def test_boshqa_fan_darsiga_boglab_bolmaydi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Fan mos kelmasa `404` — mavzu chalkashib ketmasin."""
+    fizika_darsi = await _dars(session, world, soat_oldin=3, subject=world["fizika"], period=3)
+
+    token = await _token(client, "hw.ustoz")
+    r = await client.post(
+        "/api/v1/journal/homework",
+        headers=_auth(token),
+        json={
+            "class_id": str(world["class"].id),
+            "subject_id": str(world["math"].id),
+            "title": "5-mashq",
+            "due_at": _kelajak(),
+            "lesson_id": str(fizika_darsi.id),
+        },
+    )
+    assert r.status_code == 404, r.text
+
+
+async def test_kelajakdagi_darsga_vazifa_berilmaydi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    lesson = await _dars(session, world, soat_oldin=-5, topic="Darajalar", period=4)
+
+    token = await _token(client, "hw.ustoz")
+    r = await client.post(
+        "/api/v1/journal/homework",
+        headers=_auth(token),
+        json={
+            "class_id": str(world["class"].id),
+            "subject_id": str(world["math"].id),
+            "title": "5-mashq",
+            "due_at": _kelajak(),
+            "lesson_id": str(lesson.id),
+        },
+    )
+    assert r.status_code == 422, r.text

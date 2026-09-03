@@ -19,6 +19,7 @@ from app.schemas.journal import (
     GradeOut,
     GradeSubmissionIn,
     HomeworkCreateIn,
+    HomeworkLessonOut,
     HomeworkOut,
     JournalStudentOut,
     LessonGradesIn,
@@ -222,6 +223,8 @@ def _hw_out(h: homework_service.HomeworkRow) -> HomeworkOut:
         class_name=h.class_name,
         subject_id=h.subject_id,
         subject_name=h.subject_name,
+        lesson_id=h.lesson_id,
+        topic=h.topic,
         title=h.title,
         description=h.description,
         due_at=h.due_at,
@@ -258,6 +261,33 @@ async def my_homework(
     """Ustozning bergan vazifalari (UYV-06)."""
     rows = await homework_service.teacher_homework(session, user, class_id=class_id, limit=limit)
     return [_hw_out(r) for r in rows]
+
+
+@router.get("/homework/lessons", response_model=list[HomeworkLessonOut])
+async def homework_lessons(
+    user: CurrentUserDep,
+    session: SessionDep,
+    class_id: uuid.UUID,
+    subject_id: uuid.UUID,
+) -> list[HomeworkLessonOut]:
+    """Vazifa bogʻlash uchun oʻtilgan darslar (UYV-01).
+
+    Ustoz vazifaga oʻzi oʻylab topgan nom qoʻymasin: shu roʻyxatdan
+    oʻtilgan darsni tanlaydi va sarlavha jurnaldagi mavzudan olinadi.
+    """
+    rows = await homework_service.lessons_for_homework(
+        session, user, class_id=class_id, subject_id=subject_id
+    )
+    return [
+        HomeworkLessonOut(
+            id=r.id,
+            lesson_date=r.lesson_date,
+            period=r.period,
+            topic=r.topic,
+            attendance_marked=r.attendance_marked,
+        )
+        for r in rows
+    ]
 
 
 @router.post("/homework", response_model=HomeworkOut, status_code=201)
