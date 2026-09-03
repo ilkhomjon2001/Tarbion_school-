@@ -51,17 +51,49 @@ async def world(session: AsyncSession) -> dict:
     return {"a": a, "b": b}
 
 
+def _cookie_qiymati(r) -> str:  # noqa: ANN001 — httpx.Response
+    """`Set-Cookie` sarlavhasidan refresh qiymatini oladi.
+
+    `r.cookies` ga TAYANIB BOʻLMAYDI: ishlab chiqarish sozlamasida
+    cookie `Secure` bayrogʻi bilan keladi va httpx uni `http://`
+    transportda saqlamaydi. Lokal `.env` da `COOKIE_SECURE=false`
+    boʻlgani uchun bu farq koʻrinmasdi — CI da esa (u `.env` siz,
+    standart `cookie_secure=True` bilan ishlaydi) testlar yiqildi.
+    """
+    xom = r.headers.get("set-cookie", "")
+    for qism in xom.split(";"):
+        nom, _, qiymat = qism.strip().partition("=")
+        if nom == COOKIE:
+            return qiymat
+    raise AssertionError(f"{COOKIE} cookie topilmadi: {xom!r}")
+
+
 async def _login(
     client: AsyncClient, login: str, *, remember: bool = True, agent: str = "Sinov/1.0"
 ) -> tuple[str, str]:
-    """(access_token, refresh_cookie) qaytaradi."""
+    """(access_token, refresh_cookie) qaytaradi va cookie'ni oʻrnatadi."""
     r = await client.post(
         "/api/v1/auth/login",
         json={"login": login, "password": PASSWORD, "remember": remember},
         headers={"User-Agent": agent},
     )
     assert r.status_code == 200, r.text
-    return r.json()["access_token"], r.cookies[COOKIE]
+    cookie = _cookie_qiymati(r)
+    client.cookies.set(COOKIE, cookie)
+    return r.json()["access_token"], cookie
+
+
+async def _refresh(client: AsyncClient):  # noqa: ANN201 — httpx.Response
+    """Tokenni yangilaydi va YANGI cookie'ni oʻrnatadi.
+
+    Yangi cookie oʻrnatilmasa, keyingi yangilash ESKI tokenni
+    yuborardi va server uni «qayta ishlatish» deb hisoblab butun
+    oilani bekor qilardi.
+    """
+    r = await client.post("/api/v1/auth/refresh")
+    if r.status_code == 200:
+        client.cookies.set(COOKIE, _cookie_qiymati(r))
+    return r
 
 
 def _auth(token: str) -> dict[str, str]:
@@ -108,7 +140,7 @@ async def test_yangilash_royxatni_kopaytirmaydi(client: AsyncClient, world: dict
     """
     token, _ = await _login(client, "ses.alisher")
     for _ in range(3):
-        r = await client.post("/api/v1/auth/refresh")
+        r = await _refresh(client)
         assert r.status_code == 200, r.text
         token = r.json()["access_token"]
 
@@ -238,7 +270,7 @@ async def test_yangilash_vaqtinchalikni_doimiyga_aylantirmaydi(
     birinchi yangilanishdayoq 30 kunlik boʻlib qolardi."""
     await _login(client, "ses.alisher", remember=False)
 
-    r = await client.post("/api/v1/auth/refresh")
+    r = await _refresh(client)
     assert r.status_code == 200, r.text
     assert "Max-Age" not in r.headers["set-cookie"]
 
@@ -293,7 +325,7 @@ async def test_refresh_yangi_access_beradi(client: AsyncClient, world: dict) -> 
     """Muddati oʻtganda mijoz `/refresh` bilan davom eta oladi."""
     eski_token, _ = await _login(client, "ses.alisher")
 
-    r = await client.post("/api/v1/auth/refresh")
+    r = await _refresh(client)
     assert r.status_code == 200, r.text
     yangi = r.json()["access_token"]
     assert yangi != eski_token

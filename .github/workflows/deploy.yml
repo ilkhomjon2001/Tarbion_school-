@@ -78,6 +78,16 @@ jobs:
           # 32 belgidan uzun boʻlishi shart (config validatori).
           JWT_SECRET: ci-uchun-vaqtinchalik-kalit-32-belgidan-uzun-2026
           APP_ENV: development
+        # DIQQAT: bu yerda `.env` YOʻQ (u gitignore'da), yaʼni qolgan
+        # hamma sozlama `config.py` STANDARTIDAN olinadi. Lokal `.env`
+        # esa ularning bir qismini boshqacha qiladi — masalan
+        # `COOKIE_SECURE=false` va `REQUIRE_TWO_FACTOR=false`.
+        #
+        # Shu sababli test lokal `.env` qiymatiga tayanmasligi kerak.
+        # Bir marta tushilgan (2026-09-03): sessiya testlari httpx
+        # cookie idishiga tayangan, `Secure` cookie esa `http://`
+        # transportda saqlanmaydi — lokalda oʻtdi, CI da yiqildi.
+        # Tekshirish: `COOKIE_SECURE=true REQUIRE_TWO_FACTOR=true pytest -q`
         run: uv run pytest -q
 
   frontend:
