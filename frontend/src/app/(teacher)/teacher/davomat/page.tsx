@@ -185,8 +185,12 @@ export default function TeacherDayPage() {
         return;
       }
       const n = await saveClassDay(classId, kun, entries);
-      setXabar(`Saqlandi: ${n.created} yangi, ${n.updated} yangilandi.`);
+      // Xabar `yukla()` DAN KEYIN qoʻyiladi: u boshlanishida
+      // `setXabar(null)` qiladi va tasdiq darhol oʻchib ketardi —
+      // ustoz saqlagan-saqlamaganini bilmasdi. E2E oqimi shuni
+      // ushladi (T-023).
       await yukla();
+      setXabar(`Saqlandi: ${n.created} yangi, ${n.updated} yangilandi.`);
     } catch (err) {
       setXato(apiXato(err, "Saqlab boʻlmadi."));
     } finally {
