@@ -256,6 +256,43 @@ Toʻlov yozuvi tahrirlanmaydi va oʻchirilmaydi — xato boʻlsa storno
 | `.env` git ga tushmaydi, `.env.example` yangilanadi | Repo ochiq |
 | Zaxira **shifrlangan**, boshqa joyda | Oʻgʻirlangan zaxira = butun baza |
 | Zaxira **tiklab koʻriladi** | Tiklanmaydigan zaxira — zaxira emas |
+| SSH da `fail2ban` | Pastdagi raqamlarga qarang |
+
+### SSH — eng koʻzga tashlanmaydigan teshik
+
+Butun ilova qatlamidagi himoya bitta narsaga tayanadi: serverga
+begona odam kira olmasligiga. Kirsa — `access.py` ham, JWT ham,
+audit ham ahamiyatsiz: u bazani toʻgʻridan-toʻgʻri oʻqiydi.
+
+**2026-09-03 da oʻlchangan holat** (fail2ban oʻrnatilishidan oldin,
+soʻnggi 24 soat):
+
+```
+7576  muvaffaqiyatsiz SSH kirish urinishi
+2818  shundan `root` ga parol bilan
+ 168  «admin» nomi bilan, 97 «user», 64 «test», 40 «deploy» ...
+```
+
+Yaʼni server uzluksiz parol tanlash hujumi ostida turgan va hech
+qanday cheklov boʻlmagan. `fail2ban` yoqilgan zahoti uchta IP ni
+darhol blokladi.
+
+Sozlama — `/etc/fail2ban/jail.d/sshd.local`: 10 daqiqada 5 xato →
+1 soat blok, takroriy hujumchiga muddat 4 barobar oshadi (7 kungacha).
+Toʻgʻri parol bilan kiradigan odam bu chegaraga hech qachon yetmaydi.
+
+**Lekin fail2ban — yamoq, yechim emas.** Toʻgʻri yechim: parol bilan
+kirishni butunlay yopish va faqat kalitga qoldirish.
+
+```bash
+# authorized_keys da kalit BORLIGINI tekshirgandan KEYIN:
+sed -i 's|^#*PermitRootLogin.*|PermitRootLogin prohibit-password|' /etc/ssh/sshd_config
+sed -i 's|^#*PasswordAuthentication.*|PasswordAuthentication no|' /etc/ssh/sshd_config
+sshd -t && systemctl reload ssh
+```
+
+Deploy buzilmaydi: GitHub Actions allaqachon kalit bilan kiradi
+(`github-actions@tarbion`), parol bilan emas.
 
 ### Log (X-10)
 
@@ -477,9 +514,15 @@ tiklandi" yetarli emas — **bo'sh baza ham xatosiz tiklanadi**.
 
 ### Hali qilinmagan
 
-- **Zaxira olinmaganini aniqlash** — cron jimgina yiqilsa hech kim bilmaydi.
-- **Nuqtaviy tiklash (PITR)** — hozir eng ko'pi bir kunlik ma'lumot yo'qoladi.
-- **Deploy** — HTTPS, systemd birliklari (T-022 ning qolgan qismi).
+- **SSH da parol bilan kirish hali ochiq** — `fail2ban` qoʻyildi, lekin
+  toʻgʻri yechim faqat kalitga oʻtish (yuqoridagi buyruqlar).
+- **Nuqtaviy tiklash (PITR)** — hozir eng koʻpi bir kunlik maʼlumot yoʻqoladi.
+- **Frontend CSP toʻliq emas** — `frame-ancestors`, `base-uri`,
+  `form-action` bor; `script-src` uchun nonce kerak.
+
+Bajarildi (2026-09-03): zaxira olinmaganini aniqlash (`OnFailure` →
+Telegram), deploy va HTTPS, kabinet sahifalariga xavfsizlik
+sarlavhalari, SSH da `fail2ban`.
 
 ---
 
