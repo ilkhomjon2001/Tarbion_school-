@@ -77,9 +77,21 @@ export type LoginResult =
   | { kind: "ok"; user: UserOut }
   | { kind: "2fa"; challenge: string; recoveryAvailable: boolean };
 
-export async function login(login: string, password: string): Promise<LoginResult> {
+/**
+ * `remember` SERVERGA yuboriladi, faqat brauzerda saqlanmaydi.
+ *
+ * Ilgari «eslab qolish» butunlay frontend ishi edi va sessiyaning
+ * haqiqiy umriga taʼsir qilmasdi: refresh cookie baribir 30 kunlik
+ * boʻlib qolaverardi. Umumiy kompyuterda bu aynan qochmoqchi
+ * boʻlgan holat edi.
+ */
+export async function login(
+  login: string,
+  password: string,
+  remember = true,
+): Promise<LoginResult> {
   configureClient();
-  const { data, error } = await authLogin({ body: { login, password } });
+  const { data, error } = await authLogin({ body: { login, password, remember } });
   if (error || !data) {
     throw new SessionError(messageOf(error), statusOf(error));
   }

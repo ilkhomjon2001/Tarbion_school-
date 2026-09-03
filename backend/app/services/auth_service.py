@@ -1,7 +1,8 @@
 """Autentifikatsiya (T-004). TZ: AUT-01, AUT-05, AUT-06, AUT-07, AUT-08."""
 
 import uuid
-from datetime import timedelta
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -103,6 +104,7 @@ async def authenticate(
     password: str,
     ip: str | None,
     user_agent: str | None,
+    remember: bool = True,
 ) -> tuple[User, str, str]:
     """Kirish. (user, access_token, refresh_token) qaytaradi."""
     login = normalize_login(login_raw)
@@ -154,11 +156,26 @@ async def authenticate(
     )
 
     await session.commit()
-    return user, *await issue_session(session, user, ip=ip, user_agent=user_agent)
+    return user, *await issue_session(
+        session, user, ip=ip, user_agent=user_agent, remember=remember
+    )
+
+
+#: «Eslab qolish» belgilanmagan sessiyaning yashash muddati.
+#:
+#: 12 soat — bir ish kuni va ozgina zaxira. Sozlamaga chiqarilmadi:
+#: bu xavfsizlik qarori, muhitga qarab oʻzgaradigan narsa emas. Uzun
+#: qilib qoʻyish «eslab qolmang» degan tanlovni maʼnosiz qilardi.
+VAQTINCHALIK_TTL = timedelta(hours=12)
 
 
 async def issue_session(
-    session: AsyncSession, user: User, *, ip: str | None, user_agent: str | None
+    session: AsyncSession,
+    user: User,
+    *,
+    ip: str | None,
+    user_agent: str | None,
+    remember: bool = True,
 ) -> tuple[str, str]:
     """Access va refresh token beradi.
 
@@ -167,7 +184,12 @@ async def issue_session(
     """
     access, _ = create_token(user.id, "access", roles=user.role_names)
     refresh = await _issue_refresh(
-        session, user_id=user.id, family_id=uuid.uuid4(), ip=ip, user_agent=user_agent
+        session,
+        user_id=user.id,
+        family_id=uuid.uuid4(),
+        ip=ip,
+        user_agent=user_agent,
+        remember=remember,
     )
     await session.commit()
     return access, refresh
@@ -180,9 +202,11 @@ async def _issue_refresh(
     family_id: uuid.UUID,
     ip: str | None,
     user_agent: str | None,
+    remember: bool = True,
 ) -> str:
     now = utcnow()
     token, jti = create_token(user_id, "refresh", family_id=family_id)
+    umr = timedelta(days=settings.refresh_token_ttl_days) if remember else VAQTINCHALIK_TTL
     session.add(
         RefreshToken(
             id=jti,
@@ -190,9 +214,10 @@ async def _issue_refresh(
             family_id=family_id,
             token_hash=hash_token(token),
             issued_at=now,
-            expires_at=now + timedelta(days=settings.refresh_token_ttl_days),
+            expires_at=now + umr,
             ip_address=ip,
             user_agent=(user_agent or "")[:255] or None,
+            remember=remember,
         )
     )
     return token
@@ -204,8 +229,11 @@ async def rotate_refresh(
     raw_token: str,
     ip: str | None,
     user_agent: str | None,
-) -> tuple[User, str, str]:
+) -> tuple[User, str, str, bool]:
     """Refresh tokenni aylantiradi va qayta ishlatilishini aniqlaydi.
+
+    Toʻrtinchi qiymat — sessiya «eslab qolingan»mi. Router uni cookie
+    uchun ishlatadi: vaqtinchalik sessiyaga `max_age` qoʻyilmaydi.
 
     Bekor qilingan token qaytadan kelsa — oʻgʻirlangan deb hisoblanadi va
     butun oila bekor qilinadi. Bu OWASP tavsiya etgan "refresh token reuse
@@ -262,11 +290,19 @@ async def rotate_refresh(
     # Rollar bazadan qayta oʻqiladi — admin rolni olib qoʻygan boʻlsa,
     # yangilashda darhol kuchga kiradi.
     access, _ = create_token(user.id, "access", roles=user.role_names)
+    # `stored.remember` UZATILISHI SHART: usiz vaqtinchalik sessiya
+    # birinchi yangilanishdayoq 30 kunlik doimiy sessiyaga aylanib
+    # ketardi va «eslab qolmang» degan tanlov maʼnosiz boʻlardi.
     refresh = await _issue_refresh(
-        session, user_id=user.id, family_id=stored.family_id, ip=ip, user_agent=user_agent
+        session,
+        user_id=user.id,
+        family_id=stored.family_id,
+        ip=ip,
+        user_agent=user_agent,
+        remember=stored.remember,
     )
     await session.commit()
-    return user, access, refresh
+    return user, access, refresh, stored.remember
 
 
 async def revoke_session(session: AsyncSession, *, raw_token: str | None) -> None:
@@ -287,6 +323,145 @@ async def revoke_session(session: AsyncSession, *, raw_token: str | None) -> Non
             actor_id=stored.user_id,
         )
     await session.commit()
+
+
+# ───────────────────── Faol qurilmalar (AUT-09 kengaytmasi) ─────────────────────
+#
+# Loyiha egasining soʻrovi (2026-08-29): maktab va umumiy
+# kompyuterlarda hisob ochiq qolib ketmasin. Odam oʻz sessiyalarini
+# koʻrsin va begonasini bekor qila olsin.
+#
+# Bitta qurilma = bitta `family_id`. Aylantirish har 15 daqiqada yangi
+# token beradi, lekin oila bir xil qoladi — shuning uchun roʻyxat
+# tokenlar boʻyicha emas, OILALAR boʻyicha tuziladi. Aks holda bitta
+# telefon roʻyxatda oʻnlab qator boʻlib chiqardi.
+
+
+@dataclass(frozen=True, slots=True)
+class DeviceSession:
+    family_id: uuid.UUID
+    user_agent: str | None
+    ip_address: str | None
+    issued_at: datetime
+    expires_at: datetime
+    remember: bool
+    current: bool
+
+
+async def list_sessions(
+    session: AsyncSession, *, user_id: uuid.UUID, current_raw_token: str | None = None
+) -> list[DeviceSession]:
+    """Foydalanuvchining FAOL sessiyalari, qurilma boʻyicha.
+
+    X-1: `user_id` doim soʻrov darajasida — bu yerga faqat oʻz
+    sessiyalari tushadi va boshqa odamnikini koʻrishning yoʻli yoʻq.
+    """
+    joriy_hash = hash_token(current_raw_token) if current_raw_token else None
+
+    rows = (
+        await session.execute(
+            select(RefreshToken)
+            .where(
+                RefreshToken.user_id == user_id,
+                RefreshToken.revoked_at.is_(None),
+                RefreshToken.expires_at > utcnow(),
+            )
+            .order_by(RefreshToken.family_id, RefreshToken.issued_at.desc())
+        )
+    ).scalars()
+
+    # Har oiladan faqat ENG YANGI token qoladi.
+    korilgan: dict[uuid.UUID, DeviceSession] = {}
+    for t in rows:
+        if t.family_id in korilgan:
+            continue
+        korilgan[t.family_id] = DeviceSession(
+            family_id=t.family_id,
+            user_agent=t.user_agent,
+            ip_address=str(t.ip_address) if t.ip_address else None,
+            issued_at=t.issued_at,
+            expires_at=t.expires_at,
+            remember=t.remember,
+            current=joriy_hash is not None and t.token_hash == joriy_hash,
+        )
+
+    # Joriy qurilma birinchi, qolgani yangiligi boʻyicha.
+    return sorted(korilgan.values(), key=lambda s: (not s.current, -s.issued_at.timestamp()))
+
+
+async def revoke_family(
+    session: AsyncSession, *, user_id: uuid.UUID, family_id: uuid.UUID, ip: str | None = None
+) -> bool:
+    """Bitta qurilmani chiqaradi. Oʻzinikini emasligini bilib boʻlmaydi.
+
+    `user_id` shartda TURADI: usiz boshqa odamning `family_id` sini
+    topib, uni tizimdan chiqarib yuborish mumkin boʻlardi.
+    """
+    natija = await session.execute(
+        update(RefreshToken)
+        .where(
+            RefreshToken.user_id == user_id,
+            RefreshToken.family_id == family_id,
+            RefreshToken.revoked_at.is_(None),
+        )
+        .values(revoked_at=utcnow(), revoked_reason="revoked_by_user")
+    )
+    if natija.rowcount:
+        audit_service.record(
+            session,
+            object_type="user",
+            object_id=user_id,
+            action=AuditAction.LOGOUT,
+            old={"session": str(family_id)},
+            new={"revoked": True},
+            actor_id=user_id,
+            ip=ip,
+        )
+    await session.commit()
+    return bool(natija.rowcount)
+
+
+async def revoke_other_sessions(
+    session: AsyncSession,
+    *,
+    user_id: uuid.UUID,
+    current_raw_token: str | None,
+    ip: str | None = None,
+) -> int:
+    """Joriy qurilmadan tashqari HAMMASINI chiqaradi.
+
+    Aynan shu tugma parol oʻgʻirlangan deb gumon qilinganda bosiladi,
+    shuning uchun u bitta amalda ishlashi kerak — foydalanuvchi
+    roʻyxatdan bittalab tanlab oʻtirmasin.
+    """
+    shartlar = [
+        RefreshToken.user_id == user_id,
+        RefreshToken.revoked_at.is_(None),
+    ]
+    if current_raw_token:
+        joriy = await session.scalar(
+            select(RefreshToken).where(RefreshToken.token_hash == hash_token(current_raw_token))
+        )
+        if joriy is not None:
+            shartlar.append(RefreshToken.family_id != joriy.family_id)
+
+    natija = await session.execute(
+        update(RefreshToken)
+        .where(*shartlar)
+        .values(revoked_at=utcnow(), revoked_reason="revoked_others")
+    )
+    if natija.rowcount:
+        audit_service.record(
+            session,
+            object_type="user",
+            object_id=user_id,
+            action=AuditAction.LOGOUT,
+            new={"revoked_others": natija.rowcount},
+            actor_id=user_id,
+            ip=ip,
+        )
+    await session.commit()
+    return natija.rowcount
 
 
 async def ensure_roles(session: AsyncSession, names: list[str]) -> dict[str, Role]:

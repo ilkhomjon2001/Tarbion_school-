@@ -8,6 +8,7 @@ cookie'da ketadi (DECISIONS.md). JavaScript uni koʻrmaydi, shuning uchun
 XSS bilan oʻgʻirlab boʻlmaydi.
 """
 
+import dataclasses
 import uuid
 
 from fastapi import APIRouter, Request, Response, status
@@ -30,6 +31,8 @@ from app.schemas.auth import (
     ResetRequestIn,
     ResetRequestOut,
     ResetResolveOut,
+    RevokeOut,
+    SessionOut,
     TelegramCodeOut,
     TelegramStatusOut,
     TokenOut,
@@ -57,7 +60,13 @@ def _client_ip(request: Request) -> str | None:
     return request.client.host if request.client else None
 
 
-def _set_refresh_cookie(response: Response, token: str) -> None:
+def _set_refresh_cookie(response: Response, token: str, *, remember: bool = True) -> None:
+    """`remember=False` — SESSIYA cookie'si: brauzer yopilsa yoʻqoladi.
+
+    `max_age` BERILMASLIGI kerak, `0` emas: nol brauzerga cookie'ni
+    darhol oʻchirishni buyuradi va foydalanuvchi kirgan zahoti
+    chiqib qolardi.
+    """
     response.set_cookie(
         settings.refresh_cookie_name,
         token,
@@ -65,7 +74,7 @@ def _set_refresh_cookie(response: Response, token: str) -> None:
         secure=settings.cookie_secure,
         samesite=settings.cookie_samesite,  # type: ignore[arg-type]
         domain=settings.cookie_domain,
-        max_age=settings.refresh_token_ttl_days * 24 * 3600,
+        max_age=settings.refresh_token_ttl_days * 24 * 3600 if remember else None,
         path="/api/v1/auth",
     )
 
@@ -130,6 +139,7 @@ async def login(
         password=payload.password,
         ip=_client_ip(request),
         user_agent=request.headers.get("User-Agent"),
+        remember=payload.remember,
     )
 
     if user.two_factor_enabled:
@@ -138,11 +148,11 @@ async def login(
         # oʻtilmagan.
         await auth_service.revoke_session(session, raw_token=refresh)
         return TwoFactorRequiredOut(
-            challenge_token=twofactor_service.issue_challenge(user),
+            challenge_token=twofactor_service.issue_challenge(user, remember=payload.remember),
             recovery_available=await twofactor_service.unused_recovery_count(session, user.id) > 0,
         )
 
-    _set_refresh_cookie(response, refresh)
+    _set_refresh_cookie(response, refresh, remember=payload.remember)
     return TokenOut(access_token=access, user=await _user_out(session, user))
 
 
@@ -154,7 +164,7 @@ async def two_factor_verify(
     session: SessionDep,
 ) -> TokenOut:
     """Kirishning ikkinchi bosqichi: TOTP kodi yoki tiklash kodi."""
-    user_id = twofactor_service.read_challenge(payload.challenge_token)
+    user_id, remember = twofactor_service.read_challenge(payload.challenge_token)
     user = await session.get(User, user_id)
     if user is None or not user.is_active or user.is_archived:
         raise AuthRequiredError
@@ -163,9 +173,13 @@ async def two_factor_verify(
     await twofactor_service.verify_second_factor(session, user, payload.code, ip=ip)
 
     access, refresh = await auth_service.issue_session(
-        session, user, ip=ip, user_agent=request.headers.get("User-Agent")
+        session,
+        user,
+        ip=ip,
+        user_agent=request.headers.get("User-Agent"),
+        remember=remember,
     )
-    _set_refresh_cookie(response, refresh)
+    _set_refresh_cookie(response, refresh, remember=remember)
     return TokenOut(access_token=access, user=await _user_out(session, user))
 
 
@@ -248,13 +262,15 @@ async def two_factor_recovery_codes(
 @router.post("/refresh", response_model=TokenOut)
 async def refresh(request: Request, response: Response, session: SessionDep) -> TokenOut:
     raw = request.cookies.get(settings.refresh_cookie_name, "")
-    user, access, new_refresh = await auth_service.rotate_refresh(
+    user, access, new_refresh, remember = await auth_service.rotate_refresh(
         session,
         raw_token=raw,
         ip=_client_ip(request),
         user_agent=request.headers.get("User-Agent"),
     )
-    _set_refresh_cookie(response, new_refresh)
+    # Sessiyaning turi SAQLANADI: vaqtinchalik sessiya yangilanishdan
+    # keyin ham vaqtinchalik qolishi kerak.
+    _set_refresh_cookie(response, new_refresh, remember=remember)
     return TokenOut(access_token=access, user=await _user_out(session, user))
 
 
@@ -264,6 +280,66 @@ async def logout(request: Request, response: Response, session: SessionDep) -> N
         session, raw_token=request.cookies.get(settings.refresh_cookie_name)
     )
     response.delete_cookie(settings.refresh_cookie_name, path="/api/v1/auth")
+
+
+# ─────────────────── Faol qurilmalar (AUT-09 kengaytmasi) ───────────────────
+#
+# Loyiha egasining soʻrovi (2026-08-29): maktab va umumiy
+# kompyuterlarda hisob ochiq qolib ketmasin.
+#
+# Hech qayerda `user_id` parametr sifatida QABUL QILINMAYDI — u har
+# doim tokendan olinadi. Aks holda bu uchlik boshqa odamni tizimdan
+# chiqarib yuborish quroli boʻlardi (X-1).
+
+
+@router.get("/sessions", response_model=list[SessionOut])
+async def list_sessions(
+    request: Request, current: CurrentUserDep, session: SessionDep
+) -> list[SessionOut]:
+    """Foydalanuvchining oʻz faol qurilmalari."""
+    qatorlar = await auth_service.list_sessions(
+        session,
+        user_id=current.id,
+        current_raw_token=request.cookies.get(settings.refresh_cookie_name),
+    )
+    return [SessionOut(**dataclasses.asdict(q)) for q in qatorlar]
+
+
+@router.delete("/sessions/{family_id}", response_model=RevokeOut)
+async def revoke_session_by_id(
+    family_id: uuid.UUID,
+    request: Request,
+    current: CurrentUserDep,
+    session: SessionDep,
+) -> RevokeOut:
+    """Bitta qurilmani chiqaradi.
+
+    Begona `family_id` yuborilsa `revoked: 0` qaytadi — 404 emas.
+    404 boshqa odamning sessiyasi mavjudligini tasdiqlardi (X-3).
+    """
+    ok = await auth_service.revoke_family(
+        session, user_id=current.id, family_id=family_id, ip=_client_ip(request)
+    )
+    return RevokeOut(revoked=int(ok))
+
+
+@router.delete("/sessions", response_model=RevokeOut)
+async def revoke_other_sessions(
+    request: Request, current: CurrentUserDep, session: SessionDep
+) -> RevokeOut:
+    """Joriy qurilmadan tashqari hammasini chiqaradi.
+
+    Joriy sessiya ATAYLAB qoladi: odam parolini oʻgʻirlangan deb
+    gumon qilib bu tugmani bosadi va shu zahoti oʻzi ham chiqib
+    qolsa, parolni almashtirishga ulgurmasdan qoladi.
+    """
+    n = await auth_service.revoke_other_sessions(
+        session,
+        user_id=current.id,
+        current_raw_token=request.cookies.get(settings.refresh_cookie_name),
+        ip=_client_ip(request),
+    )
+    return RevokeOut(revoked=n)
 
 
 @router.get("/me", response_model=UserOut)

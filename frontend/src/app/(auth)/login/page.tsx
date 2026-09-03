@@ -18,9 +18,13 @@ import { SessionError } from "@/lib/session";
  * rol tugmalari bor edi; ular olib tashlandi, chunki rolni foydalanuvchi
  * tanlashi mumkinligi tushunmovchilik tugʻdirardi.
  *
- * "Ushbu qurilmada eslab qolish" — yoqilsa sessiya `localStorage`da (brauzer
- * yopilsa ham saqlanadi), oʻchirilgan boʻlsa `sessionStorage`da (tab/brauzer
- * yopilganda yoki "Chiqish" bosilganda yoʻqoladi). Qarang: `lib/auth.ts`.
+ * "Ushbu qurilmada eslab qolish" — endi SERVERGA ham yuboriladi (T-004).
+ * Ilgari u faqat brauzer ishi edi (`localStorage` yoki `sessionStorage`)
+ * va refresh cookie baribir 30 kunlik boʻlib qolaverardi — yaʼni umumiy
+ * kompyuterda katakchani oʻchirish deyarli hech narsani oʻzgartirmasdi.
+ * Endi belgilanmasa: cookie sessiya cookie'si (brauzer yopilsa
+ * yoʻqoladi) va serverdagi sessiya 30 kun emas, 12 soatda tugaydi.
+ * Qarang: `lib/auth.ts`, `backend/app/services/auth_service.py`.
  */
 
 

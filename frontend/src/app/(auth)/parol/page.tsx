@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { ActiveSessions } from "@/components/account/ActiveSessions";
 import { currentRole, logout, restore } from "@/lib/auth";
 import { ROLE_HOME } from "@/lib/roles";
 import { changePassword } from "@/lib/password";
@@ -83,7 +84,7 @@ export default function ChangePasswordPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-[400px]">
+      <div className={`w-full ${majburiy ? "max-w-[400px]" : "max-w-[520px]"}`}>
         <Image
           src="/logo/tarbion-wordmark.png"
           alt="Tarbion"
@@ -139,6 +140,15 @@ export default function ChangePasswordPage() {
             {loading ? "Saqlanmoqda…" : "Parolni saqlash"}
           </button>
         </form>
+
+        {/* Faol qurilmalar FAQAT ixtiyoriy tashrifda koʻrsatiladi
+            (T-004). Majburiy almashtirishda odam bu sahifada
+            qamalgan — unga roʻyxat emas, bitta aniq vazifa kerak. */}
+        {!majburiy && (
+          <div className="mt-10 border-t border-border pt-8">
+            <ActiveSessions />
+          </div>
+        )}
 
         <button
           type="button"

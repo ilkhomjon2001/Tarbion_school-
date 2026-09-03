@@ -1,5 +1,6 @@
 "use client";
 
+import { ActiveSessions } from "@/components/account/ActiveSessions";
 import { ParentShell } from "@/components/parent/ParentShell";
 import { TelegramLink } from "@/components/parent/TelegramLink";
 import { useChildren } from "@/lib/parent/useChild";
@@ -75,6 +76,12 @@ export default function ParentSettingsPage() {
           Roʻyxatda xatolik boʻlsa, maktab administratsiyasiga murojaat
           qiling.
         </p>
+      </section>
+
+      {/* Faol qurilmalar (T-004). Ota-ona koʻpincha telefondan kiradi
+          va telefon almashadi — eski qurilmani chiqarish kerak. */}
+      <section className="mb-5 rounded-xl border border-border bg-surface p-4">
+        <ActiveSessions />
       </section>
 
       {/* Bildirishnoma sozlamalari — bot bilan birga keladi */}

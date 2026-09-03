@@ -52,7 +52,7 @@ export async function signIn(
   password: string,
   remember: boolean,
 ): Promise<SignInResult> {
-  const natija = await session.login(login, password);
+  const natija = await session.login(login, password, remember);
 
   if (natija.kind === "2fa") {
     return {

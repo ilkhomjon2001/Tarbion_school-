@@ -237,12 +237,17 @@ async def disable(
 # ─────────────────── Kirishning ikkinchi bosqichi ───────────────────
 
 
-def issue_challenge(user: User) -> str:
+def issue_challenge(user: User, *, remember: bool = True) -> str:
     """Parol tasdiqlangach beriladigan qisqa muddatli token.
 
     Bu token BOSHQA HECH NARSAGA yaramaydi: `typ` maydoni `"2fa"` va
     `deps.current_user` faqat `"access"` turini qabul qiladi. Ya'ni
     parolni bilgan, lekin kodi yoʻq odam undan foydalana olmaydi.
+
+    `remember` shu yerda saqlanadi: foydalanuvchi «eslab qolmang» deb
+    belgilagan boʻlsa, u tanlov ikkinchi bosqichdan keyin ham
+    kuchda qolishi kerak. Aks holda 2FA yoqilgan odamda katakcha
+    jimgina eʼtiborsiz qolardi.
     """
     import jwt
 
@@ -253,11 +258,12 @@ def issue_challenge(user: User) -> str:
         "jti": str(uuid.uuid4()),
         "iat": int(hozir.timestamp()),
         "exp": int((hozir + timedelta(minutes=CHALLENGE_TTL_MINUTES)).timestamp()),
+        "rmb": remember,
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 
-def read_challenge(token: str) -> uuid.UUID:
+def read_challenge(token: str) -> tuple[uuid.UUID, bool]:
     import jwt
 
     try:
@@ -269,7 +275,9 @@ def read_challenge(token: str) -> uuid.UUID:
         )
         if payload.get("typ") != "2fa":
             raise AuthRequiredError("Token turi mos emas.")
-        return uuid.UUID(payload["sub"])
+        # Eski challenge tokenlarda `rmb` yoʻq — ular uchun eski
+        # xatti-harakat (eslab qolish) saqlanadi.
+        return uuid.UUID(payload["sub"]), bool(payload.get("rmb", True))
     except (jwt.PyJWTError, KeyError, ValueError) as exc:
         raise AuthRequiredError("Tasdiqlash muddati tugagan. Qaytadan kiring.") from exc
 

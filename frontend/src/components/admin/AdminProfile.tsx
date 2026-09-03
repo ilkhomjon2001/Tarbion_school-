@@ -7,11 +7,13 @@
  * yuklanadi); bu yerda tahrirlanmaydi — hisob maʼlumotini super
  * administrator boshqaradi, audit jurnalidagi «kim» ustuni ham oʻsha
  * yozuvga tayanadi. Bu sahifada foydalanuvchi oʻzi qila oladigan
- * yagona amal bor: parolni almashtirish (AUT-08).
+ * ikki amal bor: parolni almashtirish (AUT-08) va faol qurilmalarni
+ * boshqarish (T-004).
  */
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ActiveSessions } from "@/components/account/ActiveSessions";
 import { Badge } from "@/components/ui/Badge";
 import { LogoutIcon } from "@/components/ui/icons";
 import { isRemembered, logout } from "@/lib/auth";
@@ -78,6 +80,10 @@ export function AdminProfile() {
           </section>
         </div>
       </div>
+
+      <section className="rounded-xl border border-border bg-surface p-4">
+        <ActiveSessions />
+      </section>
     </div>
   );
 }

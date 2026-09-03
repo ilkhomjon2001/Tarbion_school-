@@ -4,17 +4,18 @@ import { Card } from "@/components/ui/Card";
 import { Header } from "@/components/ui/Header";
 import { LogoutButton } from "@/components/features/student/LogoutButton";
 import { PasswordChangeForm } from "@/components/features/student/PasswordChangeForm";
+import { ActiveSessions } from "@/components/account/ActiveSessions";
 import { getUser } from "@/lib/session";
 
 /**
  * Profil. Ism, login va sinf SESSIYADAN (`/auth/me`), parol
  * almashtirish BAZAGA yozadi.
  *
- * "Faol qurilmalar", kontakt va bildirishnoma formalari OLIB TASHLANDI
+ * Kontakt va bildirishnoma formalari OLIB TASHLANDI
  * (audit K7, K8): ular hech qanday backendga ulanmagan edi — "Saqlandi"
- * degani bilan hech narsa saqlanmasdi, soxta qurilma roʻyxati esa
- * xavfsizlik yolgʻoni edi. Backend (T-004 sessiyalar, T-018
- * bildirishnomalar) yozilgach qaytariladi.
+ * degani bilan hech narsa saqlanmasdi. Soxta qurilma roʻyxati ham
+ * bor edi — u xavfsizlik yolgʻoni edi. Endi uning oʻrnida HAQIQIY
+ * roʻyxat turadi (T-004). T-018 bildirishnomalari hali kutilmoqda.
  */
 export default function ProfilePage() {
   const user = getUser();
@@ -56,6 +57,10 @@ export default function ProfilePage() {
             <PasswordChangeForm />
           </Card>
         </section>
+
+        <Card>
+          <ActiveSessions />
+        </Card>
 
         <section>
           <LogoutButton />

@@ -13,6 +13,15 @@ class LoginIn(BaseModel):
     login: str = Field(min_length=2, max_length=64)
     password: str = Field(min_length=1, max_length=128)
 
+    #: «Ushbu qurilmada eslab qolish» (AUT-09 kengaytmasi, loyiha
+    #: egasining soʻrovi). Belgilanmasa cookie SESSIYA cookie'si
+    #: boʻladi — brauzer yopilishi bilan yoʻqoladi — va serverdagi
+    #: sessiya ham 30 kun emas, 12 soatda tugaydi.
+    #:
+    #: Sukut `True`: eski mijozlar bu maydonni yubormaydi va ular
+    #: uchun xatti-harakat oʻzgarmasligi kerak.
+    remember: bool = True
+
 
 class UserOut(BaseModel):
     id: uuid.UUID
@@ -173,3 +182,28 @@ class TelegramCodeOut(BaseModel):
     code: str
     expires_at: datetime
     bot_username: str | None
+
+
+class SessionOut(BaseModel):
+    """Bitta faol qurilma (AUT-09 kengaytmasi).
+
+    Token yoki uning xeshi HECH QACHON chiqmaydi — roʻyxatning maqsadi
+    sessiyani tanib olish va bekor qilish, uni ishlatish emas. Qurilmani
+    `family_id` bilan bekor qilinadi.
+    """
+
+    family_id: uuid.UUID
+    #: Brauzer/qurilma satri. Uzun va texnik — interfeys uni qisqartiradi.
+    user_agent: str | None
+    ip_address: str | None
+    issued_at: datetime
+    expires_at: datetime
+    #: «Eslab qolish» belgilanganmi. `false` — brauzer yopilsa tugaydi.
+    remember: bool
+    #: Shu soʻrov kelayotgan qurilmami. Interfeys uni ajratib koʻrsatadi
+    #: va «chiqarish» tugmasini boshqacha nomlaydi.
+    current: bool
+
+
+class RevokeOut(BaseModel):
+    revoked: int

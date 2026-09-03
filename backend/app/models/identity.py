@@ -166,6 +166,15 @@ class RefreshToken(Base, UUIDPk):
     user_agent: Mapped[str | None] = mapped_column(String(255))
     ip_address: Mapped[str | None] = mapped_column(INET)
 
+    #: «Ushbu qurilmada eslab qolish» belgilanganmi (AUT-09 kengaytmasi).
+    #:
+    #: Belgilanmasa sessiya VAQTINCHALIK: cookie brauzer yopilishi bilan
+    #: yoʻqoladi va bu yozuv ham 30 kun emas, bir necha soatda tugaydi.
+    #: Ustunsiz ham cookie tomoni ishlardi, lekin `rotate_refresh` yangi
+    #: token berayotganda muddatni qaytadan 30 kunga uzaytirib yuborardi
+    #: — yaʼni vaqtinchalik sessiya jimgina doimiyga aylanardi.
+    remember: Mapped[bool] = mapped_column(default=True, server_default="true", nullable=False)
+
 
 class LoginAttempt(AppendOnly):
     """AUT-05: ketma-ket 5 marta notoʻgʻri parol → 15 daqiqa blok.

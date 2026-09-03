@@ -111,10 +111,14 @@ Rollar: `student`, `parent`, `teacher`, `homeroom_teacher`, `admin`, `director`,
 
 ---
 
-### [~] T-004 · Login, JWT, sessiya
+### [x] T-004 · Login, JWT, sessiya
 **TZ:** AUT-01, AUT-05, AUT-06, AUT-08
 **Kerak:** T-003
-**Frontend:** 🟡 qisman — `/login` — rol tanlash, «eslab qolish» (localStorage yoki sessionStorage). `lib/auth.ts` sessiyani saqlaydi. JWT, refresh va server sessiyasi yoʻq.
+**Frontend:** ✅ tayyor — `ActiveSessions` komponenti `/parol` (ustoz
+shellidan havola), `/admin/profil`, `/student/profil` va
+`/ota-ona/sozlamalar` da. Login sahifasidagi «eslab qolish» endi
+SERVERGA yuboriladi — ilgari u faqat brauzer ishi edi va refresh
+cookie baribir 30 kunlik boʻlib qolaverardi.
 
 Telefon + parol bilan kirish. Access token 15 daqiqa (JSON javobda),
 refresh token 30 kun (`httpOnly`, `Secure`, `SameSite=Lax` cookie).
@@ -134,15 +138,22 @@ jadvali). Har kirish `login_log` ga yoziladi: sana, IP, user-agent.
 > `refresh_tokens`/`login_log` jadvali ulanganda almashtiriladi.
 
 **Tayyor:**
-- [ ] `POST /api/v1/auth/login`, `/refresh`, `/logout`, `/me` ishlaydi
-- [ ] Test: 5 xato urinish → 6-si `423 Locked`
-- [ ] Test: muddati o'tgan access token `401` beradi, refresh yangilaydi
-- [ ] Parolni o'zgartirish endpoint'i eski parolni so'raydi
-- [ ] "Eslab qolish" o'chirilgan bo'lsa, refresh token faqat sessiya
-      cookie sifatida beriladi (brauzer yopilganda amalda tugaydi)
-- [ ] `GET/DELETE /api/v1/auth/sessions` — foydalanuvchining faol
-      qurilmalari ro'yxati va birini/barchasini (joriydan tashqari)
-      bekor qilish
+- [x] `POST /api/v1/auth/login`, `/refresh`, `/logout`, `/me` ishlaydi
+- [x] Test: 5 xato urinish → 6-si `423 Locked` (`test_security_hardening`)
+- [x] Test: muddati oʻtgan access token `401` beradi, refresh yangilaydi
+      (`test_sessions`)
+- [x] Parolni oʻzgartirish endpoint'i eski parolni soʻraydi
+      (`test_user_service`)
+- [x] "Eslab qolish" oʻchirilgan boʻlsa, refresh token faqat sessiya
+      cookie sifatida beriladi (brauzer yopilganda amalda tugaydi).
+      Serverdagi sessiya ham 30 kun emas, 12 soat. `refresh_tokens.remember`
+      ustunisiz yangilash uni jimgina doimiyga aylantirib yuborardi —
+      shu holat alohida test bilan qotirilgan.
+- [x] `GET/DELETE /api/v1/auth/sessions` — foydalanuvchining faol
+      qurilmalari roʻyxati va birini/barchasini (joriydan tashqari)
+      bekor qilish. Roʻyxat OILALAR boʻyicha: bitta qurilma bitta qator,
+      aylantirish qancha boʻlsa ham. Begona `family_id` ga `404` emas,
+      `revoked: 0` (X-3). 15 ta test.
 
 ---
 
