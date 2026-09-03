@@ -475,3 +475,29 @@ async def test_faqat_kelajakdagi_darsi_bor_ustoz_royxatdan_yoqolmaydi(
     rows = (await client.get("/api/v1/director/teachers", headers=_auth(token))).json()
     qator = next(r for r in rows if r["id"] == str(yangi.id))
     assert qator["lessons_planned"] == 0
+
+
+async def test_sinf_davomati_nechta_yozuvdan_chiqqani_koresatiladi(
+    client: AsyncClient, school: dict[str, object], session: AsyncSession
+) -> None:
+    """Yozuv boʻlmasa «0%» va «hali belgilanmagan» bir xil koʻrinmasin.
+
+    Ilgari ikkala holat ham qizil «0%» boʻlib chiqardi va rahbar buni
+    «sinf darsga kelmayapti» deb oʻqirdi.
+    """
+    token = await _token(client, "sinov.director")
+    rows = (await client.get("/api/v1/director/classes", headers=_auth(token))).json()
+    assert rows[0]["attendance_records"] == 2
+
+    yangi_sinf = SchoolClass(
+        academic_year_id=(await session.execute(select(AcademicYear))).scalars().first().id,
+        name="9-B",
+    )
+    session.add(yangi_sinf)
+    await session.flush()
+
+    rows = (await client.get("/api/v1/director/classes", headers=_auth(token))).json()
+    bosh = next(r for r in rows if r["name"] == "9-B")
+    assert bosh["attendance_percent"] == 0
+    assert bosh["attendance_records"] == 0
+

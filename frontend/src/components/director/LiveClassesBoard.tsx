@@ -109,15 +109,42 @@ export function LiveClassesBoard() {
                     )}
                   </td>
                   <td className="num px-4 py-3 text-right">{cls.student_count}</td>
-                  <td
-                    className={`num px-4 py-3 text-right font-medium ${
-                      isAtRisk(cls.attendance_percent) ? "text-danger" : "text-success"
-                    }`}
-                  >
-                    {cls.attendance_percent}%
+                  {/* Yozuv boʻlmasa foiz «0%» boʻlib chiqadi. Ilgari u
+                      qizil rangda turardi va rahbar buni «sinf darsga
+                      kelmayapti» deb oʻqirdi — aslida hali davomat
+                      belgilanmagan edi. Nol qoladi, lekin rangi
+                      neytral va tagida sababi yozilgan. */}
+                  <td className="px-4 py-3 text-right align-top">
+                    <span
+                      className={`num block font-medium ${
+                        cls.attendance_records === 0
+                          ? "text-foreground-muted"
+                          : isAtRisk(cls.attendance_percent)
+                            ? "text-danger"
+                            : "text-success"
+                      }`}
+                    >
+                      {cls.attendance_percent}%
+                    </span>
+                    <span className="mt-0.5 block text-xs leading-tight text-foreground-muted">
+                      {cls.attendance_records === 0
+                        ? "Hali davomat belgilanmagan"
+                        : `${cls.attendance_records.toLocaleString("uz-Latn")} ta yozuv`}
+                    </span>
                   </td>
-                  <td className="num px-4 py-3 text-right">
-                    {cls.average_grade > 0 ? cls.average_grade.toFixed(1) : "—"}
+                  <td className="px-4 py-3 text-right align-top">
+                    <span
+                      className={`num block ${
+                        cls.average_grade > 0 ? "text-foreground" : "text-foreground-muted"
+                      }`}
+                    >
+                      {cls.average_grade > 0 ? cls.average_grade.toFixed(1) : "0"}
+                    </span>
+                    {cls.average_grade === 0 && (
+                      <span className="mt-0.5 block text-xs leading-tight text-foreground-muted">
+                        Hali baho qoʻyilmagan
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -125,6 +152,15 @@ export function LiveClassesBoard() {
           </table>
         </div>
       </div>
+
+      {/* Jadvaldagi ustunlarda davr filtri YOʻQ — ular butun oʻquv yili
+          boʻyicha. Pastdagi oʻquvchilar kesimida esa 7/30 kun tanlanadi.
+          Ikki xil davr bir sahifada turgani uchun buni aytish shart. */}
+      <p className="text-xs text-foreground-muted">
+        Jadvaldagi davomat va oʻrtacha baho — <strong>butun oʻquv yili</strong>{" "}
+        boʻyicha. Sinfni bosing: oʻquvchilar kesimi tanlangan davr uchun
+        koʻrsatiladi.
+      </p>
 
       {selected && (
         <section className="rounded-xl border border-border bg-surface p-4">
@@ -184,7 +220,7 @@ export function LiveClassesBoard() {
                           : "text-success"
                     }`}
                   >
-                    {s.stat.total === 0 ? "—" : `${s.stat.percent}%`}
+                    {s.stat.total === 0 ? "0%" : `${s.stat.percent}%`}
                   </span>
                 </li>
               ))}
@@ -192,6 +228,8 @@ export function LiveClassesBoard() {
           )}
           <p className="mt-3 text-[11px] text-foreground-muted">
             Qizil — davomat 85% dan past (DIR-07 boʻyicha xavf ostidagi oʻquvchi).
+            Kulrang «0%» — bu davrda oʻquvchi uchun davomat umuman
+            belgilanmagan, yaʼni bu baho emas.
           </p>
         </section>
       )}

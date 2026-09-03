@@ -183,6 +183,9 @@ class ClassRowData:
     homeroom_teacher_name: str | None
     student_count: int
     attendance_percent: float
+    #: Foiz nechta yozuvdan hisoblangani. Nol boʻlsa foiz «0%» emas,
+    #: «hali belgilanmagan» degani — ikkalasi bir xil koʻrinmasin.
+    attendance_records: int
     average_grade: float
 
 
@@ -201,7 +204,11 @@ async def classes(session: AsyncSession) -> list[ClassRowData]:
         .subquery()
     )
     attendance = (
-        select(Lesson.class_id.label("class_id"), _attendance_percent.label("percent"))
+        select(
+            Lesson.class_id.label("class_id"),
+            _attendance_percent.label("percent"),
+            func.count(AttendanceRecord.id).label("records"),
+        )
         .select_from(AttendanceRecord)
         .join(Lesson, Lesson.id == AttendanceRecord.lesson_id)
         .join(Student, Student.id == AttendanceRecord.student_id)
@@ -228,6 +235,7 @@ async def classes(session: AsyncSession) -> list[ClassRowData]:
                 homeroom.c.first_name,
                 func.coalesce(counts.c.student_count, 0),
                 func.coalesce(attendance.c.percent, 0.0),
+                func.coalesce(attendance.c.records, 0),
                 func.round(cast(func.coalesce(grades.c.avg_grade, 0.0), Numeric), 2),
             )
             .select_from(SchoolClass)
@@ -247,9 +255,10 @@ async def classes(session: AsyncSession) -> list[ClassRowData]:
             homeroom_teacher_name=f"{last} {first}" if last else None,
             student_count=count,
             attendance_percent=float(percent or 0),
+            attendance_records=records or 0,
             average_grade=float(avg_grade or 0),
         )
-        for class_id, name, last, first, count, percent, avg_grade in rows
+        for class_id, name, last, first, count, percent, records, avg_grade in rows
     ]
 
 

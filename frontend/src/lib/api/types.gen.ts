@@ -1189,6 +1189,10 @@ export type ClassRowOut = {
      */
     attendance_percent: number;
     /**
+     * Attendance Records
+     */
+    attendance_records: number;
+    /**
      * Average Grade
      */
     average_grade: number;

@@ -42,6 +42,9 @@ class ClassRowOut(BaseModel):
     homeroom_teacher_name: str | None
     student_count: int
     attendance_percent: float
+    #: Foiz nechta yozuvdan hisoblangani — nol boʻlsa «0%» emas, «hali
+    #: belgilanmagan». Interfeys ikkalasini ajratib koʻrsatadi.
+    attendance_records: int
     average_grade: float
 
 

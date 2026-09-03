@@ -74,6 +74,7 @@ async def classes(session: SessionDep) -> list[ClassRowOut]:
             homeroom_teacher_name=r.homeroom_teacher_name,
             student_count=r.student_count,
             attendance_percent=r.attendance_percent,
+            attendance_records=r.attendance_records,
             average_grade=r.average_grade,
         )
         for r in await director_service.classes(session)
