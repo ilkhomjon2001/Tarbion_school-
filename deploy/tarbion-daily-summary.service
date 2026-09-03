@@ -1,0 +1,13 @@
+[Unit]
+Description=Tarbion kunlik davomat xulosasi (T-019)
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+# `oneshot` — ishini qilib chiqadi, doimiy turmaydi. Taymer chaqiradi.
+Type=oneshot
+WorkingDirectory=/opt/tarbion/backend
+Environment=PATH=/root/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/root/.local/bin/uv run python -m app.workers.daily_summary
+MemoryMax=256M

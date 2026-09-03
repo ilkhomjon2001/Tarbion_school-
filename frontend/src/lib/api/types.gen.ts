@@ -3650,6 +3650,10 @@ export type SchoolSettingsIn = {
      * Director Name
      */
     director_name?: string;
+    /**
+     * Attendance Notify Delay Minutes
+     */
+    attendance_notify_delay_minutes?: number;
 };
 
 /**
@@ -3672,6 +3676,10 @@ export type SchoolSettingsOut = {
      * Director Name
      */
     director_name: string;
+    /**
+     * Attendance Notify Delay Minutes
+     */
+    attendance_notify_delay_minutes: number;
 };
 
 /**
@@ -4757,6 +4765,50 @@ export type TelegramStatusOut = {
      * Bot Username
      */
     bot_username: string | null;
+};
+
+/**
+ * TemplateIn
+ */
+export type TemplateIn = {
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Body
+     */
+    body: string;
+};
+
+/**
+ * TemplateOut
+ */
+export type TemplateOut = {
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Body
+     */
+    body: string;
+    /**
+     * Fields
+     */
+    fields: Array<string>;
+    /**
+     * Customized
+     */
+    customized: boolean;
 };
 
 /**
@@ -10345,6 +10397,84 @@ export type NotificationsMarkAllReadResponses = {
 };
 
 export type NotificationsMarkAllReadResponse = NotificationsMarkAllReadResponses[keyof NotificationsMarkAllReadResponses];
+
+export type TemplatesListTemplatesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/message-templates';
+};
+
+export type TemplatesListTemplatesResponses = {
+    /**
+     * Response Templates List Templates
+     *
+     * Successful Response
+     */
+    200: Array<TemplateOut>;
+};
+
+export type TemplatesListTemplatesResponse = TemplatesListTemplatesResponses[keyof TemplatesListTemplatesResponses];
+
+export type TemplatesSetTemplateData = {
+    body: TemplateIn;
+    path: {
+        /**
+         * Kind
+         */
+        kind: string;
+    };
+    query?: never;
+    url: '/api/v1/message-templates/{kind}';
+};
+
+export type TemplatesSetTemplateErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TemplatesSetTemplateError = TemplatesSetTemplateErrors[keyof TemplatesSetTemplateErrors];
+
+export type TemplatesSetTemplateResponses = {
+    /**
+     * Successful Response
+     */
+    200: TemplateOut;
+};
+
+export type TemplatesSetTemplateResponse = TemplatesSetTemplateResponses[keyof TemplatesSetTemplateResponses];
+
+export type TemplatesResetTemplateData = {
+    body?: never;
+    path: {
+        /**
+         * Kind
+         */
+        kind: string;
+    };
+    query?: never;
+    url: '/api/v1/message-templates/{kind}/reset';
+};
+
+export type TemplatesResetTemplateErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TemplatesResetTemplateError = TemplatesResetTemplateErrors[keyof TemplatesResetTemplateErrors];
+
+export type TemplatesResetTemplateResponses = {
+    /**
+     * Successful Response
+     */
+    200: TemplateOut;
+};
+
+export type TemplatesResetTemplateResponse = TemplatesResetTemplateResponses[keyof TemplatesResetTemplateResponses];
 
 export type TestsMyTestsData = {
     body?: never;

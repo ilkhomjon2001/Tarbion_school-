@@ -97,6 +97,10 @@ class Settings(BaseSettings):
     # `NoDecode` shart: pydantic-settings murakkab tipni .env dan o'qiyotganda
     # avval JSON deb parse qilishga urinadi va "http://a,http://b" da yiqiladi.
     # NoDecode bilan xom qator validatorga yetib keladi.
+    #: Xabarlarda koʻrsatiladigan sayt manzili («Sayt: ...»). Odam
+    #: Telegramdagi xabardan qayerga kirishni bilsin.
+    public_site_url: str = "https://tarbion.robbitonline.uz"
+
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
 
     # --- Proksi ---

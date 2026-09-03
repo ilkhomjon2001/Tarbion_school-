@@ -88,6 +88,7 @@ function SchoolTab() {
     address: "",
     phone: "",
     director_name: "",
+    attendance_notify_delay_minutes: 30,
   });
   const [yuklandi, setYuklandi] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -103,6 +104,7 @@ function SchoolTab() {
           address: r.address,
           phone: r.phone,
           director_name: r.director_name,
+          attendance_notify_delay_minutes: r.attendance_notify_delay_minutes,
         });
         setYuklandi(true);
       })
@@ -138,7 +140,7 @@ function SchoolTab() {
   return (
     <form onSubmit={saqla} className="flex max-w-xl flex-col gap-3">
       <p className="text-sm text-foreground-muted">
-        Bu rekvizitlar toʻlov kvitansiyasi va hujjatlarda ishlatiladi.
+        Rekvizitlar toʻlov kvitansiyasi va hujjatlarda ishlatiladi.
       </p>
 
       {xabar && (
@@ -200,6 +202,35 @@ function SchoolTab() {
               />
             </label>
           </div>
+
+          {/* DAV-05. Kechikish ATAYLAB bor: ustoz dars boshida «kelmadi»
+              deb belgilab, kech qolgan bolani keyin tuzatadi. Xabar
+              darhol ketsa, ota-ona bolasi sinfda oʻtirganida «kelmadi»
+              degan xabar olardi. */}
+          <label className="block max-w-xs">
+            <span className="mb-1.5 block text-xs font-medium text-foreground">
+              Davomat xabari kechikishi (daqiqa)
+            </span>
+            <input
+              type="number"
+              min={0}
+              max={1440}
+              value={form.attendance_notify_delay_minutes}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  attendance_notify_delay_minutes: Number(e.target.value),
+                }))
+              }
+              className={`${input} num`}
+            />
+            <span className="mt-1 block text-xs text-foreground-muted">
+              Oʻquvchi kelmagani belgilangandan keyin vasiyga xabar shuncha
+              vaqtdan soʻng yuboriladi. Shu oraliqda ustoz davomatni tuzatsa,
+              xabar umuman ketmaydi. <strong>0</strong> — darhol.
+            </span>
+          </label>
+
           <div className="flex justify-end">
             <button
               type="submit"

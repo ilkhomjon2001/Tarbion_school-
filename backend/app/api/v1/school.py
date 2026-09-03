@@ -206,7 +206,11 @@ async def school_settings(user: CurrentUserDep, session: SessionDep) -> SchoolSe
     """Maktab rekvizitlari — xodimlarga (kvitansiya sarlavhasi shu yerdan)."""
     r = await school_service.school_settings(session, user)
     return SchoolSettingsOut(
-        name=r.name, address=r.address, phone=r.phone, director_name=r.director_name
+        name=r.name,
+        address=r.address,
+        phone=r.phone,
+        director_name=r.director_name,
+        attendance_notify_delay_minutes=r.attendance_notify_delay_minutes,
     )
 
 
@@ -225,10 +229,15 @@ async def set_school_settings(
         address=payload.address,
         phone=payload.phone,
         director_name=payload.director_name,
+        attendance_notify_delay_minutes=payload.attendance_notify_delay_minutes,
         ip=_client_ip(request),
     )
     return SchoolSettingsOut(
-        name=r.name, address=r.address, phone=r.phone, director_name=r.director_name
+        name=r.name,
+        address=r.address,
+        phone=r.phone,
+        director_name=r.director_name,
+        attendance_notify_delay_minutes=r.attendance_notify_delay_minutes,
     )
 
 

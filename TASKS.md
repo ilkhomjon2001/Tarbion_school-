@@ -502,11 +502,12 @@ oilaga — ota-ona va oʻquvchiga.
 
 ---
 
-### [ ] T-019 · Davomat xabarnomalari
+### [x] T-019 · Davomat xabarnomalari
 **TZ:** DAV-05, Ilova B (1-bosqich qatorlari)
 **Kerak:** T-018, T-013, T-018a
-**Frontend:** 🟡 qisman — Kabinet ichida xabar bor (T-018a). Telegram/SMS
-shablonlari va yuborish yoʻq.
+**Frontend:** ✅ tayyor — `/admin/elonlar` → «Xabar shablonlari» (tahrir,
+maydon tugmalari, oldindan koʻrish, sukutga qaytarish);
+`/admin/sozlamalar` → «Maktab» da kechikish daqiqasi.
 
 - "Farzand darsga kelmadi" — davomat belgilangach 30 daqiqada (vaqt sozlanadi)
 - "Kunlik davomat xulosasi" — darslar tugagach
@@ -514,10 +515,24 @@ shablonlari va yuborish yoʻq.
 
 Matnlar shablon jadvalida, o'rin egallovchi maydonlar bilan (`{student_name}` va h.k.).
 
+**Backend:** ✅ `message_templates` jadvali (faqat USTAMA saqlaydi, sukut
+matnlar `template_service.DEFAULTS` da — boʻsh bazada ham ishlaydi),
+`school_settings.attendance_notify_delay_minutes`,
+`/api/v1/message-templates`. Davomat xabari `notification_outbox` ga
+kechikish bilan tushadi; xabar aynan `attendance_records.id` ga
+bogʻlanadi — darsga bogʻlansa bitta bolani tuzatish butun sinfning
+xabarini bekor qilardi. Kunlik xulosa: `app/workers/daily_summary.py` +
+systemd taymeri (Toshkent vaqti 18:00). 14 ta test.
+
+Xabar FAQAT vasiyga ketadi (Ilova B) — `family_recipients` oʻquvchining
+oʻz hisobini ham qaytaradi, bolaga «sen kelmading» deb yozilmaydi.
+Maydonlar oq roʻyxatda: administrator `{parol}` deb yozib xabarga sir
+chiqarib yubora olmaydi.
+
 **Tayyor:**
-- [ ] Kechikish vaqti admin sozlamasidan o'zgaradi
-- [ ] Davomat keyin tuzatilsa, yuborilmagan xabar bekor qilinadi
-- [ ] Shablonni admin tahrirlay oladi
+- [x] Kechikish vaqti admin sozlamasidan o'zgaradi
+- [x] Davomat keyin tuzatilsa, yuborilmagan xabar bekor qilinadi
+- [x] Shablonni admin tahrirlay oladi
 
 ---
 

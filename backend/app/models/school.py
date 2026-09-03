@@ -171,3 +171,14 @@ class SchoolSettings(Entity):
     address: Mapped[str] = mapped_column(String(200), default="", nullable=False)
     phone: Mapped[str] = mapped_column(String(40), default="", nullable=False)
     director_name: Mapped[str] = mapped_column(String(120), default="", nullable=False)
+
+    #: DAV-05: davomat belgilangandan keyin vasiyga xabar qancha
+    #: kechikib ketadi. Sukut boʻyicha 30 daqiqa — TZ talabi.
+    #:
+    #: Kechikish ATAYLAB bor: ustoz darsning boshida «kelmadi» deb
+    #: belgilab, keyin kech qolgan bolani «keldi» ga tuzatadi. Xabar
+    #: darhol ketsa, ota-ona bolasi sinfda oʻtirganida «kelmadi» degan
+    #: xabar olardi va tizimga ishonchi yoʻqolardi.
+    attendance_notify_delay_minutes: Mapped[int] = mapped_column(
+        default=30, server_default="30", nullable=False
+    )

@@ -32,6 +32,7 @@ from app.api.v1 import payments as payments_router
 from app.api.v1 import schedule as schedule_router
 from app.api.v1 import school as school_router
 from app.api.v1 import surveys as surveys_router
+from app.api.v1 import templates as templates_router
 from app.api.v1 import tests as tests_router
 from app.api.v1 import wellbeing as wellbeing_router
 from app.core.config import settings
@@ -127,6 +128,7 @@ app.include_router(journal_router.router, prefix=API_V1)
 app.include_router(school_router.router, prefix=API_V1)
 app.include_router(schedule_router.router, prefix=API_V1)
 app.include_router(notifications_router.router, prefix=API_V1)
+app.include_router(templates_router.router, prefix=API_V1)
 app.include_router(tests_router.router, prefix=API_V1)
 
 

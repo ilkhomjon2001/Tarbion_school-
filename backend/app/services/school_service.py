@@ -779,6 +779,8 @@ class SchoolInfo:
     address: str
     phone: str
     director_name: str
+    #: DAV-05: davomat xabari necha daqiqadan keyin yuboriladi.
+    attendance_notify_delay_minutes: int = 30
 
 
 _DEFAULT_SCHOOL = SchoolInfo(
@@ -806,6 +808,7 @@ async def school_settings(session: AsyncSession, user: CurrentUser) -> SchoolInf
         address=row.address,
         phone=row.phone,
         director_name=row.director_name,
+        attendance_notify_delay_minutes=row.attendance_notify_delay_minutes,
     )
 
 
@@ -817,6 +820,7 @@ async def set_school_settings(
     address: str,
     phone: str,
     director_name: str,
+    attendance_notify_delay_minutes: int = 30,
     ip: str | None = None,
 ) -> SchoolInfo:
     """Rekvizitlarni yangilaydi — eski qator arxivlanadi (tarix qoladi)."""
@@ -839,11 +843,16 @@ async def set_school_settings(
         e.is_archived = True
         e.archived_at = utcnow()
 
+    # DAV-05: 0 — xabar darhol ketadi (ataylab ruxsat), yuqori chegara
+    # bir kun: undan uzogʻi «kelmadi» xabarini maʼnosiz qilardi.
+    kechikish = max(0, min(1440, attendance_notify_delay_minutes))
+
     row = SchoolSettings(
         name=toza_nom[:160],
         address=address.strip()[:200],
         phone=phone.strip()[:40],
         director_name=director_name.strip()[:120],
+        attendance_notify_delay_minutes=kechikish,
     )
     session.add(row)
     await session.flush()
@@ -854,7 +863,11 @@ async def set_school_settings(
         object_id=row.id,
         action=AuditAction.UPDATE,
         old={"name": eski[0].name} if eski else None,
-        new={"name": row.name, "director_name": row.director_name},
+        new={
+            "name": row.name,
+            "director_name": row.director_name,
+            "attendance_notify_delay_minutes": row.attendance_notify_delay_minutes,
+        },
         actor_id=user.id,
         ip=ip,
     )
@@ -864,4 +877,5 @@ async def set_school_settings(
         address=row.address,
         phone=row.phone,
         director_name=row.director_name,
+        attendance_notify_delay_minutes=row.attendance_notify_delay_minutes,
     )

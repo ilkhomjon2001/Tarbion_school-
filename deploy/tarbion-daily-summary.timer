@@ -1,0 +1,19 @@
+[Unit]
+Description=Kunlik davomat xulosasini yuborish (T-019, Ilova B)
+
+[Timer]
+# Toshkent vaqti bilan 18:00 — barcha sinflarda darslar tugagan.
+# Server UTC da yashaydi, shuning uchun mintaqa ANIQ koʻrsatiladi:
+# aks holda xulosa kunduzi, darslar tugamasdan ketardi.
+OnCalendar=Mon..Sat 18:00
+Timezone=Asia/Tashkent
+
+# Server oʻchiq boʻlgan boʻlsa, yoqilganda oʻtkazib yuborilgan ish
+# bajariladi. Xulosa bir kun kechiksa ham, umuman ketmaganidan yaxshi.
+Persistent=true
+
+# Barcha xizmatlar bir soniyada ishga tushmasin.
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

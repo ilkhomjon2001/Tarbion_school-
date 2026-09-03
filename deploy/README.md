@@ -1,6 +1,6 @@
 # Serverdagi xizmatlar
 
-Ishlab chiqarish serverida toʻrtta `systemd` xizmati ishlaydi:
+Ishlab chiqarish serverida `systemd` xizmatlari:
 
 | Xizmat | Nima qiladi | Fayl |
 |---|---|---|
@@ -8,9 +8,10 @@ Ishlab chiqarish serverida toʻrtta `systemd` xizmati ishlaydi:
 | `tarbion-web` | Next.js | serverda |
 | `tarbion-bot` | Telegram bot — ulanish (T-017) | shu papkada |
 | `tarbion-outbox` | Xabar navbatini boʻshatadi (T-018) | shu papkada |
+| `tarbion-daily-summary` | Kunlik davomat xulosasi (T-019) — taymer | shu papkada |
 
 `tarbion-api` va `tarbion-web` fayllari tarixan faqat serverda yozilgan
-va bu yerga koʻchirilmagan — ularga tegilmadi. Yangi ikkitasi shu yerda
+va bu yerga koʻchirilmagan — ularga tegilmadi. Qolganlari shu yerda
 saqlanadi: server qaytadan qurilsa, sozlama esdan chiqmasin.
 
 ## Oʻrnatish

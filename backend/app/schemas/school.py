@@ -237,6 +237,9 @@ class SchoolSettingsIn(BaseModel):
     address: str = Field(default="", max_length=200)
     phone: str = Field(default="", max_length=40)
     director_name: str = Field(default="", max_length=120)
+    #: DAV-05: davomat xabari necha daqiqadan keyin vasiyga yuboriladi.
+    #: 0 — darhol. Yuqori chegara bir kun.
+    attendance_notify_delay_minutes: int = Field(default=30, ge=0, le=1440)
 
 
 class SchoolSettingsOut(BaseModel):
@@ -244,3 +247,4 @@ class SchoolSettingsOut(BaseModel):
     address: str
     phone: str
     director_name: str
+    attendance_notify_delay_minutes: int

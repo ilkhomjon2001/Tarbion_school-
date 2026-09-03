@@ -215,3 +215,28 @@ class NotificationPreference(Entity):
     )
     kind: Mapped[str] = mapped_column(String(40), nullable=False)
     enabled: Mapped[bool] = mapped_column(nullable=False, default=True, server_default="true")
+
+
+class MessageTemplate(Entity):
+    """Xabar matni shabloni (BOT-05, T-019).
+
+    Matnlar KODDA emas, shu jadvalda — administrator ularni tahrirlay
+    oladi. Lekin jadval faqat OʻZGARTIRILGAN shablonlarni saqlaydi:
+    sukut boʻyicha matn `services/template_service.py` da. Shunda yangi
+    xabar turi qoʻshilganda bazaga qator yozish shart emas va boʻsh
+    bazada ham tizim toʻliq ishlaydi.
+
+    Oʻrin egallovchi maydonlar jingalak qavsda: `{student_name}`,
+    `{date}`, `{subject}`. Nomaʼlum maydon matnda qolib ketadi va
+    yuborilmaydi — servis buni saqlashdan oldin tekshiradi.
+    """
+
+    __tablename__ = "message_templates"
+    __table_args__ = (UniqueConstraint("kind"),)
+
+    kind: Mapped[str] = mapped_column(String(40), nullable=False)
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    body: Mapped[str] = mapped_column(String(1000), nullable=False)
+    updated_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )

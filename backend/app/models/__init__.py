@@ -95,6 +95,7 @@ from app.models.identity import (
 )
 from app.models.notifications import (
     NOTIFICATION_KIND_LABELS_UZ,
+    MessageTemplate,
     Notification,
     NotificationKind,
     NotificationOutbox,
@@ -248,6 +249,7 @@ __all__ = [
     "Lesson",
     "LoginAttempt",
     "LoginLog",
+    "MessageTemplate",
     "NOTIFICATION_KIND_LABELS_UZ",
     "Notification",
     "NotificationKind",

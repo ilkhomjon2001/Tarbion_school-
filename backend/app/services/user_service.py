@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.core.naming import build_login, login_variant
 from app.core.security import (
@@ -34,7 +35,7 @@ from app.models import (
     User,
     UserRole,
 )
-from app.services import audit_service, permissions
+from app.services import audit_service, outbox_service, permissions, template_service
 from app.services.access import CurrentUser
 
 
@@ -153,6 +154,28 @@ async def create_user(
         },
         actor_id=actor.id,
         ip=ip,
+    )
+
+    # Ilova B: «Tizimga kirish maʼlumotlari» — hisob yaratilganda.
+    # Parol xabarga QOʻSHILMAYDI (X-10): u administrator ogʻzaki
+    # aytadi. Yangi hisobda `telegram_id` hali yoʻq, shuning uchun
+    # amalda navbatga tushmaydi — lekin odam avval botga ulanib,
+    # keyin unga ikkinchi hisob ochilsa xabar oʻz-oʻzidan ketadi.
+    sarlavha, matn = await template_service.render_kind(
+        session,
+        "account_created",
+        full_name=user.full_name,
+        login=login,
+        site=settings.public_site_url or "tarbion.uz",
+    )
+    await outbox_service.enqueue(
+        session,
+        user_id=user.id,
+        kind="account_created",
+        title=sarlavha,
+        body=matn,
+        object_type="user",
+        object_id=user.id,
     )
 
     return CreatedUser(user=user, initial_password=parol)

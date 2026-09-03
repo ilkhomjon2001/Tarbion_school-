@@ -30,14 +30,21 @@ from app.models import (
     AttendanceRecord,
     AttendanceStatus,
     AuditAction,
+    Guardian,
     Lesson,
     NotificationKind,
     Permission,
     SchoolClass,
+    SchoolSettings,
     Student,
     Subject,
 )
-from app.services import audit_service, notifications_service
+from app.services import (
+    audit_service,
+    notifications_service,
+    outbox_service,
+    template_service,
+)
 from app.services.access import CurrentUser, accessible_student_ids, load_lesson_for_teacher
 from app.services.permissions import has_permission
 
@@ -192,22 +199,31 @@ async def mark_attendance(
     #: jurnalni qayta saqlaganda takror xabar ketmasligi uchun shart
     #: aynan oʻzgarishga bogʻlangan.
     xabar_uchun: list[tuple[uuid.UUID, str]] = []
+    #: Kimning navbatdagi xabari BEKOR qilinadi: holati «kelmadi» yoki
+    #: «kechikdi» dan boshqasiga oʻzgargan. Ustoz kech qolgan bolani
+    #: keyin «keldi» ga tuzatsa, ota-ona «kelmadi» degan xabar
+    #: olmasligi kerak — DAV-05 dagi kechikish aynan shu uchun bor.
+    bekor_uchun: list[uuid.UUID] = []
+    #: Har bir tegilgan yozuv — navbatdagi xabar aynan SHU yozuvga
+    #: bogʻlanadi. Darsga bogʻlansa, bitta bolani tuzatish butun
+    #: sinfning xabarini bekor qilardi.
+    yozuvlar: dict[uuid.UUID, AttendanceRecord] = {}
 
     for row in rows:
         eski = mavjud.get(row.student_id)
         note = (row.note or "").strip() or None
 
         if eski is None:
-            session.add(
-                AttendanceRecord(
-                    lesson_id=lesson_id,
-                    student_id=row.student_id,
-                    status=row.status,
-                    note=note,
-                    marked_by_id=user.id,
-                    marked_at=now,
-                )
+            yangi = AttendanceRecord(
+                lesson_id=lesson_id,
+                student_id=row.student_id,
+                status=row.status,
+                note=note,
+                marked_by_id=user.id,
+                marked_at=now,
             )
+            session.add(yangi)
+            yozuvlar[row.student_id] = yangi
             created += 1
             audit_service.record(
                 session,
@@ -240,8 +256,12 @@ async def mark_attendance(
         )
         # Xabar faqat HOLAT oʻzgarganda. Ustoz izohni tuzatgan boʻlsa
         # oilaga «Ali kelmadi» deb ikkinchi marta xabar bermaymiz.
-        if eski.status != row.status and row.status in _NOTIFY_STATUSES:
-            xabar_uchun.append((row.student_id, row.status))
+        if eski.status != row.status:
+            if row.status in _NOTIFY_STATUSES:
+                xabar_uchun.append((row.student_id, row.status))
+            elif eski.status in _NOTIFY_STATUSES:
+                bekor_uchun.append(row.student_id)
+        yozuvlar[row.student_id] = eski
 
         eski.status = row.status
         eski.note = note
@@ -269,10 +289,55 @@ async def mark_attendance(
             lesson.topic = yangi_mavzu
 
     lesson.attendance_marked_at = now
-    await _notify_family(session, user, lesson, xabar_uchun)
+    # Yangi yozuvlar `id` olishi uchun — xabar aynan yozuvga bogʻlanadi.
+    await session.flush()
+    await _notify_family(session, user, lesson, xabar_uchun, bekor_uchun, yozuvlar)
     await session.commit()
 
     return MarkResult(created=created, updated=updated, unchanged=unchanged)
+
+
+#: DAV-05 sukut qiymati — TZ talabi. Sozlama qatori boʻlmasa shu.
+DEFAULT_NOTIFY_DELAY_MINUTES = 30
+
+
+async def _notify_delay(session: AsyncSession) -> int:
+    """Xabar necha daqiqadan keyin yuborilsin (DAV-05).
+
+    Administrator sozlamasidan olinadi. Sozlama qatori hali
+    yaratilmagan boʻlishi mumkin — u holda TZ dagi sukut ishlaydi,
+    xabar butunlay toʻxtab qolmaydi.
+    """
+    qiymat = await session.scalar(
+        select(SchoolSettings.attendance_notify_delay_minutes)
+        .where(SchoolSettings.is_archived.is_(False))
+        .order_by(SchoolSettings.created_at.desc())
+        .limit(1)
+    )
+    return DEFAULT_NOTIFY_DELAY_MINUTES if qiymat is None else max(0, qiymat)
+
+
+async def _guardian_ids(
+    session: AsyncSession, student_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, list[uuid.UUID]]:
+    """Oʻquvchi → vasiylarining `user_id` lari.
+
+    `notifications_service.family_recipients` dan farqi: bu yerda
+    oʻquvchining OʻZ hisobi yoʻq. Ilova B boʻyicha «Farzand darsga
+    kelmadi» xabari vasiyga ketadi.
+    """
+    out: dict[uuid.UUID, list[uuid.UUID]] = {sid: [] for sid in student_ids}
+    if not student_ids:
+        return out
+    rows = await session.execute(
+        select(Guardian.student_id, Guardian.user_id).where(
+            Guardian.student_id.in_(student_ids),
+            Guardian.is_archived.is_(False),
+        )
+    )
+    for student_id, user_id in rows.all():
+        out[student_id].append(user_id)
+    return out
 
 
 async def _notify_family(
@@ -280,6 +345,8 @@ async def _notify_family(
     user: CurrentUser,
     lesson: Lesson,
     changes: list[tuple[uuid.UUID, str]],
+    cancels: list[uuid.UUID],
+    records: dict[uuid.UUID, AttendanceRecord],
 ) -> None:
     """Kelmagan va kechikkan oʻquvchilar boʻyicha oilaga xabar.
 
@@ -291,6 +358,15 @@ async def _notify_family(
     (`notifications_service.family_recipients`) — 25 kishilik sinfda har
     bola uchun alohida soʻrov yuborilsa N+1 boʻlardi.
     """
+    # Tuzatilgan davomat: navbatdagi, hali yuborilmagan xabar bekor
+    # qilinadi (T-019 mezoni). Yuborilgani bekor qilinmaydi — u ketgan.
+    for student_id in cancels:
+        yozuv = records.get(student_id)
+        if yozuv is not None:
+            await outbox_service.cancel_for_object(
+                session, object_type="attendance_record", object_id=yozuv.id
+            )
+
     if not changes:
         return
 
@@ -304,6 +380,14 @@ async def _notify_family(
     # yuklanmagan boʻladi (`get_lesson_attendance` dagi izohga qarang).
     fan = await session.scalar(select(Subject.name).where(Subject.id == lesson.subject_id))
     kun = lesson.lesson_date.strftime("%d.%m.%Y")
+
+    # DAV-05: kechikish administrator sozlamasidan. Sozlama boʻlmasa
+    # TZ dagi sukut — 30 daqiqa.
+    kechikish = await _notify_delay(session)
+    # Telegram xabari FAQAT vasiyga (Ilova B). `family_recipients`
+    # oʻquvchining oʻz hisobini ham qaytaradi — bolaga «sen darsga
+    # kelmading» deb yozishning maʼnosi yoʻq.
+    vasiylar = await _guardian_ids(session, student_ids)
 
     for student_id, status in changes:
         ism = nomlar.get(student_id)
@@ -327,6 +411,36 @@ async def _notify_family(
             object_id=lesson.id,
             actor_id=user.id,
         )
+
+        # ── Telegram navbati (T-019) ──
+        yozuv = records.get(student_id)
+        if yozuv is None:
+            continue
+        tur = (
+            "attendance_absent"
+            if status == AttendanceStatus.ABSENT.value
+            else "attendance_late"
+        )
+        tg_sarlavha, tg_matn = await template_service.render_kind(
+            session,
+            tur,
+            student_name=ism,
+            date=kun,
+            subject=fan or "dars",
+            period=lesson.period,
+            class_name=None,
+        )
+        for vasiy_id in vasiylar.get(student_id, []):
+            await outbox_service.enqueue(
+                session,
+                user_id=vasiy_id,
+                kind=tur,
+                title=tg_sarlavha,
+                body=tg_matn,
+                object_type="attendance_record",
+                object_id=yozuv.id,
+                send_after=utcnow() + timedelta(minutes=kechikish),
+            )
 
 
 # ─────────────────────────── DAV-06: foizlar ───────────────────────────
