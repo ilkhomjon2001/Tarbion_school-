@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * Eʼlonlar (ADM-12) va avtomatik xabar shablonlari (T-019, BOT-05).
+ * Eʼlonlar (ADM-12), xabar shablonlari (BOT-05) va yuborilgan
+ * xabarlar jurnali (BOT-06).
  *
  * Ikkalasi bir sahifada, chunki ikkalasi ham «maktab ota-onaga nima
  * yozadi» degan savolga tegishli va bir xil huquq talab qiladi
@@ -12,13 +13,15 @@
 import { useState } from "react";
 
 import { MessageTemplates } from "@/components/admin/MessageTemplates";
+import { OutboxLog } from "@/components/admin/OutboxLog";
 import { AnnouncementsManager } from "@/components/shared/AnnouncementsManager";
 
-type Tab = "elon" | "shablon";
+type Tab = "elon" | "shablon" | "jurnal";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "elon", label: "Eʼlonlar" },
   { id: "shablon", label: "Xabar shablonlari" },
+  { id: "jurnal", label: "Yuborilgan xabarlar" },
 ];
 
 export default function AdminAnnouncementsPage() {
@@ -45,11 +48,10 @@ export default function AdminAnnouncementsPage() {
         ))}
       </div>
 
-      {tab === "elon" ? (
-        <AnnouncementsManager />
-      ) : (
+      {tab === "elon" && <AnnouncementsManager />}
+      {tab !== "elon" && (
         <div className="px-4 pb-6 md:px-6">
-          <MessageTemplates />
+          {tab === "shablon" ? <MessageTemplates /> : <OutboxLog />}
         </div>
       )}
     </div>

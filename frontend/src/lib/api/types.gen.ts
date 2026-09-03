@@ -3136,6 +3136,92 @@ export type OptionOut = {
 };
 
 /**
+ * OutboxCountsOut
+ */
+export type OutboxCountsOut = {
+    /**
+     * Pending
+     */
+    pending: number;
+    /**
+     * Sent
+     */
+    sent: number;
+    /**
+     * Failed
+     */
+    failed: number;
+    /**
+     * Cancelled
+     */
+    cancelled: number;
+};
+
+/**
+ * OutboxRowOut
+ *
+ * Jurnaldagi bitta xabar.
+ *
+ * `body` maxfiy turlarda MASKALANGAN (parolni tiklash kodi) —
+ * jurnal yetkazish muammosini koʻrish uchun, matnni oʻqish uchun
+ * emas (X-10).
+ */
+export type OutboxRowOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * User Id
+     */
+    user_id: string;
+    /**
+     * User Name
+     */
+    user_name: string;
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Channel
+     */
+    channel: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Body
+     */
+    body: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Attempts
+     */
+    attempts: number;
+    /**
+     * Last Error
+     */
+    last_error: string | null;
+    /**
+     * Send After
+     */
+    send_after: string;
+    /**
+     * Sent At
+     */
+    sent_at: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
  * PasswordResetOut
  */
 export type PasswordResetOut = {
@@ -3664,6 +3750,16 @@ export type RespondIn = {
      * Comment
      */
     comment?: string | null;
+};
+
+/**
+ * RetryOut
+ */
+export type RetryOut = {
+    /**
+     * Retried
+     */
+    retried: number;
 };
 
 /**
@@ -10604,6 +10700,106 @@ export type NotificationsMarkAllReadResponses = {
 };
 
 export type NotificationsMarkAllReadResponse = NotificationsMarkAllReadResponses[keyof NotificationsMarkAllReadResponses];
+
+export type NotificationsOutboxListData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Status
+         *
+         * pending · sent · failed · cancelled
+         */
+        status?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/notifications/outbox';
+};
+
+export type NotificationsOutboxListErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type NotificationsOutboxListError = NotificationsOutboxListErrors[keyof NotificationsOutboxListErrors];
+
+export type NotificationsOutboxListResponses = {
+    /**
+     * Response Notifications Outbox List
+     *
+     * Successful Response
+     */
+    200: Array<OutboxRowOut>;
+};
+
+export type NotificationsOutboxListResponse = NotificationsOutboxListResponses[keyof NotificationsOutboxListResponses];
+
+export type NotificationsOutboxCountsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/notifications/outbox/counts';
+};
+
+export type NotificationsOutboxCountsResponses = {
+    /**
+     * Successful Response
+     */
+    200: OutboxCountsOut;
+};
+
+export type NotificationsOutboxCountsResponse = NotificationsOutboxCountsResponses[keyof NotificationsOutboxCountsResponses];
+
+export type NotificationsOutboxRetryData = {
+    body?: never;
+    path: {
+        /**
+         * Outbox Id
+         */
+        outbox_id: string;
+    };
+    query?: never;
+    url: '/api/v1/notifications/outbox/{outbox_id}/retry';
+};
+
+export type NotificationsOutboxRetryErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type NotificationsOutboxRetryError = NotificationsOutboxRetryErrors[keyof NotificationsOutboxRetryErrors];
+
+export type NotificationsOutboxRetryResponses = {
+    /**
+     * Successful Response
+     */
+    200: RetryOut;
+};
+
+export type NotificationsOutboxRetryResponse = NotificationsOutboxRetryResponses[keyof NotificationsOutboxRetryResponses];
+
+export type NotificationsOutboxRetryFailedData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/notifications/outbox/retry-failed';
+};
+
+export type NotificationsOutboxRetryFailedResponses = {
+    /**
+     * Successful Response
+     */
+    200: RetryOut;
+};
+
+export type NotificationsOutboxRetryFailedResponse = NotificationsOutboxRetryFailedResponses[keyof NotificationsOutboxRetryFailedResponses];
 
 export type TemplatesListTemplatesData = {
     body?: never;

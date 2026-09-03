@@ -17,19 +17,24 @@ jadvalida, darhol yoziladi va yetkazishni talab qilmaydi
 from __future__ import annotations
 
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.timeutil import utcnow
 from app.models import (
+    AuditAction,
     NotificationOutbox,
     NotificationPreference,
     OutboxChannel,
     OutboxStatus,
+    Permission,
     User,
 )
+from app.services import audit_service, permissions
+from app.services.access import CurrentUser
 
 #: Nechta urinishdan keyin xabar `failed` deb belgilanadi.
 #:
@@ -241,3 +246,148 @@ async def set_preference(
     qator.enabled = enabled
     qator.is_archived = False
     qator.archived_at = None
+
+
+# ─────────────────── BOT-06: administrator jurnali ───────────────────
+
+#: Matni administratorga KOʻRSATILMAYDIGAN turlar.
+#:
+#: Parolni tiklash xabarida bir martalik kod bor. Jurnal ekrani
+#: yetkazish muammosini koʻrish uchun, xabar mazmunini oʻqish uchun
+#: emas — kodni koʻrsatish esa uni oʻgʻirlashga yoʻl ochardi (X-10).
+MAXFIY_TURLAR = frozenset({"password_reset"})
+
+MASKA = "«matn koʻrsatilmaydi — maxfiy kod»"
+
+
+@dataclass(frozen=True, slots=True)
+class OutboxRow:
+    """Jurnaldagi bitta xabar."""
+
+    id: uuid.UUID
+    user_id: uuid.UUID
+    user_name: str
+    kind: str
+    channel: str
+    title: str
+    body: str
+    status: str
+    attempts: int
+    last_error: str | None
+    send_after: datetime
+    sent_at: datetime | None
+    created_at: datetime
+
+
+async def admin_list(
+    session: AsyncSession,
+    actor: CurrentUser,
+    *,
+    status: str | None = None,
+    limit: int = 100,
+) -> list[OutboxRow]:
+    """Xabar navbati — administrator uchun (BOT-06).
+
+    Sukut boʻyicha YIQILGANLAR: ekranning maqsadi muammoni koʻrsatish.
+    Muvaffaqiyatli yuborilgan minglab xabar orasida yiqilgan uchtasini
+    topib boʻlmasdi.
+    """
+    await permissions.assert_permission(session, actor, Permission.ANNOUNCEMENTS_PUBLISH)
+
+    stmt = (
+        select(NotificationOutbox, User.last_name, User.first_name)
+        .join(User, User.id == NotificationOutbox.user_id)
+        .order_by(NotificationOutbox.created_at.desc())
+        .limit(min(limit, 500))
+    )
+    if status:
+        stmt = stmt.where(NotificationOutbox.status == status)
+
+    rows = await session.execute(stmt)
+    return [
+        OutboxRow(
+            id=r.id,
+            user_id=r.user_id,
+            user_name=f"{familiya} {ism}".strip(),
+            kind=r.kind,
+            channel=r.channel,
+            title=r.title,
+            body=MASKA if r.kind in MAXFIY_TURLAR else r.body,
+            status=r.status,
+            attempts=r.attempts,
+            last_error=r.last_error,
+            send_after=r.send_after,
+            sent_at=r.sent_at,
+            created_at=r.created_at,
+        )
+        for r, familiya, ism in rows.all()
+    ]
+
+
+async def admin_counts(session: AsyncSession, actor: CurrentUser) -> dict[str, int]:
+    """Holatlar boʻyicha sanoq — ekran boshidagi qator."""
+    await permissions.assert_permission(session, actor, Permission.ANNOUNCEMENTS_PUBLISH)
+    rows = await session.execute(
+        select(NotificationOutbox.status, func.count()).group_by(NotificationOutbox.status)
+    )
+    natija = {s.value: 0 for s in OutboxStatus}
+    natija.update(dict(rows.all()))
+    return natija
+
+
+async def admin_retry(
+    session: AsyncSession, actor: CurrentUser, outbox_id: uuid.UUID, *, ip: str | None = None
+) -> bool:
+    """Bitta xabarni qayta yuborish (BOT-06)."""
+    await permissions.assert_permission(session, actor, Permission.ANNOUNCEMENTS_PUBLISH)
+    ok = await retry(session, outbox_id)
+    if ok:
+        audit_service.record(
+            session,
+            object_type="notification_outbox",
+            object_id=outbox_id,
+            action=AuditAction.UPDATE,
+            new={"retried": True},
+            actor_id=actor.id,
+            ip=ip,
+        )
+        await session.commit()
+    return ok
+
+
+async def admin_retry_failed(
+    session: AsyncSession, actor: CurrentUser, *, ip: str | None = None
+) -> int:
+    """Barcha yiqilganlarni qayta navbatga qoʻyadi. Qaytaradi: nechta.
+
+    Telegram bir necha soat tushib qolsa oʻnlab xabar yiqiladi —
+    ularni bittalab bosib chiqish administratorni charchatardi va
+    amalda hech kim qilmasdi.
+    """
+    await permissions.assert_permission(session, actor, Permission.ANNOUNCEMENTS_PUBLISH)
+    rows = await session.execute(
+        select(NotificationOutbox).where(
+            NotificationOutbox.status == OutboxStatus.FAILED.value,
+            NotificationOutbox.is_archived.is_(False),
+        )
+    )
+    n = 0
+    for row in rows.scalars():
+        row.status = OutboxStatus.PENDING.value
+        row.attempts = 0
+        row.last_error = None
+        row.send_after = utcnow()
+        n += 1
+
+    if n:
+        audit_service.record(
+            session,
+            object_type="notification_outbox",
+            object_id=None,
+            action=AuditAction.UPDATE,
+            new={"retried_all": n},
+            actor_id=actor.id,
+            ip=ip,
+        )
+        await session.commit()
+    return n

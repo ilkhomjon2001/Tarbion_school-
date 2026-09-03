@@ -456,10 +456,11 @@ bilan T-006 (kod yuborish) va T-018 (xabar yetkazish) ham jonlanadi.
 
 ---
 
-### [~] T-018 · Xabarnoma yadrosi (outbox + worker)
+### [x] T-018 · Xabarnoma yadrosi (outbox + worker)
 **TZ:** BOT-02, BOT-06, BOT-07
 **Kerak:** T-017
-**Frontend:** 🟡 qisman — Frontendda eslatma yuborish tugmasi bor (`/admin/tolovlar` → «Eslatma», bot yoki SMS tanlanadi) va yozuv audit jurnaliga tushadi. Outbox jadvali va worker — backend ishi.
+**Frontend:** ✅ tayyor — `/admin/elonlar` → «Yuborilgan xabarlar»: holat
+boʻyicha filtr va sanoq, xato matni, bittalab va ommaviy qayta yuborish.
 
 `notification_outbox` (turi, qabul qiluvchi, kanal, matn, holati, urinishlar soni,
 xato matni). Kod xabarni **to'g'ridan-to'g'ri yubormaydi** — outbox'ga yozadi.
@@ -469,16 +470,20 @@ Alohida worker sikli yuboradi, xatoda 3 marta qayta uriniladi (backoff bilan).
 
 **Tayyor:**
 - [x] Telegram tushib qolsa xabar yo'qolmaydi, navbatda qoladi
-- [~] Yetkazilmagan xabarlar admin panelida ko'rinadi va qayta yuborish mumkin
-  — `outbox_service.retry()` tayyor, admin ekrani qolgan
+- [x] Yetkazilmagan xabarlar admin panelida ko'rinadi va qayta yuborish mumkin
+  (BOT-06). Parolni tiklash xabarining MATNI koʻrsatilmaydi — unda bir
+  martalik kod bor (X-10).
 - [ ] Bir foydalanuvchiga bir turdagi xabar kuniga bir marta jamlanadi (BOT-07)
   — TZ da 2-BOSQICH, ataylab kiritilmadi
 
 **Qilingan (72cd416):** `notification_outbox` + `notification_preferences`
 modellari, `outbox_service` (navbat, backoff, bekor qilish, qayta
 yuborish), `app/workers/outbox.py` sikli, Telegram kanali, 17 test.
-**Qolgan:** T-017 (bot ulanishi — `telegram_id` ni toʻldiradi),
-T-019 (hodisalarni navbatga ulash), administrator ekrani.
+**BOT-06 (d888e23 dan keyin):** `/api/v1/notifications/outbox`
+(roʻyxat · sanoq · qayta yuborish · hammasini qayta yuborish),
+`/admin/elonlar` → «Yuborilgan xabarlar». 11 ta test.
+
+**Qolgan:** faqat BOT-07 — TZ da 2-bosqich.
 
 ---
 

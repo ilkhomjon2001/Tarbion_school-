@@ -57,3 +57,40 @@ class MarkAllReadIn(BaseModel):
 
 class MarkReadOut(BaseModel):
     updated: int
+
+
+# ─────────────────── BOT-06: xabar navbati jurnali ───────────────────
+
+
+class OutboxRowOut(BaseModel):
+    """Jurnaldagi bitta xabar.
+
+    `body` maxfiy turlarda MASKALANGAN (parolni tiklash kodi) —
+    jurnal yetkazish muammosini koʻrish uchun, matnni oʻqish uchun
+    emas (X-10).
+    """
+
+    id: uuid.UUID
+    user_id: uuid.UUID
+    user_name: str
+    kind: str
+    channel: str
+    title: str
+    body: str
+    status: str
+    attempts: int
+    last_error: str | None
+    send_after: datetime
+    sent_at: datetime | None
+    created_at: datetime
+
+
+class OutboxCountsOut(BaseModel):
+    pending: int
+    sent: int
+    failed: int
+    cancelled: int
+
+
+class RetryOut(BaseModel):
+    retried: int
