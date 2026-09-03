@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LessonRow } from "@/components/features/student/LessonRow";
-import { WEEKDAY_LABELS } from "@/lib/format";
+import { todayIso, WEEKDAY_LABELS } from "@/lib/format";
 import { subjectColor } from "@/lib/subject-colors";
 import type { ScheduleEntry } from "@/lib/types";
 
@@ -13,7 +13,10 @@ const MONTHS_UZ = [
   "Iyul", "Avgust", "Sentabr", "Oktabr", "Noyabr", "Dekabr",
 ];
 
-const TODAY_ISO = "2026-08-29";
+// «Bugun» HAQIQIY sanadan olinadi. Ilgari bu yerda qotib qolgan
+// «2026-08-29» turardi: jadvalda bugungi kun notoʻgʻri belgilanardi va
+// «Bugun» tugmasi oʻquvchini oʻtgan haftaga olib borardi.
+const TODAY_ISO = todayIso();
 
 type View = "day" | "week" | "month";
 

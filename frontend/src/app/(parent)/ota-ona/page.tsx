@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { ParentShell } from "@/components/parent/ParentShell";
 import { fetchAnnouncements, type AnnouncementOut } from "@/lib/announcements/api";
-import { formatSom } from "@/lib/format";
+import { formatSom, todayIso } from "@/lib/format";
 import {
   fetchAttendance,
   fetchAttendanceStats,
@@ -33,11 +33,6 @@ import type { GradeEntry } from "@/lib/types";
  * (backend formulasi — yagona haqiqat, Y10).
  */
 
-/** Bugungi sana — Asia/Tashkent boʻyicha (CLAUDE.md 3-qoida). */
-function bugungiSana(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tashkent" }).format(new Date());
-}
-
 const OYLAR = [
   "yanvar", "fevral", "mart", "aprel", "may", "iyun",
   "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr",
@@ -49,7 +44,7 @@ type Loadable<T> = T | null | "error";
 export default function ParentHomePage() {
   const { child, children: farzandlar, select, loading, error } = useChildren();
 
-  const bugun = bugungiSana();
+  const bugun = todayIso();
   const [days, setDays] = useState<Loadable<DayAttendance[]>>(null);
   const [stat, setStat] = useState<Loadable<AttendanceStatOut>>(null);
   const [pendingHw, setPendingHw] = useState<Loadable<number>>(null);

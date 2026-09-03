@@ -37,7 +37,7 @@ from app.core.config import settings
 from app.core.db import SessionFactory
 from app.core.naming import build_login, login_variant
 from app.core.security import hash_password
-from app.core.timeutil import combine_local
+from app.core.timeutil import combine_local, local_today
 from app.models import (
     AcademicYear,
     Appeal,
@@ -73,8 +73,12 @@ DEMO_PASSWORD = "Tarbion2026!"  # noqa: S105
 # Dars kunlari: dushanba–shanba (1..6). Yakshanba dam.
 SCHOOL_WEEKDAYS = [1, 2, 3, 4, 5, 6]
 
-# Davomat va baho shu kungacha generatsiya qilinadi (frontenddagi «bugun»).
-DEMO_TODAY = date(2026, 9, 20)
+# Davomat va baho SHU KUNGACHA generatsiya qilinadi.
+#
+# Ilgari bu yerda qotib qolgan sana turardi (`2026-09-20`) va u
+# frontenddagi qotib qolgan «bugun» bilan juftlashgan edi. Ikkalasi
+# ham haqiqiy sanaga oʻtdi: demo baza qachon toʻldirilsa, oʻsha
+# kungacha maʼlumot boʻladi va «bugun» hamma joyda bir xil kun.
 
 
 def hash_text(value: str) -> int:
@@ -550,7 +554,8 @@ async def seed(session: AsyncSession, data: dict[str, Any]) -> None:
     grade_rows = 0
 
     day = ay.starts_on
-    while day <= DEMO_TODAY:
+    bugun = local_today()
+    while day <= bugun:
         weekday = day.isoweekday()
         if weekday in by_weekday and day not in holiday_days:
             for e in by_weekday[weekday]:

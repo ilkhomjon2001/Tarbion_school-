@@ -37,6 +37,23 @@ const dateTimeFormatter = new Intl.DateTimeFormat("uz-Latn", {
 const toDate = (iso: string): Date =>
   new Date(iso.includes("T") ? iso : `${iso}T00:00:00+05:00`);
 
+const isoDayFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Tashkent",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/**
+ * Bugungi sana — `2026-09-03`, Asia/Tashkent boʻyicha (CLAUDE.md 3-qoida).
+ *
+ * Brauzer soati boshqa mintaqada boʻlishi mumkin, kun chegarasi esa
+ * maktabniki boʻlishi kerak. `en-CA` ataylab: u ISO shaklida beradi.
+ */
+export function todayIso(): string {
+  return isoDayFormatter.format(new Date());
+}
+
 export function formatDate(iso: string): string {
   return dayFormatter.format(toDate(iso));
 }

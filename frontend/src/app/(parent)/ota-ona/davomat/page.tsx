@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { ParentShell } from "@/components/parent/ParentShell";
 import { createAppeal } from "@/lib/appeals/api";
+import { todayIso } from "@/lib/format";
 import {
   dayStatus,
   fetchAttendance,
@@ -29,11 +30,6 @@ const OYLAR = [
   "Iyul", "Avgust", "Sentabr", "Oktabr", "Noyabr", "Dekabr",
 ];
 
-/** Bugungi sana — Asia/Tashkent boʻyicha (CLAUDE.md 3-qoida). */
-function bugungiSana(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tashkent" }).format(new Date());
-}
-
 const CELL: Record<AttendanceStatus, { box: string; mark: string; label: string }> = {
   present: { box: "bg-success-tint text-success", mark: "✓", label: "Qatnashdi" },
   absent: { box: "bg-danger text-brand-foreground", mark: "✕", label: "Sababsiz" },
@@ -46,7 +42,7 @@ export default function ParentAttendancePage() {
   const [openDay, setOpenDay] = useState<DayAttendance | null>(null);
   const [showForm, setShowForm] = useState(false);
 
-  const bugun = bugungiSana();
+  const bugun = todayIso();
   // Koʻrsatilayotgan oy. Sukut — joriy oy; avval 2026-avgust qattiq
   // yozilgandi va sentabrga oʻtganda sahifa eskirib qolardi.
   const [ym, setYm] = useState(() => ({
@@ -342,8 +338,8 @@ function ExcuseForm({
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [xato, setXato] = useState(false);
-  const [dan, setDan] = useState(bugungiSana());
-  const [gacha, setGacha] = useState(bugungiSana());
+  const [dan, setDan] = useState(todayIso());
+  const [gacha, setGacha] = useState(todayIso());
   const [sabab, setSabab] = useState("");
 
   if (sent) {
