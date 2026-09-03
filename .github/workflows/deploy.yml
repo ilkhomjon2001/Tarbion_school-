@@ -180,7 +180,7 @@ jobs:
           qaytar() {
             echo "XATO — $ESKI ga qaytarilmoqda"
             cd /opt/tarbion && git reset --hard "$ESKI"
-            systemctl restart tarbion-api tarbion-web || true
+            systemctl restart tarbion-api tarbion-web tarbion-bot tarbion-outbox || true
             exit 1
           }
           trap qaytar ERR
@@ -195,7 +195,10 @@ jobs:
           corepack pnpm build
 
           trap - ERR
-          systemctl restart tarbion-api tarbion-web
+          # Bot va outbox worker ham qayta yoqiladi: ular ham shu
+          # kodni ishlatadi va eski jarayon eski modellar bilan
+          # qolib ketsa, migratsiyadan keyin yiqilardi.
+          systemctl restart tarbion-api tarbion-web tarbion-bot tarbion-outbox
           UZOQ
 
       - name: Salomatlik tekshiruvi

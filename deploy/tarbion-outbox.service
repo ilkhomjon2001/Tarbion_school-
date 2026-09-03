@@ -1,0 +1,22 @@
+[Unit]
+Description=Tarbion xabarnoma worker'i (T-018, BOT-02)
+After=network.target postgresql.service
+Wants=postgresql.service
+# Cheklov [Unit] da boʻlishi SHART — [Service] da systemd uni eʼtiborsiz
+# qoldiradi. 10 daqiqada 5 martadan koʻp yiqilsa xizmat toʻxtaydi.
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/tarbion/backend
+Environment=PATH=/root/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/root/.local/bin/uv run python -m app.workers.outbox
+Restart=always
+RestartSec=10
+# Oʻlchandi: worker ~67M da turadi. 256M — toʻrt barobar zaxira.
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

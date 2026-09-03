@@ -1,0 +1,28 @@
+[Unit]
+Description=Tarbion Telegram bot (T-017, BOT-01)
+After=network.target postgresql.service
+Wants=postgresql.service
+# Cheklov [Unit] da boʻlishi SHART — [Service] da systemd uni eʼtiborsiz
+# qoldiradi (jurnalda «Unknown key name» deb yozadi). 10 daqiqada
+# 5 martadan koʻp yiqilsa xizmat toʻxtaydi va odam sababini koʻradi;
+# cheksiz qayta urinish nosozlikni yashirardi.
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/tarbion/backend
+Environment=PATH=/root/.local/bin:/usr/local/bin:/usr/bin:/bin
+# Python chiqishini buferlamaydi — journalctl da loglar darhol koʻrinsin.
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/root/.local/bin/uv run python -m app.bot.main
+Restart=always
+RestartSec=10
+# Bu VPS da swap YOʻQ — chegara kerak, lekin zaxira bilan.
+# Oʻlchandi: aiogram + SQLAlchemy + asyncpg ishga tushganda 248M gacha
+# chiqadi, keyin ~190M da turadi. 256M qoʻyilgan edi va bu OOM ga bir
+# qadam qolgan degani. Ikki barobar zaxira qoldirildi.
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target
