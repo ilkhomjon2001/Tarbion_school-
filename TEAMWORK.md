@@ -51,6 +51,27 @@ qo'shsa, migratsiya zanjiri (`down_revision`) to'qnashadi.
   aytib qo'ying (Telegram/chat orqali), aks holda ularning muhiti ishlamay
   qoladi.
 
+### ⚠️ Zaxira kaliti — TEGMANG
+
+Serverdagi `BACKUP_AGE_RECIPIENT` — zaxira nusxalarini shifrlaydigan
+**ochiq** kalit. Unga mos **maxfiy** kalit faqat loyiha egasida
+(Ilhomjon) va u serverda saqlanmaydi — ataylab shunday (X-12).
+
+Nima qilish MUMKIN EMAS:
+
+- `BACKUP_AGE_RECIPIENT` ni oʻzgartirish yoki oʻchirish;
+- yangi kalit jufti yasab, eskisining oʻrniga qoʻyish;
+- `backend/scripts/backup.sh` dagi shifrlash qadamini chetlab oʻtish.
+
+Sababi: kalit almashsa, **eski zaxiralarning hammasi ochilmaydigan
+boʻlib qoladi**. Ular oʻsha eski kalit bilan shifrlangan va boshqa
+hech narsa ularni ocha olmaydi. Buni keyin tuzatib boʻlmaydi.
+
+Maxfiy kalit kerak boʻlsa (tiklash, `restore_check.sh`) — **Ilhomjondan
+soʻrang**. Oʻzingiz yasamang.
+
+Batafsil: `docs/ZAXIRA.md`.
+
 ## 5. Aniq bo'lmagan biznes qoida
 
 - `CLAUDE.md`dagi "taxmin qilma, so'ra" qoidasi shu loyiha egasiga tegishli,

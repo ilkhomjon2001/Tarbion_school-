@@ -29,6 +29,17 @@ Maxfiy kalit qayerda saqlanadi:
 - qogʻozga chop etilib seyfda,
 - ikkalasida ham — kalit yoʻqolsa zaxira ham yoʻqoladi.
 
+### Kalitni kim ushlab turadi
+
+**2026-09-03 dan boshlab maxfiy kalit loyiha egasida (Ilhomjon).**
+Serverda yoʻq, repoda yoʻq, jamoaning ikkinchi aʼzosida yoʻq.
+
+Kalit kerak boʻlsa (haqiqiy tiklash yoki oylik `restore_check.sh`) —
+undan soʻraladi. **Yangi kalit yasab, eskisining oʻrniga qoʻyish
+mumkin emas:** eski zaxiralar oʻsha eski kalit bilan shifrlangan va
+kalit almashsa ular butunlay ochilmaydigan boʻlib qoladi. Bu qaytarib
+boʻlmaydigan xato — shuning uchun `TEAMWORK.md` da ham yozib qoʻyilgan.
+
 ---
 
 ## Bir martalik sozlash
@@ -190,6 +201,23 @@ BACKUP_ALERT_CHAT_ID=123456789   # administratorning Telegram id si
 
 Berilmasa skript jurnalga yozadi va ochiq aytadi: «zaxira yiqilgani
 HECH KIMGA yetkazilmadi».
+
+**Kimga borishini oʻzgartirish** — serverdagi `.env` da shu qatorni
+tahrirlash yetarli, qayta ishga tushirish shart emas: xizmat
+`oneshot`, har safar `.env` ni yangidan oʻqiydi.
+
+```bash
+sed -i 's|^BACKUP_ALERT_CHAT_ID=.*|BACKUP_ALERT_CHAT_ID=YANGI_ID|' \
+    /opt/tarbion/backend/.env
+systemctl start tarbion-backup-alert.service   # sinov xabari
+```
+
+Oʻz id ingizni `@userinfobot` beradi. Bir nechta odamga kerak boʻlsa —
+maxsus yopiq guruh ochib, botni aʼzo qilib, guruh id sini qoʻyish
+mumkin (guruh id si manfiy son boʻladi).
+
+Hozir: **loyiha egasi** (2026-09-03). Rahbar hisobiga oʻtkazilishi
+rejalashtirilgan.
 
 ### Nega ogohlantirish outbox orqali ketmaydi
 
