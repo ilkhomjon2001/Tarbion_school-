@@ -937,3 +937,15 @@ qamrov 50% dan past boʻlsa izoh ogohlantirish rangida.
 Muqobil — qamrov past boʻlsa foizni umuman koʻrsatmaslik — rad etildi:
 rahbar «tizim ishlamayapti» deb oʻylardi. Raqamni koʻrsatib, ishonch
 darajasini yoniga yozish toʻgʻriroq.
+
+## 2026-09-03 · Excel'dan oʻquvchi importi (T-010) qilinmaydi
+
+Loyiha egasining qarori: oʻquvchi administrator kabinetida
+toʻgʻridan-toʻgʻri qoʻshiladi, Sheets/Excel'dan import kerak emas.
+
+TZ da ADM-05 sifatida turgani uchun yozib qoʻyilmoqda — aks holda
+keyingi safar «TZ da bor-ku» deb qayta boshlanishi mumkin. Import
+qayta kerak boʻlsa, avval egasidan soʻraladi.
+
+Bir martalik yuklash uchun `app/import_real.py` CLI skripti bor
+(2026-09-02 dagi real maʼlumot koʻchirishi shu bilan qilingan).

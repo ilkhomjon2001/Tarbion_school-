@@ -8,7 +8,7 @@ Har bir taskda:
 - **Kerak** — oldin bajarilishi shart bo'lgan tasklar
 - **Tayyor** — qabul mezonlari. Hammasi bajarilmaguncha task yopilmaydi.
 
-Belgilar: `[ ]` boshlanmagan · `[~]` ishda · `[x]` tugagan
+Belgilar: `[ ]` boshlanmagan · `[~]` ishda · `[x]` tugagan · `[-]` kerak emas
 
 **Frontend** qatori — mock maʼlumot ustidagi prototip holati:
 ✅ tayyor · 🟡 qisman · ⬜ yoʻq. Prototip tayyor boʻlishi taskni YOPMAYDI:
@@ -279,20 +279,14 @@ Amallar: boshqa sinfga ko'chirish, arxivga o'tkazish (o'chirish emas).
 
 ---
 
-### [ ] T-010 · Excel'dan o'quvchilarni import
+### [-] T-010 · Excel'dan o'quvchilarni import — KERAK EMAS
 **TZ:** ADM-05
-**Kerak:** T-009
-**Frontend:** ⬜ yoʻq — Excel import yoʻq. CSV EKSPORT bor (audit, soʻrovnoma natijalari, shartnomalar).
 
-Shablon fayl (`docs/import-template.xlsx`) generatsiyasi + yuklash.
-Import ikki qadamda: **avval tekshiruv** (xatoliklar jadvali qaytadi), keyin
-tasdiqlash va yozish. Qisman import qilinmaydi — hammasi yoki hech nima.
+**Loyiha egasining qarori (3-sentabr 2026): bu task qilinmaydi.**
+Oʻquvchi administrator kabinetida toʻgʻridan-toʻgʻri qoʻshiladi
+(«Yangi oʻquvchi qabul qilish»), Sheets/Excel'dan import kerak emas.
 
-**Tayyor:**
-- [ ] Shablonni yuklab olish tugmasi ishlaydi
-- [ ] Xato qatorlar raqami va sababi bilan ko'rsatiladi
-- [ ] Takroriy o'quvchi (bir xil F.I.Sh. + tug'ilgan sana) aniqlanadi
-- [ ] Test: 100 qatorli fayl 5 soniyada qayta ishlanadi
+Qayta boshlab yubormang. Fikr oʻzgarsa — avval egasidan soʻrang.
 
 ---
 
