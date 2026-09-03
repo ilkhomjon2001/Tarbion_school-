@@ -3,10 +3,13 @@ Description=Kunlik davomat xulosasini yuborish (T-019, Ilova B)
 
 [Timer]
 # Toshkent vaqti bilan 18:00 — barcha sinflarda darslar tugagan.
-# Server UTC da yashaydi, shuning uchun mintaqa ANIQ koʻrsatiladi:
-# aks holda xulosa kunduzi, darslar tugamasdan ketardi.
-OnCalendar=Mon..Sat 18:00
-Timezone=Asia/Tashkent
+#
+# Mintaqa `OnCalendar` ning OʻZIDA koʻrsatiladi (systemd ≥ 252).
+# Alohida `Timezone=` kaliti YOʻQ — systemd uni jimgina eʼtiborsiz
+# qoldiradi va taymer server mintaqasida ishlab ketadi. Server
+# Europe/Berlin da, ya'ni xulosa Toshkent vaqti bilan 21:00 da
+# ketardi va buni hech kim sezmasdi.
+OnCalendar=Mon..Sat 18:00 Asia/Tashkent
 
 # Server oʻchiq boʻlgan boʻlsa, yoqilganda oʻtkazib yuborilgan ish
 # bajariladi. Xulosa bir kun kechiksa ham, umuman ketmaganidan yaxshi.
