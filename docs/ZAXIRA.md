@@ -83,8 +83,13 @@ sxemaning maʼnosi yoʻqoladi.
 `scripts/backup.sh` quyidagini qiladi:
 
 ```
-pg_dump → gzip -9 → age --encrypt → /var/backups + R2
+pg_dump → gzip -9 → age --encrypt → /var/backups + BOSHQA JOY
 ```
+
+«Boshqa joy» — Telegram yoki R2 (yoki ikkalasi). **Kamida bittasi
+sozlangan boʻlishi shart:** ikkalasi ham boʻsh boʻlsa skript ataylab
+yiqiladi. Faqat oʻzi himoya qilayotgan mashinada turgan zaxira —
+zaxira emas, va bu holat jimgina oʻtmasligi kerak.
 
 Quvurda `set -o pipefail` yoqilgan: har qanday qadam yiqilsa skript
 toʻxtaydi. **Yarim yozilgan zaxira eng xavfli holat** — u "bor" boʻlib
@@ -92,9 +97,40 @@ koʻrinadi, lekin tiklab boʻlmaydi.
 
 Skript yana:
 - fayl 1 KB dan kichik boʻlsa xato beradi (boʻsh dump belgisi),
-- 30 kundan eskilarini oʻchiradi,
-- R2 sozlanmagan boʻlsa **ogohlantiradi** — bir joyda turgan zaxira
-  X-12 talabini bajarmaydi.
+- lokal papkada 30 kundan eskilarini oʻchiradi.
+
+### Nega Telegram
+
+Odatda zaxira obyekt xotirasiga (R2, S3) yuklanadi. Bu yerda Telegram
+tanlandi va sabablari aniq:
+
+- **Fayl allaqachon shifrlangan**, ochish kaliti esa na serverda, na
+  Telegramda. Yaʼni u yerga ketayotgan narsa — hech kim oʻqiy
+  olmaydigan bayt. Saqlovchiga ishonish talabi yoʻqoladi.
+- Bot allaqachon ishlaydi (T-017). **Yangi hisob, karta yoki
+  kredensial kerak emas** — bu esa «keyinroq sozlaymiz» degan
+  kechikishni yoʻq qiladi. Ishlamayotgan mukammal rejadan koʻra
+  bugun ishlaydigan nusxa yaxshiroq.
+- Bot 50 MB gacha hujjat yuboradi; zaxira ~1 MB. Oʻquvchilar soni
+  oʻn barobar oshsa ham chegara yaqin emas.
+
+Kamchiligi ham bor: bu saqlash xizmati emas. Eski xabarlar avtomatik
+oʻchmaydi (lokal papkadan farqli), va Telegram hisobi yoʻqolsa nusxa
+ham yoʻqoladi. Shu sababli u lokal nusxa va R2 ning **oʻrnini
+bosmaydi** — ular bilan yonma-yon turadi.
+
+Sozlash:
+
+```
+BACKUP_TELEGRAM_CHAT_ID=123456789
+```
+
+Bir necha odam koʻrishi kerak boʻlsa — yopiq guruh ochib, botni aʼzo
+qilib, guruh id sini qoʻying (manfiy son).
+
+**Tekshirilgan (2026-09-03):** fayl yuborildi → `getFile` orqali
+qaytarib olindi → `sha256` lokal nusxa bilan **bir xil** chiqdi.
+Telegram hujjatni oʻzgartirmaydi.
 
 ---
 
@@ -256,13 +292,15 @@ tekshirildi.
 
 ## Hali qilinmagan
 
-- **Boshqa joyda saqlash.** Hozir zaxira faqat SHU serverda
-  (`/var/backups/tarbion`). Disk yoʻqolsa zaxira ham yoʻqoladi —
-  X-12 ning yarmi bajarilmagan. `backup.sh` R2 ga yuklashga tayyor,
-  faqat `R2_BUCKET`/`R2_ENDPOINT` va kalitlar kerak. Yuklanadigan
-  narsa — shifrlangan fayl, ochish kaliti esa serverda ham, R2 da ham
-  yoʻq; shu sababli maʼlumot joylashuvi masalasi (CLAUDE.md) bu yerda
+- **Uchinchi nusxa (R2).** Hozir ikkita: lokal papka va Telegram.
+  `backup.sh` R2 ga yuklashga tayyor — faqat `R2_BUCKET`,
+  `R2_ENDPOINT` va AWS kalitlari kerak. Yuklanadigan narsa
+  shifrlangan fayl, ochish kaliti esa hech qaysi saqlovchida yoʻq;
+  shu sababli maʼlumot joylashuvi masalasi (CLAUDE.md) bu yerda
   koʻtarilmaydi.
+- **Telegramdagi eski nusxalarni tozalash.** Lokal papka 30 kundan
+  eskilarini oʻzi oʻchiradi, Telegram esa hammasini saqlaydi. Hajm
+  kichik (~1 MB/kun), lekin bir yildan keyin chat uzun boʻlib ketadi.
 - **Nuqtaviy tiklash (PITR).** Hozirgi sxemada eng koʻpi bilan bir
   kunlik maʼlumot yoʻqoladi. WAL arxivlash buni daqiqagacha
   tushirardi, lekin sozlash va saqlash hajmi ancha oshadi.

@@ -47,7 +47,11 @@ else
     QANCHA="hech qachon — birinchi zaxira ham olinmagan"
 fi
 
-MATN="⚠️ Tarbion: ZAXIRA OLINMADI
+# «Olinmadi» emas, «bajarilmadi»: zaxira quvurining har qanday qadami
+# yiqilishi mumkin — dump ham, shifrlash ham, boshqa joyga nusxa ham.
+# Lokal fayl yozilib, Telegramga ketmagan boʻlsa ham bu YIQILISH:
+# faqat oʻzi himoya qilayotgan mashinada turgan zaxira zaxira emas.
+MATN="⚠️ Tarbion: ZAXIRA BAJARILMADI
 
 Server: $(hostname)
 Vaqt: $(TZ=Asia/Tashkent date '+%Y-%m-%d %H:%M') (Toshkent)

@@ -607,9 +607,16 @@ bilan shifrlaydi, maxfiy kalit serverda YOʻQ.
 `backend/scripts/restore_check.sh` vaqtinchalik bazaga tiklab
 tekshiradi (ilova roli emas, administrator ulanishi bilan — X-11).
 
-**Qolgan:** zaxira faqat SHU serverda — `R2_BUCKET`/`R2_ENDPOINT` va
-kalitlar berilishi kerak (X-12 ning «boshqa joyda» qismi).
-`BACKUP_ALERT_CHAT_ID` ham boʻsh — hozir yiqilish faqat jurnalda qoladi.
+**Boshqa joyda saqlash (X-12) tayyor:** shifrlangan fayl har kuni
+Telegramga ham yuboriladi. Yangi hisob yoki karta talab qilmagani
+uchun shu tanlandi — fayl allaqachon shifrlangan, ochish kaliti esa
+hech qaysi saqlovchida yoʻq. Aylanma sinov: yuborildi → `getFile`
+bilan qaytarib olindi → `sha256` bir xil. Manzil boʻsh boʻlsa skript
+**ataylab yiqiladi** — bir joyda turgan zaxira jimgina oʻtmasin.
+
+**Qolgan:** uchinchi nusxa (R2) — ixtiyoriy, `R2_BUCKET`/`R2_ENDPOINT`
+va kalitlar berilsa oʻzi ishlaydi. Telegramdagi eski nusxalar
+avtomatik tozalanmaydi.
 
 **Tayyor:**
 - [x] HTTP → HTTPS yoʻnaltiriladi (308)

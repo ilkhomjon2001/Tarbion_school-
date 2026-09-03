@@ -91,7 +91,16 @@ xabar "shifrlandi: $OLCHAM"
 BAYT="$(stat -c%s "$YOL" 2>/dev/null || stat -f%z "$YOL")"
 [ "$BAYT" -gt 1024 ] || xato "zaxira juda kichik ($BAYT bayt) — tekshiring"
 
-# ─────────────────── R2 ga yuklash (boshqa joy) ───────────────────
+# ─────────────────── Boshqa joyga nusxa (X-12) ───────────────────
+#
+# Zaxira faqat oʻzi himoya qilayotgan mashinada tursa — u zaxira emas.
+# Shu sababli bu yerdagi xatolik BUTUN ISHNI yiqitadi: lokal fayl
+# yozilgan boʻlsa ham, tashqi nusxasiz zaxira toʻliq hisoblanmaydi va
+# `OnFailure` ogohlantirishi ishga tushishi kerak.
+#
+# Ikkala manzil ham qoʻllanadi: qaysi biri sozlangan boʻlsa, oʻsha.
+
+NUSXA=0
 
 if [ -n "${R2_BUCKET:-}" ] && command -v aws >/dev/null; then
     xabar "R2 ga yuklanmoqda"
@@ -99,9 +108,40 @@ if [ -n "${R2_BUCKET:-}" ] && command -v aws >/dev/null; then
         --endpoint-url "${R2_ENDPOINT}" \
         --only-show-errors
     xabar "R2 ga yuklandi"
-else
-    xabar "OGOHLANTIRISH: R2 sozlanmagan — zaxira FAQAT shu serverda."
-    xabar "Server yoʻqolsa zaxira ham yoʻqoladi (X-12)."
+    NUSXA=$((NUSXA + 1))
+fi
+
+# Telegram — fayl allaqachon shifrlangan, ochish kaliti esa na serverda,
+# na Telegramda. Yaʼni bu yerga ketayotgan narsa hech kim oʻqiy
+# olmaydigan bayt. Bot 50 MB gacha hujjat yuboradi; bizniki ~1 MB.
+if [ -n "${BACKUP_TELEGRAM_CHAT_ID:-}" ] && [ -n "${TELEGRAM_BOT_TOKEN:-}" ]; then
+    xabar "Telegramga yuborilmoqda"
+    IZOH="Tarbion zaxira · $(TZ=Asia/Tashkent date '+%Y-%m-%d %H:%M') (Toshkent) · ${OLCHAM}
+Shifrlangan (age). Ochish uchun maxfiy kalit kerak."
+
+    JAVOB="$(curl --silent --show-error --max-time 180 \
+        --form "chat_id=${BACKUP_TELEGRAM_CHAT_ID}" \
+        --form "document=@${YOL}" \
+        --form "caption=${IZOH}" \
+        "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" || true)"
+
+    # Telegram xatoni ham `200` bilan qaytarishi mumkin — javob ichidagi
+    # `"ok":true` ni tekshirish shart. HTTP kodiga ishonib boʻlmaydi.
+    if printf '%s' "$JAVOB" | grep -q '"ok":true'; then
+        xabar "Telegramga yuborildi"
+        NUSXA=$((NUSXA + 1))
+    else
+        # Javobda token yoʻq (u URL da edi), lekin chat_id boʻlishi
+        # mumkin — u maxfiy emas. Xato matni kerak: «yuborilmadi»
+        # oʻzi sababni aytmaydi.
+        xato "Telegramga yuborib boʻlmadi: $(printf '%s' "$JAVOB" | head -c 300)"
+    fi
+fi
+
+if [ "$NUSXA" -eq 0 ]; then
+    xato "zaxira FAQAT shu serverda — boshqa joy sozlanmagan (X-12).
+     Kerak: BACKUP_TELEGRAM_CHAT_ID yoki R2_BUCKET/R2_ENDPOINT.
+     Lokal fayl yozildi: $YOL"
 fi
 
 # ─────────────────────── Eskilarini tozalash ───────────────────────
