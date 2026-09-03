@@ -965,3 +965,19 @@ Maʼlumot `app/e2e_seed.py` dan (qatʼiy loginlar, idempotent) va u
 `APP_ENV=production` da ishlashdan bosh tortadi. Skript har yugurishda
 oʻsha darsning davomatini tozalaydi — aks holda test saqlash yoʻlini
 bosib oʻtmasdan «oʻtdi» deb chiqadi (bir marta shunday boʻlgan).
+
+## 2026-09-03 · «tez» belgisi faqat commit SARLAVHASIDA hisoblanadi
+
+Ilgari `if: !contains(github.event.head_commit.message, '[tez]')` butun
+xabarni tekshirardi. Natija: commit IZOHIDA belgi haqida yozilgan
+commit BARCHA testlarni oʻtkazib yubordi va buni hech kim sezmadi —
+deploy muvaffaqiyatli koʻrindi.
+
+Sarlavhani `if:` ifodasi ichida ajratib boʻlmaydi (GitHub ifodalarida
+`split` va regex yoʻq), shuning uchun belgi alohida `belgilar` ishida
+`git log -1 --pretty=%s` bilan hisoblanadi va natija `outputs` orqali
+uzatiladi. Belgi topilsa ish `::warning::` chiqaradi — oʻtkazib
+yuborilgani jurnalda koʻzga tashlanadi.
+
+`belgilar` ning oʻzi muvaffaqiyatli boʻlishi deploy sharti: u yiqilsa
+testlar oʻtkazib yuborilishi kerakmi-yoʻqmi noaniq qoladi.

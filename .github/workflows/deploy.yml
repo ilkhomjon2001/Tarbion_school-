@@ -6,10 +6,16 @@ name: Sinov · testlar va deploy
 # Yiqiladigan koddan buni talab qilish keraksiz yuk — testlar avval
 # GitHub yuguruvchisida oʻtadi.
 #
-# EHTIYOT YOʻL: commit xabarida `[tez]` boʻlsa testlar oʻtkazib
-# yuboriladi. Shoshilinch tuzatish uchun — deploy ~3 daqiqada tugaydi.
-# Ataylab qoʻlda yoziladigan belgi: tasodifan tushib qolmaydi va
-# kim, qachon xavf olganini commit tarixida koʻrinadi.
+# EHTIYOT YOʻL: commit SARLAVHASIDA (birinchi qatorida) `[tez]` boʻlsa
+# testlar oʻtkazib yuboriladi. Shoshilinch tuzatish uchun — deploy
+# ~3 daqiqada tugaydi. Ataylab qoʻlda yoziladigan belgi: tasodifan
+# tushib qolmaydi va kim, qachon xavf olganini commit tarixida koʻrinadi.
+#
+# FAQAT SARLAVHA tekshiriladi, butun xabar emas — 2026-09-03 da bir
+# marta tushilgan: commit IZOHIDA `[tez]` belgisi haqida yozilgan edi va
+# `contains(head_commit.message, ...)` uni buyruq deb qabul qilib
+# BARCHA testlarni oʻtkazib yubordi. Sarlavhani `if:` ifodasi ichida
+# ajratib boʻlmaydi, shuning uchun u alohida ishda hisoblanadi.
 on:
   push:
     branches: [main]
@@ -22,12 +28,34 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # ─────────────────── Commit belgilari ───────────────────
+
+  belgilar:
+    name: Commit belgilari
+    runs-on: ubuntu-latest
+    outputs:
+      tez: ${{ steps.aniqla.outputs.tez }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: aniqla
+        run: |
+          SARLAVHA="$(git log -1 --pretty=%s)"
+          echo "Sarlavha: $SARLAVHA"
+          if printf '%s' "$SARLAVHA" | grep -qF '[tez]'; then
+            echo "tez=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::[tez] — testlar oʻtkazib yuborildi."
+          else
+            echo "tez=false" >> "$GITHUB_OUTPUT"
+          fi
+
   # ─────────────────────────── Testlar ───────────────────────────
 
   backend:
     name: Backend · testlar
     runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, '[tez]')"
+    needs: belgilar
+    if: needs.belgilar.outputs.tez != 'true'
 
     services:
       postgres:
@@ -93,7 +121,8 @@ jobs:
   frontend:
     name: Frontend · tip va build
     runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, '[tez]')"
+    needs: belgilar
+    if: needs.belgilar.outputs.tez != 'true'
     defaults:
       run:
         working-directory: frontend
@@ -126,7 +155,8 @@ jobs:
   e2e:
     name: Kritik oqim · Playwright
     runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, '[tez]')"
+    needs: belgilar
+    if: needs.belgilar.outputs.tez != 'true'
 
     services:
       postgres:
@@ -228,7 +258,7 @@ jobs:
 
   deploy:
     name: Serverga
-    needs: [backend, frontend, e2e]
+    needs: [belgilar, backend, frontend, e2e]
     runs-on: ubuntu-latest
     # `always()` kerak: `[tez]` bilan testlar SKIPPED boʻladi va
     # sukut boʻyicha bogʻliq ish ham oʻtkazib yuborilardi.
@@ -236,9 +266,13 @@ jobs:
     # Lekin `always()` yolgʻiz xavfli — u yiqilgan testda ham
     # ishlatardi. Shuning uchun natija ANIQ tekshiriladi: faqat
     # `success` yoki `skipped` oʻtadi, `failure` toʻsiladi.
+    # `belgilar` MUVAFFAQIYATLI boʻlishi shart: u yiqilsa testlar
+    # oʻtkazib yuborilishi kerakmi-yoʻqmi noaniq qoladi va `skipped`
+    # ni «hammasi joyida» deb oʻqib boʻlmaydi.
     if: |
       always() &&
       github.ref == 'refs/heads/main' &&
+      needs.belgilar.result == 'success' &&
       (needs.backend.result == 'success' || needs.backend.result == 'skipped') &&
       (needs.frontend.result == 'success' || needs.frontend.result == 'skipped') &&
       (needs.e2e.result == 'success' || needs.e2e.result == 'skipped')
