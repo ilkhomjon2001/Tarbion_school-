@@ -9,6 +9,8 @@ Ishlab chiqarish serverida `systemd` xizmatlari:
 | `tarbion-bot` | Telegram bot — ulanish (T-017) | shu papkada |
 | `tarbion-outbox` | Xabar navbatini boʻshatadi (T-018) | shu papkada |
 | `tarbion-daily-summary` | Kunlik davomat xulosasi (T-019) — taymer | shu papkada |
+| `tarbion-backup` | Kunlik shifrlangan zaxira (T-022) — taymer | shu papkada |
+| `tarbion-backup-alert` | Zaxira yiqilsa xabar beradi — `OnFailure` | shu papkada |
 
 `tarbion-api` va `tarbion-web` fayllari tarixan faqat serverda yozilgan
 va bu yerga koʻchirilmagan — ularga tegilmadi. Qolganlari shu yerda

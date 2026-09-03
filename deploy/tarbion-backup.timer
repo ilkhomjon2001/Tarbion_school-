@@ -1,0 +1,18 @@
+[Unit]
+Description=Kunlik zaxira nusxasi (T-022, NFR-07)
+
+[Timer]
+# Toshkent vaqti bilan 03:15 — maktabda hech kim ishlamaydi, yuk eng
+# past. Mintaqa `OnCalendar` ning OʻZIDA koʻrsatiladi (systemd ≥ 252);
+# alohida `Timezone=` kaliti yoʻq va systemd uni jimgina eʼtiborsiz
+# qoldiradi.
+OnCalendar=*-*-* 03:15 Asia/Tashkent
+
+# Server oʻchiq boʻlgan boʻlsa, yoqilganda oʻtkazib yuborilgan zaxira
+# olinadi. Kechikkan zaxira — umuman olinmaganidan yaxshi.
+Persistent=true
+
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

@@ -13,7 +13,7 @@ falokat paytida undan qanday tiklanadi.
 Oddiy yoʻl — arxivni parol bilan shifrlash. Lekin unda parol
 serverning oʻzida (cron skriptida yoki `.env` da) turadi. Serverni
 buzib kirgan odam avval ishchi bazani, keyin **butun zaxira tarixini**
-ochib oladi. Ya'ni zaxira hujumchining ishini osonlashtiradi.
+ochib oladi. Yaʼni zaxira hujumchining ishini osonlashtiradi.
 
 Shu sababli `age` ning **ochiq kalitli** rejimi ishlatiladi:
 
@@ -49,9 +49,18 @@ BACKUP_KEEP_DAYS=30
 # 3. Serverda `age` va `aws` (R2 uchun) oʻrnating
 apt install age awscli
 
-# 4. Cron
-15 3 * * *  /opt/tarbion/backend/scripts/backup.sh >> /var/log/tarbion-backup.log 2>&1
+# 4. Xizmat va taymer
+cp deploy/tarbion-backup.service deploy/tarbion-backup.timer \
+   deploy/tarbion-backup-alert.service /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now tarbion-backup.timer
 ```
+
+Cron emas, `systemd` taymeri — sababi uchta: server oʻchiq boʻlgan
+paytdagi ish `Persistent=true` bilan oʻtkazib yuborilmaydi, jurnal
+`journalctl -u tarbion-backup` da boshqa xizmatlar bilan bir joyda
+boʻladi, va eng muhimi — `OnFailure=` orqali **yiqilish jimgina
+oʻtmaydi** (pastda).
 
 `backup-key.txt` ni serverdan **oʻchiring**. U yerda qolsa butun
 sxemaning maʼnosi yoʻqoladi.
@@ -100,23 +109,32 @@ tiklanadi**.
 
 Tekshiruv skripti vaqtinchalik baza yaratadi, ilova roli esa
 `CREATE DATABASE` qila olmaydi (X-11 — bu ataylab). Shuning uchun
-tekshiruvni **odam**, `postgres` roli bilan ishga tushiradi. Bu ham
-ataylab: maxfiy kalit serverda turmasligi kerak, ya'ni tekshiruvni
-avtomatlashtirib boʻlmaydi.
+skript ilovaning `DATABASE_URL` ini **ishlatmaydi**, administrator
+ulanishini oladi:
+
+- serverda — `sudo -u postgres` (peer auth, parolsiz), sukut boʻyicha;
+- masofadan — `RESTORE_ADMIN_URL=postgresql://...` beriladi.
+
+Bu ham ataylab: maxfiy kalit serverda turmasligi kerak, yaʼni
+tekshiruvni avtomatlashtirib boʻlmaydi — uni **odam** oyiga bir marta
+ishga tushiradi.
 
 Natijani jurnalga yozib boring:
 
 | Sana | Zaxira | Natija | Kim |
 |---|---|---|---|
-| | | | |
+| 2026-09-03 | `tarbion-20260903-053929` | ✅ toza — 214 users · 98 students · 10816 lessons · 9982 audit_log · 3 trigger · `bf3e5898befd` | Claude (serverda, `age` bilan) |
 
 ---
 
 ## Falokat: haqiqiy tiklash
 
 ```bash
-# 1. Ilovani toʻxtating — tiklash paytida yozuv kelmasin
-systemctl stop tarbion-api tarbion-worker tarbion-bot
+# 1. Ilovani toʻxtating — tiklash paytida yozuv kelmasin.
+#    Xabarnoma worker'i va bot ham: ular tiklash oʻrtasida yarim
+#    tiklangan bazadan oʻqib, ota-onaga notoʻgʻri xabar yuborardi.
+systemctl stop tarbion-api tarbion-web tarbion-bot tarbion-outbox
+systemctl stop tarbion-backup.timer tarbion-daily-summary.timer
 
 # 2. JORIY holatdan ham nusxa oling (tiklash notoʻgʻri chiqsa kerak boʻladi)
 pg_dump "$DATABASE_URL" | gzip > /root/tiklashdan-oldin.sql.gz
@@ -130,8 +148,18 @@ age --decrypt -i ~/backup-key.txt tarbion-YYYYMMDD-HHMMSS.sql.gz.age \
 cd /opt/tarbion/backend && uv run alembic upgrade head
 
 # 5. Koʻtaring
-systemctl start tarbion-api tarbion-worker tarbion-bot
-curl -s localhost:8000/health/ready
+systemctl start tarbion-api tarbion-web tarbion-bot tarbion-outbox
+systemctl start tarbion-backup.timer tarbion-daily-summary.timer
+
+# API Docker shlyuzida tinglaydi, `localhost` da emas:
+curl -s http://172.18.0.1:8300/health/ready     # {"status":"ok","database":true}
+```
+
+Tiklangandan keyin **zaxirani darhol qayta oling** — endi ishchi baza
+tiklangan nusxadan iborat, va oldingi zaxiralar boshqa tarixga tegishli:
+
+```bash
+systemctl start tarbion-backup.service
 ```
 
 **Diqqat:** zaxira `pg_dump --clean` bilan olingan — u mavjud
@@ -139,28 +167,74 @@ jadvallarni **oʻchiradi**. 2-qadamni oʻtkazib yubormang.
 
 ---
 
+## Zaxira olinmasa — kim biladi
+
+Jimgina yiqilgan zaxira eng yomon holat: hamma «zaxira bor» deb
+oʻylab yuradi, falokat kuni esa hech narsa yoʻqligi maʼlum boʻladi.
+
+`tarbion-backup.service` da `OnFailure=tarbion-backup-alert.service`.
+Skript administratorga Telegram orqali yozadi va xabarda **oxirgi
+muvaffaqiyatli zaxira qachon boʻlgani** koʻrsatiladi — «zaxira
+yiqildi» oʻzi kam maʼlumot beradi, «oxirgi zaxira 26 kun oldin» esa
+vaziyatning ogʻirligini darhol koʻrsatadi.
+
+Sana `backup.sh` skript **oxirigacha yetgandagina** yozadigan
+`.oxirgi-muvaffaqiyat` faylidan olinadi — boshlangan, lekin uzilib
+qolgan zaxira muvaffaqiyat deb hisoblanmaydi.
+
+Sozlash:
+
+```
+BACKUP_ALERT_CHAT_ID=123456789   # administratorning Telegram id si
+```
+
+Berilmasa skript jurnalga yozadi va ochiq aytadi: «zaxira yiqilgani
+HECH KIMGA yetkazilmadi».
+
+### Nega ogohlantirish outbox orqali ketmaydi
+
+Loyihada xabar yuborishning toʻgʻri yoʻli — `notification_outbox`
+(T-018). Bu yerda u **ataylab** ishlatilmagan: zaxira yiqilishining eng
+ehtimolli sababi — PostgreSQL ishlamayotgani. Bazaga yozadigan
+ogohlantirish aynan kerak boʻlgan paytda jim qolardi. Shuning uchun
+Telegram API ga toʻgʻridan-toʻgʻri murojaat qilinadi.
+
+---
+
 ## Sinovdan oʻtgan holat
 
-Quvur haqiqiy baza ustida tekshirildi (2026-08-31):
+**2026-09-03, ishlab chiqarish serverida, haqiqiy `age` kaliti bilan:**
 
 ```
-dump → gzip → shifrlash → shifrni ochish → tiklash
-natija: 385 users · 362 students · 778 lessons
-        17581 attendance_records · 2781 grades
-        audit triggerlari: 3 ta — tiklandi
+pg_dump → gzip -9 → age --encrypt        868 KB (7.7 MB dump dan)
+age --decrypt → gunzip → psql            vaqtinchalik bazaga tiklandi
+
+  ✓ users: 214          ✓ classes: 8
+  ✓ roles: 8            ✓ lessons: 10816
+  ✓ students: 98        ✓ attendance_records: 37
+  ✓ audit_log: 9982     ✓ audit triggerlari: 3 ta
+  ✓ alembic versiyasi: bf3e5898befd
 ```
 
-`age` oʻrniga `gpg` bilan sinaldi (lokal muhitda `age` yoʻq edi);
-quvurning mantiqi bir xil. **Serverda `age` bilan qayta sinash kerak**
-— bu birinchi deploy'ning majburiy qadami.
+Yiqilish yoʻli ham sinaldi: `ExecStart` ataylab buzildi →
+`tarbion-backup.service` `failed` holatiga oʻtdi →
+`tarbion-backup-alert.service` ishga tushdi va xabar tuzdi.
+
+Avvalgi (2026-08-31) sinov lokal muhitda `gpg` bilan qilingan edi —
+u endi ahamiyatsiz, chunki quvur haqiqiy vositalar bilan qayta
+tekshirildi.
 
 ---
 
 ## Hali qilinmagan
 
-- **Zaxira olinmaganini aniqlash.** Hozir cron jimgina yiqilsa hech
-  kim bilmaydi. Kerak: har muvaffaqiyatli zaxiradan keyin belgi
-  qoʻyish va uni monitoring tekshirishi (yoki botga xabar).
+- **Boshqa joyda saqlash.** Hozir zaxira faqat SHU serverda
+  (`/var/backups/tarbion`). Disk yoʻqolsa zaxira ham yoʻqoladi —
+  X-12 ning yarmi bajarilmagan. `backup.sh` R2 ga yuklashga tayyor,
+  faqat `R2_BUCKET`/`R2_ENDPOINT` va kalitlar kerak. Yuklanadigan
+  narsa — shifrlangan fayl, ochish kaliti esa serverda ham, R2 da ham
+  yoʻq; shu sababli maʼlumot joylashuvi masalasi (CLAUDE.md) bu yerda
+  koʻtarilmaydi.
 - **Nuqtaviy tiklash (PITR).** Hozirgi sxemada eng koʻpi bilan bir
   kunlik maʼlumot yoʻqoladi. WAL arxivlash buni daqiqagacha
   tushirardi, lekin sozlash va saqlash hajmi ancha oshadi.

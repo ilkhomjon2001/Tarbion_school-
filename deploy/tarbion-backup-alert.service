@@ -1,0 +1,14 @@
+[Unit]
+Description=Zaxira olinmaganini administratorga aytish (T-022, X-12)
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/tarbion/backend
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=/opt/tarbion/backend/scripts/backup_alert.sh
+
+# Ogohlantiruvchi hech narsa yozmaydi — faqat oʻqiydi va yuboradi.
+ProtectSystem=strict
+PrivateTmp=true
+NoNewPrivileges=true
+MemoryMax=64M

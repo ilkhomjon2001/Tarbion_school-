@@ -1,0 +1,33 @@
+[Unit]
+Description=Tarbion zaxira nusxasi (T-022, X-12)
+After=network-online.target postgresql.service
+Wants=postgresql.service
+
+# Zaxira jimgina yiqilmasin. `OnFailure` skript nolga teng boʻlmagan
+# kod bilan chiqqanda ishga tushadi — shu jumladan `set -Eeuo pipefail`
+# quvurning oʻrtasida uzilganda ham.
+#
+# Ogohlantirish BAZADAN OʻTMAYDI (`outbox` orqali emas): zaxira
+# yiqilishining eng ehtimolli sababi — bazaning oʻzi ishlamayotgani.
+# Bazaga bogʻliq ogohlantirish aynan kerak boʻlgan paytda jim qolardi.
+OnFailure=tarbion-backup-alert.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/tarbion/backend
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=/opt/tarbion/backend/scripts/backup.sh
+
+# `pg_dump | gzip -9 | age` — uchalasi ham oqim rejimida ishlaydi,
+# butun baza xotiraga yigʻilmaydi. Oʻlchangan choʻqqi: ~40 MB.
+MemoryMax=512M
+
+# Zaxira faqat oʻz papkasiga yozadi. Boshqa hamma joy — faqat oʻqish
+# uchun: skriptdagi xato butun serverni buzib qoʻymasin.
+ProtectSystem=strict
+ReadWritePaths=/var/backups/tarbion
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

@@ -165,15 +165,25 @@ jobs:
 
           # ── Zaxira MIGRATSIYADAN OLDIN ──
           # Migratsiya maʼlumotni oʻzgartiradi va uni qaytarib boʻlmaydi.
-          # Oxirgi 20 tasi saqlanadi.
+          #
+          # Bu KUNDALIK zaxira EMAS (u — `tarbion-backup.timer`, shifrlangan).
+          # Buning yagona vazifasi — deploy notoʻgʻri ketsa DARHOL orqaga
+          # qaytish. Aynan shu sababli u shifrlanmaydi: maxfiy kalit
+          # ataylab serverdan tashqarida turadi (X-12), shifrlangan nusxa
+          # esa tez qaytishga yaramaydi.
+          #
+          # Buning evazi — diskda ochiq PII yotadi. Shuning uchun:
+          # `umask 077` (faqat root oʻqiydi) va atigi 5 tasi saqlanadi.
           mkdir -p /root/backups
+          chmod 700 /root/backups
+          umask 077
           BK=/root/backups/tarbion_$(date +%Y%m%d_%H%M%S).sql
           if sudo -u postgres pg_dump tarbion > "$BK" 2>/dev/null; then
             echo "zaxira: $BK ($(wc -c < "$BK") bayt)"
           else
             echo "OGOHLANTIRISH: zaxira olinmadi"
           fi
-          ls -1t /root/backups/tarbion_*.sql 2>/dev/null | tail -n +21 | xargs -r rm -f
+          ls -1t /root/backups/tarbion_*.sql 2>/dev/null | tail -n +6 | xargs -r rm -f
 
           git merge --ff-only origin/main
 

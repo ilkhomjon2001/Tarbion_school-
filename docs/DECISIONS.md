@@ -860,3 +860,38 @@ ola boshlardi.
 
 CLAUDE.md stack'ida allaqachon tanlangan edi; T-017 da amalda kerak boʻldi.
 `backend/pyproject.toml` ga qoʻshildi — bot backend muhitida ishlaydi.
+
+## 2026-09-03 · Zaxira: cron emas, `systemd` taymeri
+
+`docs/ZAXIRA.md` da cron koʻrsatilgan edi. Amalda `tarbion-backup.timer`
+qilindi: `Persistent=true` server oʻchiq boʻlgan paytdagi ishni
+oʻtkazib yubormaydi, `OnCalendar=... Asia/Tashkent` mintaqani aniq
+belgilaydi (server `Europe/Berlin` da), va eng muhimi — `OnFailure=`
+orqali yiqilish jimgina oʻtmaydi. Cron'da bularning uchalasi ham
+qoʻlda quriladi.
+
+## 2026-09-03 · Zaxira ogohlantirishi outbox'dan OʻTMAYDI
+
+Loyihada xabar yuborishning toʻgʻri yoʻli — `notification_outbox`
+(T-018). `backup_alert.sh` uni ataylab chetlab oʻtadi va Telegram API
+ga toʻgʻridan-toʻgʻri murojaat qiladi: zaxira yiqilishining eng
+ehtimolli sababi — PostgreSQL ishlamayotgani. Bazaga yozadigan
+ogohlantirish aynan kerak boʻlgan paytda jim qolardi.
+
+## 2026-09-03 · `restore_check.sh` ilova roli bilan ishlamaydi
+
+Tekshiruv vaqtinchalik baza yaratadi, ilova roli esa `CREATE DATABASE`
+qila olmaydi (X-11 — ataylab huquqsiz). Skript `DATABASE_URL` ni
+ishlatishga urinib jimgina yiqilardi. Endi u administrator ulanishini
+oladi: serverda `sudo -u postgres`, masofadan `RESTORE_ADMIN_URL`.
+Muqobil yoʻl — ilova roliga `CREATEDB` berish — rad etildi, chunki u
+X-11 ni buzardi.
+
+## 2026-09-03 · CI ning deploy oldidan oladigan nusxasi shifrlanmaydi
+
+`tarbion-backup` shifrlaydi, CI niki yoʻq. Sabab: CI nusxasining
+yagona vazifasi — deploy notoʻgʻri ketsa DARHOL orqaga qaytish, maxfiy
+kalit esa ataylab serverdan tashqarida. Shifrlangan nusxa tez
+qaytishga yaramaydi. Evaziga `umask 077` va saqlanadigan nusxa soni
+20 dan 5 ga tushirildi — diskda ochiq PII kamroq va kamroq vaqt
+yotadi.

@@ -590,21 +590,34 @@ Admin uchun ko'rish sahifasi: filtr — obyekt turi, foydalanuvchi, sana.
 ### [~] T-022 · Zaxira nusxa va deploy
 **TZ:** NFR-07, NFR-09, NFR-12
 **Kerak:** T-001
-**Frontend:** ⬜ yoʻq — Deploy, HTTPS, zaxira nusxa — hech biri yoʻq.
+**Frontend:** ⬜ yoʻq — bu server tomoni.
 
-VPS: Nginx + HTTPS (Let's Encrypt), systemd birliklari (api, worker, bot).
+VPS: Caddy + HTTPS (Let's Encrypt), systemd birliklari (api, worker, bot).
 Har kunlik `pg_dump` → siqish → R2 ga yuklash, 30 kun saqlash.
-Tiklash skripti va uni sinovdan o'tkazish yo'riqnomasi.
+Tiklash skripti va uni sinovdan oʻtkazish yoʻriqnomasi.
 
-**Zaxira qismi tayyor:** `scripts/backup.sh` (age ochiq kalit bilan
-shifrlash), `scripts/restore_check.sh` (tiklab tekshirish),
-`docs/ZAXIRA.md`. Deploy (HTTPS, systemd) hali yo'q.
+**Deploy tayyor:** `tarbion.robbitonline.uz`, HTTPS, GitHub Actions →
+SSH → migratsiya → qayta ishga tushirish. Beshta systemd xizmati
+(`api`, `web`, `bot`, `outbox`, `daily-summary`) — hammasi `enabled`.
+
+**Zaxira tayyor:** `backend/scripts/backup.sh` — `age` ochiq kaliti
+bilan shifrlaydi, maxfiy kalit serverda YOʻQ.
+`tarbion-backup.timer` har kuni 03:15 (Toshkent).
+`OnFailure=tarbion-backup-alert.service` — yiqilish jimgina oʻtmaydi.
+`backend/scripts/restore_check.sh` vaqtinchalik bazaga tiklab
+tekshiradi (ilova roli emas, administrator ulanishi bilan — X-11).
+
+**Qolgan:** zaxira faqat SHU serverda — `R2_BUCKET`/`R2_ENDPOINT` va
+kalitlar berilishi kerak (X-12 ning «boshqa joyda» qismi).
+`BACKUP_ALERT_CHAT_ID` ham boʻsh — hozir yiqilish faqat jurnalda qoladi.
 
 **Tayyor:**
-- [ ] HTTP → HTTPS yo'naltiriladi
-- [ ] Xizmatlar qayta ishga tushirilganda avtomatik ko'tariladi
-- [~] Zaxiradan tiklash sinovdan o'tkazilgan — quvur lokal bazada
-      tekshirildi (gpg bilan); serverda `age` bilan qayta sinash kerak
+- [x] HTTP → HTTPS yoʻnaltiriladi (308)
+- [x] Xizmatlar qayta ishga tushirilganda avtomatik koʻtariladi
+- [x] Zaxiradan tiklash sinovdan oʻtkazilgan — 2026-09-03, ishlab
+      chiqarish serverida, haqiqiy `age` kaliti bilan: 214 users ·
+      98 students · 10816 lessons · 9982 audit_log · 3 trigger ·
+      `bf3e5898befd`. Yiqilish yoʻli ham sinaldi.
 
 ---
 

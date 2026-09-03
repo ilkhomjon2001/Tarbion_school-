@@ -110,5 +110,16 @@ find "$BACKUP_DIR" -name 'tarbion-*.sql.gz.age' -mtime "+${BACKUP_KEEP_DAYS}" -d
 QOLGAN="$(find "$BACKUP_DIR" -name 'tarbion-*.sql.gz.age' | wc -l)"
 xabar "lokal zaxiralar: $QOLGAN ta (saqlash muddati ${BACKUP_KEEP_DAYS} kun)"
 
+# ─────────────────────── Muvaffaqiyat belgisi ───────────────────────
+#
+# Faqat SKRIPT OXIRIGACHA yetib kelgandagina yoziladi. Shu sababli
+# «oxirgi muvaffaqiyatli zaxira» sanasi haqiqatan ham muvaffaqiyatli
+# zaxirani bildiradi — boshlangan, lekin uzilib qolganini emas.
+#
+# Buni `backup_alert.sh` oʻqiydi: «zaxira yiqildi» oʻzi kam maʼlumot
+# beradi, «oxirgi zaxira 26 kun oldin» esa vaziyatning ogʻirligini
+# darhol koʻrsatadi.
+date -u +'%Y-%m-%dT%H:%M:%SZ' > "${BACKUP_DIR}/.oxirgi-muvaffaqiyat"
+
 xabar "tayyor: $YOL"
 echo "$YOL"
