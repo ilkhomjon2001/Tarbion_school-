@@ -93,7 +93,7 @@ SQLAlchemy 2.0 async engine + session dependency. Alembic sozlanadi.
 
 ## Ma'lumot modeli va autentifikatsiya
 
-### [~] T-003 · Foydalanuvchi va rol modellari
+### [x] T-003 · Foydalanuvchi va rol modellari
 **TZ:** AUT-04, AUT-07
 **Kerak:** T-002
 **Frontend:** ✅ tayyor — `lib/roles.ts` — 6 rol (oʻquvchi, ustoz, ota-ona, rahbariyat, administrator, super administrator). `lib/access.ts` — 41 boʻlim reyestri, rol standarti + foydalanuvchi istisnosi. `/admin/sozlamalar` da rol biriktirish va huquq matritsasi.
@@ -105,9 +105,16 @@ xeshlanadi (`passlib`).
 Rollar: `student`, `parent`, `teacher`, `homeroom_teacher`, `admin`, `director`, `superadmin`.
 
 **Tayyor:**
-- [ ] Migratsiya yozilgan, rollar seed qilingan
-- [ ] Parol hech qayerda ochiq saqlanmaydi va API javobida chiqmaydi
-- [ ] Foydalanuvchini arxivlash mumkin, o'chirish endpoint'i yo'q
+- [x] Migratsiya yozilgan, rollar seed qilingan — `t003` migratsiyasi 8 ta
+      rolni QATʼIY UUID bilan qoʻyadi (`ON CONFLICT DO NOTHING`), shunda
+      `user_roles` yozuvi muhitdan muhitga koʻchganda boshqa rolni
+      koʻrsatmaydi
+- [x] Parol hech qayerda ochiq saqlanmaydi va API javobida chiqmaydi —
+      `test_javob_sxemalarida_parol_yoq` butun OpenAPI'ni kezadi, shuning
+      uchun KELAJAKDAGI endpointlar ham tekshiriladi. Ochiq parol faqat
+      «bir marta koʻrsatiladi» sxemalarida (yangi hisob, parol tiklash)
+- [x] Foydalanuvchini arxivlash mumkin, o'chirish endpoint'i yo'q —
+      `users` uchun bironta `DELETE` marshrut yoʻq (1-domen qoidasi)
 
 ---
 
@@ -577,7 +584,7 @@ Admin e'lon chop etadi → tegishli foydalanuvchilarga outbox orqali yuboriladi.
 
 ## Yopish
 
-### [~] T-021 · Audit jurnali
+### [x] T-021 · Audit jurnali
 **TZ:** NFR-10, DAV-07
 **Kerak:** T-013
 **Frontend:** ✅ tayyor — `/admin/audit` — 16 turdagi amal, filtr (amal turi va matn boʻyicha), CSV eksport. Tahrirlash va oʻchirish tugmasi ATAYLAB yoʻq. Admin panelidagi har bir amal yozuv qoldiradi.
@@ -587,8 +594,12 @@ foydalanuvchi, vaqt, IP). Yozuvlar o'zgartirilmaydi.
 Admin uchun ko'rish sahifasi: filtr — obyekt turi, foydalanuvchi, sana.
 
 **Tayyor:**
-- [ ] Davomat va foydalanuvchi o'zgarishlari tushayapti
-- [ ] Audit yozuvini o'zgartiruvchi/o'chiruvchi endpoint yo'q
+- [x] Davomat va foydalanuvchi o'zgarishlari tushayapti —
+      `attendance_service` va `user_service` da `audit_service.record`
+- [x] Audit yozuvini o'zgartiruvchi/o'chiruvchi endpoint yo'q — routerda
+      faqat `GET`, va oʻzgarmaslik BAZA darajasida triggerlar bilan
+      qotirilgan (`test_audit_immutable.py`: UPDATE, DELETE va TRUNCATE
+      ham rad etiladi)
 
 ---
 

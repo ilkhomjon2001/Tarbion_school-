@@ -23,6 +23,7 @@ from app.core.config import settings
 from app.core.middleware import MAX_BODY_BYTES, _first_forwarded, _in_networks, _parse_networks
 from app.core.ratelimit import limiter
 from app.core.security import hash_password, verify_password_constant_time
+from app.main import app
 from app.models import LoginAttempt, Role, RoleName, User
 
 PASSWORD = "Sinov12345!"  # noqa: S106
@@ -373,3 +374,100 @@ def test_sirpanuvchi_oyna_hisobi() -> None:
 
     # Boshqa kalit mustaqil — bir foydalanuvchi boshqasini bloklamaydi.
     assert lim.check("b", chegara)[0] is True
+
+
+# ─────────────────── Parol javobda chiqmaydi (AUT-04, X-5) ───────────────────
+#
+# Bitta endpointni tekshirish yetarli emas: xavf kelajakda qoʻshiladigan
+# endpointda. Shuning uchun tekshiruv OpenAPI sxemasi ustidan yuritiladi —
+# javobda qaytadigan HAR QANDAY sxema tekshiriladi, jumladan hali
+# yozilmaganlari ham.
+
+#: Parolni ATAYLAB bir marta qaytaradigan sxemalar. Bular hisob ochilganda
+#: yoki parol tiklanganda administratorga koʻrsatiladi va HECH QAYERDA
+#: saqlanmaydi — logga ham tushmaydi (X-10).
+PAROL_QAYTARADIGAN_SXEMALAR = {
+    "ResetResolveOut",  # parolni tiklash: yangi parol bir marta
+    "StaffCreatedOut",  # yangi xodim: boshlangʻich parol
+    "GuardianCreatedOut",  # yangi vasiy: boshlangʻich parol
+    "PasswordResetOut",  # administrator parolni qayta tiklaydi
+}
+
+_PAROL_MAYDONLARI = ("password", "parol", "hash")
+
+
+def _javob_sxemalari(spec: dict) -> set[str]:
+    """Javobda qaytadigan sxemalar — ichma-ich havolalar ham."""
+    kerak: set[str] = set()
+    navbat: list[dict | list] = []
+
+    for yol in spec.get("paths", {}).values():
+        for amal in yol.values():
+            if isinstance(amal, dict) and "responses" in amal:
+                navbat.append(amal["responses"])
+
+    def havolalar(tugun: object) -> list[str]:
+        topildi: list[str] = []
+        if isinstance(tugun, dict):
+            ref = tugun.get("$ref")
+            if isinstance(ref, str) and ref.startswith("#/components/schemas/"):
+                topildi.append(ref.rsplit("/", 1)[1])
+            for qiymat in tugun.values():
+                topildi += havolalar(qiymat)
+        elif isinstance(tugun, list):
+            for qiymat in tugun:
+                topildi += havolalar(qiymat)
+        return topildi
+
+    for tugun in navbat:
+        kerak.update(havolalar(tugun))
+
+    # Sxema ichidagi sxemalar (masalan roʻyxat elementi) ham javobda chiqadi.
+    sxemalar = spec.get("components", {}).get("schemas", {})
+    korildi: set[str] = set()
+    while kerak - korildi:
+        nom = next(iter(kerak - korildi))
+        korildi.add(nom)
+        kerak.update(havolalar(sxemalar.get(nom, {})))
+    return korildi
+
+
+def test_javob_sxemalarida_parol_yoq() -> None:
+    """Parol hech qayerda ochiq saqlanmaydi va API javobida chiqmaydi.
+
+    `password_hash` — hech qachon, hech qayerda. Ochiq parol esa faqat
+    «bir marta koʻrsatiladi» sxemalarida.
+    """
+    spec = app.openapi()
+    sxemalar = spec["components"]["schemas"]
+
+    aybdorlar: list[str] = []
+    for nom in sorted(_javob_sxemalari(spec)):
+        for maydon in sxemalar.get(nom, {}).get("properties", {}):
+            past = maydon.lower()
+            if "password_hash" in past or past == "hash":
+                aybdorlar.append(f"{nom}.{maydon} — parol xeshi HECH QACHON qaytmaydi")
+                continue
+            if any(k in past for k in _PAROL_MAYDONLARI):
+                # `must_change_password` — bayroq, parol emas.
+                if past.startswith("must_"):
+                    continue
+                if nom not in PAROL_QAYTARADIGAN_SXEMALAR:
+                    aybdorlar.append(f"{nom}.{maydon} — parol javobda chiqmasin")
+
+    assert not aybdorlar, "Parol javobda chiqadi:\n" + "\n".join(aybdorlar)
+
+
+async def test_me_javobida_parol_yoq(client: AsyncClient, user: User) -> None:
+    """Yuqoridagi sxema testining amaldagi tasdigʻi."""
+    r = await client.post(
+        "/api/v1/auth/login", json={"login": user.login, "password": PASSWORD}
+    )
+    assert r.status_code == 200, r.text
+    token = r.json()["access_token"]
+
+    me = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert me.status_code == 200, me.text
+    matn = me.text.lower()
+    assert "password_hash" not in matn
+    assert "argon2" not in matn
