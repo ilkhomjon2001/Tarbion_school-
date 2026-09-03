@@ -9,7 +9,7 @@ import { Header } from "@/components/ui/Header";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { HomeworkSubmitForm } from "@/components/features/student/HomeworkSubmitForm";
 import { messageOf } from "@/components/shared/LiveSession";
-import { formatDate } from "@/lib/format";
+import { formatDateTime } from "@/lib/format";
 import { SUBMISSION_LABELS, SUBMISSION_TONE } from "@/lib/labels";
 import {
   fetchHomeworkList,
@@ -88,7 +88,7 @@ export default function HomeworkDetailPage() {
               {SUBMISSION_LABELS[homework.status]}
             </Badge>
             <span className="text-xs text-foreground-muted">
-              Muddat: {formatDate(homework.dueDate.slice(0, 10))}
+              Muddat: {formatDateTime(homework.dueDate)}
             </span>
           </div>
           <h2 className="text-base font-semibold text-foreground">{homework.title}</h2>

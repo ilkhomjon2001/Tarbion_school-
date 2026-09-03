@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { ChevronRightIcon } from "@/components/ui/icons";
-import { formatDate } from "@/lib/format";
+import { formatDateTime } from "@/lib/format";
 import { SUBMISSION_LABELS, SUBMISSION_TONE } from "@/lib/labels";
 import type { Homework } from "@/lib/types";
 
@@ -17,7 +17,7 @@ export function HomeworkListItem({ homework }: { homework: Homework }) {
           {homework.title}
         </p>
         <p className="text-xs text-foreground-muted">
-          Muddat: {formatDate(homework.dueDate)}
+          Muddat: {formatDateTime(homework.dueDate)}
         </p>
       </div>
       <Badge tone={SUBMISSION_TONE[homework.status]}>

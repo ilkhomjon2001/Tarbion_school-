@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { ParentShell } from "@/components/parent/ParentShell";
 import { messageOf } from "@/components/shared/LiveSession";
+import { formatDateTime } from "@/lib/format";
 import { GRADE_KIND_LABELS } from "@/lib/labels";
 import { SUBMISSION_LABELS, type SubmissionStatus } from "@/lib/contracts";
 import { useChild } from "@/lib/parent/useChild";
@@ -234,7 +235,7 @@ export default function ParentGradesPage() {
               <div className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-foreground-muted">
                 <span>
                   Muddat:{" "}
-                  <span className="text-foreground">{h.dueDate.slice(0, 10)}</span>
+                  <span className="text-foreground">{formatDateTime(h.dueDate)}</span>
                 </span>
                 {h.grade !== undefined && (
                   <span>

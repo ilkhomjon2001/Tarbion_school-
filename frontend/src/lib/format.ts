@@ -19,18 +19,40 @@ export const WEEKDAY_LABELS = [
   "Yakshanba",
 ];
 
+const dateTimeFormatter = new Intl.DateTimeFormat("uz-Latn", {
+  day: "numeric",
+  month: "long",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+  timeZone: "Asia/Tashkent",
+});
+
+/**
+ * Kun (`2026-09-04`) ham, toʻliq ISO (`2026-09-04T12:00:00Z`) ham keladi —
+ * backendda TIMESTAMPTZ maydonlar toʻliq shaklda qaytadi. Toʻliq shaklga
+ * kun chegarasi qoʻshilsa `Invalid Date` boʻlib, Intl.format RangeError
+ * otadi va butun sahifa yiqiladi.
+ */
+const toDate = (iso: string): Date =>
+  new Date(iso.includes("T") ? iso : `${iso}T00:00:00+05:00`);
+
 export function formatDate(iso: string): string {
-  return dayFormatter.format(new Date(`${iso}T00:00:00+05:00`));
+  return dayFormatter.format(toDate(iso));
+}
+
+/** «4-sentabr 17:00» — muddatlar uchun, Toshkent vaqtida. */
+export function formatDateTime(iso: string): string {
+  return dateTimeFormatter.format(toDate(iso));
 }
 
 export function formatWeekday(iso: string): string {
-  return weekdayFormatter.format(new Date(`${iso}T00:00:00+05:00`));
+  return weekdayFormatter.format(toDate(iso));
 }
 
 export function daysUntil(iso: string): number {
   const today = new Date();
-  const target = new Date(`${iso}T00:00:00+05:00`);
-  const diffMs = target.getTime() - today.getTime();
+  const diffMs = toDate(iso).getTime() - today.getTime();
   return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 }
 
