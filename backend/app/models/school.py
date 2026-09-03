@@ -168,9 +168,15 @@ class SchoolSettings(Entity):
     __tablename__ = "school_settings"
 
     name: Mapped[str] = mapped_column(String(160), nullable=False)
-    address: Mapped[str] = mapped_column(String(200), default="", nullable=False)
-    phone: Mapped[str] = mapped_column(String(40), default="", nullable=False)
-    director_name: Mapped[str] = mapped_column(String(120), default="", nullable=False)
+    address: Mapped[str] = mapped_column(
+        String(200), default="", server_default="", nullable=False
+    )
+    phone: Mapped[str] = mapped_column(
+        String(40), default="", server_default="", nullable=False
+    )
+    director_name: Mapped[str] = mapped_column(
+        String(120), default="", server_default="", nullable=False
+    )
 
     #: DAV-05: davomat belgilangandan keyin vasiyga xabar qancha
     #: kechikib ketadi. Sukut boʻyicha 30 daqiqa — TZ talabi.

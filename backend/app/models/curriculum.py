@@ -12,7 +12,7 @@ bilan bir xil (title, type, model, maqsad[], lugat[], nazariya[], ...).
 import enum
 import uuid
 
-from sqlalchemy import ForeignKey, Index, String
+from sqlalchemy import ForeignKey, Index, String, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -48,12 +48,21 @@ class CurriculumPlan(Entity):
     yil: Mapped[str] = mapped_column(String(10), nullable=False)
     sinf: Mapped[str] = mapped_column(String(20), nullable=False)
     status: Mapped[str] = mapped_column(
-        String(12), default=CurriculumStatus.QORALAMA.value, nullable=False
+        String(12),
+        default=CurriculumStatus.QORALAMA.value,
+        # Bazada ham default turadi — model uni EʼLON QILISHI kerak,
+        # aks holda `alembic check` har safar «farq bor» deb yiqiladi
+        # va haqiqiy sxema oʻzgarishi shu shovqin ichida koʻrinmay
+        # qoladi.
+        server_default=CurriculumStatus.QORALAMA.value,
+        nullable=False,
     )
     #: Yuklangan fayl nomi — «qayerdan kelgan» izi.
     source_name: Mapped[str | None] = mapped_column(String(200))
     #: [{chorak, title, type, model, maqsad[], lugat[], nazariya[], ...}]
-    lessons: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    lessons: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb")
+    )
     created_by_id: Mapped[uuid.UUID | None] = mapped_column(
         PgUUID(as_uuid=True), ForeignKey("users.id"), nullable=True
     )
