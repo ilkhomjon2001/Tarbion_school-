@@ -122,11 +122,113 @@ jobs:
       - name: Build
         run: corepack pnpm build
 
+
+  e2e:
+    name: Kritik oqim · Playwright
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[tez]')"
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: tarbion
+          POSTGRES_PASSWORD: tarbion
+          POSTGRES_DB: tarbion
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Brauzer `127.0.0.1` da, shu sababli HTTPS yoʻq: `COOKIE_SECURE`
+      # oʻchiriladi, aks holda refresh cookie umuman saqlanmaydi va
+      # oqim login'dan oʻtmaydi.
+      #
+      # 2FA ham oʻchiriladi: u alohida `pytest` testlari bilan
+      # qoplangan, bu yerda esa faqat davomat zanjiri tekshiriladi.
+      DATABASE_URL: postgresql+asyncpg://tarbion:tarbion@localhost:5432/tarbion
+      JWT_SECRET: ci-uchun-vaqtinchalik-kalit-32-belgidan-uzun-2026
+      APP_ENV: development
+      COOKIE_SECURE: "false"
+      REQUIRE_TWO_FACTOR: "false"
+      CORS_ORIGINS: http://127.0.0.1:3100
+      # Bir martalik baza, bir martalik parol — sekret emas.
+      E2E_PASSWORD: E2eCiSinov2026!
+      E2E_PORT: "3100"
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:8000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: pnpm
+        run: corepack enable
+        env:
+          COREPACK_ENABLE_DOWNLOAD_PROMPT: 0
+
+      - name: Backend bogʻliqliklari
+        working-directory: backend
+        run: uv sync --frozen
+
+      - name: Migratsiya va E2E maʼlumoti
+        working-directory: backend
+        run: |
+          uv run alembic upgrade head
+          uv run python -m app.e2e_seed
+
+      - name: Backend'ni koʻtarish
+        working-directory: backend
+        run: |
+          uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8000/health && break
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:8000/health
+
+      - name: Frontend bogʻliqliklari
+        working-directory: frontend
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Brauzer
+        working-directory: frontend
+        run: corepack pnpm exec playwright install --with-deps chromium
+
+      - name: Build
+        working-directory: frontend
+        run: corepack pnpm build
+
+      - name: Oqim testi
+        working-directory: frontend
+        run: corepack pnpm e2e
+
+      # Yiqilganda sabab kerak: iz (trace) va ekran surati.
+      - name: Yiqilgan test izlari
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-izlari
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 7
+
   # ─────────────────────────── Deploy ───────────────────────────
 
   deploy:
     name: Serverga
-    needs: [backend, frontend]
+    needs: [backend, frontend, e2e]
     runs-on: ubuntu-latest
     # `always()` kerak: `[tez]` bilan testlar SKIPPED boʻladi va
     # sukut boʻyicha bogʻliq ish ham oʻtkazib yuborilardi.
@@ -138,7 +240,8 @@ jobs:
       always() &&
       github.ref == 'refs/heads/main' &&
       (needs.backend.result == 'success' || needs.backend.result == 'skipped') &&
-      (needs.frontend.result == 'success' || needs.frontend.result == 'skipped')
+      (needs.frontend.result == 'success' || needs.frontend.result == 'skipped') &&
+      (needs.e2e.result == 'success' || needs.e2e.result == 'skipped')
 
     steps:
       - name: SSH kaliti

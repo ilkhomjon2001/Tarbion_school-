@@ -949,3 +949,19 @@ qayta kerak boʻlsa, avval egasidan soʻraladi.
 
 Bir martalik yuklash uchun `app/import_real.py` CLI skripti bor
 (2026-09-02 dagi real maʼlumot koʻchirishi shu bilan qilingan).
+
+## 2026-09-03 · E2E da bitta oqim, va u deploy'ni toʻsadi
+
+Playwright (T-023) faqat bitta zanjirni tekshiradi: ustoz davomat
+belgilaydi → ota-ona koʻradi. U toʻrtta qatlamdan oʻtadi
+(autentifikatsiya, ustoz kabineti, `access.py`, ota-ona kabineti) va
+bironta unit test uni butunligicha tekshira olmaydi. Qolgani arzonroq
+qatlamda: `pytest`, `tsc`, `check:contracts`.
+
+Ish `deploy` ning `needs` iga qoʻshildi. Bloklamaydigan test — hujjat,
+test emas. `[tez]` belgisi bilan u ham oʻtkazib yuboriladi.
+
+Maʼlumot `app/e2e_seed.py` dan (qatʼiy loginlar, idempotent) va u
+`APP_ENV=production` da ishlashdan bosh tortadi. Skript har yugurishda
+oʻsha darsning davomatini tozalaydi — aks holda test saqlash yoʻlini
+bosib oʻtmasdan «oʻtdi» deb chiqadi (bir marta shunday boʻlgan).

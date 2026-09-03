@@ -644,19 +644,21 @@ avtomatik tozalanmaydi.
 
 ---
 
-### [ ] T-023 · 1-bosqich qabuliga tayyorlash
+### [x] T-023 · 1-bosqich qabuliga tayyorlash
 **TZ:** 9-bo'lim
 **Kerak:** T-001…T-022
-**Frontend:** ⬜ yoʻq — Playwright testlari va yoʻriqnomalar yoʻq.
-
-Bajarilgan talab kodlari ro'yxati (TZ bo'yicha), qisqa foydalanuvchi
-yo'riqnomasi (ustoz uchun 1 sahifa, ota-ona uchun 1 sahifa), demo ma'lumotlari
-bilan sinov muhiti.
 
 **Tayyor:**
-- [ ] AUT, ADM, DAV modullarining 1-bosqich talablari yopilgan
-- [ ] Playwright: login → davomat belgilash → ota-ona ko'radi oqimi o'tadi
-- [ ] Yo'riqnomalar `docs/` da
+- [-] AUT, ADM, DAV modullarining 1-bosqich talablari yopilgan —
+      egasining qarori (3-sentabr 2026): rasmiy talablar roʻyxati kerak
+      emas, sayt allaqachon ishlab turibdi
+- [x] Playwright: login → davomat belgilash → ota-ona ko'radi oqimi o'tadi
+      — `frontend/e2e/davomat-oqimi.spec.ts`, maʼlumot
+      `backend/app/e2e_seed.py` dan. CI da alohida `e2e` ishi va u
+      deploy'ni toʻsadi. Ishga tushirish: `docs/E2E.md`
+- [-] Yo'riqnomalar `docs/` da — ustozniki bor
+      (`docs/USTOZ-QOLLANMA.md`), ota-ona va administrator uchun
+      egasining qaroriga koʻra hozircha kerak emas
 
 ---
 

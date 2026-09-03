@@ -9,7 +9,9 @@
     "lint": "eslint",
     "check:contracts": "node --experimental-strip-types scripts/check-contracts.ts",
     "export:seed": "node --experimental-strip-types --import ./scripts/alias-hook-register.mjs scripts/export-seed.ts",
-    "gen:api": "openapi-ts -i http://localhost:8000/openapi.json -o src/lib/api"
+    "gen:api": "openapi-ts -i http://localhost:8000/openapi.json -o src/lib/api",
+    "e2e": "playwright test",
+    "e2e:install": "playwright install --with-deps chromium"
   },
   "dependencies": {
     "next": "^15",
@@ -20,6 +22,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@hey-api/openapi-ts": "^0.99.0",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^18",
