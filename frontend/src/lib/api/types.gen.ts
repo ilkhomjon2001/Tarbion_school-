@@ -1037,6 +1037,50 @@ export type ClassCreateIn = {
 };
 
 /**
+ * ClassDayMarkIn
+ *
+ * Bir necha para bitta tranzaksiyada.
+ */
+export type ClassDayMarkIn = {
+    /**
+     * Lesson Date
+     */
+    lesson_date: string;
+    /**
+     * Entries
+     */
+    entries: Array<DayEntryIn>;
+};
+
+/**
+ * ClassDayOut
+ *
+ * Butun sinfning bir kunlik davomati — bitta soʻrovda (DAV-02).
+ */
+export type ClassDayOut = {
+    /**
+     * Class Id
+     */
+    class_id: string;
+    /**
+     * Lesson Date
+     */
+    lesson_date: string;
+    /**
+     * Students
+     */
+    students: Array<DayStudentOut>;
+    /**
+     * Lessons
+     */
+    lessons: Array<DayLessonOut>;
+    /**
+     * Marks
+     */
+    marks: Array<DayMarkOut>;
+};
+
+/**
  * ClassJournalOut
  */
 export type ClassJournalOut = {
@@ -1293,6 +1337,102 @@ export type DayAttendanceOut = {
      * Lessons
      */
     lessons: Array<LessonStatusOut>;
+};
+
+/**
+ * DayEntryIn
+ */
+export type DayEntryIn = {
+    /**
+     * Lesson Id
+     */
+    lesson_id: string;
+    /**
+     * Rows
+     */
+    rows: Array<AttendanceRowIn>;
+};
+
+/**
+ * DayLessonOut
+ *
+ * Kunlik jadvaldagi bitta para.
+ */
+export type DayLessonOut = {
+    /**
+     * Lesson Id
+     */
+    lesson_id: string;
+    /**
+     * Period
+     */
+    period: number;
+    /**
+     * Subject Name
+     */
+    subject_name: string;
+    /**
+     * Teacher Name
+     */
+    teacher_name: string;
+    /**
+     * Room
+     */
+    room: string | null;
+    /**
+     * Starts At
+     */
+    starts_at: string;
+    /**
+     * Ends At
+     */
+    ends_at: string;
+    /**
+     * Topic
+     */
+    topic: string | null;
+    /**
+     * Editable
+     */
+    editable: boolean;
+};
+
+/**
+ * DayMarkOut
+ */
+export type DayMarkOut = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Lesson Id
+     */
+    lesson_id: string;
+    /**
+     * Status
+     */
+    status: 'present' | 'absent' | 'excused' | 'late';
+    /**
+     * Note
+     */
+    note: string | null;
+};
+
+/**
+ * DayStudentOut
+ *
+ * Qator boshidagi oʻquvchi. Shaxsiy maʼlumot yoʻq (X-6).
+ */
+export type DayStudentOut = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
 };
 
 /**
@@ -8690,6 +8830,73 @@ export type AttendanceClassStudentsResponses = {
 };
 
 export type AttendanceClassStudentsResponse = AttendanceClassStudentsResponses[keyof AttendanceClassStudentsResponses];
+
+export type AttendanceClassDayData = {
+    body?: never;
+    path: {
+        /**
+         * Class Id
+         */
+        class_id: string;
+    };
+    query?: {
+        /**
+         * On
+         *
+         * Sana; boʻsh boʻlsa bugun
+         */
+        on?: string | null;
+    };
+    url: '/api/v1/attendance/classes/{class_id}/day';
+};
+
+export type AttendanceClassDayErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AttendanceClassDayError = AttendanceClassDayErrors[keyof AttendanceClassDayErrors];
+
+export type AttendanceClassDayResponses = {
+    /**
+     * Successful Response
+     */
+    200: ClassDayOut;
+};
+
+export type AttendanceClassDayResponse = AttendanceClassDayResponses[keyof AttendanceClassDayResponses];
+
+export type AttendanceMarkClassDayData = {
+    body: ClassDayMarkIn;
+    path: {
+        /**
+         * Class Id
+         */
+        class_id: string;
+    };
+    query?: never;
+    url: '/api/v1/attendance/classes/{class_id}/day';
+};
+
+export type AttendanceMarkClassDayErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AttendanceMarkClassDayError = AttendanceMarkClassDayErrors[keyof AttendanceMarkClassDayErrors];
+
+export type AttendanceMarkClassDayResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttendanceMarkOut;
+};
+
+export type AttendanceMarkClassDayResponse = AttendanceMarkClassDayResponses[keyof AttendanceMarkClassDayResponses];
 
 export type AuditEntriesData = {
     body?: never;

@@ -17,14 +17,19 @@ Uchta qoida butun modulni belgilaydi:
 
 import uuid
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
-from app.core.exceptions import EditWindowClosedError, NotFoundError, ValidationError
+from app.core.exceptions import (
+    EditWindowClosedError,
+    NotFoundError,
+    PermissionDeniedError,
+    ValidationError,
+)
 from app.core.timeutil import utcnow
 from app.models import (
     AttendanceRecord,
@@ -38,6 +43,7 @@ from app.models import (
     SchoolSettings,
     Student,
     Subject,
+    User,
 )
 from app.services import (
     audit_service,
@@ -45,7 +51,13 @@ from app.services import (
     outbox_service,
     template_service,
 )
-from app.services.access import CurrentUser, accessible_student_ids, load_lesson_for_teacher
+from app.services.access import (
+    CurrentUser,
+    accessible_student_ids,
+    homeroom_class_ids,
+    load_lesson_for_teacher,
+    taught_class_ids,
+)
 from app.services.permissions import has_permission
 
 _VALID = {s.value for s in AttendanceStatus}
@@ -150,24 +162,32 @@ async def get_lesson_attendance(
     return lesson, students, mavjud
 
 
-async def mark_attendance(
+@dataclass(frozen=True, slots=True)
+class _LessonChange:
+    """Bitta darsdagi oʻzgarish — hali `commit` qilinmagan."""
+
+    result: MarkResult
+    changes: list[tuple[uuid.UUID, str]]
+    cancels: list[uuid.UUID]
+    records: dict[uuid.UUID, AttendanceRecord]
+
+
+async def _apply_lesson(
     session: AsyncSession,
     user: CurrentUser,
-    lesson_id: uuid.UUID,
+    lesson: Lesson,
     rows: list[MarkRow],
     *,
-    topic: str | None = None,
-    ip: str | None = None,
-) -> MarkResult:
-    """Butun sinf davomati bitta soʻrovda (DAV-01).
+    topic: str | None,
+    ip: str | None,
+    now: datetime,
+) -> _LessonChange:
+    """Bitta darsning davomatini yozadi. `flush`/`commit` QILMAYDI.
 
-    Nima uchun bitta soʻrov: ustoz 25 kishilik sinfni belgilaydi va
-    yarmi saqlanib, yarmi saqlanmasligi mumkin boʻlmasligi kerak —
-    hammasi bitta tranzaksiyada.
+    Ajratilgan sabab: kunlik ekran (DAV-02) bir necha darsni BITTA
+    tranzaksiyada saqlaydi. Ikkinchi nusxa yozilsa, DAV-03 tekshiruvi
+    yoki audit yozuvi ikki joyda ikki xil boʻlib qolardi.
     """
-    lesson = await load_lesson_for_teacher(session, user, lesson_id)
-    await _assert_can_edit(session, user, lesson)
-
     if not rows:
         raise ValidationError("Davomat roʻyxati boʻsh.")
 
@@ -188,11 +208,10 @@ async def mark_attendance(
         raise ValidationError("Bitta oʻquvchi roʻyxatda ikki marta kelgan.")
 
     mavjud_rows = await session.execute(
-        select(AttendanceRecord).where(AttendanceRecord.lesson_id == lesson_id)
+        select(AttendanceRecord).where(AttendanceRecord.lesson_id == lesson.id)
     )
     mavjud = {r.student_id: r for r in mavjud_rows.scalars()}
 
-    now = utcnow()
     created = updated = unchanged = 0
     #: Kim haqida oilaga xabar beriladi. Faqat HOLATI OʻZGARGAN va
     #: yangi holati «kelmadi»/«kechikdi» boʻlgan oʻquvchilar. Ustoz
@@ -215,7 +234,7 @@ async def mark_attendance(
 
         if eski is None:
             yangi = AttendanceRecord(
-                lesson_id=lesson_id,
+                lesson_id=lesson.id,
                 student_id=row.student_id,
                 status=row.status,
                 note=note,
@@ -228,7 +247,7 @@ async def mark_attendance(
             audit_service.record(
                 session,
                 object_type="attendance",
-                object_id=lesson_id,
+                object_id=lesson.id,
                 action=AuditAction.CREATE,
                 new={"student_id": row.student_id, "status": row.status, "note": note},
                 actor_id=user.id,
@@ -247,7 +266,7 @@ async def mark_attendance(
         audit_service.record(
             session,
             object_type="attendance",
-            object_id=lesson_id,
+            object_id=lesson.id,
             action=AuditAction.UPDATE,
             old={"student_id": row.student_id, "status": eski.status, "note": eski.note},
             new={"student_id": row.student_id, "status": row.status, "note": note},
@@ -279,7 +298,7 @@ async def mark_attendance(
             audit_service.record(
                 session,
                 object_type="lesson",
-                object_id=lesson_id,
+                object_id=lesson.id,
                 action=AuditAction.UPDATE,
                 old={"topic": lesson.topic},
                 new={"topic": yangi_mavzu},
@@ -289,12 +308,42 @@ async def mark_attendance(
             lesson.topic = yangi_mavzu
 
     lesson.attendance_marked_at = now
+    return _LessonChange(
+        result=MarkResult(created=created, updated=updated, unchanged=unchanged),
+        changes=xabar_uchun,
+        cancels=bekor_uchun,
+        records=yozuvlar,
+    )
+
+
+async def mark_attendance(
+    session: AsyncSession,
+    user: CurrentUser,
+    lesson_id: uuid.UUID,
+    rows: list[MarkRow],
+    *,
+    topic: str | None = None,
+    ip: str | None = None,
+) -> MarkResult:
+    """Butun sinf davomati bitta soʻrovda (DAV-01).
+
+    Nima uchun bitta soʻrov: ustoz 25 kishilik sinfni belgilaydi va
+    yarmi saqlanib, yarmi saqlanmasligi mumkin boʻlmasligi kerak —
+    hammasi bitta tranzaksiyada.
+    """
+    lesson = await load_lesson_for_teacher(session, user, lesson_id)
+    await _assert_can_edit(session, user, lesson)
+
+    ozgarish = await _apply_lesson(
+        session, user, lesson, rows, topic=topic, ip=ip, now=utcnow()
+    )
     # Yangi yozuvlar `id` olishi uchun — xabar aynan yozuvga bogʻlanadi.
     await session.flush()
-    await _notify_family(session, user, lesson, xabar_uchun, bekor_uchun, yozuvlar)
+    await _notify_family(
+        session, user, lesson, ozgarish.changes, ozgarish.cancels, ozgarish.records
+    )
     await session.commit()
-
-    return MarkResult(created=created, updated=updated, unchanged=unchanged)
+    return ozgarish.result
 
 
 #: DAV-05 sukut qiymati — TZ talabi. Sozlama qatori boʻlmasa shu.
@@ -691,3 +740,167 @@ async def teacher_lessons(session: AsyncSession, user: CurrentUser, day: date) -
         .order_by(Lesson.period)
     )
     return list(rows.scalars())
+
+
+# ────────────────── DAV-02: sinf rahbari kunlik ekrani ──────────────────
+
+
+@dataclass(frozen=True, slots=True)
+class DayLesson:
+    """Kunlik jadvaldagi bitta para."""
+
+    lesson: Lesson
+    subject_name: str
+    teacher_name: str
+    #: Shu darsni HOZIR tahrirlash mumkinmi (DAV-03 oynasi).
+    editable: bool
+
+
+@dataclass(frozen=True, slots=True)
+class ClassDay:
+    students: list[Student]
+    lessons: list[DayLesson]
+    #: `(student_id, lesson_id)` → holat. Belgilanmagani roʻyxatda yoʻq.
+    marks: dict[tuple[uuid.UUID, uuid.UUID], str]
+    notes: dict[tuple[uuid.UUID, uuid.UUID], str]
+
+
+async def class_day(
+    session: AsyncSession, user: CurrentUser, class_id: uuid.UUID, day: date
+) -> ClassDay:
+    """Butun sinfning bir kunlik davomati — BITTA soʻrovda (DAV-02).
+
+    Qatorlar oʻquvchi, ustunlar para. Ustoz 8 ta darsni 8 marta ochib
+    yurmasin: sinf rahbari kuniga bir marta butun kunni koʻrib chiqadi.
+
+    Roʻyxat toʻliq qaytadi — belgilanmagan katak ham boʻsh boʻlib
+    koʻrinadi, aks holda ustoz nima qolganini bilmasdi.
+    """
+    await _assert_class_access(session, user, class_id)
+
+    ustoz = User.__table__.alias("ustoz")
+    rows = await session.execute(
+        select(Lesson, Subject.name, ustoz.c.last_name, ustoz.c.first_name)
+        .join(Subject, Subject.id == Lesson.subject_id)
+        .join(ustoz, ustoz.c.id == Lesson.teacher_id)
+        .where(
+            Lesson.class_id == class_id,
+            Lesson.lesson_date == day,
+            Lesson.is_archived.is_(False),
+        )
+        .order_by(Lesson.period)
+    )
+    darslar = [
+        DayLesson(
+            lesson=lesson,
+            subject_name=fan,
+            teacher_name=f"{familiya} {ism[:1]}." if ism else familiya,
+            editable=can_teacher_edit(lesson),
+        )
+        for lesson, fan, familiya, ism in rows.all()
+    ]
+
+    students = await _roster(session, class_id)
+
+    marks: dict[tuple[uuid.UUID, uuid.UUID], str] = {}
+    notes: dict[tuple[uuid.UUID, uuid.UUID], str] = {}
+    if darslar:
+        yozuvlar = await session.execute(
+            select(AttendanceRecord).where(
+                AttendanceRecord.lesson_id.in_([d.lesson.id for d in darslar]),
+                AttendanceRecord.is_archived.is_(False),
+            )
+        )
+        for r in yozuvlar.scalars():
+            marks[(r.student_id, r.lesson_id)] = r.status
+            if r.note:
+                notes[(r.student_id, r.lesson_id)] = r.note
+
+    return ClassDay(students=students, lessons=darslar, marks=marks, notes=notes)
+
+
+async def _assert_class_access(
+    session: AsyncSession, user: CurrentUser, class_id: uuid.UUID
+) -> None:
+    """Kim sinfning kunlik ekranini ocha oladi.
+
+    Sinf rahbari — oʻz sinfi (DAV-02). Fan ustozi — dars beradigan
+    sinfi: u ham oʻz darslarini shu ekrandan belgilay oladi, lekin
+    boshqa ustozning darsi unga YOPIQ boʻlib koʻrinadi (`editable`).
+    """
+    if user.is_staff_wide:
+        return
+    if user.is_teacher:
+        if class_id in await homeroom_class_ids(session, user.id):
+            return
+        if class_id in await taught_class_ids(session, user.id):
+            return
+    raise PermissionDeniedError("Bu sinf sizga biriktirilmagan.")
+
+
+@dataclass(frozen=True, slots=True)
+class DayEntry:
+    """Bitta darsga tegishli belgilar."""
+
+    lesson_id: uuid.UUID
+    rows: list[MarkRow]
+
+
+async def mark_day(
+    session: AsyncSession,
+    user: CurrentUser,
+    class_id: uuid.UUID,
+    day: date,
+    entries: list[DayEntry],
+    *,
+    ip: str | None = None,
+) -> MarkResult:
+    """Bir kunlik bir necha darsni BITTA tranzaksiyada saqlaydi.
+
+    Yarmi saqlanib yarmi saqlanmasligi mumkin emas: ustoz butun kunni
+    koʻrib chiqib «saqlash» bosadi va natija yaxlit boʻlishi kerak.
+
+    Tahrirlab boʻlmaydigan dars (DAV-03 oynasi yopilgan) roʻyxatga
+    tushsa — butun soʻrov rad etiladi. Jimgina oʻtkazib yuborish
+    yomonroq: ustoz belgiladim deb oʻylab ketardi.
+    """
+    await _assert_class_access(session, user, class_id)
+    if not entries:
+        raise ValidationError("Saqlanadigan dars koʻrsatilmagan.")
+
+    # BIRINCHI oʻtish — faqat tekshiruv, hech narsa yozilmaydi.
+    #
+    # Ikki oʻtishga boʻlingan sabab: agar tekshiruv yozish bilan
+    # aralashsa, uchinchi darsdagi xato birinchi ikkitasi allaqachon
+    # sessiyaga qoʻshilgandan keyin chiqardi. Tranzaksiya orqaga
+    # qaytarilsa ham, bu «yozib boʻlib, keyin bekor qilish» —
+    # tekshiruvni oldin qilish soddaroq va ishonchliroq.
+    darslar: list[tuple[Lesson, DayEntry]] = []
+    for entry in entries:
+        lesson = await load_lesson_for_teacher(session, user, entry.lesson_id)
+        if lesson.class_id != class_id or lesson.lesson_date != day:
+            # X-3: dars boshqa sinfniki ekanini oshkor qilmaymiz.
+            raise ValidationError("Roʻyxatda shu kunga tegishli boʻlmagan dars bor.")
+        await _assert_can_edit(session, user, lesson)
+        darslar.append((lesson, entry))
+
+    now = utcnow()
+    natijalar: list[tuple[Lesson, _LessonChange]] = []
+    created = updated = unchanged = 0
+
+    for lesson, entry in darslar:
+        ozgarish = await _apply_lesson(
+            session, user, lesson, entry.rows, topic=None, ip=ip, now=now
+        )
+        natijalar.append((lesson, ozgarish))
+        created += ozgarish.result.created
+        updated += ozgarish.result.updated
+        unchanged += ozgarish.result.unchanged
+
+    await session.flush()
+    for lesson, ozgarish in natijalar:
+        await _notify_family(
+            session, user, lesson, ozgarish.changes, ozgarish.cancels, ozgarish.records
+        )
+    await session.commit()
+    return MarkResult(created=created, updated=updated, unchanged=unchanged)

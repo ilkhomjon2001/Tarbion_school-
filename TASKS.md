@@ -376,18 +376,31 @@ Sukut bo'yicha hamma "keldi". Bir bosishda saqlanadi.
 
 ---
 
-### [ ] T-015 · Sinf rahbari kunlik davomat ekrani
+### [x] T-015 · Sinf rahbari kunlik davomat ekrani
 **TZ:** DAV-02
 **Kerak:** T-013
-**Frontend:** 🟡 qisman — `/rahbar/sinflar` → sinf tanlanganda oʻquvchilar kesimida kunma-kun davomat kalendari (bugungi / haftalik / oylik). Sinf rahbari uchun «qatorlar — oʻquvchi, ustunlar — para» koʻrinishidagi TEZ TOʻLDIRISH ekrani yoʻq.
+**Frontend:** ✅ tayyor — `/teacher/davomat`: qatorlar oʻquvchi, ustunlar
+para. Katak bosilganda holat aylanadi (kelmadi → sababli → kechikdi →
+keldi), «hammasi keldi» tugmasi, sana boʻyicha oldinga/orqaga yurish.
 
 Bitta ekranda butun sinfning kunlik davomati: qatorlar — o'quvchilar,
 ustunlar — paralar. Tez to'ldirish uchun.
 
+**Backend:** ✅ `GET/POST /api/v1/attendance/classes/{id}/day`.
+`mark_attendance` ning yadrosi `_apply_lesson` ga ajratildi — kunlik
+saqlash bir necha darsni BITTA tranzaksiyada yozadi, DAV-03 va audit
+mantiqi esa ikki joyda takrorlanmaydi. Tekshiruv yozishdan OLDIN
+(ikki oʻtish): uchinchi darsdagi xato birinchi ikkitasini yozib
+qoʻymaydi. 11 ta test.
+
+Sinf rahbari boshqa ustozning darsini ham belgilay oladi (DAV-02),
+fan ustozi esa faqat oʻz darsini — boshqasi `editable: false` boʻlib
+koʻrinadi. Muddati oʻtgan yoki hali boshlanmagan dars ham yopiq.
+
 **Tayyor:**
-- [ ] Bir kunlik butun sinf bitta so'rovda yuklanadi
-- [ ] Kelmagan o'quvchilar vizual ajratilgan
-- [ ] Sana bo'yicha oldinga/orqaga yurish
+- [x] Bir kunlik butun sinf bitta so'rovda yuklanadi
+- [x] Kelmagan o'quvchilar vizual ajratilgan
+- [x] Sana bo'yicha oldinga/orqaga yurish
 
 ---
 

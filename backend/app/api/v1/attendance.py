@@ -22,6 +22,11 @@ from app.schemas.attendance import (
     AttendanceMarkIn,
     AttendanceMarkOut,
     AttendanceStatOut,
+    ClassDayMarkIn,
+    ClassDayOut,
+    DayLessonOut,
+    DayMarkOut,
+    DayStudentOut,
     GenerationOut,
     LessonAttendanceOut,
     StudentRowOut,
@@ -291,3 +296,89 @@ async def class_students(
         StudentStatOut(student_id=s.id, full_name=_full_name(s), stat=_stat_out(stat))
         for s, stat in rows
     ]
+
+
+# ────────────────── DAV-02: sinf rahbari kunlik ekrani ──────────────────
+
+
+@router.get("/classes/{class_id}/day", response_model=ClassDayOut)
+async def class_day(
+    class_id: uuid.UUID,
+    user: CurrentUserDep,
+    session: SessionDep,
+    on: Annotated[date | None, Query(description="Sana; boʻsh boʻlsa bugun")] = None,
+) -> ClassDayOut:
+    """Butun sinfning bir kunlik davomati — BITTA soʻrovda (DAV-02).
+
+    Sinf rahbari oʻz sinfini, fan ustozi dars beradigan sinfini
+    koʻradi. Boshqa ustozning darsi `editable: false` boʻlib keladi.
+    """
+    kun = on or local_today()
+    d = await attendance_service.class_day(session, user, class_id, kun)
+    return ClassDayOut(
+        class_id=class_id,
+        lesson_date=kun,
+        students=[
+            DayStudentOut(student_id=s.id, full_name=s.full_name) for s in d.students
+        ],
+        lessons=[
+            DayLessonOut(
+                lesson_id=dl.lesson.id,
+                period=dl.lesson.period,
+                subject_name=dl.subject_name,
+                teacher_name=dl.teacher_name,
+                room=dl.lesson.room,
+                starts_at=dl.lesson.starts_at,
+                ends_at=dl.lesson.ends_at,
+                topic=dl.lesson.topic,
+                editable=dl.editable,
+            )
+            for dl in d.lessons
+        ],
+        marks=[
+            DayMarkOut(
+                student_id=sid,
+                lesson_id=lid,
+                status=holat,
+                note=d.notes.get((sid, lid)),
+            )
+            for (sid, lid), holat in d.marks.items()
+        ],
+    )
+
+
+@router.post("/classes/{class_id}/day", response_model=AttendanceMarkOut)
+async def mark_class_day(
+    class_id: uuid.UUID,
+    payload: ClassDayMarkIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> AttendanceMarkOut:
+    """Bir kunlik bir necha parani BITTA tranzaksiyada saqlaydi.
+
+    Tahrirlash muddati oʻtgan dars roʻyxatga tushsa — butun soʻrov
+    rad etiladi (`403`), jimgina oʻtkazib yuborilmaydi.
+    """
+    natija = await attendance_service.mark_day(
+        session,
+        user,
+        class_id,
+        payload.lesson_date,
+        [
+            attendance_service.DayEntry(
+                lesson_id=e.lesson_id,
+                rows=[
+                    attendance_service.MarkRow(
+                        student_id=r.student_id, status=r.status, note=r.note
+                    )
+                    for r in e.rows
+                ],
+            )
+            for e in payload.entries
+        ],
+        ip=request.client.host if request.client else None,
+    )
+    return AttendanceMarkOut(
+        created=natija.created, updated=natija.updated, unchanged=natija.unchanged
+    )

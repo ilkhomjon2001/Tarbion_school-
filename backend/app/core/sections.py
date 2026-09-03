@@ -61,6 +61,8 @@ SECTIONS: list[Section] = [
     # ── Ustoz ──
     Section("/teacher", "Bugungi darslar", "teacher", locked=True),
     Section("/teacher/jadval", "Dars jadvali", "teacher"),
+    # DAV-02: sinf rahbari butun kunni bitta ekranda belgilaydi.
+    Section("/teacher/davomat", "Kunlik davomat", "teacher"),
     Section("/teacher/vazifa", "Uy vazifasi", "teacher"),
     Section("/teacher/jurnal", "Sinf jurnali", "teacher"),
     Section("/teacher/reja", "Dars rejasi", "teacher"),

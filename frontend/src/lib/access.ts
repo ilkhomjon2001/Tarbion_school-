@@ -53,6 +53,7 @@ export const SECTIONS: Section[] = [
   // ── Ustoz ──
   { id: "/teacher", label: "Bugungi darslar", cabinet: "teacher", locked: true },
   { id: "/teacher/jadval", label: "Dars jadvali", cabinet: "teacher" },
+  { id: "/teacher/davomat", label: "Kunlik davomat", cabinet: "teacher" },
   { id: "/teacher/vazifa", label: "Uy vazifasi", cabinet: "teacher" },
   { id: "/teacher/jurnal", label: "Sinf jurnali", cabinet: "teacher" },
   { id: "/teacher/reja", label: "Dars rejasi", cabinet: "teacher" },
