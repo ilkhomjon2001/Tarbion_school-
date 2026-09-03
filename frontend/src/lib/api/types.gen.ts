@@ -1958,6 +1958,10 @@ export type FinanceSummaryOut = {
      */
     students_with_contract: number;
     /**
+     * Students Total
+     */
+    students_total: number;
+    /**
      * By Method
      */
     by_method: Array<MethodTotalOut>;

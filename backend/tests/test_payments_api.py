@@ -804,3 +804,27 @@ async def test_storno_oz_kanalidan_chiqadi(client: AsyncClient, world: dict) -> 
     }
     assert jadval["humo"]["total"] == 0
     assert jadval["naqd"]["total"] == 1_000_000
+
+
+async def test_jamlanmada_shartnoma_qamrovi(client: AsyncClient, world: dict) -> None:
+    """Shartnomasiz oʻquvchiga qarz hisoblanmaydi.
+
+    Usiz jamlanma jimgina yolgʻon gapiradi: «Qarz: 0, Qarzdorlar: 0»
+    chiqadi va rahbar «hamma toʻlagan» deb oʻqiydi, aslida esa hisob
+    umuman yuritilmayotgan boʻlishi mumkin.
+    """
+    token = await _token(client, "pm.admin")
+    jamlanma = (
+        await client.get("/api/v1/payments/summary", headers=_auth(token))
+    ).json()
+
+    assert jamlanma["students_with_contract"] == 0
+    assert jamlanma["students_total"] > 0
+    assert jamlanma["debt"] == 0  # qarz yoʻq, chunki hisoblanmagan
+
+    await _shartnoma(client, token, world["ali"].id)
+    keyin = (
+        await client.get("/api/v1/payments/summary", headers=_auth(token))
+    ).json()
+    assert keyin["students_with_contract"] == 1
+    assert keyin["students_total"] == jamlanma["students_total"]

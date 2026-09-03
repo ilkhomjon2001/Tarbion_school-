@@ -49,6 +49,10 @@ class FinanceSummaryOut(BaseModel):
     debt: int
     debtors: int
     students_with_contract: int
+    #: Jami oʻquvchi — qamrovni koʻrsatish uchun. Shartnomasi yoʻq
+    #: oʻquvchiga qarz hisoblanmaydi va jamlanma «hamma toʻlagan»
+    #: boʻlib koʻrinishi mumkin.
+    students_total: int
     #: Kanallar kesimi. Toʻlovi yoʻq kanal ham nol bilan qaytadi —
     #: «Visa orqali hech narsa kelmadi» ham javob.
     by_method: list[MethodTotalOut]

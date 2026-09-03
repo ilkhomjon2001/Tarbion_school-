@@ -82,6 +82,23 @@ export default function DirectorPaymentsPage() {
         )}
       </div>
 
+      {/* QAMROV ogohlantirishi.
+          Shartnomasi yoʻq oʻquvchiga qarz hisoblanmaydi. Yaʼni hisob
+          umuman yuritilmayotgan boʻlsa ham yuqoridagi kartalar
+          «Qarz: 0, Qarzdorlar: 0» deb turadi va rahbar buni «hamma
+          toʻlagan» deb oʻqiydi. Eng xavfli xato — jimgina notoʻgʻri
+          xulosa, shuning uchun buni ochiq aytamiz. */}
+      {summary && summary.students_with_contract < summary.students_total && (
+        <p className="rounded-lg border border-warning/40 bg-warning-tint px-3 py-2 text-sm text-foreground">
+          <strong className="font-semibold">Diqqat:</strong>{" "}
+          {summary.students_total} oʻquvchidan{" "}
+          <span className="num">{summary.students_with_contract}</span> tasida
+          shartnoma bor. Qolganiga qarz <strong>hisoblanmaydi</strong> — yuqoridagi
+          «Qarz» va «Qarzdorlar» raqamlari toʻliq manzarani koʻrsatmaydi.
+          Shartnomalar administrator kabinetida kiritiladi.
+        </p>
+      )}
+
       {/* Tushum QAYSI KANALDAN kelgani (loyiha egasining soʻrovi,
           2026-09-03). Umumiy summa oʻzi kassani bank koʻchirmasi
           bilan solishtirishga yaramaydi: naqd qancha, karta qancha —

@@ -69,6 +69,7 @@ async def summary(user: CurrentUserDep, session: SessionDep) -> FinanceSummaryOu
         debt=data.debt,
         debtors=data.debtors,
         students_with_contract=data.students_with_contract,
+        students_total=data.students_total,
         by_method=[MethodTotalOut(**dataclasses.asdict(m)) for m in data.by_method],
     )
 

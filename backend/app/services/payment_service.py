@@ -999,6 +999,13 @@ class SummaryData:
     debt: int
     debtors: int
     students_with_contract: int
+    #: Jami oʻquvchi. `students_with_contract` bilan birga — QAMROV.
+    #:
+    #: Usiz jamlanma jimgina yolgʻon gapiradi: shartnomasi yoʻq
+    #: oʻquvchiga qarz hisoblanmaydi, demak «Qarz: 0, Qarzdorlar: 0»
+    #: chiqadi va rahbar «hamma toʻlagan» deb oʻqiydi. Aslida esa
+    #: hisob umuman yuritilmayotgan boʻlishi mumkin.
+    students_total: int
     #: Kanallar boʻyicha kesim. Toʻlov boʻlmagan kanal ham QOLADI
     #: (nol bilan) — «Visa orqali hech narsa kelmadi» degan xulosa
     #: ham maʼlumot, qatorning yoʻqligi esa savol tugʻdiradi.
@@ -1058,6 +1065,7 @@ async def summary(session: AsyncSession, user: CurrentUser) -> SummaryData:
         debt=sum(-r.balance for r in rows if r.balance < 0),
         debtors=sum(1 for r in rows if r.balance < 0),
         students_with_contract=sum(1 for r in rows if r.monthly_fee is not None),
+        students_total=len(rows),
         by_method=await _by_method(session),
     )
 

@@ -789,7 +789,7 @@ export const paymentsGenerateCharges = <ThrowOnError extends boolean = false>(op
 /**
  * Record Payment
  *
- * Qoʻlda toʻlov kiritish (naqd/oʻtkazma/terminal).
+ * Qoʻlda toʻlov kiritish: naqd, Humo, Uzcard, Visa, bank oʻtkazmasi.
  */
 export const paymentsRecordPayment = <ThrowOnError extends boolean = false>(options: Options<PaymentsRecordPaymentData, ThrowOnError>): RequestResult<PaymentsRecordPaymentResponses, PaymentsRecordPaymentErrors, ThrowOnError> => (options.client ?? client).post<PaymentsRecordPaymentResponses, PaymentsRecordPaymentErrors, ThrowOnError>({
     url: '/api/v1/payments',
