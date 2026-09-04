@@ -68,7 +68,7 @@ export const PAY_STATUS_LABELS: Record<string, string> = {
   hisobsiz: "Hisobsiz",
 };
 
-export const DEFAULT_MONTHLY_FEE = 3_500_000;
+export const DEFAULT_MONTHLY_FEE = 2_300_000;
 
 /**
  * Toʻlov kanallari — `backend/app/models/payments.py` dagi

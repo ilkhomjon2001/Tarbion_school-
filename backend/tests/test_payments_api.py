@@ -477,10 +477,14 @@ async def test_oy_kesimi_fifo(client: AsyncClient, world: dict) -> None:
 
 
 async def test_muddat_otgan_oy_kechikdi(client: AsyncClient, world: dict) -> None:
-    """10-sanadan keyin toʻlanmagan oy «kechikdi» (overdue)."""
+    """Muddatdan keyin toʻlanmagan oy «kechikdi» (overdue).
+
+    Muddat — `settings.payment_due_day`, shartnomaning 3.2-A bandi
+    boʻyicha oyning 5-sanasi.
+    """
     token = await _token(client, "pm.admin")
     # Shartnoma 2026-may oldidan — may qarzini yozamiz: muddati
-    # 2026-05-10, bugungi sanadan (2026-09-01) oʻtgan.
+    # allaqachon oʻtgan.
     r = await client.put(
         f"/api/v1/payments/students/{world['ali'].id}/contract",
         headers=_auth(token),
@@ -492,7 +496,7 @@ async def test_muddat_otgan_oy_kechikdi(client: AsyncClient, world: dict) -> Non
         headers=_auth(token),
         json={"year": 2026, "month": 5},
     )
-    # Sentyabr esa hali muddati kelmagan (bugun 10-sanadan oldin boʻlsa).
+    # Sentyabr esa hali muddati kelmagan boʻlishi mumkin.
     r = await client.get(
         f"/api/v1/payments/students/{world['ali'].id}", headers=_auth(token)
     )
@@ -911,3 +915,32 @@ async def test_toliq_tolagan_tolangan_deb_belgilanadi(client: AsyncClient, world
     assert r.status_code == 201, r.text
     assert r.json()["finance"]["status"] == "tolangan"
     assert r.json()["finance"]["balance"] == OYLIK  # avans
+
+
+# ─────────────────── Shartnoma hujjatidagi raqamlar ───────────────────
+
+
+def test_shartnoma_raqamlari_hujjatga_mos() -> None:
+    """Summalar HUJJATDAN olinadi, taxmindan emas.
+
+    Manba — «Oʻquvchini maktabga qabul qilish va taʼlim xizmatlarini
+    koʻrsatish toʻgʻrisida shartnoma» (`maxfiy/`).
+
+    Bu test tavtologiyaga oʻxshaydi, lekin sababi bor: kodda ilgari
+    3 500 000 va 10-sana turgan edi va ular hech qanday hujjatga
+    tayanmasdi. 99 ta shartnoma oʻsha notoʻgʻri summada ochilib
+    ketdi. Raqam oʻzgarsa, avval shartnoma oʻzgarsin.
+    """
+    from app.core.config import settings
+    from app.models.payments import (
+        CONTRACT_ADVANCE,
+        DEFAULT_MONTHLY_FEE,
+        PREPAY_HALF_YEAR_DISCOUNT_PERCENT,
+        PREPAY_YEAR_DISCOUNT_PERCENT,
+    )
+
+    assert DEFAULT_MONTHLY_FEE == 2_300_000  # 3.1-band
+    assert CONTRACT_ADVANCE == 1_150_000  # 3.1-band, oldindan toʻlov
+    assert PREPAY_YEAR_DISCOUNT_PERCENT == 10  # 3.2-B
+    assert PREPAY_HALF_YEAR_DISCOUNT_PERCENT == 5  # 3.2-S
+    assert settings.payment_due_day == 5  # 3.2-A

@@ -36,7 +36,21 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Entity
 
 #: Standart oylik shartnoma summasi, soʻmda.
-DEFAULT_MONTHLY_FEE = 3_500_000
+#:
+#: Manba — «Oʻquvchini maktabga qabul qilish va taʼlim xizmatlarini
+#: koʻrsatish toʻgʻrisida shartnoma», 3.1-band. Kodda oldin 3 500 000
+#: turgan edi va u hech qanday hujjatga tayanmasdi.
+DEFAULT_MONTHLY_FEE = 2_300_000
+
+#: Shartnoma imzolanayotganda oldindan toʻlanadigan summa (3.1-band).
+#: Toʻlov jadvalidagi koʻp uchraydigan «1 150 000» aynan shu.
+CONTRACT_ADVANCE = 1_150_000
+
+#: Oldindan toʻlov chegirmalari (3.2-band). Foizda.
+#: · Variant B — butun yil uchun oldindan toʻlaganga;
+#: · Variant S — 6 oylik oldindan toʻlaganga.
+PREPAY_YEAR_DISCOUNT_PERCENT = 10
+PREPAY_HALF_YEAR_DISCOUNT_PERCENT = 5
 
 #: Oʻquv yili oylari — sentyabr–may. Iyun–avgustda qarz yozilmaydi.
 TUITION_MONTHS = frozenset({9, 10, 11, 12, 1, 2, 3, 4, 5})

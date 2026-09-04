@@ -84,7 +84,9 @@ class Settings(BaseSettings):
     #: kelganda uning kaliti alohida nom bilan qoʻshiladi.
     sinov_provider_key: str = "sinov-kalit-almashtiring"  # noqa: S105
     #: Oylik toʻlov shu sanagacha kutiladi; undan keyin «kechikdi».
-    payment_due_day: int = 10
+    #: Shartnomaning 3.2-A bandi: «har oyning 5-sanasidan kechiktirmasdan».
+    #: Oldin bu yerda 10 turgan edi — hujjatga tayanmagan taxmin.
+    payment_due_day: int = 5
 
     # --- Cookie ---
     refresh_cookie_name: str = "tarbion_rt"
