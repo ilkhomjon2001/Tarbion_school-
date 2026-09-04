@@ -318,3 +318,44 @@ class SchoolSettingsOut(BaseModel):
     bank_code: str
     bank_name: str
     attendance_notify_delay_minutes: int
+
+
+class ContractPartyOut(BaseModel):
+    """Shartnomani imzolaydigan vasiy."""
+
+    full_name: str
+    phone: str | None
+    address: str | None
+    relation: str
+
+
+class ContractOut(BaseModel):
+    """Shartnoma hujjati uchun maʼlumot.
+
+    Hujjat MATNI bu yerda yoʻq — u frontendda. Bu yerda faqat hujjatga
+    qoʻyiladigan qiymatlar: kim bilan, qancha, qaysi rekvizitlar.
+    """
+
+    school_name: str
+    school_address: str
+    school_phone: str
+    director_name: str
+    tax_id: str
+    bank_account: str
+    bank_code: str
+    bank_name: str
+
+    student_name: str
+    birth_date: date | None
+    class_name: str | None
+
+    guardians: list[ContractPartyOut]
+
+    monthly_fee: int
+    #: Shartnoma hali ochilmagan boʻlsa `false` — summa standartdan.
+    has_contract: bool
+    contract_starts_on: date | None
+    advance: int
+    due_day: int
+    prepay_year_percent: int
+    prepay_half_year_percent: int

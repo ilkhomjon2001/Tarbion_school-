@@ -1256,6 +1256,117 @@ export type ContractIn = {
 };
 
 /**
+ * ContractOut
+ *
+ * Shartnoma hujjati uchun maʼlumot.
+ *
+ * Hujjat MATNI bu yerda yoʻq — u frontendda. Bu yerda faqat hujjatga
+ * qoʻyiladigan qiymatlar: kim bilan, qancha, qaysi rekvizitlar.
+ */
+export type ContractOut = {
+    /**
+     * School Name
+     */
+    school_name: string;
+    /**
+     * School Address
+     */
+    school_address: string;
+    /**
+     * School Phone
+     */
+    school_phone: string;
+    /**
+     * Director Name
+     */
+    director_name: string;
+    /**
+     * Tax Id
+     */
+    tax_id: string;
+    /**
+     * Bank Account
+     */
+    bank_account: string;
+    /**
+     * Bank Code
+     */
+    bank_code: string;
+    /**
+     * Bank Name
+     */
+    bank_name: string;
+    /**
+     * Student Name
+     */
+    student_name: string;
+    /**
+     * Birth Date
+     */
+    birth_date: string | null;
+    /**
+     * Class Name
+     */
+    class_name: string | null;
+    /**
+     * Guardians
+     */
+    guardians: Array<ContractPartyOut>;
+    /**
+     * Monthly Fee
+     */
+    monthly_fee: number;
+    /**
+     * Has Contract
+     */
+    has_contract: boolean;
+    /**
+     * Contract Starts On
+     */
+    contract_starts_on: string | null;
+    /**
+     * Advance
+     */
+    advance: number;
+    /**
+     * Due Day
+     */
+    due_day: number;
+    /**
+     * Prepay Year Percent
+     */
+    prepay_year_percent: number;
+    /**
+     * Prepay Half Year Percent
+     */
+    prepay_half_year_percent: number;
+};
+
+/**
+ * ContractPartyOut
+ *
+ * Shartnomani imzolaydigan vasiy.
+ */
+export type ContractPartyOut = {
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Phone
+     */
+    phone: string | null;
+    /**
+     * Address
+     */
+    address: string | null;
+    /**
+     * Relation
+     */
+    relation: string;
+};
+
+/**
  * CreditIn
  *
  * Kredit-yozuv: qarzni sabab bilan kamaytirish.
@@ -10850,6 +10961,36 @@ export type SchoolLinkGuardianResponses = {
 };
 
 export type SchoolLinkGuardianResponse = SchoolLinkGuardianResponses[keyof SchoolLinkGuardianResponses];
+
+export type SchoolStudentContractData = {
+    body?: never;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/students/{student_id}/contract';
+};
+
+export type SchoolStudentContractErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolStudentContractError = SchoolStudentContractErrors[keyof SchoolStudentContractErrors];
+
+export type SchoolStudentContractResponses = {
+    /**
+     * Successful Response
+     */
+    200: ContractOut;
+};
+
+export type SchoolStudentContractResponse = SchoolStudentContractResponses[keyof SchoolStudentContractResponses];
 
 export type SchoolGuardianLookupData = {
     body?: never;

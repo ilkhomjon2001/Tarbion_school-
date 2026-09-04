@@ -482,6 +482,21 @@ async def test_maktab_rekvizitlari_yoziladi(client: AsyncClient, world: dict) ->
 # hujjat kelganda toʻldiriladi.
 
 
+async def _huquq(session: AsyncSession, world: dict, permission: Permission) -> None:
+    """Bitta huquqni administratorga beradi.
+
+    `_huquqli` faqat `students.manage` beradi; sozlama va toʻlov
+    endpointlari boshqa huquq soʻraydi va rol yolgʻiz yetarli emas (X-2).
+    """
+    await permissions.grant(
+        session,
+        target_user_id=world["admin"].id,
+        permission=permission,
+        granted_by=CurrentUser.from_model(world["superadmin"]),
+    )
+    await session.flush()
+
+
 async def _huquqli(session: AsyncSession, world: dict) -> None:
     await permissions.grant(
         session,
@@ -874,3 +889,81 @@ async def test_mavjud_vasiyga_ikkinchi_oquvchi_biriktiriladi(
         str(world["parent_a"].id),
         str(world["parent_b"].id),
     }
+
+
+# ─────────────────── Shartnoma hujjati ───────────────────
+
+
+async def test_otaona_oz_farzandining_shartnomasini_koradi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Hujjatga oʻquvchi, vasiy va maktab rekvizitlari tushadi."""
+    await _huquq(session, world, Permission.USERS_MANAGE)
+    admin = await _token(client, "sch.admin")
+    r = await client.put(
+        "/api/v1/school/settings",
+        headers=_auth(admin),
+        json={
+            "name": "«Tarbion» NTM",
+            "address": "Andijon viloyati, Marhamat tumani",
+            "phone": "+998901234567",
+            "director_name": "Toʻxtarov Fazliddin",
+            "tax_id": "313032894",
+            "bank_account": "20208000007467234001",
+            "bank_code": "00450",
+            "bank_name": "«Milliy Bank» AJ Marhamat BXM",
+            "attendance_notify_delay_minutes": 30,
+        },
+    )
+    assert r.status_code == 200, r.text
+
+    token = await _token(client, "sch.otaona_a")
+    r = await client.get(
+        f"/api/v1/school/students/{world['ali'].id}/contract", headers=_auth(token)
+    )
+    assert r.status_code == 200, r.text
+    b = r.json()
+    assert b["student_name"] == world["ali"].full_name
+    assert b["director_name"] == "Toʻxtarov Fazliddin"
+    # MFO bosh noli saqlanadi — bu identifikator, raqam emas.
+    assert b["bank_code"] == "00450"
+    assert [g["full_name"] for g in b["guardians"]]
+    # Shartnoma summasi hujjatdan (3.1) — hali shartnoma ochilmagan.
+    assert b["monthly_fee"] == 2_300_000
+    assert b["has_contract"] is False
+    assert b["advance"] == 1_150_000
+    assert b["due_day"] == 5
+
+
+async def test_begona_otaona_shartnomani_kora_olmaydi(
+    client: AsyncClient, world: dict
+) -> None:
+    """X-1, X-3: 403, 404 emas — mavjudligi oshkor boʻlmasin."""
+    token = await _token(client, "sch.otaona_b")
+    r = await client.get(
+        f"/api/v1/school/students/{world['ali'].id}/contract", headers=_auth(token)
+    )
+    assert r.status_code == 403, r.text
+
+
+async def test_shartnomada_amaldagi_summa_korinadi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Shartnoma ochilgan boʻlsa summa OʻSHANDAN, standartdan emas."""
+    await _huquq(session, world, Permission.PAYMENTS_MANAGE)
+    admin = await _token(client, "sch.admin")
+    r = await client.put(
+        f"/api/v1/payments/students/{world['ali'].id}/contract",
+        headers=_auth(admin),
+        json={"monthly_fee": 1_800_000, "starts_on": "2026-09-01"},
+    )
+    assert r.status_code == 200, r.text
+
+    token = await _token(client, "sch.otaona_a")
+    b = (
+        await client.get(
+            f"/api/v1/school/students/{world['ali'].id}/contract", headers=_auth(token)
+        )
+    ).json()
+    assert b["monthly_fee"] == 1_800_000
+    assert b["has_contract"] is True

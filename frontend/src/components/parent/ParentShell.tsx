@@ -46,6 +46,7 @@ const SIDEBAR_NAV = [
   { href: "/ota-ona/vazifalar", label: "Uy vazifasi", icon: BookIcon },
   ...NAV.slice(3),
   { href: "/ota-ona/tarbiya", label: "Tarbiya va psixologiya", icon: HeartIcon },
+  { href: "/ota-ona/shartnoma", label: "Shartnoma", icon: FileIcon },
   { href: "/ota-ona/oshxona", label: "Oshxona menyusi", icon: MealIcon },
   { href: "/ota-ona/elonlar", label: "Eʼlonlar", icon: BellIcon },
   { href: "/ota-ona/sorovnoma", label: "Soʻrovnoma", icon: StarIcon },
@@ -314,6 +315,15 @@ function HeartIcon() {
   return (
     <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 20s-7-4.4-7-9.4A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.6c0 5-7 9.4-7 9.4Z" />
+    </svg>
+  );
+}
+
+function FileIcon() {
+  return (
+    <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z" />
+      <path d="M14 3v5h5M9 13h6M9 17h4" />
     </svg>
   );
 }

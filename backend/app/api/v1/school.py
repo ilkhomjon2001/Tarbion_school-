@@ -30,6 +30,8 @@ from app.schemas.school import (
     ClassOut,
     ClassSubjectIn,
     ClassSubjectOut,
+    ContractOut,
+    ContractPartyOut,
     GuardianCreatedOut,
     GuardianCreateIn,
     GuardianLinkIn,
@@ -58,6 +60,7 @@ from app.schemas.school import (
 )
 from app.schemas.wellbeing import WellbeingNoteOut
 from app.services import (
+    contract_service,
     dossier_service,
     guardian_service,
     reference_service,
@@ -730,6 +733,48 @@ async def student_guardians(
     await school_service.student_card(session, user, student_id)
     rows = await guardian_service.list_guardians(session, student_id, include_archived=archived)
     return [await _guardian_row(session, g, u) for g, u in rows]
+
+
+@router.get("/students/{student_id}/contract", response_model=ContractOut)
+async def student_contract(
+    student_id: uuid.UUID, user: CurrentUserDep, session: SessionDep
+) -> ContractOut:
+    """Shartnoma hujjati uchun maʼlumot (ADM-11).
+
+    Ota-ona OʻZ farzandining shartnomasini koʻradi — tekshiruv
+    `access.py` da, soʻrov darajasida (X-1). Hujjat matni frontendda,
+    bu yerda faqat qiymatlar.
+    """
+    c = await contract_service.contract_view(session, user, student_id)
+    return ContractOut(
+        school_name=c.school_name,
+        school_address=c.school_address,
+        school_phone=c.school_phone,
+        director_name=c.director_name,
+        tax_id=c.tax_id,
+        bank_account=c.bank_account,
+        bank_code=c.bank_code,
+        bank_name=c.bank_name,
+        student_name=c.student_name,
+        birth_date=c.birth_date,
+        class_name=c.class_name,
+        guardians=[
+            ContractPartyOut(
+                full_name=g.full_name,
+                phone=g.phone,
+                address=g.address,
+                relation=g.relation,
+            )
+            for g in c.guardians
+        ],
+        monthly_fee=c.monthly_fee,
+        has_contract=c.has_contract,
+        contract_starts_on=c.contract_starts_on,
+        advance=c.advance,
+        due_day=c.due_day,
+        prepay_year_percent=c.prepay_year_percent,
+        prepay_half_year_percent=c.prepay_half_year_percent,
+    )
 
 
 @router.get(

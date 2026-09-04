@@ -36,6 +36,7 @@ import {
   schoolSetHomeroom,
   schoolStaff,
   schoolGuardianLookup,
+  schoolStudentContract,
   schoolLinkGuardian,
   schoolMakePrimary,
   schoolStudentCard,
@@ -54,6 +55,7 @@ import type {
   CafeteriaMenuOut,
   ClassOut,
   GuardianCreatedOut,
+  ContractOut,
   GuardianPhoneMatchOut,
   GuardianRowOut,
   ClassSubjectOut,
@@ -72,6 +74,7 @@ import { withAuth } from "@/lib/session";
 export type {
   ClassOut,
   GuardianCreatedOut,
+  ContractOut,
   GuardianPhoneMatchOut,
   GuardianRowOut,
   ClassSubjectOut,
@@ -608,4 +611,17 @@ export async function saveCafeteriaMenu(
   const natija: Record<number, string[]> = {};
   for (const [k, v] of Object.entries(r.days)) natija[Number(k)] = v;
   return natija;
+}
+
+/**
+ * Shartnoma hujjati uchun maʼlumot (ADM-11).
+ *
+ * Ota-ona OʻZ farzandi uchun chaqira oladi — server `access.py` orqali
+ * tekshiradi (X-1). Hujjat matni frontendda, bu yerdan faqat qiymatlar
+ * keladi: kim bilan, qancha, qaysi rekvizitlar.
+ */
+export async function fetchContract(studentId: string): Promise<ContractOut> {
+  return withAuth<ContractOut>(() =>
+    schoolStudentContract({ path: { student_id: studentId } }),
+  );
 }

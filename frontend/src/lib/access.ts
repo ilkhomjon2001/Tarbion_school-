@@ -70,6 +70,7 @@ export const SECTIONS: Section[] = [
   { id: "/ota-ona/tolov", label: "Toʻlov", cabinet: "parent" },
   { id: "/ota-ona/murojaat", label: "Murojaat", cabinet: "parent" },
   { id: "/ota-ona/tarbiya", label: "Tarbiya va psixologiya", cabinet: "parent" },
+  { id: "/ota-ona/shartnoma", label: "Shartnoma", cabinet: "parent" },
   { id: "/ota-ona/oshxona", label: "Oshxona menyusi", cabinet: "parent" },
   { id: "/ota-ona/elonlar", label: "Eʼlonlar", cabinet: "parent" },
   { id: "/ota-ona/sorovnoma", label: "Soʻrovnoma", cabinet: "parent" },
