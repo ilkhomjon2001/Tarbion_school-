@@ -598,6 +598,11 @@ function PaymentForm({
   const [method, setMethod] = useState("naqd");
   const [receipt, setReceipt] = useState("");
 
+  // Server `KV-{yil}-{tartib}` shaklida beradi (`record_payment`).
+  // Namunani shu yerda ham koʻrsatamiz — ilgari placeholder «KV-0001»
+  // derdi va yozilgan raqam boshqacha chiqib, chalgʻitardi.
+  const namuna = `KV-${new Date().getFullYear()}-0001`;
+
   return (
     <form
       onSubmit={(e) => {
@@ -641,13 +646,23 @@ function PaymentForm({
         </label>
       </span>
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-foreground">Chek raqami</span>
+        <span className="mb-1 block text-xs font-medium text-foreground">
+          Chek raqami{" "}
+          <span className="font-normal text-foreground-muted">— ixtiyoriy</span>
+        </span>
         <input
           value={receipt}
           onChange={(e) => setReceipt(e.target.value.slice(0, 60))}
-          placeholder="KV-0001"
+          placeholder={`Boʻsh qoldiring — ${namuna}`}
           className={inputClass}
         />
+        {/* Maydon boʻsh qolsa server oʻzi tartib raqam beradi. Buni
+            aytmasak administrator har safar nima yozishni oʻylab
+            qoladi va qoʻlbola raqamlar aralashib ketadi. */}
+        <span className="mt-1 block text-xs text-foreground-muted">
+          Boʻsh qoldirsangiz tizim tartib raqam beradi ({namuna}). Kassa cheki yoki
+          bank kvitansiyasi raqami boʻlsa — oʻshani yozing. Raqam takrorlanmaydi.
+        </span>
       </label>
       <p className="text-xs text-foreground-muted">
         Toʻlov yozuvi keyin tahrirlanmaydi — xato boʻlsa storno qilinadi.
