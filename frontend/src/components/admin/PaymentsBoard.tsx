@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/Badge";
 import { ConfirmArchiveButton } from "@/components/admin/ConfirmArchiveButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ListSkeleton, StatCardSkeleton } from "@/components/ui/Skeleton";
-import { WalletIcon } from "@/components/ui/icons";
+import { PlusIcon, WalletIcon, XIcon } from "@/components/ui/icons";
 import { schoolSchoolSettings } from "@/lib/api/sdk.gen";
 import type { SchoolSettingsOut } from "@/lib/api/types.gen";
 import { formatSom } from "@/lib/format";
@@ -69,6 +69,24 @@ const FILTRLAR = [
 ] as const;
 
 type Filtr = (typeof FILTRLAR)[number]["id"];
+
+/**
+ * Kartochkadagi amal panellari. Har tugma OCHIB-YOPADI — shu sabab
+ * ochiq holati alohida koʻrinishga ega.
+ */
+const PANELS = [
+  { id: "tolov", label: "Toʻlov kiritish" },
+  { id: "shartnoma", label: "Shartnoma" },
+  { id: "chegirma", label: "Chegirma" },
+  { id: "kredit", label: "Kredit-yozuv" },
+  { id: "qaytarish", label: "Avansni qaytarish" },
+] as const;
+
+const panelBtn =
+  "focus-ring inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-sm font-medium text-foreground transition-colors hover:border-brand hover:text-brand-dark";
+
+const panelBtnOpen =
+  "focus-ring inline-flex h-9 items-center gap-1.5 rounded-lg border border-brand bg-brand px-3 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark";
 
 const STATUS_TONE: Record<string, "success" | "warning" | "danger" | "neutral"> = {
   tolangan: "success",
@@ -394,46 +412,27 @@ function LedgerDrawer({
 
         {error && <p className="rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">{error}</p>}
 
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => setPanel(panel === "tolov" ? null : "tolov")} className={primaryBtn}>
-            Toʻlov kiritish
-          </button>
-          <button
-            type="button"
-            onClick={() => setPanel(panel === "shartnoma" ? null : "shartnoma")}
-            className={ghostBtn}
-          >
-            Shartnoma
-          </button>
-          <button
-            type="button"
-            onClick={() => setPanel(panel === "chegirma" ? null : "chegirma")}
-            className={ghostBtn}
-          >
-            Chegirma
-          </button>
-          <button
-            type="button"
-            onClick={() => setPanel(panel === "kredit" ? null : "kredit")}
-            className={ghostBtn}
-          >
-            Kredit-yozuv
-          </button>
-          {(fin?.balance ?? 0) > 0 && (
+        {/* Tugmalar OCHIB-YOPADI, shuning uchun bosilgani koʻrinib
+            tursin. Ilgari «Toʻlov kiritish» doim yashil edi va ochiq
+            kabi oʻqilardi — administrator bosmasdan «summa kiritadigan
+            joy qani» deb qidirardi. */}
+        <div role="group" aria-label="Amallar" className="flex flex-wrap gap-2">
+          {PANELS.filter((p) => p.id !== "qaytarish" || (fin?.balance ?? 0) > 0).map((p) => (
             <button
+              key={p.id}
               type="button"
-              onClick={() => setPanel(panel === "qaytarish" ? null : "qaytarish")}
-              className={ghostBtn}
+              aria-expanded={panel === p.id}
+              onClick={() => setPanel(panel === p.id ? null : p.id)}
+              className={panel === p.id ? panelBtnOpen : panelBtn}
             >
-              Avansni qaytarish
+              {panel === p.id ? <XIcon className="h-4 w-4" /> : <PlusIcon className="h-4 w-4" />}
+              {p.label}
             </button>
-          )}
+          ))}
         </div>
 
-        {ledger && ledger.months.length > 0 && (
-          <MonthsStrip months={ledger.months} />
-        )}
-
+        {/* Forma tugmaning OʻZI ostida. Ilgari u oylar chizigʻidan
+            keyin turardi va uzun daftarda koʻzga tashlanmasdi. */}
         {panel === "tolov" && (
           <PaymentForm
             studentId={studentId}
@@ -476,6 +475,8 @@ function LedgerDrawer({
             onSubmit={(input) => void amal(() => addDiscount(studentId, input))}
           />
         )}
+
+        {ledger && ledger.months.length > 0 && <MonthsStrip months={ledger.months} />}
 
         <section className="flex flex-col gap-1.5">
           <h3 className="text-xs font-medium uppercase tracking-wide text-foreground-muted">
@@ -611,12 +612,14 @@ function PaymentForm({
           });
         }
       }}
-      className="flex flex-col gap-2 rounded-lg border border-border p-3"
+      className="flex flex-col gap-2 rounded-lg border border-brand/40 bg-brand/5 p-3"
     >
+      <h3 className="text-sm font-semibold text-foreground">Yangi toʻlov</h3>
       <span className="flex gap-2">
         <label className="block flex-1">
           <span className="mb-1 block text-xs font-medium text-foreground">Summa (soʻm)</span>
           <input
+            autoFocus
             type="number"
             min={1}
             value={amount}
