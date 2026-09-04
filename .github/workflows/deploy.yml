@@ -386,8 +386,8 @@ jobs:
           # sinovdan oʻtmay qolardi.
           for i in $(seq 1 12); do
             sleep 5
-            KOD=$(curl -s -o /dev/null -w '%{http_code}' -m 10 https://tarbion.robbitonline.uz/health/ready || echo 000)
-            VEB=$(curl -s -o /dev/null -w '%{http_code}' -m 10 https://tarbion.robbitonline.uz/login || echo 000)
+            KOD=$(curl -s -o /dev/null -w '%{http_code}' -m 10 https://tarbion.uz/health/ready || echo 000)
+            VEB=$(curl -s -o /dev/null -w '%{http_code}' -m 10 https://tarbion.uz/login || echo 000)
             echo "urinish $i · api=$KOD veb=$VEB"
             if [ "$KOD" = "200" ] && [ "$VEB" = "200" ]; then
               echo "deploy tayyor"

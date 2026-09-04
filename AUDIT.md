@@ -43,7 +43,7 @@ ishlayapti" degan taassurot qoldiradi, vaholanki koʻp joyda shunchaki "hali ula
 - **Backend**: Python 3.12, FastAPI, SQLAlchemy 2.0 async, Alembic (18 migratsiya, zanjir butun), Pydantic v2.
 - **Baza**: PostgreSQL. **Auth**: JWT httpOnly cookie, access 15 daq / refresh 30 kun, rotatsiya + reuse-detection,
   2FA (admin/direktorga majburiy), login lockout PostgreSQLʼda.
-- **Deploy**: GitHub Actions → SSH (test + build oʻtmasa chiqmaydi), jonli: tarbion.robbitonline.uz.
+- **Deploy**: GitHub Actions → SSH (test + build oʻtmasa chiqmaydi), jonli: tarbion.uz.
 - **Yoʻq (vaʼda qilingan, qurilmagan)**: Telegram bot (`bot/` boʻsh), `notification_outbox` + worker,
   R2 fayl servisi (boto3 yoʻq), PayTechUZ (oʻrnida "sinov" provayder), Playwright.
 

@@ -612,7 +612,7 @@ VPS: Caddy + HTTPS (Let's Encrypt), systemd birliklari (api, worker, bot).
 Har kunlik `pg_dump` → siqish → R2 ga yuklash, 30 kun saqlash.
 Tiklash skripti va uni sinovdan oʻtkazish yoʻriqnomasi.
 
-**Deploy tayyor:** `tarbion.robbitonline.uz`, HTTPS, GitHub Actions →
+**Deploy tayyor:** `tarbion.uz`, HTTPS, GitHub Actions →
 SSH → migratsiya → qayta ishga tushirish. Beshta systemd xizmati
 (`api`, `web`, `bot`, `outbox`, `daily-summary`) — hammasi `enabled`.
 

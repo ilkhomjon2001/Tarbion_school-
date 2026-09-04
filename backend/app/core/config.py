@@ -99,7 +99,7 @@ class Settings(BaseSettings):
     # NoDecode bilan xom qator validatorga yetib keladi.
     #: Xabarlarda koʻrsatiladigan sayt manzili («Sayt: ...»). Odam
     #: Telegramdagi xabardan qayerga kirishni bilsin.
-    public_site_url: str = "https://tarbion.robbitonline.uz"
+    public_site_url: str = "https://tarbion.uz"
 
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
 

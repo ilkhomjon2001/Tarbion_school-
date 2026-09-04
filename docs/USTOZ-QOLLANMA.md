@@ -3,7 +3,7 @@
 Bu qoʻllanma **ustoz va sinf rahbari** uchun. Beshta ekran bilan ishlash
 tartibi va eng koʻp beriladigan savollar.
 
-Sayt: **https://tarbion.robbitonline.uz**
+Sayt: **https://tarbion.uz**
 
 ---
 
