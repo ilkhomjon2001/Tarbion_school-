@@ -1029,3 +1029,42 @@ host-only qoladi, `COOKIE_DOMAIN` boʻsh. `www.tarbion.uz` asosiy
 domenga 301 bilan yoʻnaltiriladi. Serverda `CORS_ORIGINS`,
 `PUBLIC_SITE_URL`, `NEXT_PUBLIC_API_URL` yangilandi, frontend qayta
 build qilindi.
+
+## 2026-09-04 · Toʻlov holati «qarzdor»dan ajratildi
+
+Rahbar «nechta qarzdor, nechta yarim toʻlagan» degan savolni berdi.
+`balance < 0` bunga javob bera olmaydi: hech narsa toʻlamagan va
+yarmini toʻlagan oʻquvchi ikkalasi ham manfiy balansda, holbuki
+maktab uchun bular boshqa ish.
+
+`StudentFinance.status` qoʻshildi — `tolangan | qisman | tolanmagan |
+hisobsiz`. Soʻzlar oy kesimidagi `MonthStatus` bilan bir xil, chunki
+interfeysda bitta tushunchaning ikki nomi boʻlishi mumkin emas.
+
+`hisobsiz` alohida turadi: shartnomasi yoʻq yoki oy hisoblanmagan
+oʻquvchi «toʻlamagan» deb belgilanmaydi. Aks holda hisob umuman
+yuritilmagani qarzdorlikka oʻxshab koʻrinadi va roʻyxat ishonchini
+yoʻqotadi.
+
+Roʻyxat filtri BRAUZERDA: oʻquvchi soni yuzlab, har bosishda soʻrov
+yubormaymiz va tugmaning oʻzida sanoq turadi — «Toʻlamagan 46».
+
+## 2026-09-04 · 2026-2027 oʻquv yili moliyasi ochildi
+
+Egasining koʻrsatmasi bilan 99 ta faol oʻquvchiga standart shartnoma
+(3 500 000 soʻm/oy, 2026-09-01 dan) va sentabr qarzi yozildi.
+Sentabr toʻlov jadvalidan 59 yozuv (74 740 000 soʻm) kiritildi.
+
+Hammasi **API orqali**, toʻgʻridan-toʻgʻri SQL bilan emas: servis
+qatlami huquq, validatsiya va auditni oʻz joyida bajaradi. Toʻlov
+yozuvi keyin tahrirlanmaydi (TOL-07), shuning uchun quruq yugurish
+majburiy qadam boʻldi.
+
+Usul — `naqd`, egasi tanladi; jadvalda usul yozilmagan, shuning
+uchun har yozuv izohida «usul aniqlanmagan» turadi. Kvitansiya
+raqami jadval qatoridan olinadi (`SENT26-NNN-1`) — u unikal, demak
+skript ikki marta ishga tushsa baza takrorni oʻzi rad etadi.
+
+Ismi noaniq 5 qator (7 950 000 soʻm) ATAYLAB kiritilmadi. Toʻlov
+tahrirlanmaydi, faqat storno qilinadi — noaniq yozuvni keyin
+tuzatishdan koʻra kiritmaslik arzon.
