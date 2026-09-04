@@ -981,3 +981,23 @@ yuborilgani jurnalda koʻzga tashlanadi.
 
 `belgilar` ning oʻzi muvaffaqiyatli boʻlishi deploy sharti: u yiqilsa
 testlar oʻtkazib yuborilishi kerakmi-yoʻqmi noaniq qoladi.
+
+## 2026-09-04 · Kartochkada tahrirlash — vasiy va oʻquvchi maydonlari
+
+Loyiha egasining soʻrovi: qabul paytida maʼlumot toʻliq boʻlmaydi,
+hujjat kelganda toʻldiriladi. Qoʻshildi:
+
+  · `users.address`, `users.profession` — vasiyning yashash joyi va kasbi
+  · `students.previous_school` — oldingi oʻqigan joyi
+
+Ikkalasi ham ROʻYXATLARDA qaytmaydi (X-6): faqat bitta oʻquvchi
+kartochkasida va faqat `students.manage` huquqi borga.
+
+Vasiy `PUT /school/students/{student_id}/guardians/{user_id}` orqali
+tahrirlanadi — yoʻlda `student_id` ATAYLAB bor. `user_id` yolgʻiz
+boʻlsa bu endpoint istalgan foydalanuvchini tahrirlash yoʻliga
+aylanardi. Login, parol va rol sxemada yoʻq (X-5): familiya
+almashganda ham login oʻzgarmaydi, u odamning tizimdagi manzili.
+
+Hech narsa oʻzgarmagan boʻlsa audit yozuvi YOZILMAYDI — aks holda
+kartochkani ochib-yopgan har bir amal jurnalni koʻmib tashlardi.

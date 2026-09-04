@@ -67,6 +67,14 @@ class User(Entity):
     middle_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
 
     email: Mapped[str | None] = mapped_column(String(120), nullable=True)
+
+    # --- Shaxsiy maʼlumot (ADM-04) ---
+    #
+    # Vasiy kartochkasi uchun: yashash joyi va kasbi. Ikkalasi ham
+    # ROʻYXATLARDA qaytmaydi (X-6) — faqat bitta oʻquvchi kartochkasida
+    # va faqat `students.manage` huquqi borga.
+    address: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    profession: Mapped[str | None] = mapped_column(String(100), nullable=True)
     #: Telegram hisobi. UNIKAL: bitta Telegram akkaunt bitta odamga
     #: bogʻlanadi (BOT-01). Aks holda bir akkaunt bir necha oilaning
     #: xabarini olib turardi.

@@ -36,6 +36,7 @@ from app.schemas.school import (
     GuardianOut,
     GuardianRowOut,
     GuardianUnlinkIn,
+    GuardianUpdateIn,
     HomeroomIn,
     PasswordResetOut,
     SchoolSettingsIn,
@@ -50,6 +51,7 @@ from app.schemas.school import (
     StudentListRowOut,
     StudentMoveIn,
     StudentTeacherOut,
+    StudentUpdateIn,
     SubjectCreateIn,
     SubjectOut,
 )
@@ -78,6 +80,7 @@ def _card_out(card: school_service.StudentCard) -> StudentCardOut:
         middle_name=s.middle_name,
         full_name=s.full_name,
         birth_date=s.birth_date,
+        previous_school=s.previous_school,
         class_id=s.class_id,
         class_name=card.class_name,
         is_archived=s.is_archived,
@@ -376,6 +379,32 @@ async def create_student(
     return _card_out(await school_service.student_card(session, user, student.id))
 
 
+@router.put("/students/{student_id}", response_model=StudentCardOut)
+async def update_student(
+    student_id: uuid.UUID,
+    payload: StudentUpdateIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> StudentCardOut:
+    """Kartochkani tahrirlash (ADM-05). Huquq: `students.manage`.
+
+    Sinf va arxivlash bu yerda emas — ular alohida endpointlarda.
+    """
+    await school_service.update_student(
+        session,
+        actor=user,
+        student_id=student_id,
+        last_name=payload.last_name,
+        first_name=payload.first_name,
+        middle_name=payload.middle_name,
+        birth_date=payload.birth_date,
+        previous_school=payload.previous_school,
+        ip=_client_ip(request),
+    )
+    return _card_out(await school_service.student_card(session, user, student_id))
+
+
 @router.put("/students/{student_id}/class", response_model=StudentCardOut)
 async def move_student(
     student_id: uuid.UUID,
@@ -659,9 +688,14 @@ async def _guardian_row(session: SessionDep, link: Guardian, vasiy: User) -> Gua
         id=link.id,
         user_id=vasiy.id,
         full_name=vasiy.full_name,
+        last_name=vasiy.last_name,
+        first_name=vasiy.first_name,
+        middle_name=vasiy.middle_name,
         login=vasiy.login,
         relation=link.relation,
         phone=vasiy.phone,
+        address=vasiy.address,
+        profession=vasiy.profession,
         is_primary=link.is_primary,
         is_archived=link.is_archived,
         children_count=await guardian_service.children_count(session, vasiy.id),
@@ -739,6 +773,41 @@ async def link_guardian(
     )
     vasiy = await session.get(User, payload.user_id)
     assert vasiy is not None
+    return await _guardian_row(session, link, vasiy)
+
+
+@router.put(
+    "/students/{student_id}/guardians/{user_id}", response_model=GuardianRowOut
+)
+async def update_guardian(
+    student_id: uuid.UUID,
+    user_id: uuid.UUID,
+    payload: GuardianUpdateIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> GuardianRowOut:
+    """Vasiy maʼlumotini tahrirlash: F.I.Sh., telefon, manzil, kasbi.
+
+    Login, parol va rol OʻZGARMAYDI — ular kirish huquqini belgilaydi.
+    Yoʻlda `student_id` bor: vasiy shu oʻquvchi orqali topiladi, aks
+    holda bu endpoint istalgan foydalanuvchini tahrirlash yoʻliga
+    aylanardi.
+    """
+    link, vasiy = await guardian_service.update_guardian(
+        session,
+        actor=user,
+        student_id=student_id,
+        user_id=user_id,
+        last_name=payload.last_name,
+        first_name=payload.first_name,
+        middle_name=payload.middle_name,
+        phone=payload.phone,
+        address=payload.address,
+        profession=payload.profession,
+        relation=payload.relation,
+        ip=_client_ip(request),
+    )
     return await _guardian_row(session, link, vasiy)
 
 

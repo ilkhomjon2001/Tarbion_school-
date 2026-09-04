@@ -59,10 +59,27 @@ class StudentCardOut(BaseModel):
     middle_name: str | None
     full_name: str
     birth_date: date | None
+    #: Oldingi oʻqigan joyi. 0 va 1-sinfda boʻsh boʻlishi TABIIY.
+    previous_school: str | None
     class_id: uuid.UUID | None
     class_name: str | None
     is_archived: bool
     guardians: list[GuardianOut]
+
+
+class StudentUpdateIn(BaseModel):
+    """Kartochkani tahrirlash (ADM-05).
+
+    Sinf bu yerda YOʻQ — u alohida endpointda (`/class`), chunki sinf
+    almashuvi tarixi alohida oʻqiladi. Arxivlash ham alohida: u sabab
+    talab qiladi.
+    """
+
+    last_name: str = Field(min_length=1, max_length=80)
+    first_name: str = Field(min_length=1, max_length=80)
+    middle_name: str | None = Field(default=None, max_length=80)
+    birth_date: date | None = None
+    previous_school: str | None = Field(default=None, max_length=200)
 
 
 class StudentCreateIn(BaseModel):
@@ -174,12 +191,37 @@ class GuardianRowOut(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
     full_name: str
+    #: Tahrirlash formasi uchun alohida boʻlaklar — `full_name` ni
+    #: qayta boʻlish notoʻgʻri natija berardi (ikki soʻzli familiya).
+    last_name: str
+    first_name: str
+    middle_name: str | None
     login: str
     relation: str
     phone: str | None
+    #: Yashash joyi va kasbi — faqat kartochkada (X-6).
+    address: str | None
+    profession: str | None
     is_primary: bool
     is_archived: bool
     children_count: int
+
+
+class GuardianUpdateIn(BaseModel):
+    """Vasiy maʼlumotini tahrirlash.
+
+    Login, parol va rol bu yerda YOʻQ — ular kirish huquqini
+    belgilaydi va alohida yoʻldan oʻzgaradi (X-5: kirish sxemasi
+    ataylab tor).
+    """
+
+    last_name: str = Field(min_length=1, max_length=80)
+    first_name: str = Field(min_length=1, max_length=80)
+    middle_name: str | None = Field(default=None, max_length=80)
+    phone: str | None = Field(default=None, max_length=20)
+    address: str | None = Field(default=None, max_length=200)
+    profession: str | None = Field(default=None, max_length=100)
+    relation: str
 
 
 class GuardianLinkIn(BaseModel):

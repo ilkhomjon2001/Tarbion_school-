@@ -29,6 +29,8 @@ import {
   moveStudent,
   restoreStudent,
   unlinkGuardian,
+  updateGuardian,
+  updateStudent,
   type ClassOut,
   type GuardianRowOut,
   type StudentCardOut,
@@ -181,31 +183,14 @@ export function StudentCard({
             !error && <ErrorState />
           ) : (
             <>
-              <section>
-                <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-foreground-muted">
-                  Maʼlumot
-                </h3>
-                <dl className="flex flex-col gap-1.5 text-sm">
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-foreground-muted">Familiya, ism</dt>
-                    <dd className="text-right font-medium text-foreground">
-                      {card.last_name} {card.first_name}
-                    </dd>
-                  </div>
-                  {card.middle_name && (
-                    <div className="flex justify-between gap-2">
-                      <dt className="text-foreground-muted">Otasining ismi</dt>
-                      <dd className="text-right text-foreground">{card.middle_name}</dd>
-                    </div>
-                  )}
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-foreground-muted">Tugʻilgan sana</dt>
-                    <dd className="num text-right text-foreground">
-                      {card.birth_date ?? "—"}
-                    </dd>
-                  </div>
-                </dl>
-              </section>
+              <StudentInfoSection
+                card={card}
+                canManage={canManage && !card.is_archived}
+                onSaved={(yangi) => {
+                  setCard(yangi);
+                  onChanged();
+                }}
+              />
 
               <section>
                 <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-foreground-muted">
@@ -354,6 +339,7 @@ function GuardianSection({
   });
   const [parol, setParol] = useState<{ login: string; password: string } | null>(null);
   const [unlinking, setUnlinking] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
   const [reason, setReason] = useState(UNLINK_REASONS[0]);
 
   const yukla = useCallback(async () => {
@@ -442,8 +428,24 @@ function GuardianSection({
                 {g.login}
                 {g.children_count > 1 && ` · ${g.children_count} farzand`}
               </p>
+              {(g.address || g.profession) && (
+                <p className="mt-0.5 text-xs text-foreground-muted">
+                  {[g.profession, g.address].filter(Boolean).join(" · ")}
+                </p>
+              )}
 
-              {canManage && unlinking === g.id ? (
+              {canManage && editing === g.id ? (
+                <GuardianEditForm
+                  studentId={studentId}
+                  guardian={g}
+                  onCancel={() => setEditing(null)}
+                  onSaved={() => {
+                    setEditing(null);
+                    void yukla();
+                    onChanged();
+                  }}
+                />
+              ) : canManage && unlinking === g.id ? (
                 <div className="mt-2 flex flex-col gap-2 rounded-lg border border-danger/30 p-2">
                   <p className="text-xs text-foreground-muted">
                     Bogʻlanish uzilsa bu odam farzandi maʼlumotini{" "}
@@ -481,7 +483,15 @@ function GuardianSection({
                 </div>
               ) : (
                 canManage && (
-                  <span className="mt-1 flex gap-2">
+                  <span className="mt-1 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setEditing(g.id)}
+                      className="focus-ring rounded px-1.5 py-0.5 text-xs font-medium text-brand-dark hover:underline disabled:opacity-40"
+                    >
+                      Tahrirlash
+                    </button>
                     {!g.is_primary && (
                       <button
                         type="button"
@@ -592,5 +602,381 @@ function GuardianSection({
           </button>
         ))}
     </div>
+  );
+}
+
+/**
+ * Oʻquvchi maʼlumoti — koʻrish va tahrirlash (ADM-05).
+ *
+ * Qabul paytida hamma maʼlumot toʻliq boʻlmaydi: tugʻilgan sana va
+ * oldingi maktab hujjat kelganda toʻldiriladi. Shu sabab kartochka
+ * faqat koʻrsatib qolmaydi — shu yerdan tahrirlanadi.
+ *
+ * Qoralama patterni: tahrirlash rejimida oʻzgarish DARHOL ketmaydi,
+ * «Saqlash» bosilishi kerak. Sabab — bu hujjatdagi maʼlumot, tasodifiy
+ * bosilgan tugma uni jimgina almashtirib qoʻymasin.
+ */
+function StudentInfoSection({
+  card,
+  canManage,
+  onSaved,
+}: {
+  card: StudentCardOut;
+  canManage: boolean;
+  onSaved: (card: StudentCardOut) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState(() => qoralama(card));
+
+  function boshla() {
+    setForm(qoralama(card));
+    setError(null);
+    setEditing(true);
+  }
+
+  async function saqla(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      onSaved(
+        await updateStudent(card.id, {
+          last_name: form.last_name.trim(),
+          first_name: form.first_name.trim(),
+          middle_name: form.middle_name.trim() || null,
+          birth_date: form.birth_date || null,
+          previous_school: form.previous_school.trim() || null,
+        }),
+      );
+      setEditing(false);
+    } catch (err) {
+      setError(apiXato(err, "Saqlab boʻlmadi."));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const toldirilmagan =
+    card.birth_date === null || (kerakOldingiMaktab(card) && !card.previous_school);
+
+  if (!editing) {
+    return (
+      <section>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h3 className="text-xs font-medium uppercase tracking-wide text-foreground-muted">
+            Maʼlumot
+          </h3>
+          {canManage && (
+            <button type="button" onClick={boshla} className={ghostBtn}>
+              Tahrirlash
+            </button>
+          )}
+        </div>
+
+        <dl className="flex flex-col gap-1.5 text-sm">
+          <Qator nom="Familiya, ism" qiymat={`${card.last_name} ${card.first_name}`} kuchli />
+          <Qator nom="Otasining ismi" qiymat={card.middle_name} />
+          <Qator nom="Tugʻilgan sana" qiymat={card.birth_date} raqam />
+          <Qator
+            nom="Oldingi oʻqigan joyi"
+            qiymat={card.previous_school}
+            izoh={
+              card.previous_school === null && !kerakOldingiMaktab(card)
+                ? "0–1-sinf uchun shart emas"
+                : undefined
+            }
+          />
+        </dl>
+
+        {/* Boʻsh maydon jimgina qolmasin: kartochka toʻliq emasligini
+            administrator koʻrib tursin, aks holda hujjat kelganda ham
+            hech kim toʻldirmaydi. */}
+        {canManage && toldirilmagan && (
+          <p className="mt-2 rounded-lg bg-warning-tint px-3 py-2 text-xs text-foreground">
+            Kartochka toʻliq emas — «Tahrirlash» orqali toʻldiring.
+          </p>
+        )}
+      </section>
+    );
+  }
+
+  return (
+    <form onSubmit={saqla} className="rounded-lg border border-border p-3">
+      <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-foreground-muted">
+        Maʼlumotni tahrirlash
+      </h3>
+
+      {error && (
+        <p role="alert" className="mb-3 rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">
+          {error}
+        </p>
+      )}
+
+      <div className="flex flex-col gap-2.5">
+        <Maydon
+          nom="Familiya"
+          qiymat={form.last_name}
+          ozgardi={(v) => setForm({ ...form, last_name: v })}
+        />
+        <Maydon
+          nom="Ism"
+          qiymat={form.first_name}
+          ozgardi={(v) => setForm({ ...form, first_name: v })}
+        />
+        <Maydon
+          nom="Otasining ismi"
+          qiymat={form.middle_name}
+          ozgardi={(v) => setForm({ ...form, middle_name: v })}
+        />
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-foreground">Tugʻilgan sana</span>
+          <input
+            type="date"
+            value={form.birth_date}
+            onChange={(e) => setForm({ ...form, birth_date: e.target.value })}
+            className={inputClass}
+          />
+        </label>
+        <Maydon
+          nom="Oldingi oʻqigan joyi"
+          qiymat={form.previous_school}
+          ozgardi={(v) => setForm({ ...form, previous_school: v })}
+          izoh="0–1-sinf uchun shart emas — ular birinchi marta maktabga kelgan."
+          placeholder="Masalan: 12-maktab, Chilonzor"
+        />
+      </div>
+
+      <div className="mt-3 flex gap-2">
+        <button
+          type="submit"
+          disabled={saving || !form.last_name.trim() || !form.first_name.trim()}
+          className="focus-ring inline-flex h-9 items-center rounded-lg bg-brand px-3 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark disabled:opacity-50"
+        >
+          {saving ? "Saqlanmoqda…" : "Oʻzgarishlarni saqlash"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setEditing(false)}
+          disabled={saving}
+          className={ghostBtn}
+        >
+          Bekor qilish
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function qoralama(card: StudentCardOut) {
+  return {
+    last_name: card.last_name,
+    first_name: card.first_name,
+    middle_name: card.middle_name ?? "",
+    birth_date: card.birth_date ?? "",
+    previous_school: card.previous_school ?? "",
+  };
+}
+
+/**
+ * 0 va 1-sinf uchun oldingi maktab talab qilinmaydi — ular birinchi
+ * marta maktabga kelgan. Sinfsiz oʻquvchida ham talab qilmaymiz:
+ * qaysi sinfga tushishi hali maʼlum emas.
+ */
+function kerakOldingiMaktab(card: StudentCardOut): boolean {
+  const nom = card.class_name;
+  if (!nom) return false;
+  return !/^[01]\b|^[01]-/.test(nom);
+}
+
+function Qator({
+  nom,
+  qiymat,
+  izoh,
+  kuchli,
+  raqam,
+}: {
+  nom: string;
+  qiymat: string | null;
+  izoh?: string;
+  kuchli?: boolean;
+  raqam?: boolean;
+}) {
+  return (
+    <div className="flex justify-between gap-3">
+      <dt className="shrink-0 text-foreground-muted">{nom}</dt>
+      <dd className="text-right">
+        <span
+          className={`${raqam ? "num " : ""}${
+            qiymat ? (kuchli ? "font-medium text-foreground" : "text-foreground") : "text-foreground-muted"
+          }`}
+        >
+          {qiymat || "—"}
+        </span>
+        {izoh && <span className="block text-xs text-foreground-muted">{izoh}</span>}
+      </dd>
+    </div>
+  );
+}
+
+function Maydon({
+  nom,
+  qiymat,
+  ozgardi,
+  izoh,
+  placeholder,
+}: {
+  nom: string;
+  qiymat: string;
+  ozgardi: (v: string) => void;
+  izoh?: string;
+  placeholder?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-medium text-foreground">{nom}</span>
+      <input
+        value={qiymat}
+        onChange={(e) => ozgardi(e.target.value)}
+        placeholder={placeholder}
+        className={inputClass}
+      />
+      {izoh && <span className="mt-1 block text-xs text-foreground-muted">{izoh}</span>}
+    </label>
+  );
+}
+
+/**
+ * Vasiy maʼlumotini tahrirlash (ADM-05).
+ *
+ * Nima uchun kerak: qabul paytida koʻpincha faqat ism va telefon
+ * yoziladi. Yashash joyi, kasbi va otasining ismi keyin, hujjat
+ * kelganda toʻldiriladi.
+ *
+ * Login, parol va rol BU YERDA YOʻQ — ular kirish huquqini belgilaydi
+ * va boshqa yoʻldan oʻzgaradi. Familiya almashsa ham login oʻzgarmaydi:
+ * u odamning tizimdagi manzili.
+ */
+function GuardianEditForm({
+  studentId,
+  guardian,
+  onSaved,
+  onCancel,
+}: {
+  studentId: string;
+  guardian: GuardianRowOut;
+  onSaved: () => void;
+  onCancel: () => void;
+}) {
+  const [form, setForm] = useState({
+    last_name: guardian.last_name,
+    first_name: guardian.first_name,
+    middle_name: guardian.middle_name ?? "",
+    phone: guardian.phone ?? "",
+    address: guardian.address ?? "",
+    profession: guardian.profession ?? "",
+    relation: guardian.relation,
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function saqla(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      await updateGuardian(studentId, guardian.user_id, {
+        last_name: form.last_name.trim(),
+        first_name: form.first_name.trim(),
+        middle_name: form.middle_name.trim() || null,
+        phone: form.phone.trim() || null,
+        address: form.address.trim() || null,
+        profession: form.profession.trim() || null,
+        relation: form.relation,
+      });
+      onSaved();
+    } catch (err) {
+      // Telefon band boʻlsa server kim ekanini aytadi — shuni koʻrsatamiz.
+      setError(apiXato(err, "Saqlab boʻlmadi."));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={saqla} className="mt-2 flex flex-col gap-2.5 rounded-lg border border-border bg-surface p-3">
+      {error && (
+        <p role="alert" className="rounded-lg bg-danger-tint px-2.5 py-1.5 text-xs text-danger">
+          {error}
+        </p>
+      )}
+
+      <div className="grid grid-cols-2 gap-2">
+        <Maydon
+          nom="Familiya"
+          qiymat={form.last_name}
+          ozgardi={(v) => setForm({ ...form, last_name: v })}
+        />
+        <Maydon
+          nom="Ism"
+          qiymat={form.first_name}
+          ozgardi={(v) => setForm({ ...form, first_name: v })}
+        />
+      </div>
+
+      <Maydon
+        nom="Otasining ismi"
+        qiymat={form.middle_name}
+        ozgardi={(v) => setForm({ ...form, middle_name: v })}
+      />
+
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-foreground">Qarindoshligi</span>
+        <select
+          value={form.relation}
+          onChange={(e) => setForm({ ...form, relation: e.target.value })}
+          className={inputClass}
+        >
+          {Object.entries(RELATION_LABELS).map(([id, label]) => (
+            <option key={id} value={id}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <Maydon
+        nom="Telefon"
+        qiymat={form.phone}
+        ozgardi={(v) => setForm({ ...form, phone: v })}
+        placeholder="90 123 45 67"
+      />
+      <Maydon
+        nom="Yashash joyi"
+        qiymat={form.address}
+        ozgardi={(v) => setForm({ ...form, address: v })}
+        placeholder="Toshkent, Chilonzor 5-mavze, 12-uy"
+      />
+      <Maydon
+        nom="Kasbi"
+        qiymat={form.profession}
+        ozgardi={(v) => setForm({ ...form, profession: v })}
+        placeholder="Shifokor"
+      />
+
+      <span className="flex gap-2">
+        <button
+          type="submit"
+          disabled={saving || !form.last_name.trim() || !form.first_name.trim()}
+          className="focus-ring inline-flex h-8 items-center rounded-lg bg-brand px-3 text-xs font-semibold text-brand-foreground disabled:opacity-50"
+        >
+          {saving ? "Saqlanmoqda…" : "Saqlash"}
+        </button>
+        <button type="button" onClick={onCancel} disabled={saving} className={ghostBtn}>
+          Bekor
+        </button>
+      </span>
+    </form>
   );
 }

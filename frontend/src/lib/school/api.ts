@@ -41,6 +41,8 @@ import {
   schoolStudentDossier,
   schoolStudentGuardians,
   schoolUnlinkGuardian,
+  schoolUpdateGuardian,
+  schoolUpdateStudent,
   schoolStudents,
   schoolSubjectsOfClass,
   schoolSubjects,
@@ -407,6 +409,30 @@ export async function createStudent(input: StudentCreateInput): Promise<StudentC
   return withAuth<StudentCardOut>(() => schoolCreateStudent({ body: input }));
 }
 
+/**
+ * Kartochkani tahrirlash (ADM-05).
+ *
+ * Sinf va arxivlash bu yerda emas — ular alohida amallar: sinf
+ * almashuvi tarixi va ketish sababi alohida oʻqiladi.
+ */
+export type StudentUpdateInput = {
+  last_name: string;
+  first_name: string;
+  middle_name?: string | null;
+  birth_date?: string | null;
+  /** Oldingi oʻqigan joyi. 0–1-sinfda boʻsh qoladi. */
+  previous_school?: string | null;
+};
+
+export async function updateStudent(
+  studentId: string,
+  input: StudentUpdateInput,
+): Promise<StudentCardOut> {
+  return withAuth<StudentCardOut>(() =>
+    schoolUpdateStudent({ path: { student_id: studentId }, body: input }),
+  );
+}
+
 export async function moveStudent(
   studentId: string,
   classId: string | null,
@@ -439,6 +465,34 @@ export async function restoreStudent(studentId: string): Promise<StudentCardOut>
  * Vasiylar roʻyxati. Telefon SHU YERDA bor — bu bitta oʻquvchi
  * kartochkasi, roʻyxat emas (X-6).
  */
+/**
+ * Vasiy maʼlumotini tahrirlash: F.I.Sh., telefon, manzil, kasbi.
+ *
+ * Login, parol va rol OʻZGARMAYDI — ular kirish huquqini belgilaydi.
+ */
+export type GuardianUpdateInput = {
+  last_name: string;
+  first_name: string;
+  middle_name?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  profession?: string | null;
+  relation: string;
+};
+
+export async function updateGuardian(
+  studentId: string,
+  userId: string,
+  input: GuardianUpdateInput,
+): Promise<GuardianRowOut> {
+  return withAuth<GuardianRowOut>(() =>
+    schoolUpdateGuardian({
+      path: { student_id: studentId, user_id: userId },
+      body: input,
+    }),
+  );
+}
+
 export async function fetchGuardians(
   studentId: string,
   archived = false,

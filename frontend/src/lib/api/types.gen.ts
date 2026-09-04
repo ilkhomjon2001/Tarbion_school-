@@ -2234,6 +2234,18 @@ export type GuardianRowOut = {
      */
     full_name: string;
     /**
+     * Last Name
+     */
+    last_name: string;
+    /**
+     * First Name
+     */
+    first_name: string;
+    /**
+     * Middle Name
+     */
+    middle_name: string | null;
+    /**
      * Login
      */
     login: string;
@@ -2245,6 +2257,14 @@ export type GuardianRowOut = {
      * Phone
      */
     phone: string | null;
+    /**
+     * Address
+     */
+    address: string | null;
+    /**
+     * Profession
+     */
+    profession: string | null;
     /**
      * Is Primary
      */
@@ -2269,6 +2289,46 @@ export type GuardianUnlinkIn = {
      * Reason
      */
     reason: string;
+};
+
+/**
+ * GuardianUpdateIn
+ *
+ * Vasiy maʼlumotini tahrirlash.
+ *
+ * Login, parol va rol bu yerda YOʻQ — ular kirish huquqini
+ * belgilaydi va alohida yoʻldan oʻzgaradi (X-5: kirish sxemasi
+ * ataylab tor).
+ */
+export type GuardianUpdateIn = {
+    /**
+     * Last Name
+     */
+    last_name: string;
+    /**
+     * First Name
+     */
+    first_name: string;
+    /**
+     * Middle Name
+     */
+    middle_name?: string | null;
+    /**
+     * Phone
+     */
+    phone?: string | null;
+    /**
+     * Address
+     */
+    address?: string | null;
+    /**
+     * Profession
+     */
+    profession?: string | null;
+    /**
+     * Relation
+     */
+    relation: string;
 };
 
 /**
@@ -4307,6 +4367,10 @@ export type StudentCardOut = {
      */
     birth_date: string | null;
     /**
+     * Previous School
+     */
+    previous_school: string | null;
+    /**
      * Class Id
      */
     class_id: string | null;
@@ -4680,6 +4744,38 @@ export type StudentTeacherOut = {
      * Is Homeroom
      */
     is_homeroom: boolean;
+};
+
+/**
+ * StudentUpdateIn
+ *
+ * Kartochkani tahrirlash (ADM-05).
+ *
+ * Sinf bu yerda YOʻQ — u alohida endpointda (`/class`), chunki sinf
+ * almashuvi tarixi alohida oʻqiladi. Arxivlash ham alohida: u sabab
+ * talab qiladi.
+ */
+export type StudentUpdateIn = {
+    /**
+     * Last Name
+     */
+    last_name: string;
+    /**
+     * First Name
+     */
+    first_name: string;
+    /**
+     * Middle Name
+     */
+    middle_name?: string | null;
+    /**
+     * Birth Date
+     */
+    birth_date?: string | null;
+    /**
+     * Previous School
+     */
+    previous_school?: string | null;
 };
 
 /**
@@ -10240,6 +10336,36 @@ export type SchoolStudentCardResponses = {
 
 export type SchoolStudentCardResponse = SchoolStudentCardResponses[keyof SchoolStudentCardResponses];
 
+export type SchoolUpdateStudentData = {
+    body: StudentUpdateIn;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/students/{student_id}';
+};
+
+export type SchoolUpdateStudentErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolUpdateStudentError = SchoolUpdateStudentErrors[keyof SchoolUpdateStudentErrors];
+
+export type SchoolUpdateStudentResponses = {
+    /**
+     * Successful Response
+     */
+    200: StudentCardOut;
+};
+
+export type SchoolUpdateStudentResponse = SchoolUpdateStudentResponses[keyof SchoolUpdateStudentResponses];
+
 export type SchoolStudentDossierData = {
     body?: never;
     path: {
@@ -10636,6 +10762,40 @@ export type SchoolLinkGuardianResponses = {
 };
 
 export type SchoolLinkGuardianResponse = SchoolLinkGuardianResponses[keyof SchoolLinkGuardianResponses];
+
+export type SchoolUpdateGuardianData = {
+    body: GuardianUpdateIn;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+        /**
+         * User Id
+         */
+        user_id: string;
+    };
+    query?: never;
+    url: '/api/v1/school/students/{student_id}/guardians/{user_id}';
+};
+
+export type SchoolUpdateGuardianErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolUpdateGuardianError = SchoolUpdateGuardianErrors[keyof SchoolUpdateGuardianErrors];
+
+export type SchoolUpdateGuardianResponses = {
+    /**
+     * Successful Response
+     */
+    200: GuardianRowOut;
+};
+
+export type SchoolUpdateGuardianResponse = SchoolUpdateGuardianResponses[keyof SchoolUpdateGuardianResponses];
 
 export type SchoolMakePrimaryData = {
     body?: never;

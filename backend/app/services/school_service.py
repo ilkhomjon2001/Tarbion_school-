@@ -30,7 +30,7 @@ from app.core.exceptions import (
     PermissionDeniedError,
     ValidationError,
 )
-from app.core.timeutil import utcnow
+from app.core.timeutil import local_today, utcnow
 from app.models import (
     AcademicYear,
     AuditAction,
@@ -301,6 +301,77 @@ async def create_student(
         actor_id=actor.id,
         ip=ip,
     )
+    await session.commit()
+    return student
+
+
+async def update_student(
+    session: AsyncSession,
+    *,
+    actor: CurrentUser,
+    student_id: uuid.UUID,
+    last_name: str,
+    first_name: str,
+    middle_name: str | None,
+    birth_date: date | None,
+    previous_school: str | None,
+    ip: str | None = None,
+) -> Student:
+    """Kartochkani tahrirlash (ADM-05).
+
+    Sinf va arxivlash bu yerda YOʻQ — ular alohida endpointlarda,
+    chunki ikkalasi ham qoʻshimcha maʼno tashiydi (koʻchish tarixi,
+    ketish sababi).
+
+    Har oʻzgarish auditga ESKI va YANGI qiymat bilan tushadi: kartochka
+    hujjat asosida toʻldiriladi va «kim tuzatdi» degan savol keyin
+    chiqadi.
+    """
+    await assert_permission(session, actor, Permission.STUDENTS_MANAGE)
+
+    student = await session.get(Student, student_id)
+    if student is None or student.is_archived:
+        raise NotFoundError("Oʻquvchi topilmadi.")
+
+    if not last_name.strip() or not first_name.strip():
+        raise ValidationError("Familiya va ism boʻsh boʻlmasin.")
+    if birth_date is not None and birth_date > local_today():
+        raise ValidationError("Tugʻilgan sana kelajakda boʻlmasin.")
+
+    eski = {
+        "last_name": student.last_name,
+        "first_name": student.first_name,
+        "middle_name": student.middle_name,
+        "birth_date": student.birth_date,
+        "previous_school": student.previous_school,
+    }
+
+    student.last_name = last_name.strip()
+    student.first_name = first_name.strip()
+    student.middle_name = (middle_name or "").strip() or None
+    student.birth_date = birth_date
+    student.previous_school = (previous_school or "").strip() or None
+
+    yangi = {
+        "last_name": student.last_name,
+        "first_name": student.first_name,
+        "middle_name": student.middle_name,
+        "birth_date": student.birth_date,
+        "previous_school": student.previous_school,
+    }
+
+    # Hech narsa oʻzgarmagan boʻlsa auditni shovqinga koʻmmaymiz.
+    if eski != yangi:
+        audit_service.record(
+            session,
+            object_type="student",
+            object_id=student.id,
+            action=AuditAction.UPDATE,
+            old=eski,
+            new=yangi,
+            actor_id=actor.id,
+            ip=ip,
+        )
     await session.commit()
     return student
 

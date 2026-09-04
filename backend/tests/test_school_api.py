@@ -11,7 +11,7 @@ from datetime import date
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
@@ -473,3 +473,254 @@ async def test_maktab_rekvizitlari_yoziladi(client: AsyncClient, world: dict) ->
             "/api/v1/school/settings", headers=_auth(ustoz), json={"name": "X"}
         )
     ).status_code == 403
+
+
+# ────────── Kartochkani tahrirlash (ADM-05, loyiha egasining soʻrovi) ──────────
+#
+# Oʻquvchi qabul qilinganda hamma maʼlumot toʻliq boʻlmaydi: vasiyning
+# F.I.Sh., yashash joyi, kasbi va oʻquvchining oldingi maktabi keyin,
+# hujjat kelganda toʻldiriladi.
+
+
+async def _huquqli(session: AsyncSession, world: dict) -> None:
+    await permissions.grant(
+        session,
+        target_user_id=world["admin"].id,
+        permission=Permission.STUDENTS_MANAGE,
+        granted_by=CurrentUser.from_model(world["superadmin"]),
+    )
+    await session.flush()
+
+
+async def test_oquvchi_kartochkasi_tahrirlanadi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    await _huquqli(session, world)
+    token = await _token(client, "sch.admin")
+
+    r = await client.put(
+        f"/api/v1/school/students/{world['ali'].id}",
+        headers=_auth(token),
+        json={
+            "last_name": "Aliyev",
+            "first_name": "Ali",
+            "middle_name": "Anvarovich",
+            "birth_date": "2012-03-04",
+            "previous_school": "12-maktab, Chilonzor",
+        },
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["middle_name"] == "Anvarovich"
+    assert body["previous_school"] == "12-maktab, Chilonzor"
+
+
+async def test_oldingi_maktab_bosh_qolishi_mumkin(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """0 va 1-sinf uchun bu maydon toʻldirilmaydi — xato emas."""
+    await _huquqli(session, world)
+    token = await _token(client, "sch.admin")
+
+    r = await client.put(
+        f"/api/v1/school/students/{world['ali'].id}",
+        headers=_auth(token),
+        json={"last_name": "Aliyev", "first_name": "Ali"},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["previous_school"] is None
+
+
+async def test_kelajakdagi_tugilgan_sana_rad_etiladi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    await _huquqli(session, world)
+    token = await _token(client, "sch.admin")
+
+    r = await client.put(
+        f"/api/v1/school/students/{world['ali'].id}",
+        headers=_auth(token),
+        json={"last_name": "Aliyev", "first_name": "Ali", "birth_date": "2099-01-01"},
+    )
+    assert r.status_code == 422, r.text
+
+
+async def test_huquqsiz_admin_kartochkani_tahrirlay_olmaydi(
+    client: AsyncClient, world: dict
+) -> None:
+    """X-2: rol yolgʻiz yetarli emas."""
+    token = await _token(client, "sch.admin")
+    r = await client.put(
+        f"/api/v1/school/students/{world['ali'].id}",
+        headers=_auth(token),
+        json={"last_name": "Boshqa", "first_name": "Nom"},
+    )
+    assert r.status_code == 403, r.text
+
+
+async def test_kartochka_tahriri_auditga_tushadi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """4-domen qoidasi: eski va yangi qiymat bilan."""
+    await _huquqli(session, world)
+    token = await _token(client, "sch.admin")
+
+    await client.put(
+        f"/api/v1/school/students/{world['ali'].id}",
+        headers=_auth(token),
+        json={"last_name": "Aliyev", "first_name": "Ali", "previous_school": "5-maktab"},
+    )
+
+    yozuv = (
+        await session.execute(
+            select(AuditLog).where(
+                AuditLog.object_type == "student", AuditLog.action == "update"
+            )
+        )
+    ).scalars().all()
+    assert len(yozuv) == 1
+    assert yozuv[0].old_value["previous_school"] is None
+    assert yozuv[0].new_value["previous_school"] == "5-maktab"
+
+
+async def test_ozgarish_bolmasa_audit_yozilmaydi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Bir xil qiymat qayta yuborilsa audit shovqinga koʻmilmasin."""
+    await _huquqli(session, world)
+    token = await _token(client, "sch.admin")
+    tana = {"last_name": "Aliyev", "first_name": "Ali", "birth_date": "2012-03-04"}
+
+    await client.put(
+        f"/api/v1/school/students/{world['ali'].id}", headers=_auth(token), json=tana
+    )
+    await client.put(
+        f"/api/v1/school/students/{world['ali'].id}", headers=_auth(token), json=tana
+    )
+
+    soni = await session.scalar(
+        select(func.count())
+        .select_from(AuditLog)
+        .where(AuditLog.object_type == "student", AuditLog.action == "update")
+    )
+    assert soni == 0, "hech narsa oʻzgarmagan, lekin audit yozildi"
+
+
+# ─────────────────────────── Vasiy ───────────────────────────
+
+
+async def test_vasiy_malumoti_tahrirlanadi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    await _huquqli(session, world)
+    token = await _token(client, "sch.admin")
+
+    r = await client.put(
+        f"/api/v1/school/students/{world['ali'].id}/guardians/{world['parent_a'].id}",
+        headers=_auth(token),
+        json={
+            "last_name": "Aliyev",
+            "first_name": "Anvar",
+            "middle_name": "Sobirovich",
+            "phone": "901234567",
+            "address": "Toshkent, Chilonzor 5-mavze, 12-uy",
+            "profession": "Shifokor",
+            "relation": "father",
+        },
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["address"] == "Toshkent, Chilonzor 5-mavze, 12-uy"
+    assert body["profession"] == "Shifokor"
+    assert body["first_name"] == "Anvar"
+    # Login OʻZGARMAYDI — u kirish identifikatori.
+    assert body["login"] == "sch.otaona_a"
+
+
+async def test_boshqa_oquvchining_vasiysini_tahrirlab_bolmaydi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Vasiy OʻQUVCHI orqali topiladi.
+
+    Aks holda bu endpoint istalgan foydalanuvchini tahrirlash yoʻliga
+    aylanardi: `user_id` yolgʻiz yetarli emas.
+    """
+    await _huquqli(session, world)
+    token = await _token(client, "sch.admin")
+
+    r = await client.put(
+        f"/api/v1/school/students/{world['ali'].id}/guardians/{world['parent_b'].id}",
+        headers=_auth(token),
+        json={
+            "last_name": "Begona",
+            "first_name": "Odam",
+            "relation": "father",
+        },
+    )
+    assert r.status_code == 404, r.text
+
+
+async def test_huquqsiz_admin_vasiyni_tahrirlay_olmaydi(
+    client: AsyncClient, world: dict
+) -> None:
+    """X-2."""
+    token = await _token(client, "sch.admin")
+    r = await client.put(
+        f"/api/v1/school/students/{world['ali'].id}/guardians/{world['parent_a'].id}",
+        headers=_auth(token),
+        json={"last_name": "Boshqa", "first_name": "Nom", "relation": "father"},
+    )
+    assert r.status_code == 403, r.text
+
+
+async def test_band_telefon_kimligini_aytadi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Telefon boʻyicha oila topiladi — takror bogʻlanishni buzardi."""
+    await _huquqli(session, world)
+
+    # Fiksturada hammaning raqami bir xil; boshqa oilaga ALOHIDA raqam
+    # beramiz, keyin oʻshani birinchi oilaga koʻchirishga urinamiz.
+    world["parent_b"].phone = "998907654321"
+    await session.flush()
+
+    token = await _token(client, "sch.admin")
+    r = await client.put(
+        f"/api/v1/school/students/{world['ali'].id}/guardians/{world['parent_a'].id}",
+        headers=_auth(token),
+        json={
+            "last_name": "Aliyev",
+            "first_name": "Anvar",
+            "phone": "998907654321",
+            "relation": "father",
+        },
+    )
+    assert r.status_code == 409, r.text
+    assert "Valiyev" in r.json()["message"], r.text
+
+
+async def test_vasiy_royxatida_manzil_va_kasb_qaytadi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """X-6: bu bitta oʻquvchi kartochkasi, roʻyxat emas — shaxsiy maʼlumot shu yerda."""
+    await _huquqli(session, world)
+    token = await _token(client, "sch.admin")
+    await client.put(
+        f"/api/v1/school/students/{world['ali'].id}/guardians/{world['parent_a'].id}",
+        headers=_auth(token),
+        json={
+            "last_name": "Aliyev",
+            "first_name": "Anvar",
+            "address": "Toshkent",
+            "profession": "Muhandis",
+            "relation": "father",
+        },
+    )
+
+    r = await client.get(
+        f"/api/v1/school/students/{world['ali'].id}/guardians", headers=_auth(token)
+    )
+    assert r.status_code == 200, r.text
+    qator = r.json()[0]
+    assert qator["address"] == "Toshkent"
+    assert qator["profession"] == "Muhandis"

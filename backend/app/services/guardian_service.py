@@ -117,6 +117,104 @@ async def list_guardians(
     return [(g, u) for g, u in (await session.execute(stmt)).all()]
 
 
+async def update_guardian(
+    session: AsyncSession,
+    *,
+    actor: CurrentUser,
+    student_id: uuid.UUID,
+    user_id: uuid.UUID,
+    last_name: str,
+    first_name: str,
+    middle_name: str | None,
+    phone: str | None,
+    address: str | None,
+    profession: str | None,
+    relation: str,
+    ip: str | None = None,
+) -> tuple[Guardian, User]:
+    """Vasiy maʼlumotini tahrirlash (ADM-05, AUT-03).
+
+    Login, parol va rol bu yerda oʻzgarmaydi — ular kirish huquqini
+    belgilaydi. Familiya oʻzgarsa ham login OʻZGARMAYDI: u boshqa
+    joylarda havola sifatida ishlatilgan boʻlishi mumkin va uni
+    almashtirish odamni tizimdan uzib qoʻyardi.
+
+    Bogʻlanish oʻquvchi orqali topiladi: `user_id` yolgʻiz yetarli
+    emas, aks holda huquqi bor administrator istalgan foydalanuvchini
+    shu yoʻldan tahrirlay olardi (X-5 — kirish sxemasi tor boʻlsin).
+    """
+    await _assert_can_manage(session, actor)
+
+    if relation not in RELATIONS:
+        raise ValidationError("Qarindoshlik turi notoʻgʻri.")
+    if not last_name.strip() or not first_name.strip():
+        raise ValidationError("Familiya va ism boʻsh boʻlmasin.")
+
+    link = await session.scalar(
+        select(Guardian).where(
+            Guardian.student_id == student_id,
+            Guardian.user_id == user_id,
+            Guardian.is_archived.is_(False),
+        )
+    )
+    if link is None:
+        raise NotFoundError("Vasiy topilmadi.")
+
+    user = await session.get(User, user_id)
+    if user is None or user.is_archived:
+        raise NotFoundError("Vasiy topilmadi.")
+
+    raqam = _normalize_phone(phone)
+    if raqam is not None and raqam != _normalize_phone(user.phone):
+        band = await _find_parent_by_phone(session, raqam)
+        if band is not None and band.id != user.id:
+            raise ConflictError(
+                f"Bu telefon allaqachon boshqa vasiyga biriktirilgan: {band.full_name}."
+            )
+
+    eski = {
+        "last_name": user.last_name,
+        "first_name": user.first_name,
+        "middle_name": user.middle_name,
+        "phone": user.phone,
+        "address": user.address,
+        "profession": user.profession,
+        "relation": link.relation,
+    }
+
+    user.last_name = last_name.strip()
+    user.first_name = first_name.strip()
+    user.middle_name = (middle_name or "").strip() or None
+    user.phone = raqam
+    user.address = (address or "").strip() or None
+    user.profession = (profession or "").strip() or None
+    link.relation = relation
+
+    yangi = {
+        "last_name": user.last_name,
+        "first_name": user.first_name,
+        "middle_name": user.middle_name,
+        "phone": user.phone,
+        "address": user.address,
+        "profession": user.profession,
+        "relation": link.relation,
+    }
+
+    if eski != yangi:
+        audit_service.record(
+            session,
+            object_type="guardian",
+            object_id=link.id,
+            action=AuditAction.UPDATE,
+            old=eski,
+            new=yangi,
+            actor_id=actor.id,
+            ip=ip,
+        )
+    await session.commit()
+    return link, user
+
+
 async def link_existing(
     session: AsyncSession,
     *,

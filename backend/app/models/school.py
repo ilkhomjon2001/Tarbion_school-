@@ -109,6 +109,10 @@ class Student(Entity):
     middle_name: Mapped[str | None] = mapped_column(String(80))
     birth_date: Mapped[date | None] = mapped_column(Date)
 
+    #: Oldingi oʻqigan joyi — koʻchib kelgan oʻquvchi uchun. 0 va
+    #: 1-sinfda boʻsh qoladi: ular birinchi marta maktabga kelgan.
+    previous_school: Mapped[str | None] = mapped_column(String(200))
+
     @property
     def full_name(self) -> str:
         parts = [self.last_name, self.first_name, self.middle_name or ""]
