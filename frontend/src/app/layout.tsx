@@ -31,6 +31,8 @@ const onest = Onest({
 });
 
 export const metadata: Metadata = {
+  // Qidiruv va ulashish uchun mutlaq manzillar shu bazadan quriladi.
+  metadataBase: new URL("https://tarbion.uz"),
   // Sarlavha endi bitta kabinetga bogʻlanmaydi — ustoz, oʻquvchi va
   // rahbariyat kabinetlari bir xil ildiz layoutdan foydalanadi.
   title: {
@@ -38,10 +40,33 @@ export const metadata: Metadata = {
     template: "%s · Tarbion",
   },
   description:
-    "Tarbion xususiy maktabi platformasi: davomat, dars rejasi, jurnal, "
-    + "uy vazifasi va hisobotlar.",
+    "Tarbion xususiy maktabining rasmiy platformasi: davomat, dars jadvali, "
+    + "jurnal, uy vazifasi, toʻlovlar va hisobotlar — ustoz, oʻquvchi va "
+    + "ota-onalar uchun yagona tizim.",
   // Belgi app/icon.png va app/apple-icon.png dan avtomatik olinadi.
   applicationName: "Tarbion",
+  keywords: [
+    "Tarbion",
+    "Tarbion maktabi",
+    "maktab boshqaruv tizimi",
+    "elektron jurnal",
+    "davomat",
+  ],
+  openGraph: {
+    type: "website",
+    url: "https://tarbion.uz",
+    siteName: "Tarbion",
+    locale: "uz_UZ",
+    title: "Tarbion — maktab boshqaruv platformasi",
+    description:
+      "Tarbion xususiy maktabining rasmiy platformasi: davomat, jurnal, "
+      + "uy vazifasi va hisobotlar.",
+    images: [{ url: "/logo/tarbion-lockup.png", alt: "Tarbion" }],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 /** Next.js 15 da themeColor metadata emas, viewport eksportida boʻladi. */
@@ -65,6 +90,22 @@ export default function RootLayout({
           elementning atributlariga tegishli, ichkaridagi haqiqiy
           nomuvofiqliklar baribir koʻrinadi. */}
       <body suppressHydrationWarning className="min-h-full font-sans">
+        {/* Qidiruv tizimlari uchun tashkilot maʼlumoti (JSON-LD).
+            Brend soʻrovida («tarbion») saytning rasmiy ekanini va
+            logotipni aniq bildiradi. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "EducationalOrganization",
+              name: "Tarbion",
+              alternateName: "Tarbion xususiy maktabi",
+              url: "https://tarbion.uz",
+              logo: "https://tarbion.uz/logo/tarbion-mark.png",
+            }),
+          }}
+        />
         {children}
       </body>
     </html>

@@ -4,8 +4,8 @@ import Link from "next/link";
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { completeTwoFactor, signIn } from "@/lib/auth";
+import { useEffect, useState } from "react";
+import { completeTwoFactor, currentRole, restore, signIn } from "@/lib/auth";
 import { ROLE_HOME } from "@/lib/roles";
 import { SessionError } from "@/lib/session";
 
@@ -38,6 +38,22 @@ export default function LoginPage() {
   const [locked, setLocked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [remember, setRemember] = useState(false);
+
+  // Sessiya tirik boʻlsa formani koʻrsatmay oʻz kabinetiga oʻtkazamiz.
+  // Ildiz `/` endi SEO uchun toʻgʻridan-toʻgʻri shu sahifaga yoʻnaltiradi
+  // (kabinetlar robots.ts da yopiq) — kirgan odam esa avvalgidek
+  // kabinetiga tushishi kerak.
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      const ok = (await restore().catch(() => false)) && alive;
+      const role = ok ? currentRole() : null;
+      if (role) router.replace(ROLE_HOME[role]);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [router]);
 
   /** Ikkinchi bosqich uchun challenge — `null` boʻlsa parol formasi. */
   const [challenge, setChallenge] = useState<string | null>(null);
