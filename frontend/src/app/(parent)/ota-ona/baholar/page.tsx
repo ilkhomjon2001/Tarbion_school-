@@ -4,33 +4,24 @@ import { useEffect, useState } from "react";
 
 import { ParentShell } from "@/components/parent/ParentShell";
 import { messageOf } from "@/components/shared/LiveSession";
-import { formatDateTime } from "@/lib/format";
 import { GRADE_KIND_LABELS } from "@/lib/labels";
-import { SUBMISSION_LABELS, type SubmissionStatus } from "@/lib/contracts";
 import { useChild } from "@/lib/parent/useChild";
-import { fetchHomeworkList, fetchSubjectGrades } from "@/lib/student/api";
-import type { Homework, SubjectGradeSummary } from "@/lib/types";
+import { fetchSubjectGrades } from "@/lib/student/api";
+import type { SubjectGradeSummary } from "@/lib/types";
 
 /**
- * Baholar (OTA-04) va uy vazifasi holati (OTA-05) — BAZADAN.
+ * Baholar (OTA-04) — BAZADAN.
+ *
+ * Uy vazifasi (OTA-05) endi alohida boʻlimda — `/ota-ona/vazifalar`
+ * (ilgari shu sahifada ichki yorliq edi).
  *
  * Maʼlumot qatlami oʻquvchi kabineti bilan UMUMIY (`lib/student/api.ts`):
- * ikkalasi ham `journal` endpointlaridan oʻqiydi, kim qaysi oʻquvchini
- * koʻrishini server hal qiladi (X-1) — bu yerda faqat farzand tanlanadi.
+ * `journal` endpointlaridan oʻqiydi, kim qaysi oʻquvchini koʻrishini
+ * server hal qiladi (X-1) — bu yerda faqat farzand tanlanadi.
  *
  * Imtihonlar va chorak bahosi boʻlimlari hozircha YOʻQ: ular backend'da
  * yozilmagan (imtihon moduli, T-031) — soxta natija koʻrsatilmaydi.
  */
-
-type View = "subjects" | "homework";
-
-const HW_TONES: Record<SubmissionStatus, string> = {
-  assigned: "bg-surface-muted text-foreground-muted",
-  submitted: "bg-info-tint text-info",
-  late: "bg-warning-tint text-warning",
-  graded: "bg-success-tint text-success",
-  returned: "bg-danger-tint text-danger",
-};
 
 const GRADE_TONE = (value: number) =>
   value >= 4
@@ -41,26 +32,18 @@ const GRADE_TONE = (value: number) =>
 
 export default function ParentGradesPage() {
   const [child, setChild] = useChild();
-  const [view, setView] = useState<View>("subjects");
   const [subjects, setSubjects] = useState<SubjectGradeSummary[] | null>(null);
-  const [homework, setHomework] = useState<Homework[] | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!child.id) return;
     let alive = true;
     setSubjects(null);
-    setHomework(null);
     setError("");
     void (async () => {
       try {
-        const [grades, hw] = await Promise.all([
-          fetchSubjectGrades(child.id),
-          fetchHomeworkList(child.id),
-        ]);
-        if (!alive) return;
-        setSubjects(grades);
-        setHomework(hw);
+        const grades = await fetchSubjectGrades(child.id);
+        if (alive) setSubjects(grades);
       } catch (err) {
         if (alive) setError(messageOf(err));
       }
@@ -99,34 +82,9 @@ export default function ParentGradesPage() {
         </p>
       </div>
 
-      <div role="tablist" aria-label="Koʻrinish" className="mb-4 flex gap-2">
-        {(
-          [
-            ["subjects", "Fanlar boʻyicha"],
-            ["homework", "Uy vazifasi"],
-          ] as const
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            role="tab"
-            aria-selected={view === key}
-            onClick={() => setView(key)}
-            className={`h-10 rounded-lg border px-3.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
-              view === key
-                ? "border-brand bg-brand-tint text-brand-dark"
-                : "border-border bg-surface text-foreground-muted hover:bg-surface-muted"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {view === "subjects" ? (
-        subjects === null ? (
-          <p className="text-sm text-foreground-muted">Yuklanmoqda…</p>
-        ) : subjects.length === 0 ? (
+      {subjects === null ? (
+        <p className="text-sm text-foreground-muted">Yuklanmoqda…</p>
+      ) : subjects.length === 0 ? (
           <p className="rounded-xl border border-dashed border-border bg-surface-muted px-4 py-8 text-center text-sm text-foreground-muted">
             Hozircha baho qoʻyilmagan.
           </p>
@@ -209,44 +167,7 @@ export default function ParentGradesPage() {
               </section>
             )}
           </>
-        )
-      ) : homework === null ? (
-        <p className="text-sm text-foreground-muted">Yuklanmoqda…</p>
-      ) : homework.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border bg-surface-muted px-4 py-8 text-center text-sm text-foreground-muted">
-          Hozircha uy vazifasi berilmagan.
-        </p>
-      ) : (
-        <ul className="space-y-2.5">
-          {homework.map((h) => (
-            <li key={h.id} className="rounded-xl border border-border bg-surface p-4">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-xs text-foreground-muted">{h.subject}</p>
-                  <p className="mt-0.5 font-medium">{h.title}</p>
-                </div>
-                <span
-                  className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${HW_TONES[h.status]}`}
-                >
-                  {SUBMISSION_LABELS[h.status]}
-                </span>
-              </div>
-
-              <div className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-foreground-muted">
-                <span>
-                  Muddat:{" "}
-                  <span className="text-foreground">{formatDateTime(h.dueDate)}</span>
-                </span>
-                {h.grade !== undefined && (
-                  <span>
-                    Baho: <span className="font-semibold text-success">{h.grade}</span>
-                  </span>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+        )}
     </ParentShell>
   );
 }

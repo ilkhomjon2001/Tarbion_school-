@@ -253,7 +253,7 @@ export default function ParentHomePage() {
           }
         />
         <Tile
-          href="/ota-ona/baholar"
+          href="/ota-ona/vazifalar"
           label="Topshirilmagan vazifa"
           loading={pendingHw === null}
           value={pendingHw === "error" || pendingHw === null ? "—" : pendingHw}

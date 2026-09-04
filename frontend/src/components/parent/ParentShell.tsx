@@ -39,7 +39,12 @@ const NAV = [
 
 /** Katta ekranda joy yetarli — qolgan boʻlimlar ham roʻyxatda. */
 const SIDEBAR_NAV = [
-  ...NAV,
+  ...NAV.slice(0, 3),
+  // Uy vazifasi sidebarda alohida (egasining soʻrovi). Telefonda pastki
+  // menyuga sigʻmaydi — u yerdan bosh sahifadagi «Topshirilmagan vazifa»
+  // kartasi orqali kiriladi.
+  { href: "/ota-ona/vazifalar", label: "Uy vazifasi", icon: BookIcon },
+  ...NAV.slice(3),
   { href: "/ota-ona/tarbiya", label: "Tarbiya va psixologiya", icon: HeartIcon },
   { href: "/ota-ona/oshxona", label: "Oshxona menyusi", icon: MealIcon },
   { href: "/ota-ona/elonlar", label: "Eʼlonlar", icon: BellIcon },
@@ -254,6 +259,14 @@ function StarIcon() {
   return (
     <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" />
+    </svg>
+  );
+}
+
+function BookIcon() {
+  return (
+    <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 19.5V5a2 2 0 0 1 2-2h14v16.5M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-4.5H6.5A2.5 2.5 0 0 0 4 19.5Z" />
     </svg>
   );
 }
