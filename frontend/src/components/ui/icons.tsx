@@ -280,6 +280,16 @@ export function PlusIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function ArchiveIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M3.5 7.5h17v-3h-17v3Z" />
+      <path d="M5 7.5v11a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-11" />
+      <path d="M10 12h4" />
+    </Icon>
+  );
+}
+
 export function PencilIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

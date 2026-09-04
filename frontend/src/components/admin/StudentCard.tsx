@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/Badge";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ListSkeleton } from "@/components/ui/Skeleton";
 import {
+  ArchiveIcon,
   LinkIcon,
   PencilIcon,
   PlusIcon,
@@ -297,8 +298,9 @@ export function StudentCard({
                     <button
                       type="button"
                       onClick={() => setArchiving(true)}
-                      className="focus-ring mt-3 inline-flex h-9 items-center rounded-lg px-3 text-sm font-medium text-danger transition-colors hover:bg-danger-tint"
+                      className="focus-ring mt-3 inline-flex h-9 items-center gap-1.5 rounded-lg border border-danger/40 px-3 text-sm font-medium text-danger transition-colors hover:bg-danger-tint"
                     >
+                      <ArchiveIcon className="h-4 w-4" />
                       Arxivga oʻtkazish
                     </button>
                   )}
