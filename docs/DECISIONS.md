@@ -1098,3 +1098,50 @@ tegadigan maydoni yoʻq edi. Endi ramkali, 36px balandlikda, belgisi
 bilan. Boshlangʻich tugmalar ham bitta uslubga (`primaryBtn`)
 keltirildi — ilgari har joyda alohida yozilgan va balandligi
 har xil edi.
+
+## 2026-09-04 · Shartnoma raqamlari kodga koʻchirildi
+
+Loyiha egasi shartnoma PDF'ini berdi (`maxfiy/`). Oʻqib chiqilganda
+kodda turgan ikkita raqam **hujjatga zid** ekani chiqdi:
+
+| | Kodda | Shartnomada |
+|---|---|---|
+| Oylik | 3 500 000 | **2 300 000** (3.1) |
+| Toʻlov muddati | 10-sana | **5-sana** (3.2-A) |
+
+3 500 000 qayerdan kelgani nomaʼlum — hech qanday hujjatga
+tayanmasdi. Oʻsha kuni 99 ta shartnoma shu summada ochilib
+ketgan edi.
+
+Tuzatish yoʻli: shartnoma 2 300 000 ga oʻzgartirildi, sentabr qarzi
+esa QOTGAN (2-buzilmas qoida), shuning uchun farq har oʻquvchiga
+**kredit-yozuv** bilan qaytarildi (99 × 1 200 000). Qarz yozuvi
+oʻzgarmadi, tuzatish alohida qatorda va sababi koʻrinib turadi.
+Toʻgʻridan-toʻgʻri oʻchirish rad etildi: `tuition_charges` da
+(student, year, month) unikal cheklovi bor, arxivlash oʻrinni
+boʻshatmaydi — demak «qayta hisoblash» yoʻli baribir SQL talab
+qilardi.
+
+Hujjatdagi qolgan raqamlar ham konstantaga aylandi: oldindan toʻlov
+1 150 000, yillik oldindan toʻlovga 10%, 6 oylikka 5% chegirma.
+Ularni test qoʻriqlaydi — raqam oʻzgarsa avval shartnoma oʻzgarsin.
+
+Yoʻl-yoʻlakay maʼlum boʻldi: toʻlov jadvalidagi koʻp uchraydigan
+«1150» — bu yarim toʻlov emas, shartnomadagi **majburiy boshlangʻich
+toʻlov**.
+
+## 2026-09-04 · Shartnoma hujjati — PDF kutubxonasisiz
+
+Ota-ona kabinetiga «Shartnoma» boʻlimi qoʻshildi: hujjat matni
+frontendda, qiymatlari `GET /school/students/{id}/contract` dan.
+
+PDF kutubxonasi (reportlab, weasyprint) qoʻshilmadi. Loyihada
+allaqachon `print-doc` mexanizmi bor — `globals.css` dagi chop etish
+qoidasi sahifadagi qolgan hamma narsani yashiradi va brauzerning
+«PDF sifatida saqlash» tugmasi haqiqiy PDF beradi. Yangi bogʻliqlik,
+shrift muammosi va server yuki — hech biri kerak emas.
+
+Muhim farq: hujjat **jonli** — shartnoma summasi oʻzgarsa sahifa ham
+oʻzgaradi. Qogʻozdagi imzolangan nusxa esa oʻzgarmaydi, shuning uchun
+sahifada «imzolangan qogʻoz nusxa asl hisoblanadi» deb yozib
+qoʻyilgan.
