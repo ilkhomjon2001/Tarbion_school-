@@ -360,6 +360,21 @@ async def update_student(
         "previous_school": student.previous_school,
     }
 
+    # Ism kirish hisobiga ham koʻchadi. Ular ikki xil joyda saqlanadi
+    # (kartochka va `users`), va faqat kartochka tuzatilsa oʻquvchi
+    # oʻz kabinetida hamon eski ism bilan koʻrinadi. LOGIN oʻzgarmaydi:
+    # u odamning tizimdagi manzili, familiya almashsa ham qoladi.
+    if student.user_id is not None and (
+        eski["last_name"],
+        eski["first_name"],
+        eski["middle_name"],
+    ) != (student.last_name, student.first_name, student.middle_name):
+        hisob = await session.get(User, student.user_id)
+        if hisob is not None:
+            hisob.last_name = student.last_name
+            hisob.first_name = student.first_name
+            hisob.middle_name = student.middle_name
+
     # Hech narsa oʻzgarmagan boʻlsa auditni shovqinga koʻmmaymiz.
     if eski != yangi:
         audit_service.record(

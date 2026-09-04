@@ -724,3 +724,41 @@ async def test_vasiy_royxatida_manzil_va_kasb_qaytadi(
     qator = r.json()[0]
     assert qator["address"] == "Toshkent"
     assert qator["profession"] == "Muhandis"
+
+
+async def test_ism_tuzatilsa_kirish_hisobi_ham_yangilanadi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Ism ikki joyda: kartochkada va `users` da.
+
+    Faqat kartochka tuzatilsa oʻquvchi oʻz kabinetida hamon eski ism
+    bilan koʻrinadi — imlo xatosi tuzatilgandan keyin ham. LOGIN esa
+    OʻZGARMAYDI: u odamning tizimdagi manzili.
+    """
+    await _huquqli(session, world)
+    token = await _token(client, "sch.admin")
+
+    hisob = User(
+        login="std.ali",
+        password_hash=hash_password(PASSWORD),
+        last_name="Xolmahammatov",
+        first_name="Ali",
+    )
+    session.add(hisob)
+    await session.flush()
+    student = await session.get(Student, world["ali"].id)
+    assert student is not None
+    student.user_id = hisob.id
+    await session.commit()
+
+    r = await client.put(
+        f"/api/v1/school/students/{world['ali'].id}",
+        headers=_auth(token),
+        json={"last_name": "Xolmuhammadov", "first_name": "Alisher"},
+    )
+    assert r.status_code == 200, r.text
+
+    await session.refresh(hisob)
+    assert hisob.last_name == "Xolmuhammadov"
+    assert hisob.first_name == "Alisher"
+    assert hisob.login == "std.ali"  # manzil oʻzgarmaydi
