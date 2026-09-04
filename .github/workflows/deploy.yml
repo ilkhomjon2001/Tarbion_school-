@@ -217,15 +217,23 @@ jobs:
           uv run alembic upgrade head
           uv run python -m app.e2e_seed
 
+      # `nohup` va `setsid` ataylab: qadam tugagach uning qobigʻi
+      # yopiladi va oddiy `&` bilan qoʻyilgan jarayon SIGHUP olib
+      # oʻlishi mumkin. Jurnal faylga yoziladi — yiqilganda sabab
+      # artefaktda koʻrinsin.
       - name: Backend'ni koʻtarish
         working-directory: backend
         run: |
-          uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 &
-          for i in $(seq 1 30); do
-            curl -sf http://127.0.0.1:8000/health && break
+          setsid nohup uv run uvicorn app.main:app --host 127.0.0.1 --port 8000             > uvicorn.log 2>&1 < /dev/null &
+          for i in $(seq 1 40); do
+            curl -sf http://127.0.0.1:8000/health >/dev/null && break
             sleep 1
           done
-          curl -sf http://127.0.0.1:8000/health
+          if ! curl -sf http://127.0.0.1:8000/health; then
+            echo "--- uvicorn.log ---"
+            cat uvicorn.log
+            exit 1
+          fi
 
       - name: Frontend bogʻliqliklari
         working-directory: frontend
@@ -238,6 +246,18 @@ jobs:
       - name: Build
         working-directory: frontend
         run: corepack pnpm build
+
+      # Testdan OLDIN backend hamon tirikligi tekshiriladi: u qadamlar
+      # orasida oʻlgan boʻlsa, Playwright «Failed to fetch» deb
+      # yiqilardi va sabab login sahifasida qolib ketardi.
+      - name: Backend tirikmi
+        working-directory: backend
+        run: |
+          if ! curl -sf http://127.0.0.1:8000/health; then
+            echo "::error::Backend oʻlgan — quyida uvicorn jurnali."
+            cat uvicorn.log
+            exit 1
+          fi
 
       - name: Oqim testi
         working-directory: frontend
@@ -252,6 +272,7 @@ jobs:
           path: |
             frontend/playwright-report/
             frontend/test-results/
+            backend/uvicorn.log
           retention-days: 7
 
   # ─────────────────────────── Deploy ───────────────────────────

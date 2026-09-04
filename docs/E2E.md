@@ -55,6 +55,25 @@ E2E_PASSWORD='E2eSinov2026!' pnpm e2e
 `E2E_PASSWORD` berilmasa testlar **oʻtib ketadi**, yiqilmaydi — muhitsiz
 chaqirilganda uzun stek izidan koʻra aniq sabab yaxshiroq.
 
+`pnpm build` ni `NEXT_PUBLIC_API_URL` bilan qilish SHART: bu qiymat
+build paytida kodga qotadi. Usiz build sukut boʻyicha `localhost:8000`
+ga murojaat qiladi, sahifa esa `127.0.0.1:3100` da ochiladi va sessiya
+tiklanmasdan login sahifasiga qaytaraveradi.
+
+### CI ni lokalda takrorlash
+
+CI **toza** bazada ishlaydi, lokal baza esa toʻla. Farq test natijasini
+oʻzgartiradi, shuning uchun shubhali holatda toza bazada sinang:
+
+```bash
+# pytest bazasining sxemasini boʻshatib, CI ketma-ketligini takrorlaymiz
+# (lokal rol yangi baza YARATA olmaydi — X-11, ataylab)
+cd backend
+DATABASE_URL="$TEST_DATABASE_URL" uv run alembic upgrade head
+DATABASE_URL="$TEST_DATABASE_URL" E2E_PASSWORD='...' uv run python -m app.e2e_seed
+DATABASE_URL="$TEST_DATABASE_URL" COOKIE_SECURE=false REQUIRE_TWO_FACTOR=false   CORS_ORIGINS='http://127.0.0.1:3100' uv run uvicorn app.main:app --port 8000
+```
+
 Yiqilsa iz koʻriladi:
 
 ```bash
@@ -89,11 +108,17 @@ yozuvlarni topib ishlatadi.
 | Ota-ona | `e2e.otaona` |
 | Oʻquvchi | Sinovov Oʻquvchi |
 | Sinf | `E2E-1` |
-| Dars | **bugun**, 1-para, 08:30–09:15 |
+| Dars | **bugun**, 1-para, «hozirdan 2 soat oldin» |
 
-Dars aynan **bugunga** yaratiladi: DAV-03 ning 24 soatlik oynasi ochiq
-boʻlishi kerak, aks holda ustoz davomat belgilay olmaydi va test sababi
-tushunarsiz tarzda yiqilardi.
+Dars vaqti **nisbiy** — qatʼiy soat emas. DAV-03 boʻyicha boshlanmagan
+darsga davomat yozib boʻlmaydi, shuning uchun dars har doim allaqachon
+boshlangan boʻlishi kerak. Vaqt mahalliy kun chegarasiga qisiladi:
+natija har doim bugungi kunda va har doim oʻtmishda.
+
+Ilgari bu yerda qatʼiy 08:30 turardi va test **kun vaqtiga bogʻliq**
+edi: CI ertalab soat 07:41 (Toshkent) da ishga tushdi, dars hali
+boshlanmagan edi va davomat katagi oʻchiq chiqdi. Lokalda esa kechqurun
+sinalgani uchun oʻtib ketardi.
 
 Skript har yugurishda oʻsha darsning davomat yozuvlarini **tozalaydi**.
 Sababi bir marta tushilgan: yozuv oldingi yugurishdan qolganda katak

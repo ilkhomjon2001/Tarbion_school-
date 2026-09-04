@@ -20,7 +20,7 @@ import argparse
 import asyncio
 import os
 import sys
-from datetime import date, time
+from datetime import date, datetime, timedelta
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,7 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.db import SessionFactory
 from app.core.security import hash_password
-from app.core.timeutil import combine_local, local_today
+from app.core.timeutil import DISPLAY_TZ, local_day_bounds, local_today, utcnow
 from app.models import (
     AcademicYear,
     AttendanceRecord,
@@ -51,8 +51,25 @@ OTAONA_LOGIN = "e2e.otaona"
 SINF_NOMI = "E2E-1"
 FAN_NOMI = "E2E matematika"
 PARA = 1
-BOSHLANISH = time(8, 30)
-TUGASH = time(9, 15)
+DARS_DAVOMI = timedelta(minutes=45)
+
+
+def _dars_vaqti() -> tuple[datetime, datetime]:
+    """Dars ALLAQACHON boshlangan boʻlsin, lekin bugungi kun ichida.
+
+    DAV-03: boshlanmagan darsga davomat yozib boʻlmaydi. Ilgari bu
+    yerda qatʼiy 08:30 turardi va test kun vaqtiga bogʻliq boʻlib
+    qolgandi — CI ertalab soat 07:41 da (Toshkent) ishga tushdi,
+    dars hali boshlanmagan edi va katak oʻchiq chiqdi.
+
+    Endi vaqt «hozirdan 2 soat oldin» dan olinadi va mahalliy kun
+    chegarasiga qisiladi: natija har doim bugungi kunda va har doim
+    oʻtmishda boʻladi.
+    """
+    hozir = utcnow()
+    kun_boshi, _ = local_day_bounds(local_today())
+    boshi = min(max(hozir - timedelta(hours=2), kun_boshi), hozir)
+    return boshi, boshi + DARS_DAVOMI
 
 
 async def _rol(session: AsyncSession, nom: str) -> Role:
@@ -95,21 +112,23 @@ async def run(parol: str) -> None:
             session.add(yil)
             await session.flush()
 
+        boshi, tugashi = _dars_vaqti()
+        # Qoʻngʻiroq jadvali darsning haqiqiy vaqtiga mos boʻlsin —
+        # aks holda ekranda para vaqti boshqa koʻrinardi.
+        mahalliy_boshi = boshi.astimezone(DISPLAY_TZ).time()
+        mahalliy_tugashi = tugashi.astimezone(DISPLAY_TZ).time()
+
         qongiroq = await session.scalar(
             select(BellSchedule).where(
                 BellSchedule.academic_year_id == yil.id, BellSchedule.period == PARA
             )
         )
         if qongiroq is None:
-            session.add(
-                BellSchedule(
-                    academic_year_id=yil.id,
-                    period=PARA,
-                    starts_at=BOSHLANISH,
-                    ends_at=TUGASH,
-                )
-            )
-            await session.flush()
+            qongiroq = BellSchedule(academic_year_id=yil.id, period=PARA)
+            session.add(qongiroq)
+        qongiroq.starts_at = mahalliy_boshi
+        qongiroq.ends_at = mahalliy_tugashi
+        await session.flush()
 
         # ── Ustoz, fan, sinf ──
         ustoz = await _hisob(
@@ -226,13 +245,16 @@ async def run(parol: str) -> None:
                 teacher_id=ustoz.id,
                 lesson_date=bugun,
                 period=PARA,
-                starts_at=combine_local(bugun, BOSHLANISH),
-                ends_at=combine_local(bugun, TUGASH),
             )
             session.add(dars)
-        else:
-            dars.teacher_id = ustoz.id
-            dars.is_archived = False
+        dars.teacher_id = ustoz.id
+        dars.subject_id = fan.id
+        dars.is_archived = False
+        # Vaqt HAR SAFAR qayta qoʻyiladi: baza kechadan qolgan boʻlsa
+        # dars 24 soatlik oynadan chiqib ketgan boʻlardi va katak
+        # yana oʻchiq chiqardi.
+        dars.starts_at = boshi
+        dars.ends_at = tugashi
         # `dars.id` pastdagi tozalash uchun kerak — yangi yozuv boʻlsa
         # flush'gacha u `None` boʻlardi va DELETE hech narsani
         # tozalamasdan jimgina oʻtib ketardi.

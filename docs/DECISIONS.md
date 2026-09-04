@@ -1001,3 +1001,20 @@ almashganda ham login oʻzgarmaydi, u odamning tizimdagi manzili.
 
 Hech narsa oʻzgarmagan boʻlsa audit yozuvi YOZILMAYDI — aks holda
 kartochkani ochib-yopgan har bir amal jurnalni koʻmib tashlardi.
+
+## 2026-09-04 · E2E dars vaqti nisbiy boʻlishi kerak
+
+`app/e2e_seed.py` darsni qatʼiy 08:30 ga qoʻyardi va test **kun
+vaqtiga bogʻliq** boʻlib qoldi: DAV-03 boʻyicha boshlanmagan darsga
+davomat yozib boʻlmaydi, CI esa ertalab 07:41 (Toshkent) da ishga
+tushdi — dars hali boshlanmagan, katak oʻchiq, test yiqildi. Lokalda
+kechqurun sinalgani uchun oʻtib ketardi.
+
+Endi vaqt «hozirdan 2 soat oldin» dan olinadi va mahalliy kun
+chegarasiga qisiladi: har doim bugungi kunda, har doim oʻtmishda.
+Qoʻngʻiroq jadvali ham shu vaqtga moslanadi.
+
+Sabab TAXMIN qilinmadi — CI sharoiti lokalda takrorlandi (pytest
+bazasining sxemasi boʻshatilib, `alembic upgrade head` + `e2e_seed`).
+Toza baza va toʻla baza farqi aynan shu turdagi xatoni yashiradi,
+shuning uchun takrorlash tartibi `docs/E2E.md` ga yozildi.
