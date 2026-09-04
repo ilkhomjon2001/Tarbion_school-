@@ -683,9 +683,7 @@ function StudentInfoSection({
             nom="Oldingi oʻqigan joyi"
             qiymat={card.previous_school}
             izoh={
-              card.previous_school === null && !kerakOldingiMaktab(card)
-                ? "0–1-sinf uchun shart emas"
-                : undefined
+              card.previous_school === null ? oldingiMaktabIzohi(card.class_name) : undefined
             }
           />
         </dl>
@@ -743,7 +741,7 @@ function StudentInfoSection({
           nom="Oldingi oʻqigan joyi"
           qiymat={form.previous_school}
           ozgardi={(v) => setForm({ ...form, previous_school: v })}
-          izoh="0–1-sinf uchun shart emas — ular birinchi marta maktabga kelgan."
+          izoh={oldingiMaktabIzohi(card.class_name)}
           placeholder="Masalan: 12-maktab, Chilonzor"
         />
       </div>
@@ -780,14 +778,34 @@ function qoralama(card: StudentCardOut) {
 }
 
 /**
- * 0 va 1-sinf uchun oldingi maktab talab qilinmaydi — ular birinchi
- * marta maktabga kelgan. Sinfsiz oʻquvchida ham talab qilmaymiz:
- * qaysi sinfga tushishi hali maʼlum emas.
+ * 0 va 1-sinf uchun oldingi maktab talab qilinmaydi. Sinfsiz
+ * oʻquvchida ham talab qilmaymiz: qaysi sinfga tushishi hali
+ * maʼlum emas.
  */
 function kerakOldingiMaktab(card: StudentCardOut): boolean {
-  const nom = card.class_name;
-  if (!nom) return false;
-  return !/^[01]\b|^[01]-/.test(nom);
+  return sinfRaqami(card.class_name) > 1;
+}
+
+/** «1-A» → 1, «0-sinf» → 0, sinfsiz → −1. */
+function sinfRaqami(className: string | null | undefined): number {
+  const m = /^(\d+)/.exec((className ?? "").trim());
+  return m ? Number(m[1]) : -1;
+}
+
+/**
+ * Maydon ostidagi izoh sinfga qarab oʻzgaradi.
+ *
+ * 1-sinfda maydon TOʻLDIRILADI, lekin majburiy emas (loyiha egasining
+ * soʻrovi, 2026-09-04): bola boshqa joyda bogʻcha yoki tayyorlov
+ * guruhida boʻlgan boʻlishi mumkin va bu maʼlumot kerak. Ilgari izoh
+ * «0–1-sinf uchun shart emas» derdi va administrator 1-sinfda maydonni
+ * umuman toʻldirmasdi.
+ */
+function oldingiMaktabIzohi(className: string | null | undefined): string | undefined {
+  const sinf = sinfRaqami(className);
+  if (sinf === 0) return "0-sinf uchun shart emas — birinchi marta maktabga kelgan.";
+  if (sinf === 1) return "Majburiy emas — bogʻcha yoki tayyorlov guruhi boʻlsa yozing.";
+  return undefined;
 }
 
 function Qator({
