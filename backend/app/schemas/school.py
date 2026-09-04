@@ -232,6 +232,24 @@ class GuardianLinkIn(BaseModel):
     is_primary: bool = False
 
 
+class GuardianPhoneMatchOut(BaseModel):
+    """Telefon boʻyicha topilgan mavjud vasiy.
+
+    Telefon YOZISHDAN OLDIN tekshiriladi: administrator butun shaklni
+    toʻldirib «bu telefon band» degan xatoga urilmasin, balki darhol
+    «shu vasiyga bu oʻquvchi ham biriktirilsinmi» degan savolni koʻrsin.
+    """
+
+    user_id: uuid.UUID
+    full_name: str
+    relation: str | None
+    children_count: int
+    #: Farzandlari — administrator «bu oʻsha oilami» deb qaror qiladi.
+    children: list[str]
+    #: Shu oʻquvchiga allaqachon bogʻlangan — taklif koʻrsatilmaydi.
+    already_linked: bool
+
+
 class GuardianCreateIn(BaseModel):
     last_name: str = Field(min_length=1, max_length=80)
     first_name: str = Field(min_length=1, max_length=80)

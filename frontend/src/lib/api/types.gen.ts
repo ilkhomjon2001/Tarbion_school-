@@ -2229,6 +2229,42 @@ export type GuardianOut = {
 };
 
 /**
+ * GuardianPhoneMatchOut
+ *
+ * Telefon boʻyicha topilgan mavjud vasiy.
+ *
+ * Telefon YOZISHDAN OLDIN tekshiriladi: administrator butun shaklni
+ * toʻldirib «bu telefon band» degan xatoga urilmasin, balki darhol
+ * «shu vasiyga bu oʻquvchi ham biriktirilsinmi» degan savolni koʻrsin.
+ */
+export type GuardianPhoneMatchOut = {
+    /**
+     * User Id
+     */
+    user_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Relation
+     */
+    relation: string | null;
+    /**
+     * Children Count
+     */
+    children_count: number;
+    /**
+     * Children
+     */
+    children: Array<string>;
+    /**
+     * Already Linked
+     */
+    already_linked: boolean;
+};
+
+/**
  * GuardianRowOut
  *
  * Oʻquvchi kartochkasidagi vasiy qatori.
@@ -10782,6 +10818,43 @@ export type SchoolLinkGuardianResponses = {
 };
 
 export type SchoolLinkGuardianResponse = SchoolLinkGuardianResponses[keyof SchoolLinkGuardianResponses];
+
+export type SchoolGuardianLookupData = {
+    body?: never;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query: {
+        /**
+         * Phone
+         */
+        phone: string;
+    };
+    url: '/api/v1/school/students/{student_id}/guardians/lookup';
+};
+
+export type SchoolGuardianLookupErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SchoolGuardianLookupError = SchoolGuardianLookupErrors[keyof SchoolGuardianLookupErrors];
+
+export type SchoolGuardianLookupResponses = {
+    /**
+     * Response School Guardian Lookup
+     *
+     * Successful Response
+     */
+    200: GuardianPhoneMatchOut | null;
+};
+
+export type SchoolGuardianLookupResponse = SchoolGuardianLookupResponses[keyof SchoolGuardianLookupResponses];
 
 export type SchoolUpdateGuardianData = {
     body: GuardianUpdateIn;

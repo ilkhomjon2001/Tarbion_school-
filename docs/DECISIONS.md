@@ -1068,3 +1068,33 @@ skript ikki marta ishga tushsa baza takrorni oʻzi rad etadi.
 Ismi noaniq 5 qator (7 950 000 soʻm) ATAYLAB kiritilmadi. Toʻlov
 tahrirlanmaydi, faqat storno qilinadi — noaniq yozuvni keyin
 tuzatishdan koʻra kiritmaslik arzon.
+
+## 2026-09-04 · Vasiy telefon RAQAMDAN boshlab qoʻshiladi
+
+Raqam odamning kaliti. Maktabda ikkinchi farzandi bor ota-onaga yangi
+hisob ochilmasligi kerak — aks holda u ikkita login bilan ikkita
+kabinetga kirib, har birida bitta farzandini koʻradi.
+
+Backendda `link_existing` allaqachon bor edi, lekin **interfeysda unga
+yoʻl yoʻq edi**: administrator butun shaklni toʻldirib yuborardi va
+«bu telefon falonchida» degan `409` ni koʻrardi — keyin nima qilishni
+bilmasdi.
+
+Endi `GET /school/students/{id}/guardians/lookup?phone=` qoʻshildi.
+Raqam kiritilishi bilan (9 raqamdan boshlab, 400 ms kechikish bilan)
+tekshiriladi va savol chiqadi: «Bu raqam falonchi hisobiga bogʻlangan,
+farzandi: … · shu vasiyga bu oʻquvchi ham biriktirilsinmi?»
+
+Huquq `students.manage` — vasiy qoʻshish bilan bir xil. Bu ataylab
+tor: aks holda endpoint telefon raqamlarini sanab chiqish yoʻliga
+aylanardi (X-6). Ota-ona oʻz farzandi kartochkasida ham chaqira
+olmaydi — testda tasdiqlangan.
+
+## 2026-09-04 · Kartochkadagi amal tugmalari
+
+Vasiy qatoridagi «Tahrirlash», «Asosiy qilish», «Bogʻlanishni uzish»
+tagi chiziladigan MATN edi: tugmaga oʻxshamasdi va telefonda barmoq
+tegadigan maydoni yoʻq edi. Endi ramkali, 36px balandlikda, belgisi
+bilan. Boshlangʻich tugmalar ham bitta uslubga (`primaryBtn`)
+keltirildi — ilgari har joyda alohida yozilgan va balandligi
+har xil edi.

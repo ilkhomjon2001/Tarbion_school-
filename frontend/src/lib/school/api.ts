@@ -35,6 +35,7 @@ import {
   schoolSetClassSubject,
   schoolSetHomeroom,
   schoolStaff,
+  schoolGuardianLookup,
   schoolLinkGuardian,
   schoolMakePrimary,
   schoolStudentCard,
@@ -53,6 +54,7 @@ import type {
   CafeteriaMenuOut,
   ClassOut,
   GuardianCreatedOut,
+  GuardianPhoneMatchOut,
   GuardianRowOut,
   ClassSubjectOut,
   StudentCardOut,
@@ -70,6 +72,7 @@ import { withAuth } from "@/lib/session";
 export type {
   ClassOut,
   GuardianCreatedOut,
+  GuardianPhoneMatchOut,
   GuardianRowOut,
   ClassSubjectOut,
   StudentCardOut,
@@ -525,6 +528,22 @@ export async function createGuardian(
 ): Promise<GuardianCreatedOut> {
   return withAuth<GuardianCreatedOut>(() =>
     schoolCreateGuardian({ path: { student_id: studentId }, body: input }),
+  );
+}
+
+/**
+ * Telefon boʻyicha mavjud vasiyni topadi — YOZISHDAN OLDIN.
+ *
+ * Raqam kiritilishi bilan chaqiriladi: «bu raqam falonchiga bogʻlangan,
+ * shu vasiyga bu oʻquvchi ham biriktirilsinmi?» Aks holda administrator
+ * butun shaklni toʻldirib `409` ga urilardi.
+ */
+export async function lookupGuardianByPhone(
+  studentId: string,
+  phone: string,
+): Promise<GuardianPhoneMatchOut | null> {
+  return withAuth<GuardianPhoneMatchOut | null>(() =>
+    schoolGuardianLookup({ path: { student_id: studentId }, query: { phone } }),
   );
 }
 

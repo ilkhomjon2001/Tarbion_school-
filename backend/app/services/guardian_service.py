@@ -29,6 +29,7 @@ oʻzgartiradi.
 """
 
 import uuid
+from dataclasses import dataclass
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -491,3 +492,69 @@ async def children_count(session: AsyncSession, user_id: uuid.UUID) -> int:
             )
         )
     ) or 0
+
+
+@dataclass(frozen=True, slots=True)
+class PhoneMatch:
+    """Telefon boʻyicha topilgan mavjud vasiy."""
+
+    user_id: uuid.UUID
+    full_name: str
+    relation: str | None  # shu telefonli hisobning birinchi bogʻlanishidagi
+    children_count: int
+    #: Farzandlarining ismi — administrator «bu oʻsha oilami» deb qaror qiladi.
+    children: list[str]
+    #: Shu oʻquvchining vasiysi boʻlib boʻlganmi — «biriktirish» taklif
+    #: qilinmasin.
+    already_linked: bool
+
+
+async def find_by_phone(
+    session: AsyncSession,
+    actor: CurrentUser,
+    *,
+    student_id: uuid.UUID,
+    phone: str,
+) -> PhoneMatch | None:
+    """Telefon allaqachon ota-onada bormi — YOZISHDAN OLDIN.
+
+    Ilgari bu faqat `409` xatosi orqali bilinardi: administrator butun
+    shaklni toʻldirib, yuborib, keyin «bu telefon falonchida» degan
+    xabarni koʻrardi va nima qilishni bilmasdi — mavjud hisobga
+    bogʻlash yoʻli interfeysda umuman yoʻq edi.
+
+    Endi raqam kiritilishi bilan tekshiriladi va «shu vasiyga bu
+    oʻquvchi ham biriktirilsinmi» deb soʻraladi.
+
+    Huquq `students.manage` — vasiy qoʻshish bilan bir xil. Bu ataylab
+    tor: aks holda endpoint telefon raqamlarini sanab chiqish yoʻliga
+    aylanardi (X-6).
+    """
+    await _assert_can_manage(session, actor)
+    await _get_student(session, student_id)
+
+    topildi = await _find_parent_by_phone(session, phone)
+    if topildi is None:
+        return None
+
+    rows = (
+        await session.execute(
+            select(Guardian, Student)
+            .join(Student, Student.id == Guardian.student_id)
+            .where(
+                Guardian.user_id == topildi.id,
+                Guardian.is_archived.is_(False),
+                Student.is_archived.is_(False),
+            )
+            .order_by(Student.last_name, Student.first_name)
+        )
+    ).all()
+
+    return PhoneMatch(
+        user_id=topildi.id,
+        full_name=topildi.full_name,
+        relation=rows[0][0].relation if rows else None,
+        children_count=len(rows),
+        children=[s.full_name for _, s in rows],
+        already_linked=any(g.student_id == student_id for g, _ in rows),
+    )

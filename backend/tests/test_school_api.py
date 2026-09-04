@@ -762,3 +762,115 @@ async def test_ism_tuzatilsa_kirish_hisobi_ham_yangilanadi(
     assert hisob.last_name == "Xolmuhammadov"
     assert hisob.first_name == "Alisher"
     assert hisob.login == "std.ali"  # manzil oʻzgarmaydi
+
+
+# ─────────────────── Telefon boʻyicha vasiy topish ───────────────────
+
+
+async def test_telefon_boyicha_mavjud_vasiy_topiladi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Ikkinchi farzand: raqam kiritilishi bilan oila koʻrinsin.
+
+    Ilgari bu faqat `409` orqali bilinardi — administrator butun
+    shaklni toʻldirib yuborardi va mavjud hisobga bogʻlash yoʻli
+    interfeysda umuman yoʻq edi.
+    """
+    await _huquqli(session, world)
+    world["parent_b"].phone = "+998 90 765-43-21"
+    await session.flush()
+
+    token = await _token(client, "sch.admin")
+    r = await client.get(
+        f"/api/v1/school/students/{world['ali'].id}/guardians/lookup",
+        headers=_auth(token),
+        params={"phone": "998907654321"},  # boshqa yozilish — bir xil raqam
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["user_id"] == str(world["parent_b"].id)
+    assert body["children_count"] == 1
+    assert body["children"] == [world["vali"].full_name]
+    assert body["already_linked"] is False
+
+
+async def test_oz_vasiysi_qayta_taklif_qilinmaydi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Allaqachon shu oʻquvchining vasiysi — «biriktirish» taklifi keraksiz."""
+    await _huquqli(session, world)
+    world["parent_a"].phone = "998901112233"
+    await session.flush()
+
+    token = await _token(client, "sch.admin")
+    r = await client.get(
+        f"/api/v1/school/students/{world['ali'].id}/guardians/lookup",
+        headers=_auth(token),
+        params={"phone": "998901112233"},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["already_linked"] is True
+
+
+async def test_notanish_telefonda_bosh_javob(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    await _huquqli(session, world)
+    token = await _token(client, "sch.admin")
+    r = await client.get(
+        f"/api/v1/school/students/{world['ali'].id}/guardians/lookup",
+        headers=_auth(token),
+        params={"phone": "998000000000"},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json() is None
+
+
+async def test_huquqsiz_admin_telefon_qidira_olmaydi(
+    client: AsyncClient, world: dict
+) -> None:
+    """X-2 va X-6: bu endpoint telefon sanab chiqish yoʻli boʻlmasin."""
+    token = await _token(client, "sch.admin")
+    r = await client.get(
+        f"/api/v1/school/students/{world['ali'].id}/guardians/lookup",
+        headers=_auth(token),
+        params={"phone": "998901112233"},
+    )
+    assert r.status_code == 403, r.text
+
+
+async def test_otaona_telefon_qidira_olmaydi(client: AsyncClient, world: dict) -> None:
+    """X-1: ota-ona oʻz farzandi kartochkasida ham qidira olmaydi."""
+    token = await _token(client, "sch.otaona_a")
+    r = await client.get(
+        f"/api/v1/school/students/{world['ali'].id}/guardians/lookup",
+        headers=_auth(token),
+        params={"phone": "998901112233"},
+    )
+    assert r.status_code == 403, r.text
+
+
+async def test_mavjud_vasiyga_ikkinchi_oquvchi_biriktiriladi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Bitta hisob — ikki farzand. Yangi hisob ochilmaydi."""
+    await _huquqli(session, world)
+    token = await _token(client, "sch.admin")
+
+    r = await client.put(
+        f"/api/v1/school/students/{world['vali'].id}/guardians",
+        headers=_auth(token),
+        json={"user_id": str(world["parent_a"].id), "relation": "father"},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["children_count"] == 2
+
+    rows = (
+        await client.get(
+            f"/api/v1/school/students/{world['vali'].id}/guardians", headers=_auth(token)
+        )
+    ).json()
+    assert {g["user_id"] for g in rows} == {
+        str(world["parent_a"].id),
+        str(world["parent_b"].id),
+    }

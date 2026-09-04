@@ -34,6 +34,7 @@ from app.schemas.school import (
     GuardianCreateIn,
     GuardianLinkIn,
     GuardianOut,
+    GuardianPhoneMatchOut,
     GuardianRowOut,
     GuardianUnlinkIn,
     GuardianUpdateIn,
@@ -717,6 +718,36 @@ async def student_guardians(
     await school_service.student_card(session, user, student_id)
     rows = await guardian_service.list_guardians(session, student_id, include_archived=archived)
     return [await _guardian_row(session, g, u) for g, u in rows]
+
+
+@router.get(
+    "/students/{student_id}/guardians/lookup", response_model=GuardianPhoneMatchOut | None
+)
+async def guardian_lookup(
+    student_id: uuid.UUID,
+    user: CurrentUserDep,
+    session: SessionDep,
+    phone: str = Query(min_length=4, max_length=20),
+) -> GuardianPhoneMatchOut | None:
+    """Telefon boʻyicha mavjud vasiyni topadi — YOZISHDAN OLDIN.
+
+    Huquq `students.manage` — vasiy qoʻshish bilan bir xil. Bu ataylab
+    tor: aks holda endpoint telefon raqamlarini sanab chiqish yoʻliga
+    aylanardi (X-6).
+    """
+    m = await guardian_service.find_by_phone(
+        session, user, student_id=student_id, phone=phone
+    )
+    if m is None:
+        return None
+    return GuardianPhoneMatchOut(
+        user_id=m.user_id,
+        full_name=m.full_name,
+        relation=m.relation,
+        children_count=m.children_count,
+        children=m.children,
+        already_linked=m.already_linked,
+    )
 
 
 @router.post(

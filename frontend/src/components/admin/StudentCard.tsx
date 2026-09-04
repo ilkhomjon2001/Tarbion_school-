@@ -18,13 +18,22 @@ import { StudentDossier } from "@/components/admin/StudentDossier";
 import { Badge } from "@/components/ui/Badge";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ListSkeleton } from "@/components/ui/Skeleton";
-import { XIcon } from "@/components/ui/icons";
+import {
+  LinkIcon,
+  PencilIcon,
+  PlusIcon,
+  StarIcon,
+  UnlinkIcon,
+  XIcon,
+} from "@/components/ui/icons";
 import {
   apiXato,
   archiveStudent,
   createGuardian,
   fetchGuardians,
   fetchStudentCard,
+  linkGuardian,
+  lookupGuardianByPhone,
   makePrimaryGuardian,
   moveStudent,
   restoreStudent,
@@ -32,6 +41,7 @@ import {
   updateGuardian,
   updateStudent,
   type ClassOut,
+  type GuardianPhoneMatchOut,
   type GuardianRowOut,
   type StudentCardOut,
 } from "@/lib/school/api";
@@ -63,6 +73,22 @@ const inputClass =
 
 const ghostBtn =
   "focus-ring inline-flex h-9 items-center rounded-lg border border-border px-3 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-muted disabled:opacity-50";
+
+const primaryBtn =
+  "focus-ring inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-brand px-3 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark disabled:opacity-50";
+
+/**
+ * Qator ichidagi kichik amal tugmasi.
+ *
+ * Ilgari bular tagi chiziladigan matn edi — tugmaga oʻxshamasdi va
+ * telefonda barmoq tegadigan maydoni yoʻq edi. Endi ramkali, 36px
+ * balandlikda va yonida belgisi bor.
+ */
+const rowBtn =
+  "focus-ring inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 text-xs font-medium text-foreground transition-colors hover:border-brand hover:text-brand-dark disabled:opacity-40";
+
+const rowBtnDanger =
+  "focus-ring inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 text-xs font-medium text-foreground-muted transition-colors hover:border-danger hover:text-danger disabled:opacity-40";
 
 export function StudentCard({
   studentId,
@@ -198,6 +224,7 @@ export function StudentCard({
                 </h3>
                 <GuardianSection
                   studentId={card.id}
+                  studentName={card.full_name}
                   canManage={canManage && !card.is_archived}
                   onChanged={onChanged}
                 />
@@ -318,10 +345,12 @@ export function StudentCard({
  */
 function GuardianSection({
   studentId,
+  studentName,
   canManage,
   onChanged,
 }: {
   studentId: string;
+  studentName: string;
   canManage: boolean;
   onChanged: () => void;
 }) {
@@ -331,12 +360,6 @@ function GuardianSection({
   const [busy, setBusy] = useState(false);
 
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({
-    last_name: "",
-    first_name: "",
-    phone: "",
-    relation: "father",
-  });
   const [parol, setParol] = useState<{ login: string; password: string } | null>(null);
   const [unlinking, setUnlinking] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
@@ -472,8 +495,9 @@ function GuardianSection({
                           setUnlinking(null),
                         );
                       }}
-                      className="focus-ring inline-flex h-8 items-center rounded-lg bg-danger px-3 text-xs font-semibold text-white disabled:opacity-50"
+                      className="focus-ring inline-flex h-9 items-center gap-1.5 rounded-lg bg-danger px-3 text-sm font-semibold text-white transition-colors hover:bg-danger/90 disabled:opacity-50"
                     >
+                      <UnlinkIcon className="h-4 w-4" />
                       Uzish
                     </button>
                     <button type="button" onClick={() => setUnlinking(null)} className={ghostBtn}>
@@ -483,13 +507,14 @@ function GuardianSection({
                 </div>
               ) : (
                 canManage && (
-                  <span className="mt-1 flex flex-wrap gap-2">
+                  <span className="mt-2 flex flex-wrap gap-1.5">
                     <button
                       type="button"
                       disabled={busy}
                       onClick={() => setEditing(g.id)}
-                      className="focus-ring rounded px-1.5 py-0.5 text-xs font-medium text-brand-dark hover:underline disabled:opacity-40"
+                      className={rowBtn}
                     >
+                      <PencilIcon className="h-3.5 w-3.5" />
                       Tahrirlash
                     </button>
                     {!g.is_primary && (
@@ -497,8 +522,9 @@ function GuardianSection({
                         type="button"
                         disabled={busy}
                         onClick={() => void amal(() => makePrimaryGuardian(studentId, g.id))}
-                        className="focus-ring rounded px-1.5 py-0.5 text-xs font-medium text-brand-dark hover:underline disabled:opacity-40"
+                        className={rowBtn}
                       >
+                        <StarIcon className="h-3.5 w-3.5" />
                         Asosiy qilish
                       </button>
                     )}
@@ -506,8 +532,9 @@ function GuardianSection({
                       type="button"
                       disabled={busy}
                       onClick={() => setUnlinking(g.id)}
-                      className="focus-ring rounded px-1.5 py-0.5 text-xs font-medium text-foreground-muted hover:text-danger disabled:opacity-40"
+                      className={rowBtnDanger}
                     >
+                      <UnlinkIcon className="h-3.5 w-3.5" />
                       Bogʻlanishni uzish
                     </button>
                   </span>
@@ -520,88 +547,245 @@ function GuardianSection({
 
       {canManage &&
         (adding ? (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void amal(async () => {
-                const javob = await createGuardian(studentId, {
-                  last_name: form.last_name.trim(),
-                  first_name: form.first_name.trim(),
-                  phone: form.phone.trim() || null,
-                  relation: form.relation,
-                  // Birinchi vasiy avtomatik asosiy: xabarnoma
-                  // manzilsiz qolmasin.
-                  is_primary: rows.length === 0,
-                });
+          <GuardianAddForm
+            studentId={studentId}
+            studentName={studentName}
+            isFirst={rows.length === 0}
+            busy={busy}
+            onCancel={() => setAdding(false)}
+            onCreate={(input) =>
+              amal(async () => {
+                const javob = await createGuardian(studentId, input);
                 setParol({
                   login: javob.guardian.login,
                   password: javob.initial_password,
                 });
-                setForm({ last_name: "", first_name: "", phone: "", relation: "father" });
                 setAdding(false);
-              });
-            }}
-            className="flex flex-col gap-2 rounded-lg border border-border p-3"
-          >
-            <p className="text-xs text-foreground-muted">
-              Yangi hisob ochiladi. Agar bu odamning maktabda boshqa farzandi boʻlsa,
-              telefon boʻyicha aniqlanadi va mavjud hisobga bogʻlash taklif qilinadi.
-            </p>
-            <span className="flex gap-2">
-              <input
-                required
-                value={form.last_name}
-                onChange={(e) => setForm({ ...form, last_name: e.target.value })}
-                placeholder="Familiya"
-                className={inputClass}
-              />
-              <input
-                required
-                value={form.first_name}
-                onChange={(e) => setForm({ ...form, first_name: e.target.value })}
-                placeholder="Ism"
-                className={inputClass}
-              />
-            </span>
-            <span className="flex gap-2">
-              <input
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                placeholder="+998 90 123 45 67"
-                inputMode="tel"
-                className={inputClass}
-              />
-              <select
-                value={form.relation}
-                onChange={(e) => setForm({ ...form, relation: e.target.value })}
-                className={inputClass}
-              >
-                {Object.entries(RELATION_LABELS).map(([id, label]) => (
-                  <option key={id} value={id}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </span>
-            <span className="flex justify-end gap-2">
-              <button type="button" onClick={() => setAdding(false)} className={ghostBtn}>
-                Bekor qilish
-              </button>
-              <button
-                type="submit"
-                disabled={busy}
-                className="focus-ring inline-flex h-9 items-center rounded-lg bg-brand px-3 text-sm font-semibold text-brand-foreground disabled:opacity-50"
-              >
-                Hisob ochib bogʻlash
-              </button>
-            </span>
-          </form>
+              })
+            }
+            onLink={(userId, relation, isPrimary) =>
+              amal(async () => {
+                await linkGuardian(studentId, userId, relation, isPrimary);
+                setAdding(false);
+              })
+            }
+          />
         ) : (
-          <button type="button" onClick={() => setAdding(true)} className={ghostBtn}>
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className={`${ghostBtn} gap-1.5`}
+          >
+            <PlusIcon className="h-4 w-4" />
             Vasiy qoʻshish
           </button>
         ))}
     </div>
+  );
+}
+
+/**
+ * Vasiy qoʻshish — telefon RAQAMDAN boshlanadi.
+ *
+ * Sabab: raqam odamning kaliti. Maktabda ikkinchi farzandi bor
+ * ota-onaga yangi hisob ochilmasligi kerak — aks holda u ikkita login
+ * bilan ikkita kabinetga kirib, har birida bitta farzandini koʻradi.
+ *
+ * Ilgari bu faqat yuborilgandan keyin `409` bilan bilinardi va mavjud
+ * hisobga bogʻlash yoʻli interfeysda umuman yoʻq edi. Endi raqam
+ * kiritilishi bilan tekshiriladi va savol beriladi.
+ */
+function GuardianAddForm({
+  studentId,
+  studentName,
+  isFirst,
+  busy,
+  onCancel,
+  onCreate,
+  onLink,
+}: {
+  studentId: string;
+  studentName: string;
+  isFirst: boolean;
+  busy: boolean;
+  onCancel: () => void;
+  onCreate: (input: {
+    last_name: string;
+    first_name: string;
+    phone: string | null;
+    relation: string;
+    is_primary: boolean;
+  }) => void;
+  onLink: (userId: string, relation: string, isPrimary: boolean) => void;
+}) {
+  const [form, setForm] = useState({
+    last_name: "",
+    first_name: "",
+    phone: "",
+    relation: "father",
+  });
+  const [topildi, setTopildi] = useState<GuardianPhoneMatchOut | null>(null);
+  const [qidirmoqda, setQidirmoqda] = useState(false);
+
+  const raqam = form.phone.replace(/\D/g, "");
+
+  // Raqam toʻliqroq boʻlgach qidiramiz. 9 ta raqam — «901234567»;
+  // shu chegaradan pastda har harfda soʻrov yuborishning maʼnosi yoʻq.
+  useEffect(() => {
+    if (raqam.length < 9) {
+      setTopildi(null);
+      return;
+    }
+    let bekor = false;
+    setQidirmoqda(true);
+    const t = setTimeout(async () => {
+      try {
+        const m = await lookupGuardianByPhone(studentId, raqam);
+        if (!bekor) setTopildi(m);
+      } catch {
+        // Qidiruv yiqilsa shakl ishlayveradi: server baribir `409`
+        // bilan toʻxtatadi, faqat ogohlantirish oldinroq kelmaydi.
+        if (!bekor) setTopildi(null);
+      } finally {
+        if (!bekor) setQidirmoqda(false);
+      }
+    }, 400);
+    return () => {
+      bekor = true;
+      clearTimeout(t);
+    };
+  }, [raqam, studentId]);
+
+  const bogʻlash = topildi !== null && !topildi.already_linked;
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (topildi !== null && topildi.already_linked) return;
+        if (bogʻlash && topildi) {
+          onLink(topildi.user_id, form.relation, isFirst);
+          return;
+        }
+        onCreate({
+          last_name: form.last_name.trim(),
+          first_name: form.first_name.trim(),
+          phone: form.phone.trim() || null,
+          relation: form.relation,
+          // Birinchi vasiy avtomatik asosiy: xabarnoma manzilsiz qolmasin.
+          is_primary: isFirst,
+        });
+      }}
+      className="flex flex-col gap-2.5 rounded-lg border border-border bg-surface p-3"
+    >
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-foreground">
+          Telefon raqami
+        </span>
+        <input
+          autoFocus
+          value={form.phone}
+          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+          placeholder="+998 90 123 45 67"
+          inputMode="tel"
+          className={inputClass}
+        />
+        <span className="mt-1 block text-xs text-foreground-muted">
+          {qidirmoqda
+            ? "Tekshirilmoqda…"
+            : "Avval raqamni kiriting — maktabda boshqa farzandi bor-yoʻqligi shundan aniqlanadi."}
+        </span>
+      </label>
+
+      {topildi !== null && topildi.already_linked && (
+        <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-foreground-muted">
+          Bu raqam <strong>{topildi.full_name}</strong> ga tegishli va u allaqachon shu
+          oʻquvchining vasiysi. Boshqa raqam kiriting.
+        </p>
+      )}
+
+      {bogʻlash && topildi && (
+        <div className="rounded-lg border border-brand/40 bg-brand/5 p-3">
+          <p className="text-sm text-foreground">
+            Bu raqam <strong>{topildi.full_name}</strong> hisobiga bogʻlangan.
+          </p>
+          <p className="mt-1 text-xs text-foreground-muted">
+            {topildi.children_count === 1
+              ? `Farzandi: ${topildi.children[0]}`
+              : `${topildi.children_count} farzandi: ${topildi.children.join(", ")}`}
+          </p>
+          <p className="mt-2 text-sm font-medium text-foreground">
+            Yangi hisob ochilmasin — shu vasiyga <strong>{studentName}</strong> ham
+            biriktirilsinmi?
+          </p>
+          <p className="mt-1 text-xs text-foreground-muted">
+            Bitta login bilan ikkala farzandini bir kabinetda koʻradi.
+          </p>
+        </div>
+      )}
+
+      {/* Ism maydonlari FAQAT yangi hisob ochilganda kerak: mavjud
+          vasiyning ismi allaqachon bazada va uni bu yerdan
+          oʻzgartirmaymiz. */}
+      {!bogʻlash && (
+        <span className="flex gap-2">
+          <input
+            required
+            value={form.last_name}
+            onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+            placeholder="Familiya"
+            className={inputClass}
+          />
+          <input
+            required
+            value={form.first_name}
+            onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+            placeholder="Ism"
+            className={inputClass}
+          />
+        </span>
+      )}
+
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-foreground">
+          Qarindoshligi
+        </span>
+        <select
+          value={form.relation}
+          onChange={(e) => setForm({ ...form, relation: e.target.value })}
+          className={inputClass}
+        >
+          {Object.entries(RELATION_LABELS).map(([id, label]) => (
+            <option key={id} value={id}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <span className="flex flex-wrap justify-end gap-2">
+        <button type="button" onClick={onCancel} className={ghostBtn}>
+          Bekor qilish
+        </button>
+        <button
+          type="submit"
+          disabled={busy || (topildi !== null && topildi.already_linked)}
+          className={primaryBtn}
+        >
+          {bogʻlash ? (
+            <>
+              <LinkIcon className="h-4 w-4" />
+              Ha, shu vasiyga biriktirish
+            </>
+          ) : (
+            <>
+              <PlusIcon className="h-4 w-4" />
+              Hisob ochib bogʻlash
+            </>
+          )}
+        </button>
+      </span>
+    </form>
   );
 }
 
@@ -669,7 +853,8 @@ function StudentInfoSection({
             Maʼlumot
           </h3>
           {canManage && (
-            <button type="button" onClick={boshla} className={ghostBtn}>
+            <button type="button" onClick={boshla} className={rowBtn}>
+              <PencilIcon className="h-3.5 w-3.5" />
               Tahrirlash
             </button>
           )}
@@ -750,7 +935,7 @@ function StudentInfoSection({
         <button
           type="submit"
           disabled={saving || !form.last_name.trim() || !form.first_name.trim()}
-          className="focus-ring inline-flex h-9 items-center rounded-lg bg-brand px-3 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark disabled:opacity-50"
+          className={primaryBtn}
         >
           {saving ? "Saqlanmoqda…" : "Oʻzgarishlarni saqlash"}
         </button>
@@ -987,7 +1172,7 @@ function GuardianEditForm({
         <button
           type="submit"
           disabled={saving || !form.last_name.trim() || !form.first_name.trim()}
-          className="focus-ring inline-flex h-8 items-center rounded-lg bg-brand px-3 text-xs font-semibold text-brand-foreground disabled:opacity-50"
+          className={primaryBtn}
         >
           {saving ? "Saqlanmoqda…" : "Saqlash"}
         </button>
