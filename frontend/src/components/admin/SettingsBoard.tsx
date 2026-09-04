@@ -88,6 +88,10 @@ function SchoolTab() {
     address: "",
     phone: "",
     director_name: "",
+    tax_id: "",
+    bank_account: "",
+    bank_code: "",
+    bank_name: "",
     attendance_notify_delay_minutes: 30,
   });
   const [yuklandi, setYuklandi] = useState(false);
@@ -104,6 +108,10 @@ function SchoolTab() {
           address: r.address,
           phone: r.phone,
           director_name: r.director_name,
+          tax_id: r.tax_id,
+          bank_account: r.bank_account,
+          bank_code: r.bank_code,
+          bank_name: r.bank_name,
           attendance_notify_delay_minutes: r.attendance_notify_delay_minutes,
         });
         setYuklandi(true);
@@ -202,6 +210,70 @@ function SchoolTab() {
               />
             </label>
           </div>
+
+          {/* Bank rekvizitlari — shartnomaning 5-bandidan.
+              Kvitansiyada va shartnoma hujjatida chiqadi: ota-ona pulni
+              qayerga oʻtkazishini shu yerdan koʻradi. */}
+          <fieldset className="rounded-lg border border-border p-3">
+            <legend className="px-1 text-xs font-medium uppercase tracking-wide text-foreground-muted">
+              Bank rekvizitlari
+            </legend>
+            <p className="mb-3 text-xs text-foreground-muted">
+              Shartnoma va kvitansiyada chiqadi. Boʻsh qoldirilsa hujjatda
+              oʻsha qatorlar koʻrinmaydi.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-foreground">
+                  STIR (ИНН)
+                </span>
+                <input
+                  value={form.tax_id}
+                  onChange={(e) => setForm((f) => ({ ...f, tax_id: e.target.value }))}
+                  placeholder="313032894"
+                  className={`${input} num`}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-foreground">
+                  Hisob raqami
+                </span>
+                <input
+                  value={form.bank_account}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, bank_account: e.target.value }))
+                  }
+                  placeholder="20208000007467234001"
+                  className={`${input} num`}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-foreground">
+                  MFO
+                </span>
+                <input
+                  value={form.bank_code}
+                  onChange={(e) => setForm((f) => ({ ...f, bank_code: e.target.value }))}
+                  placeholder="00450"
+                  className={`${input} num`}
+                />
+                <span className="mt-1 block text-xs text-foreground-muted">
+                  Bosh nol saqlanadi — bu raqam emas, identifikator.
+                </span>
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-foreground">
+                  Bank nomi
+                </span>
+                <input
+                  value={form.bank_name}
+                  onChange={(e) => setForm((f) => ({ ...f, bank_name: e.target.value }))}
+                  placeholder="«Milliy Bank» AJ Marhamat BXM"
+                  className={input}
+                />
+              </label>
+            </div>
+          </fieldset>
 
           {/* DAV-05. Kechikish ATAYLAB bor: ustoz dars boshida «kelmadi»
               deb belgilab, kech qolgan bolani keyin tuzatadi. Xabar

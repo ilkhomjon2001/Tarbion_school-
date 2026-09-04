@@ -4096,6 +4096,22 @@ export type SchoolSettingsIn = {
      */
     director_name?: string;
     /**
+     * Tax Id
+     */
+    tax_id?: string;
+    /**
+     * Bank Account
+     */
+    bank_account?: string;
+    /**
+     * Bank Code
+     */
+    bank_code?: string;
+    /**
+     * Bank Name
+     */
+    bank_name?: string;
+    /**
      * Attendance Notify Delay Minutes
      */
     attendance_notify_delay_minutes?: number;
@@ -4121,6 +4137,22 @@ export type SchoolSettingsOut = {
      * Director Name
      */
     director_name: string;
+    /**
+     * Tax Id
+     */
+    tax_id: string;
+    /**
+     * Bank Account
+     */
+    bank_account: string;
+    /**
+     * Bank Code
+     */
+    bank_code: string;
+    /**
+     * Bank Name
+     */
+    bank_name: string;
     /**
      * Attendance Notify Delay Minutes
      */

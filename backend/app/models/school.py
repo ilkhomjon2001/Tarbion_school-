@@ -182,6 +182,28 @@ class SchoolSettings(Entity):
         String(120), default="", server_default="", nullable=False
     )
 
+    # ── Bank rekvizitlari ──
+    #
+    # Shartnomaning 5-bandida («Yakuniy rekvizitlar») turadi va
+    # kvitansiyada ham chiqishi kerak: ota-ona pulni qayerga
+    # oʻtkazishini shu yerdan koʻradi. Ilgari ular faqat qogʻozda edi
+    # va tizim shartnoma chiqara olmasdi.
+    #
+    # Hammasi matn: ИНН va MFO raqamga oʻxshaydi, lekin ular
+    # identifikator — bosh nolni yoʻqotmasin («00450»).
+    tax_id: Mapped[str] = mapped_column(
+        String(20), default="", server_default="", nullable=False
+    )
+    bank_account: Mapped[str] = mapped_column(
+        String(30), default="", server_default="", nullable=False
+    )
+    bank_code: Mapped[str] = mapped_column(
+        String(10), default="", server_default="", nullable=False
+    )
+    bank_name: Mapped[str] = mapped_column(
+        String(120), default="", server_default="", nullable=False
+    )
+
     #: DAV-05: davomat belgilangandan keyin vasiyga xabar qancha
     #: kechikib ketadi. Sukut boʻyicha 30 daqiqa — TZ talabi.
     #:

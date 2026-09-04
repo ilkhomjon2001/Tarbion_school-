@@ -214,6 +214,10 @@ async def school_settings(user: CurrentUserDep, session: SessionDep) -> SchoolSe
         address=r.address,
         phone=r.phone,
         director_name=r.director_name,
+        tax_id=r.tax_id,
+        bank_account=r.bank_account,
+        bank_code=r.bank_code,
+        bank_name=r.bank_name,
         attendance_notify_delay_minutes=r.attendance_notify_delay_minutes,
     )
 
@@ -233,6 +237,10 @@ async def set_school_settings(
         address=payload.address,
         phone=payload.phone,
         director_name=payload.director_name,
+        tax_id=payload.tax_id,
+        bank_account=payload.bank_account,
+        bank_code=payload.bank_code,
+        bank_name=payload.bank_name,
         attendance_notify_delay_minutes=payload.attendance_notify_delay_minutes,
         ip=_client_ip(request),
     )
@@ -241,6 +249,10 @@ async def set_school_settings(
         address=r.address,
         phone=r.phone,
         director_name=r.director_name,
+        tax_id=r.tax_id,
+        bank_account=r.bank_account,
+        bank_code=r.bank_code,
+        bank_name=r.bank_name,
         attendance_notify_delay_minutes=r.attendance_notify_delay_minutes,
     )
 

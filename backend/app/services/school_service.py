@@ -865,6 +865,11 @@ class SchoolInfo:
     address: str
     phone: str
     director_name: str
+    #: Bank rekvizitlari — shartnomaning 5-bandidan.
+    tax_id: str = ""
+    bank_account: str = ""
+    bank_code: str = ""
+    bank_name: str = ""
     #: DAV-05: davomat xabari necha daqiqadan keyin yuboriladi.
     attendance_notify_delay_minutes: int = 30
 
@@ -894,6 +899,10 @@ async def school_settings(session: AsyncSession, user: CurrentUser) -> SchoolInf
         address=row.address,
         phone=row.phone,
         director_name=row.director_name,
+        tax_id=row.tax_id,
+        bank_account=row.bank_account,
+        bank_code=row.bank_code,
+        bank_name=row.bank_name,
         attendance_notify_delay_minutes=row.attendance_notify_delay_minutes,
     )
 
@@ -906,6 +915,10 @@ async def set_school_settings(
     address: str,
     phone: str,
     director_name: str,
+    tax_id: str = "",
+    bank_account: str = "",
+    bank_code: str = "",
+    bank_name: str = "",
     attendance_notify_delay_minutes: int = 30,
     ip: str | None = None,
 ) -> SchoolInfo:
@@ -938,6 +951,10 @@ async def set_school_settings(
         address=address.strip()[:200],
         phone=phone.strip()[:40],
         director_name=director_name.strip()[:120],
+        tax_id=tax_id.strip()[:20],
+        bank_account=bank_account.strip()[:30],
+        bank_code=bank_code.strip()[:10],
+        bank_name=bank_name.strip()[:120],
         attendance_notify_delay_minutes=kechikish,
     )
     session.add(row)
@@ -963,5 +980,9 @@ async def set_school_settings(
         address=row.address,
         phone=row.phone,
         director_name=row.director_name,
+        tax_id=row.tax_id,
+        bank_account=row.bank_account,
+        bank_code=row.bank_code,
+        bank_name=row.bank_name,
         attendance_notify_delay_minutes=row.attendance_notify_delay_minutes,
     )
