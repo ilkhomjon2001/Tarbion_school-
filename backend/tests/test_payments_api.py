@@ -828,3 +828,86 @@ async def test_jamlanmada_shartnoma_qamrovi(client: AsyncClient, world: dict) ->
     ).json()
     assert keyin["students_with_contract"] == 1
     assert keyin["students_total"] == jamlanma["students_total"]
+
+
+# ─────────────────── Toʻlov holati kesimi ───────────────────
+
+
+async def test_yarim_tolagan_qarzdordan_ajraladi(client: AsyncClient, world: dict) -> None:
+    """«Toʻlamagan» va «yarim toʻlagan» bitta katakka tushmasin.
+
+    Ikkalasi ham manfiy balansda, shuning uchun `debtors` ikkalasini
+    birga sanaydi. Maktab uchun bular boshqa ikki holat: birinchisiga
+    qoʻngʻiroq qilinadi, ikkinchisiga eslatma yetadi.
+    """
+    token = await _token(client, "pm.admin")
+    await _shartnoma(client, token, world["ali"].id)
+    await _shartnoma(client, token, world["vali"].id)
+    await client.post(
+        "/api/v1/payments/charges/generate",
+        headers=_auth(token),
+        json={"year": 2026, "month": 9},
+    )
+
+    # Ali yarmini toʻladi, Vali hech narsa toʻlamadi.
+    r = await client.post(
+        "/api/v1/payments",
+        headers=_auth(token),
+        json={"student_id": str(world["ali"].id), "amount": OYLIK // 2, "method": "naqd"},
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["finance"]["status"] == "qisman"
+
+    rows = (
+        await client.get("/api/v1/payments/students", headers=_auth(token))
+    ).json()
+    holat = {x["student_id"]: x["status"] for x in rows}
+    assert holat[str(world["ali"].id)] == "qisman"
+    assert holat[str(world["vali"].id)] == "tolanmagan"
+
+    jamlanma = (
+        await client.get("/api/v1/payments/summary", headers=_auth(token))
+    ).json()
+    assert jamlanma["partial"] == 1
+    assert jamlanma["unpaid"] == 1
+    assert jamlanma["paid_full"] == 0
+    # Eski koʻrsatkich ikkalasini birga sanaydi — shuning uchun kesim kerak.
+    assert jamlanma["debtors"] == 2
+
+
+async def test_shartnomasiz_oquvchi_qarzdor_emas(client: AsyncClient, world: dict) -> None:
+    """Qarzi hisoblanmagan oʻquvchi «toʻlamagan» deb belgilanmaydi.
+
+    Aks holda shartnoma kiritilmagani qarzdorlikka oʻxshab koʻrinadi va
+    roʻyxat ishonchini yoʻqotadi.
+    """
+    token = await _token(client, "pm.admin")
+    rows = (
+        await client.get("/api/v1/payments/students", headers=_auth(token))
+    ).json()
+    assert {x["status"] for x in rows} == {"hisobsiz"}
+
+    jamlanma = (
+        await client.get("/api/v1/payments/summary", headers=_auth(token))
+    ).json()
+    assert jamlanma["unpaid"] == 0
+    assert jamlanma["no_charge"] == jamlanma["students_total"]
+
+
+async def test_toliq_tolagan_tolangan_deb_belgilanadi(client: AsyncClient, world: dict) -> None:
+    """Ortiqcha toʻlagan (avans) ham «toʻlangan» — qarzdor emas."""
+    token = await _token(client, "pm.admin")
+    await _shartnoma(client, token, world["ali"].id)
+    await client.post(
+        "/api/v1/payments/charges/generate",
+        headers=_auth(token),
+        json={"year": 2026, "month": 9},
+    )
+    r = await client.post(
+        "/api/v1/payments",
+        headers=_auth(token),
+        json={"student_id": str(world["ali"].id), "amount": OYLIK * 2, "method": "naqd"},
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["finance"]["status"] == "tolangan"
+    assert r.json()["finance"]["balance"] == OYLIK  # avans

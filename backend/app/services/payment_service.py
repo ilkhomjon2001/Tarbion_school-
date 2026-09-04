@@ -76,6 +76,29 @@ class LedgerRow:
     stornod: bool = False  # bu toʻlov bekor qilinganmi
 
 
+#: Oʻquvchining toʻlov holati. Oy kesimidagi `MonthStatus.status` bilan
+#: bir xil soʻzlar — interfeysda ikki xil atama boʻlmasin.
+PAY_FULL = "tolangan"
+PAY_PARTIAL = "qisman"
+PAY_NONE = "tolanmagan"
+#: Hali qarz hisoblanmagan — shartnomasi yoʻq yoki oy hisoblanmagan.
+PAY_NOCHARGE = "hisobsiz"
+
+
+def payment_status(charged: int, paid: int) -> str:
+    """«Qarzdor»ni «yarim toʻlagan»dan ajratadi.
+
+    Bitta `balance` raqami buni ayta olmaydi: hech narsa toʻlamagan va
+    yarmini toʻlagan oʻquvchi ikkalasi ham manfiy balansda turadi,
+    holbuki maktab uchun bular butunlay boshqa ikki holat.
+    """
+    if charged <= 0:
+        return PAY_NOCHARGE
+    if paid <= 0:
+        return PAY_NONE
+    return PAY_FULL if paid >= charged else PAY_PARTIAL
+
+
 @dataclass(frozen=True, slots=True)
 class StudentFinance:
     student_id: uuid.UUID
@@ -85,6 +108,8 @@ class StudentFinance:
     charged: int
     paid: int
     balance: int  # manfiy = qarz
+    #: `tolangan | qisman | tolanmagan | hisobsiz`
+    status: str
     #: Ketgan oʻquvchi — qarzi qolgan boʻlsa hisobotda «ketgan» belgisi bilan.
     is_archived: bool = False
 
@@ -670,6 +695,7 @@ async def finance_rows(
                 charged=c,
                 paid=p,
                 balance=balans,
+                status=payment_status(c, p),
                 is_archived=s.is_archived,
             )
         )
@@ -809,6 +835,7 @@ async def student_ledger(
             charged=c_total,
             paid=p_total,
             balance=p_total - c_total,
+            status=payment_status(c_total, p_total),
             is_archived=student.is_archived,
         ),
         rows,
@@ -1006,6 +1033,17 @@ class SummaryData:
     #: chiqadi va rahbar «hamma toʻlagan» deb oʻqiydi. Aslida esa
     #: hisob umuman yuritilmayotgan boʻlishi mumkin.
     students_total: int
+    #: Holat kesimi — «qarzdor» soni bilan bir xil emas.
+    #:
+    #: `debtors` ikkalasini birga sanaydi: hech narsa toʻlamagan ham,
+    #: yarmini toʻlagan ham manfiy balansda. Maktab uchun bular boshqa
+    #: ikki holat — birinchisiga qoʻngʻiroq qilinadi, ikkinchisiga
+    #: eslatma yuboriladi.
+    paid_full: int
+    partial: int
+    unpaid: int
+    #: Qarzi hali hisoblanmagan — shartnomasiz yoki oy hisoblanmagan.
+    no_charge: int
     #: Kanallar boʻyicha kesim. Toʻlov boʻlmagan kanal ham QOLADI
     #: (nol bilan) — «Visa orqali hech narsa kelmadi» degan xulosa
     #: ham maʼlumot, qatorning yoʻqligi esa savol tugʻdiradi.
@@ -1066,6 +1104,10 @@ async def summary(session: AsyncSession, user: CurrentUser) -> SummaryData:
         debtors=sum(1 for r in rows if r.balance < 0),
         students_with_contract=sum(1 for r in rows if r.monthly_fee is not None),
         students_total=len(rows),
+        paid_full=sum(1 for r in rows if r.status == PAY_FULL),
+        partial=sum(1 for r in rows if r.status == PAY_PARTIAL),
+        unpaid=sum(1 for r in rows if r.status == PAY_NONE),
+        no_charge=sum(1 for r in rows if r.status == PAY_NOCHARGE),
         by_method=await _by_method(session),
     )
 

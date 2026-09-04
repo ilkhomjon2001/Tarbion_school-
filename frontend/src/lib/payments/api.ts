@@ -56,6 +56,18 @@ export const MONTH_STATUS_LABELS: Record<string, string> = {
   tolanmagan: "Toʻlanmagan",
 };
 
+/**
+ * Oʻquvchining umumiy toʻlov holati — oy kesimidagi bilan bir xil
+ * kodlar, lekin matni odam haqida: «Toʻlagan», oy haqida esa
+ * «Toʻlangan». `hisobsiz` faqat shu darajada uchraydi.
+ */
+export const PAY_STATUS_LABELS: Record<string, string> = {
+  tolangan: "Toʻlagan",
+  qisman: "Yarim toʻlagan",
+  tolanmagan: "Toʻlamagan",
+  hisobsiz: "Hisobsiz",
+};
+
 export const DEFAULT_MONTHLY_FEE = 3_500_000;
 
 /**

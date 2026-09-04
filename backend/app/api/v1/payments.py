@@ -52,6 +52,7 @@ def _finance_out(r: payment_service.StudentFinance) -> StudentFinanceOut:
         charged=r.charged,
         paid=r.paid,
         balance=r.balance,
+        status=r.status,
         is_archived=r.is_archived,
     )
 
@@ -70,6 +71,10 @@ async def summary(user: CurrentUserDep, session: SessionDep) -> FinanceSummaryOu
         debtors=data.debtors,
         students_with_contract=data.students_with_contract,
         students_total=data.students_total,
+        paid_full=data.paid_full,
+        partial=data.partial,
+        unpaid=data.unpaid,
+        no_charge=data.no_charge,
         by_method=[MethodTotalOut(**dataclasses.asdict(m)) for m in data.by_method],
     )
 

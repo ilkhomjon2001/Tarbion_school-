@@ -1974,6 +1974,22 @@ export type FinanceSummaryOut = {
      */
     students_total: number;
     /**
+     * Paid Full
+     */
+    paid_full: number;
+    /**
+     * Partial
+     */
+    partial: number;
+    /**
+     * Unpaid
+     */
+    unpaid: number;
+    /**
+     * No Charge
+     */
+    no_charge: number;
+    /**
      * By Method
      */
     by_method: Array<MethodTotalOut>;
@@ -4499,6 +4515,10 @@ export type StudentFinanceOut = {
      * Balance
      */
     balance: number;
+    /**
+     * Status
+     */
+    status: string;
     /**
      * Is Archived
      */

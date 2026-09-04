@@ -31,6 +31,7 @@ import {
   generateCharges,
   METHOD_LABELS,
   MONTH_NAMES_UZ,
+  PAY_STATUS_LABELS,
   recordPayment,
   refundPayment,
   setContract,
@@ -51,10 +52,35 @@ const primaryBtn =
 const ghostBtn =
   "focus-ring inline-flex h-9 items-center rounded-lg border border-border px-3 text-sm font-medium text-foreground transition-colors hover:bg-surface-muted disabled:opacity-50";
 
+/**
+ * Roʻyxat filtri. `hammasi` — filtr yoʻq.
+ *
+ * Ilgari bu yerda «Faqat qarzdorlar» belgisi turardi va u ikki xil
+ * odamni bitta roʻyxatga qoʻshib yuborardi: hech narsa toʻlamagan va
+ * yarmini toʻlagan. Maktab uchun bular boshqa ish — birinchisiga
+ * qoʻngʻiroq qilinadi, ikkinchisiga eslatma yetadi.
+ */
+const FILTRLAR = [
+  { id: "hammasi", label: "Hammasi" },
+  { id: "tolanmagan", label: "Toʻlamagan" },
+  { id: "qisman", label: "Yarim toʻlagan" },
+  { id: "tolangan", label: "Toʻlagan" },
+  { id: "hisobsiz", label: "Hisobsiz" },
+] as const;
+
+type Filtr = (typeof FILTRLAR)[number]["id"];
+
+const STATUS_TONE: Record<string, "success" | "warning" | "danger" | "neutral"> = {
+  tolangan: "success",
+  qisman: "warning",
+  tolanmagan: "danger",
+  hisobsiz: "neutral",
+};
+
 export function AdminPaymentsBoard() {
   const [summary, setSummary] = useState<FinanceSummaryOut | null>(null);
   const [rows, setRows] = useState<StudentFinanceOut[] | null>(null);
-  const [debtorsOnly, setDebtorsOnly] = useState(false);
+  const [filtr, setFiltr] = useState<Filtr>("hammasi");
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -62,10 +88,9 @@ export function AdminPaymentsBoard() {
 
   const yukla = useCallback(async () => {
     try {
-      const [s, r] = await Promise.all([
-        fetchFinanceSummary(),
-        fetchFinanceStudents(debtorsOnly),
-      ]);
+      // Filtr brauzerda: oʻquvchi soni yuzlab, har bosishda soʻrov
+      // yubormaymiz va holatlar boʻyicha sanoq darhol koʻrinadi.
+      const [s, r] = await Promise.all([fetchFinanceSummary(), fetchFinanceStudents()]);
       setSummary(s);
       setRows(r);
       setError(null);
@@ -73,7 +98,7 @@ export function AdminPaymentsBoard() {
       setError(apiXato(err, "Moliya maʼlumotini olib boʻlmadi."));
       setRows([]);
     }
-  }, [debtorsOnly]);
+  }, []);
 
   useEffect(() => {
     void yukla();
@@ -100,8 +125,14 @@ export function AdminPaymentsBoard() {
     }
   }
 
-  const filtered = (rows ?? []).filter(
-    (r) => !query || r.student_name.toLowerCase().includes(query.toLowerCase()),
+  const all = rows ?? [];
+  const sanoq: Record<string, number> = { hammasi: all.length };
+  for (const r of all) sanoq[r.status] = (sanoq[r.status] ?? 0) + 1;
+
+  const filtered = all.filter(
+    (r) =>
+      (filtr === "hammasi" || r.status === filtr) &&
+      (!query || r.student_name.toLowerCase().includes(query.toLowerCase())),
   );
 
   return (
@@ -157,15 +188,26 @@ export function AdminPaymentsBoard() {
           aria-label="Oʻquvchini qidirish"
           className={`${inputClass} max-w-xs`}
         />
-        <label className="flex items-center gap-2 text-sm text-foreground">
-          <input
-            type="checkbox"
-            checked={debtorsOnly}
-            onChange={(e) => setDebtorsOnly(e.target.checked)}
-            className="h-4 w-4"
-          />
-          Faqat qarzdorlar
-        </label>
+        {/* Sanoq tugmaning OʻZIDA: «nechta qarzdor, nechta yarim
+            toʻlagan» degan savolga bosmasdan javob beradi. */}
+        <div role="group" aria-label="Toʻlov holati" className="flex flex-wrap gap-1.5">
+          {FILTRLAR.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              aria-pressed={filtr === f.id}
+              onClick={() => setFiltr(f.id)}
+              className={`focus-ring inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-colors ${
+                filtr === f.id
+                  ? "border-brand bg-brand text-brand-foreground"
+                  : "border-border text-foreground hover:bg-surface-muted"
+              }`}
+            >
+              {f.label}
+              <span className="num text-xs opacity-70">{sanoq[f.id] ?? 0}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {rows === null ? (
@@ -173,12 +215,16 @@ export function AdminPaymentsBoard() {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={<WalletIcon className="h-5 w-5" />}
-          title={debtorsOnly ? "Qarzdor yoʻq" : "Oʻquvchi topilmadi"}
+          title={
+            filtr === "hammasi"
+              ? "Oʻquvchi topilmadi"
+              : `«${FILTRLAR.find((f) => f.id === filtr)?.label}» holatida oʻquvchi yoʻq`
+          }
         />
       ) : (
         <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
           <div className="scroll-x">
-            <table className="w-full min-w-[760px] border-collapse text-sm">
+            <table className="w-full min-w-[900px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface-muted/60 text-left text-xs font-medium uppercase tracking-wide text-foreground-muted">
                   <th className="px-3 py-3">Oʻquvchi</th>
@@ -187,6 +233,7 @@ export function AdminPaymentsBoard() {
                   <th className="px-3 py-3 text-right">Hisoblangan</th>
                   <th className="px-3 py-3 text-right">Toʻlangan</th>
                   <th className="px-3 py-3 text-right">Balans</th>
+                  <th className="px-3 py-3">Holat</th>
                 </tr>
               </thead>
               <tbody>
@@ -226,6 +273,11 @@ export function AdminPaymentsBoard() {
                       >
                         {formatSom(r.balance)}
                       </span>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <Badge tone={STATUS_TONE[r.status] ?? "neutral"}>
+                        {PAY_STATUS_LABELS[r.status] ?? r.status}
+                      </Badge>
                     </td>
                   </tr>
                 ))}

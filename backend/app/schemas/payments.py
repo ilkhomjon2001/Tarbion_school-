@@ -15,6 +15,9 @@ class StudentFinanceOut(BaseModel):
     paid: int
     #: Manfiy = qarz.
     balance: int
+    #: `tolangan | qisman | tolanmagan | hisobsiz` — «hech narsa
+    #: toʻlamagan»ni «yarmini toʻlagan»dan ajratadi.
+    status: str
     #: Ketgan oʻquvchi — qarzi bilan hisobotda qoladi.
     is_archived: bool = False
 
@@ -53,6 +56,12 @@ class FinanceSummaryOut(BaseModel):
     #: oʻquvchiga qarz hisoblanmaydi va jamlanma «hamma toʻlagan»
     #: boʻlib koʻrinishi mumkin.
     students_total: int
+    #: Holat kesimi. `debtors` bulardan ikkitasini birga sanaydi:
+    #: toʻlamagan ham, yarim toʻlagan ham manfiy balansda turadi.
+    paid_full: int
+    partial: int
+    unpaid: int
+    no_charge: int
     #: Kanallar kesimi. Toʻlovi yoʻq kanal ham nol bilan qaytadi —
     #: «Visa orqali hech narsa kelmadi» ham javob.
     by_method: list[MethodTotalOut]
