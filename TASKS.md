@@ -280,6 +280,11 @@ Amallar: boshqa sinfga ko'chirish, arxivga o'tkazish (o'chirish emas).
       `POST /school/students/{id}/guardians`; boshlang'ich parol bir marta
       qaytadi. Ikkinchi farzand mavjud hisobga bog'lanadi (`PUT`), telefon
       takrorlansa `409` va xabar kimligini aytadi
+- [x] Vasiy qo'shish telefon RAQAMDAN boshlanadi: `GET .../guardians/lookup`
+      yozishdan oldin tekshiradi va «shu vasiyga bu o'quvchi ham
+      biriktirilsinmi?» deb so'raydi (4-sentabr 2026)
+- [x] Kartochkada o'quvchi va vasiy ma'lumotini tahrirlash — tug'ilgan
+      sana, oldingi maktab, vasiyning yashash joyi va kasbi
 - [x] Arxivlangan o'quvchi ro'yxatlarda ko'rinmaydi, hisobotlarda qoladi
 - [x] Sinfni o'zgartirish tarixi saqlanadi — `audit_log` da eski va yangi
       `class_id`; `/admin/audit` dan filtrlab ko'riladi
