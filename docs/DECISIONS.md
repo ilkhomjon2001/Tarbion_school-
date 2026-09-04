@@ -896,7 +896,6 @@ qaytishga yaramaydi. Evaziga `umask 077` va saqlanadigan nusxa soni
 20 dan 5 ga tushirildi — diskda ochiq PII kamroq va kamroq vaqt
 yotadi.
 
-<<<<<<< HEAD
 ## 2026-09-03 · Uy vazifasi oʻtilgan darsga bogʻlanadi
 
 Ilgari ustoz vazifaga oʻzi oʻylab topgan nom qoʻyardi («5-mashq») va
@@ -1019,8 +1018,7 @@ Sabab TAXMIN qilinmadi — CI sharoiti lokalda takrorlandi (pytest
 bazasining sxemasi boʻshatilib, `alembic upgrade head` + `e2e_seed`).
 Toza baza va toʻla baza farqi aynan shu turdagi xatoni yashiradi,
 shuning uchun takrorlash tartibi `docs/E2E.md` ga yozildi.
-||||||| parent of 12d5a7a (chore(deploy): sayt tarbion.uz domeniga ko'chirildi)
-=======
+
 ## 2026-09-04 · Sayt tarbion.uz domeniga koʻchirildi
 
 Egasining qarori. `tarbion.robbitonline.uz` **butunlay uzildi** —
@@ -1031,4 +1029,3 @@ host-only qoladi, `COOKIE_DOMAIN` boʻsh. `www.tarbion.uz` asosiy
 domenga 301 bilan yoʻnaltiriladi. Serverda `CORS_ORIGINS`,
 `PUBLIC_SITE_URL`, `NEXT_PUBLIC_API_URL` yangilandi, frontend qayta
 build qilindi.
->>>>>>> 12d5a7a (chore(deploy): sayt tarbion.uz domeniga ko'chirildi)
