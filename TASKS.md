@@ -285,6 +285,10 @@ Amallar: boshqa sinfga ko'chirish, arxivga o'tkazish (o'chirish emas).
       biriktirilsinmi?» deb so'raydi (4-sentabr 2026)
 - [x] Kartochkada o'quvchi va vasiy ma'lumotini tahrirlash — tug'ilgan
       sana, oldingi maktab, vasiyning yashash joyi va kasbi
+- [x] Maktab bank rekvizitlari (STIR, h/r, MFO, bank) — shartnomaning
+      5-bandidan, `/admin/sozlamalar` da (4-sentabr 2026)
+- [x] Shartnoma hujjati ota-ona kabinetida — `/ota-ona/shartnoma`,
+      matn to'liq, qiymatlari bazadan, chop etish/PDF brauzer orqali
 - [x] Arxivlangan o'quvchi ro'yxatlarda ko'rinmaydi, hisobotlarda qoladi
 - [x] Sinfni o'zgartirish tarixi saqlanadi — `audit_log` da eski va yangi
       `class_id`; `/admin/audit` dan filtrlab ko'riladi
@@ -734,7 +738,8 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
 - [ ] T-045 · Savollarni Excel'dan import — TST-06
   - Frontend: ⬜ yoʻq
 - [x] T-046 · To'lov: shartnoma va to'lov jadvali — TOL-01, TOL-02 —
-  shartnoma (standart 3.5 mln/oy), chegirma, oylik hisoblash (sentabr–may,
+  shartnoma (standart 2.3 mln/oy — shartnoma 3.1-bandi), chegirma,
+  oylik hisoblash (sentabr–may,
   idempotent). Hisoblangan qarz qotadi
   - Frontend: ✅ tayyor — `/admin/shartnomalar` — kelgan-ketgan bazasi, sabab va sana bilan
 - [x] T-047 · To'lov kiritish va kvitansiya — TOL-03, TOL-04, TOL-07 —
