@@ -82,6 +82,13 @@ async def _find_parent_by_phone(session: AsyncSession, phone: str) -> User | Non
     Taqqoslash bazada: raqam boʻlmagan belgilar SQL da olib tashlanadi.
     Hamma foydalanuvchini Python'ga tortib solishtirish maktab
     oʻsganda sekinlashardi.
+
+    Tartib MAJBURIY. Yangi raqam qoʻyishda dublikat toʻsiladi
+    (`set_guardian_phone`), lekin eski maʼlumotda ikkita vasiyda bir
+    xil raqam turgan boʻlishi mumkin. `ORDER BY` boʻlmasa Postgres
+    ikkovidan xohlaganini qaytaradi va bir xil soʻrov har safar boshqa
+    odamni koʻrsatardi. Eng eski hisob tanlanadi — u koʻpincha
+    haqiqiy egasi.
     """
     raqam = _normalize_phone(phone)
     if raqam is None:
@@ -98,6 +105,7 @@ async def _find_parent_by_phone(session: AsyncSession, phone: str) -> User | Non
             tozalangan == raqam,
             Role.name == RoleName.PARENT.value,
         )
+        .order_by(User.created_at, User.id)
         .limit(1)
     )
     return await session.scalar(stmt)

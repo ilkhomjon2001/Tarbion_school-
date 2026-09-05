@@ -967,3 +967,32 @@ async def test_shartnomada_amaldagi_summa_korinadi(
     ).json()
     assert b["monthly_fee"] == 1_800_000
     assert b["has_contract"] is True
+
+
+async def test_bir_xil_telefonda_eng_eski_hisob_qaytadi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Eski maʼlumotda ikki vasiyda bir xil raqam boʻlishi mumkin.
+
+    `ORDER BY` boʻlmasa Postgres ikkovidan xohlaganini qaytarardi va
+    bir xil soʻrov har safar boshqa odamni koʻrsatardi. Yangi raqam
+    qoʻyishda dublikat toʻsiladi, lekin eskisi qolib ketgan boʻlishi
+    mumkin — shuning uchun natija BARQAROR boʻlishi kerak.
+    """
+    await _huquqli(session, world)
+    world["parent_a"].phone = "998901112233"
+    world["parent_b"].phone = "998901112233"
+    await session.flush()
+
+    token = await _token(client, "sch.admin")
+    javoblar = set()
+    for _ in range(3):
+        r = await client.get(
+            f"/api/v1/school/students/{world['ali'].id}/guardians/lookup",
+            headers=_auth(token),
+            params={"phone": "998901112233"},
+        )
+        assert r.status_code == 200, r.text
+        javoblar.add(r.json()["user_id"])
+
+    assert len(javoblar) == 1
