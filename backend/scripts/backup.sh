@@ -27,8 +27,10 @@
 #     BACKUP_DIR            — lokal papka (sukut: /var/backups/tarbion)
 #     BACKUP_KEEP_DAYS      — necha kun saqlanadi (sukut: 30)
 #     FILE_STORAGE_DIR      — yuklangan fayllar papkasi (T-025).
-#                             Zaxiraga qoʻshiladi; boʻsh boʻlsa oʻtkazib
-#                             yuboriladi, lekin bu yozib qoldiriladi
+#                             Sukut: <backend>/var/files — ilovaning
+#                             sukuti bilan bir xil. Zaxiraga qoʻshiladi;
+#                             boʻsh boʻlsa oʻtkazib yuboriladi, lekin
+#                             bu logda yozib qoldiriladi
 #     R2_BUCKET, R2_ENDPOINT, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 #
 # Cron:
@@ -50,7 +52,12 @@ YOL="${BACKUP_DIR}/${NOM}"
 # Yuklangan fayllar alohida arxivda: baza tez tiklanadi, fayllar esa
 # katta va kamdan-kam oʻzgaradi — ikkalasini bitta quvurga qoʻshish
 # tiklashni sekinlashtirardi.
-FILE_STORAGE_DIR="${FILE_STORAGE_DIR:-/opt/tarbion/var/files}"
+# Sukut ilovaning oʻz sukuti bilan bir xil boʻlishi SHART. Ilova
+# `var/files` ni ishlatadi va u `WorkingDirectory` ga nisbatan
+# hisoblanadi — yaʼni `<backend>/var/files`. Bu yerda boshqa yoʻl
+# yozilsa zaxira jimgina boʻsh papkani koʻrib, «fayl yoʻq» deb
+# oʻtib ketardi.
+FILE_STORAGE_DIR="${FILE_STORAGE_DIR:-${BACKEND_DIR}/var/files}"
 FAYL_NOM="tarbion-files-${SANA}.tar.gz.age"
 FAYL_YOL="${BACKUP_DIR}/${FAYL_NOM}"
 
