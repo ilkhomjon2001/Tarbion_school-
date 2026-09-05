@@ -5,6 +5,116 @@ export type ClientOptions = {
 };
 
 /**
+ * AbsenceCreateIn
+ */
+export type AbsenceCreateIn = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Date From
+     */
+    date_from: string;
+    /**
+     * Date To
+     */
+    date_to: string;
+    /**
+     * Reason
+     */
+    reason: string;
+    /**
+     * File Id
+     */
+    file_id?: string | null;
+};
+
+/**
+ * AbsenceDecideIn
+ */
+export type AbsenceDecideIn = {
+    /**
+     * Approve
+     */
+    approve: boolean;
+    /**
+     * Note
+     */
+    note?: string | null;
+};
+
+/**
+ * AbsenceOut
+ */
+export type AbsenceOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Student Name
+     */
+    student_name: string;
+    /**
+     * Class Name
+     */
+    class_name: string | null;
+    /**
+     * Date From
+     */
+    date_from: string;
+    /**
+     * Date To
+     */
+    date_to: string;
+    /**
+     * Reason
+     */
+    reason: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Created By Name
+     */
+    created_by_name: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Decided By Name
+     */
+    decided_by_name: string | null;
+    /**
+     * Decision Note
+     */
+    decision_note: string | null;
+    /**
+     * Marked Lessons
+     */
+    marked_lessons: number;
+    /**
+     * File Name
+     */
+    file_name: string | null;
+    /**
+     * File Url
+     */
+    file_url: string | null;
+    /**
+     * Can Decide
+     */
+    can_decide: boolean;
+};
+
+/**
  * AcademicYearCreateIn
  */
 export type AcademicYearCreateIn = {
@@ -856,6 +966,16 @@ export type BodyCurriculumImportPlan = {
      * Sinf
      */
     sinf: string;
+    /**
+     * File
+     */
+    file: Blob | File;
+};
+
+/**
+ * Body_files_upload
+ */
+export type BodyFilesUpload = {
     /**
      * File
      */
@@ -2084,6 +2204,32 @@ export type ExamStatsOut = {
      * Pass Rate
      */
     pass_rate: number | null;
+};
+
+/**
+ * FileOut
+ */
+export type FileOut = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Size Bytes
+     */
+    size_bytes: number;
+    /**
+     * Content Type
+     */
+    content_type: string;
+    /**
+     * Url
+     */
+    url: string;
 };
 
 /**
@@ -8174,6 +8320,68 @@ export type ExamsSetPlanStatusResponses = {
 
 export type ExamsSetPlanStatusResponse = ExamsSetPlanStatusResponses[keyof ExamsSetPlanStatusResponses];
 
+export type FilesUploadData = {
+    body: BodyFilesUpload;
+    path?: never;
+    query?: never;
+    url: '/api/v1/files';
+};
+
+export type FilesUploadErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type FilesUploadError = FilesUploadErrors[keyof FilesUploadErrors];
+
+export type FilesUploadResponses = {
+    /**
+     * Successful Response
+     */
+    201: FileOut;
+};
+
+export type FilesUploadResponse = FilesUploadResponses[keyof FilesUploadResponses];
+
+export type FilesDownloadData = {
+    body?: never;
+    path: {
+        /**
+         * File Id
+         */
+        file_id: string;
+    };
+    query: {
+        /**
+         * Exp
+         */
+        exp: number;
+        /**
+         * Sig
+         */
+        sig: string;
+    };
+    url: '/api/v1/files/{file_id}/download';
+};
+
+export type FilesDownloadErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type FilesDownloadError = FilesDownloadErrors[keyof FilesDownloadErrors];
+
+export type FilesDownloadResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
 export type PaymentsSummaryData = {
     body?: never;
     path?: never;
@@ -9693,6 +9901,161 @@ export type AttendanceMarkClassDayResponses = {
 };
 
 export type AttendanceMarkClassDayResponse = AttendanceMarkClassDayResponses[keyof AttendanceMarkClassDayResponses];
+
+export type AttendanceListAbsenceRequestsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Status
+         */
+        status?: string | null;
+        /**
+         * Student Id
+         */
+        student_id?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/attendance/absence-requests';
+};
+
+export type AttendanceListAbsenceRequestsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AttendanceListAbsenceRequestsError = AttendanceListAbsenceRequestsErrors[keyof AttendanceListAbsenceRequestsErrors];
+
+export type AttendanceListAbsenceRequestsResponses = {
+    /**
+     * Response Attendance List Absence Requests
+     *
+     * Successful Response
+     */
+    200: Array<AbsenceOut>;
+};
+
+export type AttendanceListAbsenceRequestsResponse = AttendanceListAbsenceRequestsResponses[keyof AttendanceListAbsenceRequestsResponses];
+
+export type AttendanceCreateAbsenceRequestData = {
+    body: AbsenceCreateIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/attendance/absence-requests';
+};
+
+export type AttendanceCreateAbsenceRequestErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AttendanceCreateAbsenceRequestError = AttendanceCreateAbsenceRequestErrors[keyof AttendanceCreateAbsenceRequestErrors];
+
+export type AttendanceCreateAbsenceRequestResponses = {
+    /**
+     * Successful Response
+     */
+    201: AbsenceOut;
+};
+
+export type AttendanceCreateAbsenceRequestResponse = AttendanceCreateAbsenceRequestResponses[keyof AttendanceCreateAbsenceRequestResponses];
+
+export type AttendanceGetAbsenceRequestData = {
+    body?: never;
+    path: {
+        /**
+         * Request Id
+         */
+        request_id: string;
+    };
+    query?: never;
+    url: '/api/v1/attendance/absence-requests/{request_id}';
+};
+
+export type AttendanceGetAbsenceRequestErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AttendanceGetAbsenceRequestError = AttendanceGetAbsenceRequestErrors[keyof AttendanceGetAbsenceRequestErrors];
+
+export type AttendanceGetAbsenceRequestResponses = {
+    /**
+     * Successful Response
+     */
+    200: AbsenceOut;
+};
+
+export type AttendanceGetAbsenceRequestResponse = AttendanceGetAbsenceRequestResponses[keyof AttendanceGetAbsenceRequestResponses];
+
+export type AttendanceDecideAbsenceRequestData = {
+    body: AbsenceDecideIn;
+    path: {
+        /**
+         * Request Id
+         */
+        request_id: string;
+    };
+    query?: never;
+    url: '/api/v1/attendance/absence-requests/{request_id}/decide';
+};
+
+export type AttendanceDecideAbsenceRequestErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AttendanceDecideAbsenceRequestError = AttendanceDecideAbsenceRequestErrors[keyof AttendanceDecideAbsenceRequestErrors];
+
+export type AttendanceDecideAbsenceRequestResponses = {
+    /**
+     * Successful Response
+     */
+    200: AbsenceOut;
+};
+
+export type AttendanceDecideAbsenceRequestResponse = AttendanceDecideAbsenceRequestResponses[keyof AttendanceDecideAbsenceRequestResponses];
+
+export type AttendanceCancelAbsenceRequestData = {
+    body?: never;
+    path: {
+        /**
+         * Request Id
+         */
+        request_id: string;
+    };
+    query?: never;
+    url: '/api/v1/attendance/absence-requests/{request_id}/cancel';
+};
+
+export type AttendanceCancelAbsenceRequestErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AttendanceCancelAbsenceRequestError = AttendanceCancelAbsenceRequestErrors[keyof AttendanceCancelAbsenceRequestErrors];
+
+export type AttendanceCancelAbsenceRequestResponses = {
+    /**
+     * Successful Response
+     */
+    200: AbsenceOut;
+};
+
+export type AttendanceCancelAbsenceRequestResponse = AttendanceCancelAbsenceRequestResponses[keyof AttendanceCancelAbsenceRequestResponses];
 
 export type AuditEntriesData = {
     body?: never;

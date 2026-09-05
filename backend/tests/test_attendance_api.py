@@ -574,3 +574,309 @@ async def test_darslar_royxatida_sanoqlar_bor(client: AsyncClient, world: dict) 
     assert dars["student_count"] == 2
     assert dars["present_count"] == 1
     assert dars["marked"] is True
+
+
+# ─────────────── Sababli qoldirish arizasi (DAV-04) ───────────────
+
+
+async def _ariza(
+    client: AsyncClient,
+    token: str,
+    world: dict,
+    *,
+    student=None,
+    kun_dan=None,
+    kun_gacha=None,
+    sabab: str = "Shifokor koʻrigi — spravka ilova qilindi.",
+    file_id: str | None = None,
+):
+    kun = local_today()
+    tana = {
+        "student_id": str((student or world["ali"]).id),
+        "date_from": str(kun_dan or kun),
+        "date_to": str(kun_gacha or kun),
+        "reason": sabab,
+    }
+    if file_id is not None:
+        tana["file_id"] = file_id
+    return await client.post(
+        "/api/v1/attendance/absence-requests", headers=_auth(token), json=tana
+    )
+
+
+async def test_vasiy_ariza_yozadi(client: AsyncClient, world: dict) -> None:
+    token = await _token(client, "dav.otaona_a")
+    r = await _ariza(client, token, world)
+    assert r.status_code == 201, r.text
+
+    data = r.json()
+    assert data["status"] == "kutilmoqda"
+    assert data["student_name"].startswith("Aliyev")
+    assert data["can_decide"] is False  # vasiy oʻzi qaror qilmaydi
+
+
+async def test_begona_farzandga_ariza_yozib_bolmaydi(
+    client: AsyncClient, world: dict
+) -> None:
+    """X-1: URL emas, tanadagi `student_id` almashtiriladi."""
+    token = await _token(client, "dav.otaona_b")
+    r = await _ariza(client, token, world, student=world["ali"])
+    assert r.status_code == 403
+
+
+async def test_begona_vasiy_arizani_royxatda_kormaydi(
+    client: AsyncClient, world: dict
+) -> None:
+    token_a = await _token(client, "dav.otaona_a")
+    await _ariza(client, token_a, world)
+
+    token_b = await _token(client, "dav.otaona_b")
+    r = await client.get("/api/v1/attendance/absence-requests", headers=_auth(token_b))
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+async def test_sinf_rahbari_tasdiqlaydi_va_davomat_sababli_boladi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """DAV-04 ning oʻzagi: tasdiqlangach oʻsha kunning darsi «sababli»."""
+    vasiy = await _token(client, "dav.otaona_a")
+    ariza = (await _ariza(client, vasiy, world)).json()
+
+    rahbar = await _token(client, "dav.ustoz_a")
+    r = await client.post(
+        f"/api/v1/attendance/absence-requests/{ariza['id']}/decide",
+        headers=_auth(rahbar),
+        json={"approve": True},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "tasdiqlangan"
+    assert r.json()["marked_lessons"] == 1
+
+    yozuv = (
+        await session.execute(
+            select(AttendanceRecord).where(
+                AttendanceRecord.lesson_id == world["bugungi"].id,
+                AttendanceRecord.student_id == world["ali"].id,
+            )
+        )
+    ).scalar_one()
+    assert yozuv.status == "excused"
+
+
+async def test_kelgan_bolaning_davomatiga_tegilmaydi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Ustoz «keldi» degan boʻlsa, bola darsda boʻlgan — ariza uni oʻzgartirmaydi."""
+    ustoz = await _token(client, "dav.ustoz_a")
+    await client.post(
+        f"/api/v1/attendance/lessons/{world['bugungi'].id}",
+        headers=_auth(ustoz),
+        json={"rows": [{"student_id": str(world["ali"].id), "status": "present"}]},
+    )
+
+    vasiy = await _token(client, "dav.otaona_a")
+    ariza = (await _ariza(client, vasiy, world)).json()
+    r = await client.post(
+        f"/api/v1/attendance/absence-requests/{ariza['id']}/decide",
+        headers=_auth(ustoz),
+        json={"approve": True},
+    )
+    assert r.json()["marked_lessons"] == 0
+
+    yozuv = (
+        await session.execute(
+            select(AttendanceRecord).where(
+                AttendanceRecord.lesson_id == world["bugungi"].id,
+                AttendanceRecord.student_id == world["ali"].id,
+            )
+        )
+    ).scalar_one()
+    assert yozuv.status == "present"
+
+
+async def test_ariza_dav03_oynasi_yopilgan_darsni_ham_tuzatadi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Ariza — boshqa yoʻl: hujjat bor, qaror qiluvchi maʼlum, audit bor.
+
+    Ustozning oʻzi bu darsni tuzata olmaydi (DAV-03), ariza esa oʻzgartiradi.
+    """
+    kun = local_today() - timedelta(days=2)
+    vasiy = await _token(client, "dav.otaona_a")
+    ariza = (
+        await _ariza(client, vasiy, world, kun_dan=kun, kun_gacha=kun)
+    ).json()
+
+    rahbar = await _token(client, "dav.ustoz_a")
+    r = await client.post(
+        f"/api/v1/attendance/absence-requests/{ariza['id']}/decide",
+        headers=_auth(rahbar),
+        json={"approve": True},
+    )
+    assert r.json()["marked_lessons"] == 1
+
+    yozuv = (
+        await session.execute(
+            select(AttendanceRecord).where(
+                AttendanceRecord.lesson_id == world["eski"].id,
+                AttendanceRecord.student_id == world["ali"].id,
+            )
+        )
+    ).scalar_one()
+    assert yozuv.status == "excused"
+
+
+async def test_begona_ustoz_qaror_qila_olmaydi(client: AsyncClient, world: dict) -> None:
+    """Boshqa sinfning rahbari — `403`, `404` emas (X-3)."""
+    vasiy = await _token(client, "dav.otaona_a")
+    ariza = (await _ariza(client, vasiy, world)).json()
+
+    begona = await _token(client, "dav.ustoz_b")
+    r = await client.post(
+        f"/api/v1/attendance/absence-requests/{ariza['id']}/decide",
+        headers=_auth(begona),
+        json={"approve": True},
+    )
+    assert r.status_code == 403
+
+
+async def test_vasiy_ozi_arizasini_tasdiqlay_olmaydi(
+    client: AsyncClient, world: dict
+) -> None:
+    vasiy = await _token(client, "dav.otaona_a")
+    ariza = (await _ariza(client, vasiy, world)).json()
+
+    r = await client.post(
+        f"/api/v1/attendance/absence-requests/{ariza['id']}/decide",
+        headers=_auth(vasiy),
+        json={"approve": True},
+    )
+    assert r.status_code == 403
+
+
+async def test_rad_etishda_sabab_majburiy(client: AsyncClient, world: dict) -> None:
+    """«Rad etildi» oʻzi javob emas — oila nima qilishini bilmay qoladi."""
+    vasiy = await _token(client, "dav.otaona_a")
+    ariza = (await _ariza(client, vasiy, world)).json()
+
+    rahbar = await _token(client, "dav.ustoz_a")
+    r = await client.post(
+        f"/api/v1/attendance/absence-requests/{ariza['id']}/decide",
+        headers=_auth(rahbar),
+        json={"approve": False},
+    )
+    assert r.status_code == 422
+
+    r = await client.post(
+        f"/api/v1/attendance/absence-requests/{ariza['id']}/decide",
+        headers=_auth(rahbar),
+        json={"approve": False, "note": "Spravka ilova qilinmagan."},
+    )
+    assert r.status_code == 200
+    assert r.json()["status"] == "rad_etilgan"
+    assert r.json()["decision_note"] == "Spravka ilova qilinmagan."
+
+
+async def test_ikki_marta_qaror_qabul_qilinmaydi(
+    client: AsyncClient, world: dict
+) -> None:
+    vasiy = await _token(client, "dav.otaona_a")
+    ariza = (await _ariza(client, vasiy, world)).json()
+    rahbar = await _token(client, "dav.ustoz_a")
+
+    yol = f"/api/v1/attendance/absence-requests/{ariza['id']}/decide"
+    assert (
+        await client.post(yol, headers=_auth(rahbar), json={"approve": True})
+    ).status_code == 200
+    ikkinchi = await client.post(yol, headers=_auth(rahbar), json={"approve": True})
+    assert ikkinchi.status_code == 409
+
+
+async def test_vasiy_arizasini_bekor_qiladi(client: AsyncClient, world: dict) -> None:
+    vasiy = await _token(client, "dav.otaona_a")
+    ariza = (await _ariza(client, vasiy, world)).json()
+
+    r = await client.post(
+        f"/api/v1/attendance/absence-requests/{ariza['id']}/cancel",
+        headers=_auth(vasiy),
+    )
+    assert r.status_code == 200
+    assert r.json()["status"] == "bekor_qilingan"
+
+
+async def test_tasdiqlangan_arizani_bekor_qilib_bolmaydi(
+    client: AsyncClient, world: dict
+) -> None:
+    """Davomat allaqachon oʻzgargan — orqaga qaytarish boshqa qaror."""
+    vasiy = await _token(client, "dav.otaona_a")
+    ariza = (await _ariza(client, vasiy, world)).json()
+    rahbar = await _token(client, "dav.ustoz_a")
+    await client.post(
+        f"/api/v1/attendance/absence-requests/{ariza['id']}/decide",
+        headers=_auth(rahbar),
+        json={"approve": True},
+    )
+
+    r = await client.post(
+        f"/api/v1/attendance/absence-requests/{ariza['id']}/cancel",
+        headers=_auth(vasiy),
+    )
+    assert r.status_code == 409
+
+
+async def test_juda_eski_kun_uchun_ariza_qabul_qilinmaydi(
+    client: AsyncClient, world: dict
+) -> None:
+    """Cheksiz orqaga ariza butun yil davomatini qayta yozish imkonini berardi."""
+    vasiy = await _token(client, "dav.otaona_a")
+    eski_kun = local_today() - timedelta(days=60)
+    r = await _ariza(client, vasiy, world, kun_dan=eski_kun, kun_gacha=eski_kun)
+    assert r.status_code == 422
+
+
+async def test_teskari_sana_oraligi_qabul_qilinmaydi(
+    client: AsyncClient, world: dict
+) -> None:
+    vasiy = await _token(client, "dav.otaona_a")
+    kun = local_today()
+    r = await _ariza(
+        client, vasiy, world, kun_dan=kun, kun_gacha=kun - timedelta(days=3)
+    )
+    assert r.status_code == 422
+
+
+async def test_ariza_va_qaror_auditga_tushadi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """DAV-07: davomat oʻzgarishi ariza id si bilan bogʻlanadi."""
+    vasiy = await _token(client, "dav.otaona_a")
+    ariza = (await _ariza(client, vasiy, world)).json()
+    rahbar = await _token(client, "dav.ustoz_a")
+    await client.post(
+        f"/api/v1/attendance/absence-requests/{ariza['id']}/decide",
+        headers=_auth(rahbar),
+        json={"approve": True},
+    )
+
+    rows = (
+        (
+            await session.execute(
+                select(AuditLog).where(AuditLog.object_type == "absence_request")
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert len(rows) == 2  # yaratildi + qaror
+
+    davomat = (
+        (
+            await session.execute(
+                select(AuditLog).where(AuditLog.object_type == "attendance")
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert any(r.new_value.get("absence_request_id") == ariza["id"] for r in davomat)

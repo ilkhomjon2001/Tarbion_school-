@@ -4,6 +4,11 @@ Alembic autogenerate `Base.metadata` ni toʻliq koʻrishi uchun har bir model
 shu yerda roʻyxatdan oʻtishi shart — aks holda jadval migratsiyaga tushmaydi.
 """
 
+from app.models.absence import (
+    ABSENCE_STATUS_LABELS_UZ,
+    AbsenceRequest,
+    AbsenceStatus,
+)
 from app.models.academic import AcademicYear, BellSchedule, Holiday, Term
 from app.models.announcements import (
     Announcement,
@@ -208,6 +213,9 @@ __all__ = [
     "Announcement",
     "AnnouncementAudience",
     "AnnouncementClass",
+    "ABSENCE_STATUS_LABELS_UZ",
+    "AbsenceRequest",
+    "AbsenceStatus",
     "AcademicYear",
     "APPEAL_STATUS_LABELS_UZ",
     "APPEAL_TARGET_LABELS_UZ",

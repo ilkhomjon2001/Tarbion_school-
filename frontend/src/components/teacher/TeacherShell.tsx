@@ -34,6 +34,7 @@ const NAV_GROUPS = [
       { href: "/teacher", label: "Bugungi darslar", icon: HomeIcon, exact: true },
       { href: "/teacher/jadval", label: "Dars jadvali", icon: CalendarIcon },
       { href: "/teacher/davomat", label: "Kunlik davomat", icon: CheckIcon },
+      { href: "/teacher/arizalar", label: "Sababli qoldirish", icon: ClipboardIcon },
       { href: "/teacher/vazifa", label: "Uy vazifasi", icon: ClipboardIcon },
     ],
   },

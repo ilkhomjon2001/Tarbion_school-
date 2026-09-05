@@ -3,7 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { ParentShell } from "@/components/parent/ParentShell";
-import { createAppeal } from "@/lib/appeals/api";
+import {
+  ABSENCE_STATUS_LABELS,
+  ACCEPTED_FILE_TYPES,
+  cancelAbsenceRequest,
+  createAbsenceRequest,
+  listAbsenceRequests,
+  uploadFile,
+  type AbsenceOut,
+} from "@/lib/absence/api";
 import { todayIso } from "@/lib/format";
 import {
   dayStatus,
@@ -21,6 +29,10 @@ import { useChildren } from "@/lib/parent/useChild";
  *
  * Sababli va sababsiz qoldirish rangi bilan ajratilgan, lekin rang
  * yolgʻiz maʼno tashimaydi — har katakchada belgi ham bor.
+ *
+ * Ariza avval MUROJAAT sifatida ketardi — alohida jadval yoʻq edi.
+ * Endi oʻz moduli bor (T-037): sinf rahbari tasdiqlaganda oʻsha
+ * kunlardagi darslar avtomatik «sababli» ga oʻtadi.
  */
 
 const WEEKDAYS = ["Du", "Se", "Ch", "Pa", "Ju", "Sh", "Ya"];
@@ -41,6 +53,8 @@ export default function ParentAttendancePage() {
   const { child, children: farzandlar, select, loading, error: childError } = useChildren();
   const [openDay, setOpenDay] = useState<DayAttendance | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [arizalar, setArizalar] = useState<AbsenceOut[]>([]);
+  const [arizaYangilash, setArizaYangilash] = useState(0);
 
   const bugun = todayIso();
   // Koʻrsatilayotgan oy. Sukut — joriy oy; avval 2026-avgust qattiq
@@ -55,6 +69,23 @@ export default function ParentAttendancePage() {
   // qayta hisoblanmaydi, hamma kabinet bitta formulani koʻradi (Y10).
   const [summary, setSummary] = useState<AttendanceStatOut | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!child) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const rows = await listAbsenceRequests({ studentId: child.id });
+        if (alive) setArizalar(rows);
+      } catch {
+        // Ariza roʻyxati kalendarni bloklamaydi — u ikkinchi darajali.
+        if (alive) setArizalar([]);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [child, arizaYangilash]);
 
   useEffect(() => {
     if (!child) return;
@@ -260,7 +291,11 @@ export default function ParentAttendancePage() {
       {/* DAV-04: sababli qoldirish arizasi */}
       <section className="mt-5">
         {showForm ? (
-          <ExcuseForm studentId={child.id} onClose={() => setShowForm(false)} />
+          <ExcuseForm
+            studentId={child.id}
+            onClose={() => setShowForm(false)}
+            onSent={() => setArizaYangilash((n) => n + 1)}
+          />
         ) : (
           <button
             type="button"
@@ -271,6 +306,21 @@ export default function ParentAttendancePage() {
           </button>
         )}
       </section>
+
+      {arizalar.length > 0 && (
+        <section className="mt-5">
+          <h2 className="mb-2.5 text-sm font-semibold">Yuborilgan arizalar</h2>
+          <ul className="space-y-2">
+            {arizalar.map((a) => (
+              <ArizaQatori
+                key={a.id}
+                ariza={a}
+                onChanged={() => setArizaYangilash((n) => n + 1)}
+              />
+            ))}
+          </ul>
+        </section>
+      )}
 
       {openDay && <DaySheet day={openDay} onClose={() => setOpenDay(null)} />}
     </ParentShell>
@@ -331,24 +381,28 @@ function DaySheet({ day, onClose }: { day: DayAttendance; onClose: () => void })
 function ExcuseForm({
   studentId,
   onClose,
+  onSent,
 }: {
   studentId: string;
   onClose: () => void;
+  /** Ariza yozilgach roʻyxat yangilansin. */
+  onSent: () => void;
 }) {
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [xato, setXato] = useState(false);
+  const [xato, setXato] = useState<string | null>(null);
   const [dan, setDan] = useState(todayIso());
   const [gacha, setGacha] = useState(todayIso());
   const [sabab, setSabab] = useState("");
+  const [fayl, setFayl] = useState<File | null>(null);
 
   if (sent) {
     return (
       <div role="status" className="rounded-xl border border-success/30 bg-success-tint p-4">
         <p className="font-medium text-success">Ariza yuborildi</p>
         <p className="mt-1 text-sm text-success/85">
-          Sinf rahbariga murojaat sifatida yetkazildi — javobni «Murojaat»
-          boʻlimida koʻrasiz.
+          Sinf rahbari koʻrib chiqadi. Tasdiqlansa, oʻsha kunlar
+          kalendarda «sababli» boʻlib koʻrinadi.
         </p>
       </div>
     );
@@ -356,22 +410,32 @@ function ExcuseForm({
 
   async function yubor(e: React.FormEvent) {
     e.preventDefault();
-    if (busy || sabab.trim().length < 3) return;
+    if (busy || sabab.trim().length < 5) return;
     setBusy(true);
-    setXato(false);
+    setXato(null);
     try {
-      // DAV-04 arizasi — sinf rahbariga MUROJAAT sifatida boradi:
-      // alohida jadval kerak emas, javob yozishmasi ham tayyor (MUR-*).
-      await createAppeal({
+      // Fayl avval yuklanadi, uning `id` si arizaga biriktiriladi.
+      // Ikki qadam: ariza JSON, fayl esa multipart.
+      let fileId: string | null = null;
+      if (fayl) {
+        fileId = (await uploadFile(fayl)).id;
+      }
+      await createAbsenceRequest({
         studentId,
-        target: "homeroom",
-        title: `Sababli qoldirish arizasi (${dan} — ${gacha})`,
-        body: `Davr: ${dan} — ${gacha}.\nSabab: ${sabab.trim()}`,
+        dateFrom: dan,
+        dateTo: gacha,
+        reason: sabab.trim(),
+        fileId,
       });
       setSent(true);
+      onSent();
       setTimeout(onClose, 2500);
-    } catch {
-      setXato(true);
+    } catch (err) {
+      setXato(
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message?: unknown }).message)
+          : "Yuborib boʻlmadi. Internetni tekshirib, qayta urinib koʻring.",
+      );
     } finally {
       setBusy(false);
     }
@@ -382,8 +446,8 @@ function ExcuseForm({
       <h2 className="text-sm font-semibold">Sababli qoldirish arizasi</h2>
 
       {xato && (
-        <p className="mt-2 rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">
-          Yuborib boʻlmadi. Internetni tekshirib, qayta urinib koʻring.
+        <p role="alert" className="mt-2 rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">
+          {xato}
         </p>
       )}
 
@@ -428,9 +492,22 @@ function ExcuseForm({
             placeholder="Masalan: shifokor koʻrigida edi"
             className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none placeholder:text-foreground-muted/60 focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/25"
           />
+        </div>
+
+        <div className="sm:col-span-2">
+          <label htmlFor="ex-file" className="mb-1.5 block text-sm font-medium">
+            Ilova <span className="font-normal text-foreground-muted">(ixtiyoriy)</span>
+          </label>
+          <input
+            id="ex-file"
+            type="file"
+            accept={ACCEPTED_FILE_TYPES}
+            onChange={(e) => setFayl(e.target.files?.[0] ?? null)}
+            className="block w-full text-sm text-foreground-muted file:mr-3 file:h-9 file:rounded-lg file:border file:border-border file:bg-surface-muted file:px-3 file:text-sm file:font-medium file:text-foreground"
+          />
           <p className="mt-1 text-xs text-foreground-muted">
-            Shifokor maʼlumotnomasi boʻlsa, uni sinf rahbariga koʻrsatasiz —
-            fayl yuklash tez orada qoʻshiladi.
+            Shifokor maʼlumotnomasining surati yoki PDF. Faylni faqat sinf
+            rahbari va maktab maʼmuriyati koʻradi.
           </p>
         </div>
       </div>
@@ -445,7 +522,7 @@ function ExcuseForm({
         </button>
         <button
           type="submit"
-          disabled={busy || sabab.trim().length < 3}
+          disabled={busy || sabab.trim().length < 5}
           className="inline-flex h-11 items-center rounded-lg bg-brand px-4 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-dark disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
         >
           {busy ? "Yuborilmoqda…" : "Arizani yuborish"}
@@ -484,5 +561,89 @@ function MonthButton({
     >
       <span aria-hidden>{children}</span>
     </button>
+  );
+}
+
+
+/* --- DAV-04: yuborilgan arizalar --- */
+
+const ARIZA_TONE: Record<string, string> = {
+  kutilmoqda: "bg-warning-tint text-warning",
+  tasdiqlangan: "bg-success-tint text-success",
+  rad_etilgan: "bg-danger-tint text-danger",
+  bekor_qilingan: "bg-surface-muted text-foreground-muted",
+};
+
+function ArizaQatori({
+  ariza,
+  onChanged,
+}: {
+  ariza: AbsenceOut;
+  onChanged: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+
+  async function bekorQil() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await cancelAbsenceRequest(ariza.id);
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <li className="rounded-xl border border-border bg-surface p-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="font-medium">
+            {ariza.date_from === ariza.date_to
+              ? ariza.date_from
+              : `${ariza.date_from} — ${ariza.date_to}`}
+          </p>
+          <p className="mt-0.5 text-sm text-foreground-muted">{ariza.reason}</p>
+        </div>
+        <span
+          className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+            ARIZA_TONE[ariza.status] ?? ARIZA_TONE.bekor_qilingan
+          }`}
+        >
+          {ABSENCE_STATUS_LABELS[ariza.status] ?? ariza.status}
+        </span>
+      </div>
+
+      {ariza.file_name && (
+        <p className="mt-2 text-xs text-foreground-muted">
+          Ilova: {ariza.file_name}
+        </p>
+      )}
+
+      {ariza.decision_note && (
+        <p className="mt-2 rounded-lg bg-surface-muted px-3 py-2 text-sm">
+          <span className="font-medium">{ariza.decided_by_name}:</span>{" "}
+          {ariza.decision_note}
+        </p>
+      )}
+
+      {ariza.status === "tasdiqlangan" && ariza.marked_lessons > 0 && (
+        <p className="mt-2 text-sm text-success">
+          {ariza.marked_lessons} ta dars «sababli» deb belgilandi.
+        </p>
+      )}
+
+      {/* Bekor qilish faqat qaror chiqmagunicha — serverda ham shunday. */}
+      {ariza.status === "kutilmoqda" && (
+        <button
+          type="button"
+          onClick={() => void bekorQil()}
+          disabled={busy}
+          className="mt-3 inline-flex h-9 items-center rounded-lg border border-border px-3 text-sm font-medium text-foreground-muted transition-colors hover:bg-surface-muted disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+        >
+          {busy ? "Bekor qilinmoqda…" : "Arizani bekor qilish"}
+        </button>
+      )}
+    </li>
   );
 }

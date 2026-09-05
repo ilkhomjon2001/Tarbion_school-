@@ -739,8 +739,20 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
     (`author_id`), kim ochgani `created_by_id` da qoladi
   - Ustoz kabineti (`/teacher/murojaat`) ham ULANDI (1-sentyabr) —
     roʻyxat, yozishma, yopish `appeals` API'sidan; kesim serverda
-- [ ] T-037 · Sababli qoldirish arizasi — DAV-04
-  - Frontend: ⬜ yoʻq
+- [x] T-037 · Sababli qoldirish arizasi — DAV-04
+  - Backend: ✅ `absence_requests` jadvali, `/api/v1/attendance/absence-requests`
+    (yozish · roʻyxat · bitta · qaror · bekor qilish). 16 ta test
+  - Tasdiqlanganda oʻsha kunlardagi darslar «sababli» ga OʻTADI — DAV-03
+    oynasi yopiq boʻlsa ham. Bu chetlab oʻtish ataylab: ariza boshqa yoʻl
+    — uni oila boshlaydi, hujjat ilova qilinadi, qaror kim tomonidan
+    qabul qilingani yoziladi, har oʻzgarish auditga tushadi (DAV-07)
+  - Ustoz «keldi»/«kechikdi» degan darsga TEGILMAYDI — bola darsda boʻlgan
+  - Rad etishda sabab majburiy; ariza oʻchirilmaydi, bekor qilinadi
+  - Chegara: 30 kun orqaga, bitta ariza 30 kundan uzun emas
+  - Frontend: ✅ `/ota-ona/davomat` — ariza formasi FAYL ilovasi bilan
+    (ilgari murojaat sifatida ketardi) va yuborilgan arizalar roʻyxati;
+    `/teacher/arizalar` — sinf rahbari uchun tasdiqlash/rad etish,
+    ilova havolasi soʻralganda olinadi (X-7)
 - [ ] T-038 · 2-bosqich xabarnomalari — Ilova B (2-bosqich qatorlari)
   - Frontend: ⬜ yoʻq
 - [ ] T-039 · Jadval istisnolari (dars almashtirish) — ADM-10

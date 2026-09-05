@@ -18,6 +18,7 @@ from app.core.db import SessionDep
 from app.core.exceptions import ValidationError
 from app.core.timeutil import local_today
 from app.models import AttendanceRecord, Student
+from app.schemas.absence import AbsenceCreateIn, AbsenceDecideIn, AbsenceOut
 from app.schemas.attendance import (
     AttendanceMarkIn,
     AttendanceMarkOut,
@@ -33,11 +34,36 @@ from app.schemas.attendance import (
     StudentStatOut,
     TeacherLessonOut,
 )
-from app.services import attendance_service, lesson_service
+from app.services import absence_service, attendance_service, lesson_service
 from app.services.attendance_service import AttendanceStat, MarkRow
 
 #: Jadval ekranida eng uzuni — oy koʻrinishi. Undan uzun oraliq xato.
 MAX_RANGE_DAYS = 62
+
+
+def _client_ip(request: Request) -> str | None:
+    return request.client.host if request.client else None
+
+
+def _absence_out(v: absence_service.AbsenceView) -> AbsenceOut:
+    return AbsenceOut(
+        id=v.id,
+        student_id=v.student_id,
+        student_name=v.student_name,
+        class_name=v.class_name,
+        date_from=v.date_from,
+        date_to=v.date_to,
+        reason=v.reason,
+        status=v.status,
+        created_by_name=v.created_by_name,
+        created_at=v.created_at_iso,
+        decided_by_name=v.decided_by_name,
+        decision_note=v.decision_note,
+        marked_lessons=v.marked_lessons,
+        file_name=v.file_name,
+        file_url=v.file_url,
+        can_decide=v.can_decide,
+    )
 
 router = APIRouter(prefix="/attendance", tags=["attendance"])
 
@@ -381,4 +407,99 @@ async def mark_class_day(
     )
     return AttendanceMarkOut(
         created=natija.created, updated=natija.updated, unchanged=natija.unchanged
+    )
+
+
+# ─────────────── Sababli qoldirish arizasi (DAV-04) ───────────────
+
+
+@router.post("/absence-requests", response_model=AbsenceOut, status_code=201)
+async def create_absence_request(
+    payload: AbsenceCreateIn,
+    session: SessionDep,
+    user: CurrentUserDep,
+    request: Request,
+) -> AbsenceOut:
+    """Vasiy sababli qoldirish uchun ariza yuboradi.
+
+    Boshqa oilaning bolasiga ariza yozilsa `403` (X-1).
+    """
+    ariza = await absence_service.create(
+        session,
+        user,
+        student_id=payload.student_id,
+        date_from=payload.date_from,
+        date_to=payload.date_to,
+        reason=payload.reason,
+        file_id=payload.file_id,
+        ip=_client_ip(request),
+    )
+    return _absence_out(await absence_service.get_request(session, user, ariza.id))
+
+
+@router.get("/absence-requests", response_model=list[AbsenceOut])
+async def list_absence_requests(
+    session: SessionDep,
+    user: CurrentUserDep,
+    status_filter: Annotated[str | None, Query(alias="status")] = None,
+    student_id: Annotated[uuid.UUID | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=200)] = 100,
+) -> list[AbsenceOut]:
+    """Arizalar — koʻrish doirasi bilan kesilgan.
+
+    Ilova havolasi bu yerda BERILMAYDI: roʻyxat har qatorga 15
+    daqiqalik kalit tarqatmasligi kerak (X-7). Havola bitta arizani
+    ochganda keladi.
+    """
+    rows = await absence_service.list_requests(
+        session, user, status=status_filter, student_id=student_id, limit=limit
+    )
+    return [_absence_out(r) for r in rows]
+
+
+@router.get("/absence-requests/{request_id}", response_model=AbsenceOut)
+async def get_absence_request(
+    request_id: uuid.UUID, session: SessionDep, user: CurrentUserDep
+) -> AbsenceOut:
+    """Bitta ariza — ilovaga imzolangan havola bilan."""
+    return _absence_out(await absence_service.get_request(session, user, request_id))
+
+
+@router.post("/absence-requests/{request_id}/decide", response_model=AbsenceOut)
+async def decide_absence_request(
+    request_id: uuid.UUID,
+    payload: AbsenceDecideIn,
+    session: SessionDep,
+    user: CurrentUserDep,
+    request: Request,
+) -> AbsenceOut:
+    """Sinf rahbari tasdiqlaydi yoki rad etadi.
+
+    Tasdiqlanganda oʻsha kunlardagi darslar «sababli» ga oʻtadi —
+    ustoz «keldi» degan darslardan tashqari.
+    """
+    return _absence_out(
+        await absence_service.decide(
+            session,
+            user,
+            request_id=request_id,
+            approve=payload.approve,
+            note=payload.note,
+            ip=_client_ip(request),
+        )
+    )
+
+
+@router.post("/absence-requests/{request_id}/cancel", response_model=AbsenceOut)
+async def cancel_absence_request(
+    request_id: uuid.UUID,
+    session: SessionDep,
+    user: CurrentUserDep,
+    request: Request,
+) -> AbsenceOut:
+    """Vasiy oʻz arizasini bekor qiladi — qaror chiqmagunicha."""
+    return _absence_out(
+        await absence_service.cancel(
+            session, user, request_id=request_id, ip=_client_ip(request)
+        )
     )

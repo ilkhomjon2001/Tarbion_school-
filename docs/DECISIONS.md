@@ -1191,3 +1191,19 @@ Himoya HMAC imzoda: `HMAC-SHA256(jwt_secret, "<file_id>.<muddat>")`,
 «Bu faylga havola ber» degan umumiy endpoint ATAYLAB yozilmadi — u
 boʻlsa har kim istalgan `file_id` ga havola olardi. Havolani faylni
 ilova qilgan modul beradi, u oldin oʻz kirish tekshiruvini qiladi.
+
+## Sababli qoldirish arizasi DAV-03 oynasini chetlab oʻtadi (T-037)
+
+Davomat 24 soatdan keyin ustoz uchun yopiladi — bu ustoz jimgina
+tarixni qayta yozmasligi uchun. Tasdiqlangan ariza esa uni
+oʻzgartiradi, chunki bu BOSHQA yoʻl: uni oila boshlaydi, hujjat ilova
+qilinadi, qaror kim tomonidan va qachon qabul qilingani yoziladi, har
+bir davomat oʻzgarishi audit yozuvida ariza id si bilan bogʻlanadi.
+Oynaning maqsadi (izsiz oʻzgarish boʻlmasin) buzilmaydi.
+
+Ustoz «keldi» yoki «kechikdi» degan darsga tegilmaydi — bola darsda
+boʻlgan, uni «sababli» qilish davomatni yolgʻon qilardi.
+
+Ariza avval MUROJAAT sifatida ketardi (alohida jadval yoʻq edi). Endi
+oʻz moduli bor: murojaat yozishma uchun, ariza esa davomatni
+oʻzgartiradigan hujjat — ikkalasining hayot sikli boshqa.
