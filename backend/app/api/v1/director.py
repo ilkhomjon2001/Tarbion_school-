@@ -14,9 +14,9 @@ oʻrtacha baho jurnal/davomat servislari bilan BIR XIL formulada
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request, Response
 
-from app.api.v1.deps import require_roles
+from app.api.v1.deps import CurrentUserDep, require_roles
 from app.core.db import SessionDep
 from app.models import RoleName
 from app.schemas.director import (
@@ -25,7 +25,7 @@ from app.schemas.director import (
     DirectorOverviewOut,
     TeacherRowOut,
 )
-from app.services import director_service
+from app.services import director_service, report_service
 
 router = APIRouter(
     prefix="/director",
@@ -43,6 +43,8 @@ router = APIRouter(
 )
 
 PeriodDays = Annotated[int, Query(ge=1, le=365, description="Necha kunlik davr")]
+
+XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
 @router.get("/overview", response_model=DirectorOverviewOut)
@@ -101,3 +103,39 @@ async def teachers(session: SessionDep) -> list[TeacherRowOut]:
         )
         for r in await director_service.teachers(session)
     ]
+
+
+# ─────────────── Hisobotlarni eksport (DIR-08, X-13) ───────────────
+
+
+@router.get("/reports/{kind}/export")
+async def export_report(
+    kind: str,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> Response:
+    """Hisobotni Excel qilib beradi.
+
+    Huquq `reports.export` — rol yetarli emas: direktor hisobotni
+    koʻradi, yuklab olish esa alohida beriladi. Har eksport auditga
+    tushadi (X-13): eng ehtimolli sizib chiqish hujum emas, xodim.
+
+    PDF alohida endpoint emas — hisobotning ekrandagi koʻrinishi
+    brauzerning chop etish oynasi orqali PDF ga chiqadi.
+    """
+    hisobot = await report_service.export_xlsx(
+        session,
+        user,
+        kind=kind,
+        ip=request.client.host if request.client else None,
+    )
+    return Response(
+        content=hisobot.content,
+        media_type=XLSX_MIME,
+        headers={
+            "Content-Disposition": f'attachment; filename="{hisobot.filename}"',
+            # Hisobotda shaxsiy maʼlumot bor — oraliq keshda qolmasin.
+            "Cache-Control": "private, no-store",
+        },
+    )

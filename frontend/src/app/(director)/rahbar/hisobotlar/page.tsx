@@ -8,9 +8,10 @@
  * (`director/overview`), sinflar kesimi (`director/classes`) va moliya
  * jamlanmasi (`payments/summary`).
  *
- * CSV eksport ATAYLAB yoʻq: eksport ham audit jurnaliga tushishi shart
- * (X-13), shuning uchun u keyin backend endpointi orqali qilinadi —
- * brauzerda fayl yasab berish audit izini chetlab oʻtardi.
+ * Eksport SERVERDAN (DIR-08): brauzerda CSV yigʻish audit izini
+ * chetlab oʻtardi va X-13 buzilardi. Endi `/director/reports/{kind}/export`
+ * Excel beradi va har yuklab olish audit jurnaliga tushadi. PDF —
+ * brauzerning chop etish oynasi orqali.
  */
 
 import { useEffect, useState } from "react";
@@ -20,6 +21,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ChartSkeleton, StatCardSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
 import { BarChartIcon } from "@/components/ui/icons";
 import { AreaLineChart } from "@/components/director/charts";
+import { ReportExport } from "@/components/director/ReportExport";
 import { messageOf } from "@/components/shared/LiveSession";
 import {
   fetchClasses,
@@ -201,11 +203,12 @@ export default function ReportsPage() {
                 </tbody>
               </table>
             </div>
-            <p className="border-t border-border px-4 py-2.5 text-xs text-foreground-muted">
-              Davomati {RISK_THRESHOLD}% dan past sinf qizil bilan belgilanadi.
-              Eksport keyingi bosqichda server orqali qoʻshiladi — har bir yuklab
-              olish audit jurnaliga tushishi shart.
-            </p>
+            <div className="border-t border-border px-4 py-3">
+              <p className="mb-2.5 text-xs text-foreground-muted">
+                Davomati {RISK_THRESHOLD}% dan past sinf qizil bilan belgilanadi.
+              </p>
+              <ReportExport kinds={["sinflar", "ustozlar", "qarzdorlik"]} />
+            </div>
           </div>
         )}
       </section>

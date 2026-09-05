@@ -1265,3 +1265,19 @@ roʻyxat qilib koʻrsatadi — jimgina tashlash undan ham yomon boʻlardi.
 
 Savollar mavjudlariga QOʻSHILADI. «Hammasini oʻchirib qayta yozish»
 tez tuyuladi, lekin xato bosilganda qaytarib boʻlmaydigan yoʻqotish.
+
+## Hisobot fayli serverda yasaladi, brauzerda emas (T-053, DIR-08)
+
+X-13: har eksport audit jurnaliga tushishi shart — eng ehtimolli
+sizib chiqish hujum emas, xodim. Brauzerda CSV yigʻish tez va arzon
+koʻrinadi, lekin u audit izini butunlay chetlab oʻtardi: server
+hech qachon «kimdir roʻyxatni yuklab oldi» degan hodisani koʻrmasdi.
+
+Huquq `reports.export` — rol yetarli emas. Direktor hisobotni
+koʻradi, yuklab olish esa alohida beriladi. Moliya tekshiruvi ustiga
+qoʻshiladi: oʻquv boʻlimida `reports.export` boʻlsa ham qarzdorlik
+hisobotini ololmaydi.
+
+PDF uchun alohida kutubxona olinmadi — hisobotning ekrandagi
+koʻrinishi allaqachon tayyor va brauzerning chop etish oynasi orqali
+PDF ga chiqadi (shartnoma sahifasidagi `print-doc` bilan bir yoʻl).

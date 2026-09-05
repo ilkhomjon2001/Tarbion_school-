@@ -854,8 +854,20 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
   - Frontend: ✅ tayyor — `/rahbar/ustozlar/[id]` → «KPI» — 4 koʻrsatkich, imtihon dinamikasi, sinflar kesimi
 - [ ] T-052 · Xavf ostidagi o'quvchilar — DIR-07
   - Frontend: ✅ tayyor — `isAtRisk()` — `/rahbar/sinflar` va davomat kesimida ajratiladi
-- [ ] T-053 · Hisobotlarni eksport (Excel/PDF) — DIR-08
-  - Frontend: 🟡 qisman — CSV eksport va brauzer orqali PDF bor, Excel yoʻq
+- [x] T-053 · Hisobotlarni eksport (Excel/PDF) — DIR-08
+  - `GET /director/reports/{sinflar|ustozlar|qarzdorlik}/export` — Excel.
+    `services/report_service.py`. 6 ta test
+  - Fayl SERVERDA yasaladi, brauzerda emas: X-13 boʻyicha har eksport
+    auditga tushishi shart va brauzerdagi CSV bu izni chetlab oʻtardi
+  - Huquq `reports.export` — ROL yetarli emas: direktor hisobotni
+    koʻradi, yuklab olish alohida beriladi. Moliya tekshiruvi ustiga
+    qoʻshiladi: oʻquv boʻlimida `reports.export` boʻlsa ham qarzdorlik
+    hisobotini ololmaydi
+  - Faylda «Maʼlumot» varagʻi: qachon, kim, nechta qator. Fayl qoʻldan
+    qoʻlga oʻtganda «bu qaysi kundagi holat?» savoli javobsiz qolmasin
+  - PDF alohida yozilmadi — hisobotning ekrandagi koʻrinishi
+    brauzerning chop etish oynasi orqali PDF ga chiqadi
+  - Frontend: ✅ `/rahbar/hisobotlar` da uchta eksport tugmasi
 - [ ] T-054 · Ikki bosqichli tasdiqlash — AUT-09
   - Frontend: ⬜ yoʻq
 - [~] T-055 · Foydalanuvchi va administrator qo'llanmalari — NFR-16

@@ -6,11 +6,13 @@ serverda, frontendda yashirish himoya emas. Shu sabab har bir yangi
 endpoint uchun «notoʻgʻri rol» testi yoziladi.
 """
 
+import io
 import uuid
 from datetime import date, time, timedelta
 
 import pytest
 from httpx import AsyncClient
+from openpyxl import load_workbook
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,15 +22,18 @@ from app.models import (
     AcademicYear,
     AttendanceRecord,
     AttendanceStatus,
+    AuditLog,
     Grade,
     GradeKind,
     Lesson,
+    Permission,
     Role,
     RoleName,
     SchoolClass,
     Student,
     Subject,
     User,
+    UserPermission,
 )
 
 PASSWORD = "Sinov12345!"  # noqa: S106
@@ -501,3 +506,127 @@ async def test_sinf_davomati_nechta_yozuvdan_chiqqani_koresatiladi(
     assert bosh["attendance_percent"] == 0
     assert bosh["attendance_records"] == 0
 
+
+
+# ─────────────── Hisobotlarni eksport (DIR-08, X-13) ───────────────
+
+
+async def _huquq(session: AsyncSession, user, permission: Permission) -> None:
+    """Huquqni toʻgʻridan-toʻgʻri beradi — `grant` chaqiruvchida
+    `permissions.grant` talab qiladi va bu testda ortiqcha qadam."""
+    session.add(UserPermission(user_id=user.id, permission=permission.value))
+    await session.commit()
+
+
+async def test_huquqsiz_direktor_eksport_qila_olmaydi(
+    client: AsyncClient, school: dict[str, object]
+) -> None:
+    """Rol yetarli emas — yuklab olish alohida beriladigan huquq."""
+    token = await _token(client, "sinov.director")
+    r = await client.get(
+        "/api/v1/director/reports/sinflar/export",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 403
+
+
+async def test_sinflar_hisoboti_excelga_chiqadi(
+    client: AsyncClient, school: dict[str, object], session: AsyncSession
+) -> None:
+    await _huquq(session, school["director"], Permission.REPORTS_EXPORT)
+
+    token = await _token(client, "sinov.director")
+    r = await client.get(
+        "/api/v1/director/reports/sinflar/export",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 200, r.text
+    assert r.headers["cache-control"] == "private, no-store"
+    assert ".xlsx" in r.headers["content-disposition"]
+
+    wb = load_workbook(io.BytesIO(r.content))
+    # Sana faylning ICHIDA turadi — «bu qaysi kundagi holat?» savoli
+    # bir oydan keyin ham javobsiz qolmasin.
+    assert "Maʼlumot" in wb.sheetnames
+    varaq = wb["Sinflar kesimi"]
+    assert varaq["A1"].value == "Sinf"
+    assert varaq.freeze_panes == "A2"
+
+
+async def test_ustozlar_hisoboti_excelga_chiqadi(
+    client: AsyncClient, school: dict[str, object], session: AsyncSession
+) -> None:
+    await _huquq(session, school["director"], Permission.REPORTS_EXPORT)
+
+    token = await _token(client, "sinov.director")
+    r = await client.get(
+        "/api/v1/director/reports/ustozlar/export",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 200, r.text
+    wb = load_workbook(io.BytesIO(r.content))
+    assert "Ustozlar faoliyati" in wb.sheetnames
+
+
+async def test_nomalum_hisobot_turi_422(
+    client: AsyncClient, school: dict[str, object], session: AsyncSession
+) -> None:
+    await _huquq(session, school["director"], Permission.REPORTS_EXPORT)
+
+    token = await _token(client, "sinov.director")
+    r = await client.get(
+        "/api/v1/director/reports/allaqanday/export",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 422
+
+
+async def test_eksport_auditga_tushadi(
+    client: AsyncClient, school: dict[str, object], session: AsyncSession
+) -> None:
+    """X-13: eng ehtimolli sizib chiqish hujum emas, xodim."""
+    await _huquq(session, school["director"], Permission.REPORTS_EXPORT)
+
+    token = await _token(client, "sinov.director")
+    await client.get(
+        "/api/v1/director/reports/sinflar/export",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    rows = (
+        (
+            await session.execute(
+                select(AuditLog).where(AuditLog.object_type == "report_export")
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert len(rows) == 1
+    assert rows[0].new_value["kind"] == "sinflar"
+    assert rows[0].actor_id == school["director"].id
+
+
+async def test_oquv_bolimi_qarzdorlikni_eksport_qila_olmaydi(
+    client: AsyncClient, school: dict[str, object], session: AsyncSession
+) -> None:
+    """Oʻquv boʻlimi hisobotlarni koʻradi, lekin moliyani KOʻRMAYDI.
+
+    `reports.export` huquqi berilgan boʻlsa ham — moliya tekshiruvi
+    alohida turadi (`assert_finance_admin`).
+    """
+    await _huquq(session, school["academic"], Permission.REPORTS_EXPORT)
+
+    token = await _token(client, "sinov.academic")
+    r = await client.get(
+        "/api/v1/director/reports/qarzdorlik/export",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 403
+
+    # Sinflar kesimi esa ochiq.
+    ok = await client.get(
+        "/api/v1/director/reports/sinflar/export",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert ok.status_code == 200
