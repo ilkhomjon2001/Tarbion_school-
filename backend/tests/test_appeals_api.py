@@ -768,7 +768,7 @@ async def test_admin_cannot_attach_thread_to_unrelated_account(
         headers=_auth(admin),
     )
     assert resp.status_code == 422
-    assert "vasiysi emas" in resp.json()["message"]
+    assert "ota-onasi emas" in resp.json()["message"]
 
 
 async def test_parent_cannot_forge_author(client: AsyncClient, world: dict) -> None:

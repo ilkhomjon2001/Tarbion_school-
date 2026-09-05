@@ -25,7 +25,7 @@ export default function ParentAppealsPage() {
       <LiveAppeals
         viewer="parent"
         title="Murojaatlar"
-        hint="Vasiy hisobingiz telefon raqami bilan kiring. Hisobingiz yoʻq boʻlsa — maktab administratoriga murojaat qiling."
+        hint="Ota-ona hisobingiz telefon raqami bilan kiring. Hisobingiz yoʻq boʻlsa — maktab administratoriga murojaat qiling."
       />
     </ParentShell>
   );

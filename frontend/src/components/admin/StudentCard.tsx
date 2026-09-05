@@ -50,13 +50,13 @@ import {
 const RELATION_LABELS: Record<string, string> = {
   father: "Otasi",
   mother: "Onasi",
-  guardian: "Vasiy",
+  guardian: "Qonuniy vakili",
 };
 
-/** Vasiylikni uzish sabablari — bu kirish huquqini yopadi, izsiz qolmaydi. */
+/** Biriktirishni uzish sabablari — bu kirish huquqini yopadi, izsiz qolmaydi. */
 const UNLINK_REASONS = [
   "Ota-ona ajrashdi",
-  "Vasiylik boshqa odamga oʻtdi",
+  "Qonuniy vakillik boshqa odamga oʻtdi",
   "Xato biriktirilgan edi",
   "Ota-onaning oʻz iltimosi",
 ];
@@ -221,7 +221,7 @@ export function StudentCard({
 
               <section>
                 <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-foreground-muted">
-                  Vasiylar
+                  Ota-onalar
                 </h3>
                 <GuardianSection
                   studentId={card.id}
@@ -373,7 +373,7 @@ function GuardianSection({
       setRows(await fetchGuardians(studentId));
       setError(null);
     } catch (err) {
-      setError(apiXato(err, "Vasiylarni olib boʻlmadi."));
+      setError(apiXato(err, "Ota-onalarni olib boʻlmadi."));
     } finally {
       setLoading(false);
     }
@@ -422,7 +422,7 @@ function GuardianSection({
 
       {rows.length === 0 ? (
         <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-foreground-muted">
-          Vasiy biriktirilmagan — ota-ona kabinetiga kira olmaydi.
+          Ota-ona biriktirilmagan — ota-ona kabinetiga kira olmaydi.
         </p>
       ) : (
         <ul className="flex flex-col gap-1.5">
@@ -579,7 +579,7 @@ function GuardianSection({
             className={`${ghostBtn} gap-1.5`}
           >
             <PlusIcon className="h-4 w-4" />
-            Vasiy qoʻshish
+            Ota-ona qoʻshish
           </button>
         ))}
     </div>
@@ -702,7 +702,7 @@ function GuardianAddForm({
       {topildi !== null && topildi.already_linked && (
         <p className="rounded-lg bg-surface-muted px-3 py-2 text-xs text-foreground-muted">
           Bu raqam <strong>{topildi.full_name}</strong> ga tegishli va u allaqachon shu
-          oʻquvchining vasiysi. Boshqa raqam kiriting.
+          oʻquvchining ota-onasi. Boshqa raqam kiriting.
         </p>
       )}
 
@@ -717,7 +717,7 @@ function GuardianAddForm({
               : `${topildi.children_count} farzandi: ${topildi.children.join(", ")}`}
           </p>
           <p className="mt-2 text-sm font-medium text-foreground">
-            Yangi hisob ochilmasin — shu vasiyga <strong>{studentName}</strong> ham
+            Yangi hisob ochilmasin — shu ota-onaga <strong>{studentName}</strong> ham
             biriktirilsinmi?
           </p>
           <p className="mt-1 text-xs text-foreground-muted">
@@ -727,7 +727,7 @@ function GuardianAddForm({
       )}
 
       {/* Ism maydonlari FAQAT yangi hisob ochilganda kerak: mavjud
-          vasiyning ismi allaqachon bazada va uni bu yerdan
+          ota-onaning ismi allaqachon bazada va uni bu yerdan
           oʻzgartirmaymiz. */}
       {!bogʻlash && (
         <span className="flex gap-2">
@@ -777,7 +777,7 @@ function GuardianAddForm({
           {bogʻlash ? (
             <>
               <LinkIcon className="h-4 w-4" />
-              Ha, shu vasiyga biriktirish
+              Ha, shu ota-onaga biriktirish
             </>
           ) : (
             <>

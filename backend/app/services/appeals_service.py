@@ -348,13 +348,13 @@ async def create_appeal(
 
         family = await guardians_of(session, student_id)
         if not family:
-            raise ValidationError("Bu oʻquvchiga vasiy hisobi biriktirilmagan.")
+            raise ValidationError("Bu oʻquvchiga ota-ona hisobi biriktirilmagan.")
 
         allowed = {row[0] for row in family}
         if author_id is None:
             author_id = family[0][0]  # asosiy vasiy — `guardians_of` tartibi
         elif author_id not in allowed:
-            raise ValidationError("Tanlangan hisob bu oʻquvchining vasiysi emas.")
+            raise ValidationError("Tanlangan hisob bu oʻquvchining ota-onasi emas.")
     else:
         # Bola haqiqatan shu ota-onaning farzandimi — soʻrov darajasida.
         is_child = await session.scalar(

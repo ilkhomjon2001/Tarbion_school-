@@ -26,8 +26,13 @@ import { apiXato, fetchContract, type ContractOut } from "@/lib/school/api";
 const RELATION_LABELS: Record<string, string> = {
   father: "otasi",
   mother: "onasi",
-  guardian: "vasiysi",
+  guardian: "qonuniy vakili",
 };
+
+// DIQQAT: quyidagi shartnoma BANDLARIDAGI «ota-ona yoki vasiylarga»
+// iborasi imzolangan hujjatdan soʻzma-soʻz koʻchirilgan (3.2-band).
+// Interfeys atamasi «ota-ona» ga oʻzgargan boʻlsa ham, HUJJAT MATNI
+// tegilmaydi — u yuridik kuchga ega.
 
 export default function ParentContractPage() {
   const [child, selectChild] = useChild();
@@ -237,7 +242,7 @@ function ContractDocument({ d }: { d: ContractOut }) {
                 {asosiy.phone && <p className="num">Tel.: {asosiy.phone}</p>}
               </>
             ) : (
-              <p className="text-foreground-muted">Vasiy biriktirilmagan.</p>
+              <p className="text-foreground-muted">Ota-ona biriktirilmagan.</p>
             )}
             <p className="mt-1">Oʻquvchi: {d.student_name}</p>
           </div>

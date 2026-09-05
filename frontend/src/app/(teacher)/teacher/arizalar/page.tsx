@@ -71,7 +71,7 @@ export default function AbsenceRequestsPage() {
   return (
     <TeacherShell
       title="Sababli qoldirish arizalari"
-      subtitle="Vasiy yuborgan ariza — tasdiqlansa, oʻsha kunlar «sababli» boʻladi"
+      subtitle="Ota-ona yuborgan ariza — tasdiqlansa, oʻsha kunlar «sababli» boʻladi"
     >
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap gap-2">
@@ -100,7 +100,7 @@ export default function AbsenceRequestsPage() {
           <EmptyState
             icon={<ClipboardIcon className="h-5 w-5" />}
             title="Ariza yoʻq"
-            description="Vasiy ota-ona kabinetidan sababli qoldirish arizasini yuborganda u shu yerda paydo boʻladi."
+            description="Ota-ona oʻz kabinetidan sababli qoldirish arizasini yuborganda u shu yerda paydo boʻladi."
           />
         ) : (
           <ul className="flex flex-col gap-3">

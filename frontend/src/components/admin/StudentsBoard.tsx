@@ -241,7 +241,7 @@ export function StudentsBoard({ initialQuery = "" }: { initialQuery?: string }) 
             </table>
           </div>
           <p className="border-t border-border px-4 py-3 text-xs text-foreground-muted">
-            Roʻyxatda tugʻilgan sana va vasiy telefoni koʻrsatilmaydi — ular
+            Roʻyxatda tugʻilgan sana va ota-ona telefoni koʻrsatilmaydi — ular
             kartochkada va faqat huquqi borga (X-6).
           </p>
         </div>

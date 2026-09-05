@@ -205,7 +205,7 @@ export default function AnnouncementsPage() {
               ) : (
                 <>
                   <span className="num font-semibold text-foreground">{recipients}</span>{" "}
-                  kishiga yetkaziladi (vasiylar va oʻquvchi hisoblari)
+                  kishiga yetkaziladi (ota-ona va oʻquvchi hisoblari)
                 </>
               )}
             </p>

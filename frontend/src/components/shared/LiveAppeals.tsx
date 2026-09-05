@@ -904,7 +904,7 @@ function StartConversationForm({ onDone }: { onDone: () => void }) {
 
       {chosen && chosen.guardians.length === 0 && (
         <p className="rounded-lg bg-warning-tint px-3 py-2 text-xs text-warning">
-          Bu oʻquvchiga vasiy hisobi biriktirilmagan — avval hisob oching.
+          Bu oʻquvchiga ota-ona hisobi biriktirilmagan — avval hisob oching.
         </p>
       )}
 
@@ -919,7 +919,7 @@ function StartConversationForm({ onDone }: { onDone: () => void }) {
             {chosen.guardians.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.fullName}
-                {g.isPrimary ? " — asosiy vasiy" : ""}
+                {g.isPrimary ? " — asosiy" : ""}
               </option>
             ))}
           </select>

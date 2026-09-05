@@ -113,7 +113,7 @@ export default function WellbeingPage() {
   return (
     <TeacherShell
       title="Tarbiyaviy izoh"
-      subtitle="Yozuv vasiyga, sinf rahbariga va rahbariyatga koʻrinadi"
+      subtitle="Yozuv ota-onaga, sinf rahbariga va rahbariyatga koʻrinadi"
     >
       <div className="flex flex-col gap-4">
         {error && (

@@ -16,7 +16,7 @@ oldingisiga tayanadi:
 2. **Qoʻngʻiroqlar jadvali** — parasi belgilanmagan dars yaratilmaydi
 3. **Fanlar va sinflar**
 4. **Xodimlar** va ularga fan biriktirish
-5. **Oʻquvchilar** va vasiylar
+5. **Oʻquvchilar** va ota-onalar
 6. **Dars jadvali** (`Maʼlumotnomalar → Dars jadvali`)
 7. **Darslarni generatsiya qilish** — chorak boʻyicha
 8. **Shartnomalar va toʻlov jadvali**
@@ -56,7 +56,7 @@ Muhim huquqlar:
 
 ---
 
-## 2. Oʻquvchi va vasiy
+## 2. Oʻquvchi va ota-ona
 
 ### Yangi oʻquvchi
 
@@ -65,18 +65,18 @@ Muhim huquqlar:
 Hisob avtomatik ochiladi: login `familiya.ism` koʻrinishida, parol
 vaqtinchalik. Ikkalasini oilaga bering.
 
-### Vasiy biriktirish
+### Ota-ona biriktirish
 
-Kartochkadagi «Vasiy qoʻshish» — **telefon raqamidan boshlanadi**.
+Kartochkadagi «Ota-ona qoʻshish» — **telefon raqamidan boshlanadi**.
 
 Raqam bazada topilsa tizim aytadi: «Bu raqam Karimov Akmalga tegishli,
-uning 1 ta farzandi bor. Shu vasiyga ikkinchi oʻquvchi biriktirilsinmi?»
+uning 1 ta farzandi bor. Shu ota-onaga ikkinchi oʻquvchi biriktirilsinmi?»
 Tasdiqlasangiz mavjud hisob ishlatiladi — oila ikkala bolani bitta
 login bilan koʻradi.
 
-Raqam topilmasa yangi vasiy hisobi ochiladi.
+Raqam topilmasa yangi ota-ona hisobi ochiladi.
 
-> Bir telefon — bir vasiy. Ikkita hisobga bir raqam qoʻyib boʻlmaydi.
+> Bir telefon — bir ota-ona. Ikkita hisobga bir raqam qoʻyib boʻlmaydi.
 
 ### Chiqarish va qaytarish
 
@@ -126,7 +126,7 @@ qachon.
 
 ### Sababli qoldirish arizalari
 
-Vasiy ariza yozadi, **sinf rahbari** tasdiqlaydi. Sinf rahbari taʼtilda
+Ota-ona ariza yozadi, **sinf rahbari** tasdiqlaydi. Sinf rahbari taʼtilda
 boʻlsa administrator ham qaror qila oladi.
 
 Tasdiqlangan ariza oʻsha kunlardagi darslarni «sababli» qiladi —

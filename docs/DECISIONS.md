@@ -1281,3 +1281,24 @@ hisobotini ololmaydi.
 PDF uchun alohida kutubxona olinmadi — hisobotning ekrandagi
 koʻrinishi allaqachon tayyor va brauzerning chop etish oynasi orqali
 PDF ga chiqadi (shartnoma sahifasidagi `print-doc` bilan bir yoʻl).
+
+## Interfeysda «ota-ona», kodda «guardian» (2026-09-05)
+
+Egasining qarori: «vasiy» soʻzi ekranda yomon eshitiladi. Interfeys
+matni, foydalanuvchiga koʻrinadigan xato xabarlari va qoʻllanmalar
+**«ota-ona»** ga oʻtdi.
+
+OʻZGARMAGANI va nega:
+
+- **Kod va baza** — `Guardian`, `guardian_service`, `guardians`
+  jadvali, `relation` qiymatlari. Kod inglizcha (CLAUDE.md) va
+  `guardian` toʻgʻri atama; migratsiya bilan nom almashtirish hech
+  qanday foyda bermaydi.
+- **Qarindoshlik yorligʻi** «Otasi / Onasi» yonida turadi. Uchinchisi
+  aynan «ota-ona EMAS» degan holat, shuning uchun u **«Qonuniy vakil»**
+  boʻldi — «ota-ona» deyilsa roʻyxat maʼnosiz boʻlib qolardi.
+- **Shartnoma bandlari** (`ota-ona/shartnoma`, 3.2-band) — imzolangan
+  hujjatdan soʻzma-soʻz koʻchirilgan. Yuridik matn interfeys atamasiga
+  qarab oʻzgartirilmaydi.
+- **Ishlab chiquvchi hujjatlari** (CLAUDE.md, TASKS.md, XAVFSIZLIK.md,
+  DECISIONS.md) va kod izohlari — ular TZ atamasiga tayanadi.

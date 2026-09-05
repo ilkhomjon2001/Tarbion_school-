@@ -167,18 +167,18 @@ async def update_guardian(
         )
     )
     if link is None:
-        raise NotFoundError("Vasiy topilmadi.")
+        raise NotFoundError("Ota-ona topilmadi.")
 
     user = await session.get(User, user_id)
     if user is None or user.is_archived:
-        raise NotFoundError("Vasiy topilmadi.")
+        raise NotFoundError("Ota-ona topilmadi.")
 
     raqam = _normalize_phone(phone)
     if raqam is not None and raqam != _normalize_phone(user.phone):
         band = await _find_parent_by_phone(session, raqam)
         if band is not None and band.id != user.id:
             raise ConflictError(
-                f"Bu telefon allaqachon boshqa vasiyga biriktirilgan: {band.full_name}."
+                f"Bu telefon allaqachon boshqa ota-onaga biriktirilgan: {band.full_name}."
             )
 
     eski = {
@@ -254,7 +254,7 @@ async def link_existing(
         )
     )
     if mavjud is not None and not mavjud.is_archived:
-        raise ConflictError(f"{user.full_name} allaqachon shu oʻquvchining vasiysi.")
+        raise ConflictError(f"{user.full_name} allaqachon shu oʻquvchining ota-onasi.")
 
     await _ensure_parent_role(session, user)
 
@@ -337,7 +337,7 @@ async def create_and_link(
         if bor is not None:
             raise ConflictError(
                 f"Bu telefon {bor.full_name} hisobiga tegishli. Yangi hisob ochish "
-                f"oʻrniga oʻsha hisobni vasiy qilib bogʻlang."
+                f"oʻrniga oʻsha hisobni ota-ona qilib bogʻlang."
             )
 
     yaratildi = await user_service.create_user(
@@ -458,7 +458,7 @@ async def _get_link(
     # `student_id` ham tekshiriladi: boshqa oʻquvchining bogʻlanishini
     # id boʻyicha oʻzgartirib boʻlmasin.
     if bogʻlanish is None or bogʻlanish.student_id != student_id or bogʻlanish.is_archived:
-        raise NotFoundError("Vasiy bogʻlanishi topilmadi.")
+        raise NotFoundError("Ota-ona bogʻlanishi topilmadi.")
     return bogʻlanish
 
 

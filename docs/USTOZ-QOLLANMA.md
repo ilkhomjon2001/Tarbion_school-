@@ -131,7 +131,7 @@ Sinf rahbari oʻz sinfi boʻyicha kengaytirilgan huquqqa ega:
 
 ### Sababli qoldirish arizalari
 
-`Sababli qoldirish` boʻlimida vasiy yuborgan arizalar chiqadi: sanalar,
+`Sababli qoldirish` boʻlimida ota-ona yuborgan arizalar chiqadi: sanalar,
 sabab va ilova (shifokor maʼlumotnomasi boʻlishi mumkin).
 
 Ilovani ochish uchun tugmani bosing — havola **15 daqiqa** amal qiladi.

@@ -150,7 +150,7 @@ export function AdminDashboard() {
               href="/admin/qabul?yangi=1"
               icon={<GraduationCapIcon className="h-5 w-5 text-brand" />}
               title="Yangi oʻquvchi qabul qilish"
-              context="Oʻquvchi, vasiy hisobi va shartnoma — toʻrt qadamda"
+              context="Oʻquvchi, ota-ona hisobi va shartnoma — toʻrt qadamda"
             />
             <QuickLink
               href="/admin/tolovlar"

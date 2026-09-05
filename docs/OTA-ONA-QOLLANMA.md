@@ -1,6 +1,6 @@
 # Ota-onalar uchun qoʻllanma — Tarbion
 
-Bu qoʻllanma **vasiy** (ota, ona yoki qonuniy vakil) uchun. Farzandingiz
+Bu qoʻllanma **ota-ona** (yoki qonuniy vakil) uchun. Farzandingiz
 bilan bogʻliq hamma narsa bitta joyda: davomat, baholar, uy vazifasi,
 toʻlov va maktab bilan yozishma.
 
@@ -176,7 +176,7 @@ Telegram ulanganini tekshiring (9-boʻlim). Ulanmagan boʻlsa xabarlar
 faqat kabinet ichidagi bildirishnomalarda koʻrinadi.
 
 **Ikkinchi farzandim roʻyxatda yoʻq.**
-Maktab maʼmuriyatiga ayting — ular sizni ikkinchi bolaga ham vasiy qilib
+Maktab maʼmuriyatiga ayting — ular sizni ikkinchi bolaga ham ota-ona qilib
 biriktiradi.
 
 **Parolni almashtirmoqchiman.**

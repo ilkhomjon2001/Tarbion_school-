@@ -29,7 +29,7 @@ import {
 } from "@/lib/school/api";
 import { addDiscount, setContract, DEFAULT_MONTHLY_FEE } from "@/lib/payments/api";
 
-const STEPS = ["Oʻquvchi", "Ota-ona / vasiy", "Sinf va shartnoma", "Tasdiqlash"];
+const STEPS = ["Oʻquvchi", "Ota-ona", "Sinf va shartnoma", "Tasdiqlash"];
 
 const MONTHS_IN_YEAR = 9;
 
@@ -37,7 +37,7 @@ const MONTHS_IN_YEAR = 9;
 const RELATIONS: { id: string; label: string }[] = [
   { id: "father", label: "Ota" },
   { id: "mother", label: "Ona" },
-  { id: "guardian", label: "Vasiy" },
+  { id: "guardian", label: "Qonuniy vakil" },
 ];
 
 function relationLabel(id: string): string {
@@ -123,8 +123,8 @@ export function EnrollWizard({ startBlank = false }: { startBlank?: boolean }) {
   const [saveError, setSaveError] = useState("");
 
   /**
-   * Yakuniy qadam — BAZAGA yozadi: oʻquvchi → vasiy hisobi → shartnoma
-   * (→ chegirma). Vasiy paroli javobda BIR MARTA keladi va yakuniy
+   * Yakuniy qadam — BAZAGA yozadi: oʻquvchi → ota-ona hisobi → shartnoma
+   * (→ chegirma). Ota-ona paroli javobda BIR MARTA keladi va yakuniy
    * ekranda koʻrsatiladi.
    *
    * Telefon boshqa hisobda boʻlsa server 409 qaytaradi va xabar kimligini
@@ -205,7 +205,7 @@ export function EnrollWizard({ startBlank = false }: { startBlank?: boolean }) {
           <div>
             <h1 className="text-h2 font-bold text-foreground">Qabul</h1>
             <p className="text-sm text-foreground-muted">
-              Yangi oʻquvchini bazaga kiritish va vasiy hisobini ochish
+              Yangi oʻquvchini bazaga kiritish va ota-ona hisobini ochish
             </p>
           </div>
           <button
@@ -368,7 +368,7 @@ function validate(draft: EnrollDraft, step: number): string[] {
 
   if (step === 1) {
     if (draft.guardianFullName.trim().split(/\s+/).length < 2) {
-      problems.push("Ota-ona / vasiy F.I.Sh ni toʻliq kiriting.");
+      problems.push("Ota-ona F.I.Sh ni toʻliq kiriting.");
     }
     if (draft.guardianPhone.replace(/\D/g, "").length < 12) {
       problems.push("Telefon raqami toʻliq emas. Namuna: +998 90 123 45 67");
@@ -434,7 +434,7 @@ function GuardianStep({
 }) {
   return (
     <>
-      <h2 className="mb-1 text-base font-semibold text-foreground">Ota-ona / vasiy</h2>
+      <h2 className="mb-1 text-base font-semibold text-foreground">Ota-ona</h2>
       <p className="mb-4 text-sm text-foreground-muted">
         Bu shaxs kabinetga kirish huquqini oladi va toʻlov boʻyicha xabarlarni qabul qiladi.
       </p>
@@ -635,7 +635,7 @@ function ConfirmStep({ draft, classes }: { draft: EnrollDraft; classes: ClassOut
       <h2 className="mb-1 text-base font-semibold text-foreground">Tasdiqlash</h2>
       <p className="mb-4 text-sm text-foreground-muted">
         Maʼlumotlarni tekshiring. Tasdiqlangach oʻquvchi {draft.className} sinfiga
-        qoʻshiladi, shartnoma yoziladi va vasiy uchun kabinet hisobi ochiladi.
+        qoʻshiladi, shartnoma yoziladi va ota-ona uchun kabinet hisobi ochiladi.
       </p>
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
         <Row label="Oʻquvchi">{draft.studentFullName}</Row>
@@ -643,7 +643,7 @@ function ConfirmStep({ draft, classes }: { draft: EnrollDraft; classes: ClassOut
         <Row label="Sinf">{draft.className}</Row>
         <Row label="Sinf rahbari">{homeroomName}</Row>
         <Row label="Qabul sanasi">{draft.enrollDate}</Row>
-        <Row label="Ota-ona / vasiy">
+        <Row label="Ota-ona">
           {draft.guardianFullName} ({relationLabel(draft.guardianRelation)})
         </Row>
         <Row label="Telefon">{draft.guardianPhone}</Row>
@@ -690,7 +690,7 @@ function RecapPanel({
       )}
 
       <div className="mt-4">
-        <SectionHead index={2} label="Ota-ona / vasiy" show={step > 1} onEdit={() => onEdit(1)} />
+        <SectionHead index={2} label="Ota-ona" show={step > 1} onEdit={() => onEdit(1)} />
       </div>
       {step > 1 ? (
         <div className="mt-1.5 rounded-lg bg-surface-muted p-3">
@@ -765,7 +765,7 @@ function Placeholder() {
   );
 }
 
-/** Qabul natijasi — vasiy paroli BIR MARTA shu yerda koʻrsatiladi. */
+/** Qabul natijasi — ota-ona paroli BIR MARTA shu yerda koʻrsatiladi. */
 interface EnrollResult {
   studentName: string;
   guardianLogin: string;
@@ -794,7 +794,7 @@ function EnrolledScreen({
         </p>
         <div className="mt-4 rounded-lg bg-warning-tint px-3 py-3 text-left">
           <p className="text-xs font-semibold text-warning">
-            Vasiy kabinetiga kirish maʼlumotlari — FAQAT HOZIR koʻrsatiladi
+            Ota-ona kabinetiga kirish maʼlumotlari — FAQAT HOZIR koʻrsatiladi
           </p>
           <dl className="mt-2 space-y-1 text-sm">
             <div className="flex justify-between gap-2">

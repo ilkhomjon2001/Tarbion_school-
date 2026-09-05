@@ -32,7 +32,7 @@ import { KIND_LABELS, TONE_LABELS } from "@/lib/wellbeing/api";
 const RELATION_LABELS: Record<string, string> = {
   father: "Otasi",
   mother: "Onasi",
-  guardian: "Vasiy",
+  guardian: "Qonuniy vakili",
 };
 
 const MONTH_NAMES = [
@@ -169,7 +169,7 @@ export function StudentDossier({
             <>
               <Section title="Oila" hint="Telefon faqat shu kartochkada (X-6)">
                 {d.guardians.length === 0 ? (
-                  <Empty>Vasiy biriktirilmagan.</Empty>
+                  <Empty>Ota-ona biriktirilmagan.</Empty>
                 ) : (
                   <ul className="flex flex-col gap-1.5">
                     {d.guardians.map((g) => (
@@ -253,7 +253,7 @@ export function StudentDossier({
                 )}
               </Section>
 
-              <Section title="Oila bilan suhbatlar" hint="Ichki qaydlar — vasiy koʻrmaydi">
+              <Section title="Oila bilan suhbatlar" hint="Ichki qaydlar — ota-ona koʻrmaydi">
                 {d.conversations.length === 0 ? (
                   <Empty>Qayd yoʻq.</Empty>
                 ) : (

@@ -297,7 +297,7 @@ function SchoolTab() {
               className={`${input} num`}
             />
             <span className="mt-1 block text-xs text-foreground-muted">
-              Oʻquvchi kelmagani belgilangandan keyin vasiyga xabar shuncha
+              Oʻquvchi kelmagani belgilangandan keyin ota-onaga xabar shuncha
               vaqtdan soʻng yuboriladi. Shu oraliqda ustoz davomatni tuzatsa,
               xabar umuman ketmaydi. <strong>0</strong> — darhol.
             </span>
