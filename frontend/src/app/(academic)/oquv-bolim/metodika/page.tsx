@@ -13,6 +13,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { CurriculumSearch } from "@/components/shared/CurriculumSearch";
 import { CurriculumView } from "@/components/shared/CurriculumView";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -76,6 +77,15 @@ export default function MetodikaPage() {
           {xato}
         </p>
       )}
+
+      {/*
+        MET-05: qidiruv joriy rejalar boʻyicha. Oʻquv boʻlimiga ham
+        kerak — «bu atama qaysi darsda bor?» degan savol reja
+        tuzayotganda tez-tez chiqadi.
+      */}
+      <section className="rounded-xl border border-border bg-surface p-3">
+        <CurriculumSearch />
+      </section>
 
       <ImportForm onDone={() => void yukla()} />
 
@@ -304,14 +314,19 @@ function PlansTable({
                     >
                       Eksport
                     </button>
-                    {p.status === "qoralama" && (
+                    {/*
+                      MET-07: arxivdagi versiya ham joriy qilinadi —
+                      «oldingi versiyaga qaytarish» aynan shu. Eski
+                      reja oʻchirilmagan, faqat holati arxiv.
+                    */}
+                    {p.status !== "joriy" && (
                       <button
                         type="button"
                         disabled={busyId === p.id}
                         onClick={() => void amal(p.id, () => publishPlan(p.id))}
                         className="focus-ring rounded bg-brand px-2 py-1 text-xs font-semibold text-brand-foreground hover:bg-brand-dark disabled:opacity-50"
                       >
-                        Joriy qilish
+                        {p.status === "arxiv" ? "Qayta joriy qilish" : "Joriy qilish"}
                       </button>
                     )}
                     {p.status !== "joriy" && (
@@ -386,7 +401,7 @@ function PreviewPanel({
           </p>
         </div>
         <div className="flex gap-2">
-          {plan.status === "qoralama" && (
+          {plan.status !== "joriy" && (
             <button
               type="button"
               disabled={busy}
@@ -402,7 +417,11 @@ function PreviewPanel({
               }}
               className="focus-ring inline-flex h-10 items-center rounded-lg bg-brand px-4 text-sm font-semibold text-brand-foreground hover:bg-brand-dark disabled:opacity-50"
             >
-              {busy ? "Joriy qilinmoqda…" : "Joriy qilish"}
+              {busy
+                ? "Joriy qilinmoqda…"
+                : plan.status === "arxiv"
+                  ? "Qayta joriy qilish"
+                  : "Joriy qilish"}
             </button>
           )}
           <button

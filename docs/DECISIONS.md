@@ -1220,3 +1220,30 @@ Bekor qilingan dars ARXIVLANMAYDI. Generatsiya `is_archived = false`
 boʻyicha tekshiradi va arxivlangani slotni boʻshatadi (Y4) — keyingi
 generatsiya darsni qayta yaratib qoʻyardi. Shuning uchun dars joyida
 qoladi, faqat `cancelled_at` qoʻyiladi.
+
+## Metodik baza qidiruvi Python'da filtrlaydi (T-026, MET-05)
+
+Darslar `curriculum_plans.lessons` JSONB roʻyxatida yotadi. Fan/sinf
+filtri SQL da, matn qidiruvi esa Python da. Sabab: bitta (fan, yil,
+sinf) uchun bitta JORIY reja boʻladi — maktab hajmida bu bir necha
+oʻnlab qator, yaʼni bir necha ming dars. GIN indeks va
+`jsonb_path_query` bu hajmda foyda bermaydi, kodni esa sezilarli
+murakkablashtiradi. Rejalar soni yuzlab boʻlsa — oʻshanda indeks.
+
+Natijada `matched_in` qaytadi (mavzu / atama / jihoz) va ekranda
+koʻrsatiladi: jihoz boʻyicha topilganda mavzu nomi qidiruv soʻzini
+umuman oʻz ichiga olmaydi va foydalanuvchi natijaga ishonmaydi.
+
+## Kartochkadagi baholash mezoni `baholash` deb nomlandi (T-024)
+
+`mezon` kaliti statik Robototexnika bazasida allaqachon band va u
+yerda BOSHQA maʼnoda — baholash jadvali (`ustunlar`, `qatorlar`).
+Ikkalasi bir xil `CurriculumView` da chizilgani uchun nomlar
+toʻqnashardi.
+
+## Versiyaga qaytarish alohida amal emas (T-027, MET-07)
+
+Reja joriy qilinganda eskisi `arxiv` holatiga oʻtadi — oʻchirilmaydi
+(CLAUDE.md 1-qoida). Demak «oldingi versiyaga qaytarish» aynan oʻsha
+versiyani qayta joriy qilish. Alohida `restore` endpointi yozilsa,
+bir xil ishni ikki yoʻl bilan qiladigan ikkita kod boʻlardi.

@@ -82,6 +82,21 @@ export interface Dars {
   nazariya?: NazariyaBlok[];
   amaliy?: NazariyaBlok[];
   uyga?: string[];
+  /** MET-02: dars oxirida oʻquvchi nima qila oladi. */
+  natija?: string;
+  /** MET-02: kerakli jihozlar — qidiruvga tushadi (MET-05). */
+  jihoz?: string[];
+  /**
+   * MET-02: baholash mezonlari.
+   *
+   * Nomi `mezon` EMAS: statik Robototexnika bazasida `mezon` boshqa
+   * maʼnoda (baholash jadvali) band.
+   */
+  baholash?: string[];
+  /** MET-04: tashqi video havola — kartochka ichida koʻrsatiladi. */
+  video?: string;
+  /** MET-03: ilova qilingan fayllar. */
+  files?: { id: string; name: string }[];
   meta?: DarsMeta;
   topshiriq?: DarsTopshiriq;
   kod?: DarsKod;
@@ -111,9 +126,12 @@ export const TYPE_META: Record<string, { label: string; cls: string }> = {
 
 import {
   curriculumPublishedCatalog,
+  curriculumSearch,
   curriculumPublishedPlan,
 } from "@/lib/api/sdk.gen";
-import type { PlanLessonsOut } from "@/lib/api/types.gen";
+import type { PlanLessonsOut, SearchHitOut } from "@/lib/api/types.gen";
+
+export type { SearchHitOut };
 import { withAuth } from "@/lib/session";
 
 const BASE = "/reja/robototexnika";
@@ -175,4 +193,31 @@ export function lessonsToChoraklar(
     .sort((a, b) => a[0] - b[0])
     .map(([c, darslar]) => ({ nom: `${c}-chorak`, darslar }));
   return { yil, sinf, choraklar };
+}
+
+
+/**
+ * Metodik bazada qidiruv (MET-05).
+ *
+ * Qidiruv faqat JORIY rejalar boʻyicha — qoralama hali hujjat emas.
+ * Natijada `matched_in` keladi: mavzu, atama yoki jihoz. Uni
+ * koʻrsatish muhim — foydalanuvchi «nega bu chiqdi?» degan savolga
+ * javob koʻrsin.
+ */
+export async function searchCurriculum(params: {
+  q: string;
+  fan?: string;
+  sinf?: string;
+  chorak?: number;
+}): Promise<SearchHitOut[]> {
+  return withAuth<SearchHitOut[]>(() =>
+    curriculumSearch({
+      query: {
+        q: params.q,
+        ...(params.fan ? { fan: params.fan } : {}),
+        ...(params.sinf ? { sinf: params.sinf } : {}),
+        ...(params.chorak ? { chorak: params.chorak } : {}),
+      },
+    }),
+  );
 }

@@ -3371,6 +3371,64 @@ export type LessonCancelIn = {
 };
 
 /**
+ * LessonCardIn
+ *
+ * Kartochkaning YUBORILGAN maydonlari oʻzgaradi, qolgani tegilmaydi.
+ *
+ * `chorak` va `type` bu yerda yoʻq: chorak darsning rejadagi oʻrnini
+ * belgilaydi va uni oʻzgartirish butun rejani qayta tartiblashni
+ * talab qilardi — bunday oʻzgarish Excel orqali qilinadi.
+ */
+export type LessonCardIn = {
+    /**
+     * Title
+     */
+    title?: string | null;
+    /**
+     * Model
+     */
+    model?: string | null;
+    /**
+     * Natija
+     */
+    natija?: string | null;
+    /**
+     * Video
+     */
+    video?: string | null;
+    /**
+     * Maqsad
+     */
+    maqsad?: Array<string> | null;
+    /**
+     * Lugat
+     */
+    lugat?: Array<string> | null;
+    /**
+     * Jihoz
+     */
+    jihoz?: Array<string> | null;
+    /**
+     * Baholash
+     */
+    baholash?: Array<string> | null;
+    /**
+     * Uyga
+     */
+    uyga?: Array<string> | null;
+    /**
+     * Resurslar
+     */
+    resurslar?: Array<string> | null;
+    /**
+     * Files
+     */
+    files?: Array<{
+        [key: string]: unknown;
+    }> | null;
+};
+
+/**
  * LessonExceptionOut
  */
 export type LessonExceptionOut = {
@@ -3907,28 +3965,6 @@ export type PermissionOut = {
      * Group
      */
     group: string;
-};
-
-/**
- * PlanCreateIn
- */
-export type PlanCreateIn = {
-    /**
-     * Teacher Id
-     */
-    teacher_id: string;
-    /**
-     * Subject Id
-     */
-    subject_id: string;
-    /**
-     * Class Id
-     */
-    class_id: string;
-    /**
-     * Period
-     */
-    period: string;
 };
 
 /**
@@ -4600,6 +4636,44 @@ export type ScoreItemIn = {
      * Absent
      */
     absent?: boolean;
+};
+
+/**
+ * SearchHitOut
+ */
+export type SearchHitOut = {
+    /**
+     * Plan Id
+     */
+    plan_id: string;
+    /**
+     * Fan
+     */
+    fan: string;
+    /**
+     * Yil
+     */
+    yil: string;
+    /**
+     * Sinf
+     */
+    sinf: string;
+    /**
+     * Chorak
+     */
+    chorak: number;
+    /**
+     * Index
+     */
+    index: number;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Matched In
+     */
+    matched_in: string;
 };
 
 /**
@@ -6455,6 +6529,54 @@ export type WellbeingNoteOut = {
     created_at: string;
 };
 
+/**
+ * PlanCreateIn
+ *
+ * MET-06: ustoz oʻz rejasini qoʻshadi. Reja QORALAMA boʻlib tugʻiladi.
+ */
+export type AppSchemasCurriculumPlanCreateIn = {
+    /**
+     * Fan
+     */
+    fan: string;
+    /**
+     * Yil
+     */
+    yil: string;
+    /**
+     * Sinf
+     */
+    sinf: string;
+    /**
+     * Lessons
+     */
+    lessons: Array<{
+        [key: string]: unknown;
+    }>;
+};
+
+/**
+ * PlanCreateIn
+ */
+export type AppSchemasExamsPlanCreateIn = {
+    /**
+     * Teacher Id
+     */
+    teacher_id: string;
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Class Id
+     */
+    class_id: string;
+    /**
+     * Period
+     */
+    period: string;
+};
+
 export type AuthLoginData = {
     body: LoginIn;
     path?: never;
@@ -8074,6 +8196,31 @@ export type CurriculumPlansResponses = {
 
 export type CurriculumPlansResponse = CurriculumPlansResponses[keyof CurriculumPlansResponses];
 
+export type CurriculumCreatePlanData = {
+    body: AppSchemasCurriculumPlanCreateIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/curriculum/plans';
+};
+
+export type CurriculumCreatePlanErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CurriculumCreatePlanError = CurriculumCreatePlanErrors[keyof CurriculumCreatePlanErrors];
+
+export type CurriculumCreatePlanResponses = {
+    /**
+     * Successful Response
+     */
+    201: PlanRowOut;
+};
+
+export type CurriculumCreatePlanResponse = CurriculumCreatePlanResponses[keyof CurriculumCreatePlanResponses];
+
 export type CurriculumPlanLessonsData = {
     body?: never;
     path: {
@@ -8216,6 +8363,128 @@ export type CurriculumExportResponses = {
      */
     200: unknown;
 };
+
+export type CurriculumSearchData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Q
+         */
+        q: string;
+        /**
+         * Fan
+         */
+        fan?: string | null;
+        /**
+         * Sinf
+         */
+        sinf?: string | null;
+        /**
+         * Chorak
+         */
+        chorak?: number | null;
+    };
+    url: '/api/v1/curriculum/search';
+};
+
+export type CurriculumSearchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CurriculumSearchError = CurriculumSearchErrors[keyof CurriculumSearchErrors];
+
+export type CurriculumSearchResponses = {
+    /**
+     * Response Curriculum Search
+     *
+     * Successful Response
+     */
+    200: Array<SearchHitOut>;
+};
+
+export type CurriculumSearchResponse = CurriculumSearchResponses[keyof CurriculumSearchResponses];
+
+export type CurriculumVersionsData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Fan
+         */
+        fan: string;
+        /**
+         * Yil
+         */
+        yil: string;
+        /**
+         * Sinf
+         */
+        sinf: string;
+    };
+    url: '/api/v1/curriculum/versions';
+};
+
+export type CurriculumVersionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CurriculumVersionsError = CurriculumVersionsErrors[keyof CurriculumVersionsErrors];
+
+export type CurriculumVersionsResponses = {
+    /**
+     * Response Curriculum Versions
+     *
+     * Successful Response
+     */
+    200: Array<PlanRowOut>;
+};
+
+export type CurriculumVersionsResponse = CurriculumVersionsResponses[keyof CurriculumVersionsResponses];
+
+export type CurriculumUpdateLessonCardData = {
+    body: LessonCardIn;
+    path: {
+        /**
+         * Plan Id
+         */
+        plan_id: string;
+        /**
+         * Index
+         */
+        index: number;
+    };
+    query?: never;
+    url: '/api/v1/curriculum/plans/{plan_id}/lessons/{index}';
+};
+
+export type CurriculumUpdateLessonCardErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CurriculumUpdateLessonCardError = CurriculumUpdateLessonCardErrors[keyof CurriculumUpdateLessonCardErrors];
+
+export type CurriculumUpdateLessonCardResponses = {
+    /**
+     * Response Curriculum Update Lesson Card
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type CurriculumUpdateLessonCardResponse = CurriculumUpdateLessonCardResponses[keyof CurriculumUpdateLessonCardResponses];
 
 export type ExamsListExamsData = {
     body?: never;
@@ -8376,7 +8645,7 @@ export type ExamsListPlansResponses = {
 export type ExamsListPlansResponse = ExamsListPlansResponses[keyof ExamsListPlansResponses];
 
 export type ExamsCreatePlanData = {
-    body: PlanCreateIn;
+    body: AppSchemasExamsPlanCreateIn;
     path?: never;
     query?: never;
     url: '/api/v1/exams/plans';

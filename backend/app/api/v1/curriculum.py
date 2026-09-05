@@ -9,7 +9,7 @@ shulardan oladi.
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, Request, Response, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Query, Request, Response, UploadFile
 
 from app.api.v1.deps import CurrentUserDep, require_roles
 from app.core.db import SessionDep
@@ -17,9 +17,12 @@ from app.core.exceptions import ValidationError
 from app.models import RoleName
 from app.schemas.curriculum import (
     ImportOut,
+    LessonCardIn,
+    PlanCreateIn,
     PlanLessonsOut,
     PlanRowOut,
     PublishedCatalogOut,
+    SearchHitOut,
 )
 from app.services import curriculum_service
 
@@ -124,7 +127,9 @@ async def import_plan(
     return ImportOut(plan=_row(natija.plan), warnings=natija.warnings)
 
 
-@router.post("/plans/{plan_id}/publish", response_model=PlanRowOut, dependencies=[manage])
+# Rol darvozasi ATAYLAB yoʻq: MET-06 boʻyicha kim joriy qila olishi
+# SOZLAMAGA bogʻliq va uni servis hal qiladi (`assert_can_publish`).
+@router.post("/plans/{plan_id}/publish", response_model=PlanRowOut)
 async def publish(
     plan_id: uuid.UUID, request: Request, user: CurrentUserDep, session: SessionDep
 ) -> PlanRowOut:
@@ -153,4 +158,103 @@ async def export(
         content=curriculum_service.export_xlsx(p),
         media_type=XLSX_MIME,
         headers={"Content-Disposition": f'attachment; filename="{nom}"'},
+    )
+
+
+# ─────────── Qidiruv, ustoz rejasi, versiyalar (MET-05…MET-07) ───────────
+
+
+@router.get("/search", response_model=list[SearchHitOut])
+async def search(
+    session: SessionDep,
+    user: CurrentUserDep,
+    q: Annotated[str, Query(min_length=2, max_length=80)],
+    fan: Annotated[str | None, Query(max_length=80)] = None,
+    sinf: Annotated[str | None, Query(max_length=20)] = None,
+    chorak: Annotated[int | None, Query(ge=1, le=4)] = None,
+) -> list[SearchHitOut]:
+    """MET-05: mavzu, atama va jihoz nomi boʻyicha qidiruv.
+
+    Qidiruv faqat JORIY rejalar boʻyicha — qoralama hali hujjat emas.
+    Barcha xodimlarga ochiq, `/published` kabi.
+    """
+    rows = await curriculum_service.search_lessons(
+        session, q=q, fan=fan, sinf=sinf, chorak=chorak
+    )
+    return [
+        SearchHitOut(
+            plan_id=r.plan_id,
+            fan=r.fan,
+            yil=r.yil,
+            sinf=r.sinf,
+            chorak=r.chorak,
+            index=r.index,
+            title=r.title,
+            matched_in=r.matched_in,
+        )
+        for r in rows
+    ]
+
+
+@router.get("/versions", response_model=list[PlanRowOut], dependencies=[manage])
+async def versions(
+    session: SessionDep,
+    fan: Annotated[str, Query(max_length=80)],
+    yil: Annotated[str, Query(max_length=10)],
+    sinf: Annotated[str, Query(max_length=20)],
+) -> list[PlanRowOut]:
+    """MET-07: shu fan/sinf uchun barcha versiyalar, yangisidan eskisiga.
+
+    Eskisiga qaytarish alohida amal emas — oʻsha versiyani qayta joriy
+    qilish yetadi (`POST /plans/{id}/publish`).
+    """
+    rows = await curriculum_service.list_versions(session, fan=fan, yil=yil, sinf=sinf)
+    return [_row(p) for p in rows]
+
+
+@router.post("/plans", response_model=PlanRowOut, status_code=201)
+async def create_plan(
+    payload: PlanCreateIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> PlanRowOut:
+    """MET-06: ustoz oʻz dars rejasini qoʻshadi.
+
+    Rol darvozasi ATAYLAB yoʻq — bu endpoint aynan ustoz uchun.
+    Reja QORALAMA boʻlib tugʻiladi va uni joriy qilish alohida amal.
+    """
+    plan = await curriculum_service.create_plan(
+        session,
+        user,
+        fan=payload.fan,
+        yil=payload.yil,
+        sinf=payload.sinf,
+        lessons=payload.lessons,
+        ip=request.client.host if request.client else None,
+    )
+    return _row(plan)
+
+
+@router.patch("/plans/{plan_id}/lessons/{index}", response_model=dict)
+async def update_lesson_card(
+    plan_id: uuid.UUID,
+    index: int,
+    payload: LessonCardIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> dict:
+    """Bitta dars kartochkasini tahrirlaydi (MET-02, MET-03, MET-04).
+
+    Kirish nazorati servisda: oʻquv boʻlimi har doim, ustoz esa faqat
+    oʻzi yaratgan QORALAMA rejani.
+    """
+    return await curriculum_service.update_lesson_card(
+        session,
+        user,
+        plan_id=plan_id,
+        index=index,
+        changes=payload.model_dump(exclude_unset=True),
+        ip=request.client.host if request.client else None,
     )

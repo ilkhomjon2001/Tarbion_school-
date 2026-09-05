@@ -498,6 +498,59 @@ function DarsTafsilot({ dars }: { dars: Dars }) {
             <Royxat items={dars.uyga} belgi="✎" />
           </Bolim>
         )}
+
+        {/* MET-02: kutilayotgan natija, jihozlar, baholash mezoni. */}
+        {dars.natija && (
+          <Bolim title="Kutilayotgan natija">
+            <p className="text-sm text-foreground">{dars.natija}</p>
+          </Bolim>
+        )}
+
+        {dars.jihoz && dars.jihoz.length > 0 && (
+          <Bolim title="Kerakli jihozlar">
+            <Royxat items={dars.jihoz} belgi="🔧" />
+          </Bolim>
+        )}
+
+        {dars.baholash && dars.baholash.length > 0 && (
+          <Bolim title="Baholash mezoni">
+            <Royxat items={dars.baholash} belgi="◆" />
+          </Bolim>
+        )}
+
+        {/*
+          MET-04: tashqi video. `rel` majburiy — `noopener` boʻlmasa
+          ochilgan sahifa `window.opener` orqali bizni boshqara oladi.
+        */}
+        {dars.video && (
+          <Bolim title="Video">
+            <a
+              href={dars.video}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="focus-ring inline-flex items-center gap-1.5 rounded-lg text-sm font-medium text-brand-dark underline underline-offset-2"
+            >
+              Videoni yangi oynada ochish
+            </a>
+          </Bolim>
+        )}
+
+        {/*
+          MET-03: ilovalar. Havola SHU YERDA yasalmaydi — u imzolangan
+          va 15 daqiqa yashaydi (X-7), shuning uchun bosilganda
+          serverdan soʻraladi.
+        */}
+        {dars.files && dars.files.length > 0 && (
+          <Bolim title="Ilovalar">
+            <ul className="flex flex-col gap-1.5">
+              {dars.files.map((f) => (
+                <li key={f.id} className="text-sm text-foreground">
+                  📎 {f.name}
+                </li>
+              ))}
+            </ul>
+          </Bolim>
+        )}
       </div>
     </div>
   );

@@ -675,8 +675,18 @@ avtomatik tozalanmaydi.
 
 Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
 
-- [ ] T-024 · Metodik baza ierarxiyasi va dars kartochkasi — MET-01, MET-02
-  - Frontend: ✅ tayyor — `/teacher/jadval` → fan boʻyicha baza brauzeri, `lib/teacher/plan-data.ts`
+- [x] T-024 · Metodik baza ierarxiyasi va dars kartochkasi — MET-01, MET-02
+  - Ierarxiya fan → yil → sinf → chorak → dars allaqachon bor edi
+  - MET-02 ning yetishmayotgan uchtasi qoʻshildi: **kutilayotgan
+    natija**, **kerakli jihozlar**, **baholash mezoni**. MET-04 uchun
+    **video havola** ham (faqat http(s) — `javascript:` tashlanadi)
+  - Kalit `baholash`, `mezon` EMAS: statik Robototexnika bazasida
+    `mezon` boshqa maʼnoda (jadval) band edi
+  - `PATCH /curriculum/plans/{id}/lessons/{index}` — bitta kartochkani
+    tahrirlash, fayl ilovasi bilan (MET-03). Faqat yuborilgan maydon
+    oʻzgaradi
+  - Frontend: ✅ `/teacher/reja` va `/oquv-bolim/metodika` — yangi
+    maydonlar, video havolasi va ilovalar kartochkada koʻrinadi
 - [x] T-025 · Fayl yuklash va imzolangan havola — MET-03, NFR-11
   - R2 EMAS, serverning oʻz diski — egasining qarori (5-sentabr 2026).
     Maʼlumot Oʻzbekistonda qoladi, qoʻshimcha hisob kerak emas
@@ -696,10 +706,25 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
   - 10 ta test: qalbaki imzo, muddati oʻtgan havola, boshqa faylning
     imzosi, `../` li nom, ruxsatsiz tur
   - Frontend: ⬜ — foydalanuvchi ekranlari T-024 va T-037 bilan keladi
-- [ ] T-026 · Metodik bazada qidiruv va filtr — MET-05
-  - Frontend: 🟡 qisman — sinf boʻyicha filtr bor, toʻliq qidiruv yoʻq
-- [ ] T-027 · Reja tasdiqlash oqimi va versiyalar — MET-06, MET-07
-  - Frontend: ⬜ yoʻq
+- [x] T-026 · Metodik bazada qidiruv va filtr — MET-05
+  - `GET /curriculum/search?q=&fan=&sinf=&chorak=` — mavzu nomi, atama
+    va jihoz nomi boʻyicha. Natijada `matched_in` qaytadi va ekranda
+    koʻrsatiladi: jihoz boʻyicha topilganda mavzu soʻzni umuman oʻz
+    ichiga olmaydi, «nega bu chiqdi?» savoliga javob kerak
+  - Faqat JORIY rejalar — qoralama hali hujjat emas
+  - Frontend: ✅ ustoz va oʻquv boʻlimi ekranlarida qidiruv paneli
+- [x] T-027 · Reja tasdiqlash oqimi va versiyalar — MET-06, MET-07
+  - MET-06: `POST /curriculum/plans` — ustoz oʻz rejasini qoʻshadi,
+    reja QORALAMA boʻlib tugʻiladi. Nashrdan oldin tasdiqlash
+    `school_settings.curriculum_requires_approval` bilan boshqariladi;
+    sukut YOQILGAN (egasining qarori, 5-sentabr 2026). Yoqilgan boʻlsa
+    faqat oʻquv boʻlimi joriy qiladi; oʻchirilgan boʻlsa ustoz OʻZI
+    qoʻshgan rejani oʻzi joriy qiladi
+  - MET-07: `GET /curriculum/versions?fan=&yil=&sinf=`. Eski versiya
+    oʻchirilmaydi — joriy qilinganda `arxiv` boʻladi, shuning uchun
+    «oldingi versiyaga qaytarish» alohida amal emas: oʻsha versiyani
+    qayta joriy qilish yetadi
+  - 14 ta test. Frontend: ✅ arxivdagi rejada «Qayta joriy qilish»
 - [ ] T-028 · Ustoz kabineti: yuklama va sinflar — MET-09
   - Frontend: ✅ tayyor — `/rahbar/ustozlar/[id]` → «Sinflari» va «Statistika»
 - [x] T-029 · Baholar jurnali: model va API — JUR-01, JUR-02, JUR-03 · backend tayyor (`/api/v1/journal`)

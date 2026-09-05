@@ -10,6 +10,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { CurriculumSearch } from "@/components/shared/CurriculumSearch";
 import { CurriculumView } from "@/components/shared/CurriculumView";
 import { TeacherShell } from "@/components/teacher/TeacherShell";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -106,6 +107,22 @@ export default function RejaPage() {
       {xato ? (
         <ErrorState description="Dars rejasini olib boʻlmadi. Sahifani yangilab koʻring." />
       ) : (
+        <div className="flex flex-col gap-4">
+          {/*
+            MET-05: qidiruv butun bazani kesib oʻtadi — fan/sinf
+            tanlashdan oldin turadi, chunki «qaysi darsda multimetr
+            kerak?» degan savolda ustoz fanni ham bilmaydi.
+          */}
+          <section className="rounded-xl border border-border bg-surface p-3">
+            <CurriculumSearch
+              onOpen={(hit) => {
+                setFan(hit.fan);
+                setYil(hit.yil);
+                setSinf(hit.sinf);
+              }}
+            />
+          </section>
+
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
           {/* ── Chap panel: fan + yil + sinflar ── */}
           <aside className="shrink-0 lg:sticky lg:top-20 lg:w-52">
@@ -203,6 +220,7 @@ export default function RejaPage() {
               <CurriculumView reja={reja} />
             )}
           </div>
+        </div>
         </div>
       )}
     </TeacherShell>

@@ -214,3 +214,13 @@ class SchoolSettings(Entity):
     attendance_notify_delay_minutes: Mapped[int] = mapped_column(
         default=30, server_default="30", nullable=False
     )
+
+    #: MET-06: ustoz qoʻshgan dars rejasi nashrdan oldin tasdiqlanadimi.
+    #:
+    #: TZ buni sozlamaga qoʻyadi. Sukut boʻyicha YOQILGAN (egasining
+    #: qarori, 5-sentabr 2026): metodik baza butun maktab koʻradigan
+    #: hujjat, unga tasodifiy qoralama tushib qolmasin. Oʻchirilsa
+    #: ustoz oʻz rejasini oʻzi joriy qila oladi.
+    curriculum_requires_approval: Mapped[bool] = mapped_column(
+        default=True, server_default="true", nullable=False
+    )
