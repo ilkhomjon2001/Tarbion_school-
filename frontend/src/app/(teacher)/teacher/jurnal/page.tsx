@@ -19,6 +19,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { TeacherShell } from "@/components/teacher/TeacherShell";
+import { TermGradesPanel } from "@/components/teacher/TermGradesPanel";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ListSkeleton } from "@/components/ui/Skeleton";
@@ -228,6 +229,17 @@ export default function JournalPage() {
               Baho darsdan qoʻyiladi: «Bugungi darslar» → davomatni saqlang → «Jurnalni ochish».
             </p>
           </div>
+        )}
+
+        {/*
+          Chorak bahosi boʻlimi FAN USTOZIGA chizilmaydi (4-qoida).
+          Bayroq serverdan keladi — bu yerda qoida takrorlanmaydi.
+        */}
+        {slot && data?.shows_average && (
+          <section className="flex flex-col gap-2">
+            <h2 className="text-sm font-semibold text-foreground">Chorak baholari</h2>
+            <TermGradesPanel classId={slot.classId} subjectId={slot.subjectId} />
+          </section>
         )}
       </div>
     </TeacherShell>

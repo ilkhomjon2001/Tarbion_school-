@@ -12,8 +12,10 @@ import {
   fetchAttendanceSummary,
   fetchStudentMe,
   fetchSubjectGrades,
+  fetchTermGrades,
   localIso,
 } from "@/lib/student/api";
+import type { StudentTermGradeOut } from "@/lib/api/types.gen";
 import type { AttendanceSummary, SubjectGradeSummary } from "@/lib/types";
 
 /**
@@ -25,6 +27,7 @@ import type { AttendanceSummary, SubjectGradeSummary } from "@/lib/types";
 export default function GradesPage() {
   const [summary, setSummary] = useState<AttendanceSummary | null>(null);
   const [grades, setGrades] = useState<SubjectGradeSummary[] | null>(null);
+  const [terms, setTerms] = useState<StudentTermGradeOut[]>([]);
   const [error, setError] = useState("");
 
   const today = new Date();
@@ -38,12 +41,14 @@ export default function GradesPage() {
           return;
         }
         const now = new Date();
-        const [attendance, subjectGrades] = await Promise.all([
+        const [attendance, subjectGrades, termGrades] = await Promise.all([
           fetchAttendanceSummary(me.studentId, now.getFullYear(), now.getMonth()),
           fetchSubjectGrades(me.studentId),
+          fetchTermGrades(me.studentId),
         ]);
         setSummary(attendance);
         setGrades(subjectGrades);
+        setTerms(termGrades);
       } catch (err) {
         setError(messageOf(err));
       }
@@ -58,6 +63,35 @@ export default function GradesPage() {
           <p role="alert" className="rounded-lg bg-danger-tint px-3 py-2 text-sm text-danger">
             {error}
           </p>
+        )}
+
+        {/* Chorak bahosi — faqat yakunlanganlari (JUR-04). */}
+        {terms.length > 0 && (
+          <section>
+            <h2 className="mb-2 text-sm font-semibold text-foreground">
+              Chorak baholari
+            </h2>
+            <Card>
+              <ul className="flex flex-wrap gap-2">
+                {terms.map((t) => (
+                  <li
+                    key={`${t.term_id}-${t.subject_id}`}
+                    className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5"
+                  >
+                    <span className="text-sm">
+                      {t.subject_name}
+                      <span className="ml-1 text-xs text-foreground-muted">
+                        {t.term_name}
+                      </span>
+                    </span>
+                    <span className="num inline-flex h-7 w-7 items-center justify-center rounded-lg bg-surface-muted text-sm font-bold text-foreground">
+                      {t.value}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          </section>
         )}
 
         <section>

@@ -199,3 +199,63 @@ class Grade(Entity):
     max_value: Mapped[int] = mapped_column(default=5, server_default="5", nullable=False)
     weight: Mapped[int] = mapped_column(default=1, server_default="1", nullable=False)
     comment: Mapped[str | None] = mapped_column(String(300))
+
+
+class TermGrade(Entity):
+    """JUR-04: chorak bahosi — vaznlar asosida hisoblanadi va yakunlanadi.
+
+    Nega saqlanadi, har safar qayta hisoblanmaydi: chorak yopilgandan
+    keyin baho HUJJAT boʻladi — tabelga, hisobotga va oilaga ketadi.
+    Keyin kimdir eski darsning bahosini tuzatsa, chorak bahosi
+    oʻz-oʻzidan oʻzgarib ketmasligi kerak.
+
+    Shuning uchun ikkita qiymat yonma-yon turadi:
+
+        computed_value — yakunlash paytida hisoblangani
+        value          — amaldagi baho (qoʻlda tuzatilgan boʻlsa, tuzatilgani)
+
+    Ikkalasi saqlanadi, chunki "avtomatik 3 chiqqan edi, ustoz 4 qildi"
+    savoliga javob kerak. Qoʻlda tuzatishda `reason` MAJBURIY (JUR-04)
+    va oʻzgarish auditga tushadi (JUR-07).
+    """
+
+    __tablename__ = "term_grades"
+    __table_args__ = (
+        # Bir oʻquvchi + bir fan + bir chorak = bitta faol chorak bahosi.
+        Index(
+            "uq_term_grade",
+            "student_id",
+            "subject_id",
+            "term_id",
+            unique=True,
+            postgresql_where=text("NOT is_archived"),
+        ),
+        CheckConstraint("value >= 0", name="term_grade_non_negative"),
+    )
+
+    student_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("students.id"), nullable=False
+    )
+    subject_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("subjects.id"), nullable=False
+    )
+    term_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("terms.id"), nullable=False
+    )
+
+    #: Amaldagi chorak bahosi.
+    value: Mapped[int] = mapped_column(nullable=False)
+    #: Yakunlash paytida vaznlar boʻyicha hisoblangani — tuzatilsa ham qoladi.
+    computed_value: Mapped[int | None] = mapped_column(nullable=True)
+    max_value: Mapped[int] = mapped_column(default=5, server_default="5", nullable=False)
+
+    #: Qoʻlda tuzatilganmi (JUR-04).
+    is_manual: Mapped[bool] = mapped_column(
+        default=False, server_default="false", nullable=False
+    )
+    #: Tuzatish sababi — qoʻlda tuzatilganda boʻsh boʻlmaydi.
+    reason: Mapped[str | None] = mapped_column(String(300))
+
+    set_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )

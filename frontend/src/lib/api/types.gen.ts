@@ -1231,6 +1231,36 @@ export type ClassSubjectOut = {
 };
 
 /**
+ * ClassTermGradesOut
+ */
+export type ClassTermGradesOut = {
+    /**
+     * Class Id
+     */
+    class_id: string;
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Term Id
+     */
+    term_id: string;
+    /**
+     * Term Name
+     */
+    term_name: string;
+    /**
+     * Rows
+     */
+    rows: Array<TermGradeRowOut>;
+    /**
+     * Can Edit
+     */
+    can_edit: boolean;
+};
+
+/**
  * ContactKind
  *
  * Administratorning ichki suhbat qaydi turi (ADM-16).
@@ -2054,6 +2084,34 @@ export type ExamStatsOut = {
      * Pass Rate
      */
     pass_rate: number | null;
+};
+
+/**
+ * FinalizeTermIn
+ */
+export type FinalizeTermIn = {
+    /**
+     * Class Id
+     */
+    class_id: string;
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Term Id
+     */
+    term_id: string;
+};
+
+/**
+ * FinalizeTermOut
+ */
+export type FinalizeTermOut = {
+    /**
+     * Saved
+     */
+    saved: number;
 };
 
 /**
@@ -4946,6 +5004,40 @@ export type StudentTeacherOut = {
 };
 
 /**
+ * StudentTermGradeOut
+ */
+export type StudentTermGradeOut = {
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Subject Name
+     */
+    subject_name: string;
+    /**
+     * Term Id
+     */
+    term_id: string;
+    /**
+     * Term Name
+     */
+    term_name: string;
+    /**
+     * Value
+     */
+    value: number;
+    /**
+     * Max Value
+     */
+    max_value: number;
+    /**
+     * Is Manual
+     */
+    is_manual: boolean;
+};
+
+/**
  * StudentUpdateIn
  *
  * Kartochkani tahrirlash (ADM-05).
@@ -5489,6 +5581,106 @@ export type TemplateOut = {
      * Customized
      */
     customized: boolean;
+};
+
+/**
+ * TermGradeOut
+ */
+export type TermGradeOut = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Term Id
+     */
+    term_id: string;
+    /**
+     * Value
+     */
+    value: number;
+    /**
+     * Computed Value
+     */
+    computed_value: number | null;
+    /**
+     * Max Value
+     */
+    max_value: number;
+    /**
+     * Is Manual
+     */
+    is_manual: boolean;
+    /**
+     * Reason
+     */
+    reason: string | null;
+};
+
+/**
+ * TermGradeRowOut
+ */
+export type TermGradeRowOut = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Full Name
+     */
+    full_name: string;
+    /**
+     * Computed
+     */
+    computed: number | null;
+    /**
+     * Final
+     */
+    final: number | null;
+    /**
+     * Max Value
+     */
+    max_value: number;
+    /**
+     * Is Manual
+     */
+    is_manual: boolean;
+    /**
+     * Reason
+     */
+    reason: string | null;
+};
+
+/**
+ * TermGradeSetIn
+ *
+ * JUR-04: qoʻlda tuzatish. Sabab majburiy — bu talabning oʻzagi.
+ */
+export type TermGradeSetIn = {
+    /**
+     * Student Id
+     */
+    student_id: string;
+    /**
+     * Subject Id
+     */
+    subject_id: string;
+    /**
+     * Term Id
+     */
+    term_id: string;
+    /**
+     * Value
+     */
+    value: number;
+    /**
+     * Reason
+     */
+    reason: string;
 };
 
 /**
@@ -10128,6 +10320,132 @@ export type JournalSubmitResponses = {
 };
 
 export type JournalSubmitResponse = JournalSubmitResponses[keyof JournalSubmitResponses];
+
+export type JournalClassTermGradesData = {
+    body?: never;
+    path: {
+        /**
+         * Class Id
+         */
+        class_id: string;
+    };
+    query: {
+        /**
+         * Subject Id
+         */
+        subject_id: string;
+        /**
+         * Term Id
+         */
+        term_id: string;
+    };
+    url: '/api/v1/journal/classes/{class_id}/term-grades';
+};
+
+export type JournalClassTermGradesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type JournalClassTermGradesError = JournalClassTermGradesErrors[keyof JournalClassTermGradesErrors];
+
+export type JournalClassTermGradesResponses = {
+    /**
+     * Successful Response
+     */
+    200: ClassTermGradesOut;
+};
+
+export type JournalClassTermGradesResponse = JournalClassTermGradesResponses[keyof JournalClassTermGradesResponses];
+
+export type JournalFinalizeTermGradesData = {
+    body: FinalizeTermIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/journal/term-grades/finalize';
+};
+
+export type JournalFinalizeTermGradesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type JournalFinalizeTermGradesError = JournalFinalizeTermGradesErrors[keyof JournalFinalizeTermGradesErrors];
+
+export type JournalFinalizeTermGradesResponses = {
+    /**
+     * Successful Response
+     */
+    200: FinalizeTermOut;
+};
+
+export type JournalFinalizeTermGradesResponse = JournalFinalizeTermGradesResponses[keyof JournalFinalizeTermGradesResponses];
+
+export type JournalSetTermGradeData = {
+    body: TermGradeSetIn;
+    path?: never;
+    query?: never;
+    url: '/api/v1/journal/term-grades';
+};
+
+export type JournalSetTermGradeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type JournalSetTermGradeError = JournalSetTermGradeErrors[keyof JournalSetTermGradeErrors];
+
+export type JournalSetTermGradeResponses = {
+    /**
+     * Successful Response
+     */
+    200: TermGradeOut;
+};
+
+export type JournalSetTermGradeResponse = JournalSetTermGradeResponses[keyof JournalSetTermGradeResponses];
+
+export type JournalStudentTermGradesData = {
+    body?: never;
+    path: {
+        /**
+         * Student Id
+         */
+        student_id: string;
+    };
+    query?: {
+        /**
+         * Term Id
+         */
+        term_id?: string | null;
+    };
+    url: '/api/v1/journal/students/{student_id}/term-grades';
+};
+
+export type JournalStudentTermGradesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type JournalStudentTermGradesError = JournalStudentTermGradesErrors[keyof JournalStudentTermGradesErrors];
+
+export type JournalStudentTermGradesResponses = {
+    /**
+     * Response Journal Student Term Grades
+     *
+     * Successful Response
+     */
+    200: Array<StudentTermGradeOut>;
+};
+
+export type JournalStudentTermGradesResponse = JournalStudentTermGradesResponses[keyof JournalStudentTermGradesResponses];
 
 export type SchoolSubjectsData = {
     body?: never;

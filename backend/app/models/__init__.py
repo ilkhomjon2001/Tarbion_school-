@@ -67,6 +67,7 @@ from app.models.homework import (
     Homework,
     HomeworkSubmission,
     SubmissionStatus,
+    TermGrade,
 )
 from app.models.hr import (
     CONTRACT_TYPE_LABELS_UZ,
@@ -284,6 +285,7 @@ __all__ = [
     "QUESTION_KIND_LABELS_UZ",
     "QuestionKind",
     "Term",
+    "TermGrade",
     "User",
     "UserPermission",
     "UserRole",

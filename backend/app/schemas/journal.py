@@ -192,3 +192,69 @@ class StudentRatingOut(BaseModel):
     total_students: int
     average: float | None
     attendance_percent: float
+
+
+# ─────────────────────── Chorak bahosi (JUR-04) ───────────────────────
+
+
+class TermGradeRowOut(BaseModel):
+    student_id: uuid.UUID
+    full_name: str
+    #: Joriy baholardan hisoblangani — hali yakunlanmagan boʻlsa ham koʻrinadi.
+    computed: int | None
+    #: Yakunlangan baho. `None` — chorak hali yakunlanmagan.
+    final: int | None
+    max_value: int
+    is_manual: bool
+    reason: str | None
+
+
+class ClassTermGradesOut(BaseModel):
+    class_id: uuid.UUID
+    subject_id: uuid.UUID
+    term_id: uuid.UUID
+    term_name: str
+    rows: list[TermGradeRowOut]
+    can_edit: bool
+
+
+class TermGradeSetIn(BaseModel):
+    """JUR-04: qoʻlda tuzatish. Sabab majburiy — bu talabning oʻzagi."""
+
+    student_id: uuid.UUID
+    subject_id: uuid.UUID
+    term_id: uuid.UUID
+    value: int = Field(ge=0, le=100)
+    reason: str = Field(min_length=3, max_length=300)
+
+
+class TermGradeOut(BaseModel):
+    student_id: uuid.UUID
+    subject_id: uuid.UUID
+    term_id: uuid.UUID
+    value: int
+    computed_value: int | None
+    max_value: int
+    is_manual: bool
+    reason: str | None
+
+
+class FinalizeTermIn(BaseModel):
+    class_id: uuid.UUID
+    subject_id: uuid.UUID
+    term_id: uuid.UUID
+
+
+class FinalizeTermOut(BaseModel):
+    #: Nechta oʻquvchining bahosi yozildi yoki yangilandi.
+    saved: int
+
+
+class StudentTermGradeOut(BaseModel):
+    subject_id: uuid.UUID
+    subject_name: str
+    term_id: uuid.UUID
+    term_name: str
+    value: int
+    max_value: int
+    is_manual: bool

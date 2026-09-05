@@ -11,43 +11,63 @@
  */
 
 import {
+  academicCurrentYear,
+  academicTerms,
+} from "@/lib/api/sdk.gen";
+import {
   journalArchiveHomework,
   journalClassAverages,
   journalClassJournal,
+  journalClassTermGrades,
   journalCreateHomework,
+  journalFinalizeTermGrades,
   journalGradeSubmission,
   journalHomeworkLessons,
   journalLessonJournal,
   journalMyHomework,
   journalReturnSubmission,
   journalSetGrades,
+  journalSetTermGrade,
   journalStudentGrades,
   journalStudentHomework,
+  journalStudentTermGrades,
   journalSubmissions,
   journalSubmit,
 } from "@/lib/api/sdk.gen";
 import type {
+  AcademicYearOut,
   ClassJournalOut,
+  ClassTermGradesOut,
+  FinalizeTermOut,
   HomeworkLessonOut,
   HomeworkOut,
   LessonJournalOut,
   StudentHomeworkOut,
   StudentSubjectGradesOut,
+  StudentTermGradeOut,
   SubmissionListOut,
   SubmissionOut,
+  TermGradeOut,
+  TermGradeRowOut,
+  TermOut,
 } from "@/lib/api/types.gen";
 import { formatDate } from "@/lib/format";
 import { withAuth } from "@/lib/session";
 
 export type {
   ClassJournalOut,
+  ClassTermGradesOut,
   HomeworkLessonOut,
   HomeworkOut,
   LessonJournalOut,
   StudentHomeworkOut,
   StudentSubjectGradesOut,
+  StudentTermGradeOut,
   SubmissionListOut,
   SubmissionOut,
+  TermGradeOut,
+  TermGradeRowOut,
+  TermOut,
 };
 
 /** Serverdan kelgan xato matni — foydalanuvchiga koʻrsatiladi. */
@@ -295,4 +315,80 @@ export function localToday(): string {
 /** `datetime-local` maydonining qiymati → ISO (brauzer zonasida). */
 export function localInputToIso(value: string): string {
   return new Date(value).toISOString();
+}
+
+// ─────────────────────── Chorak bahosi (JUR-04) ───────────────────────
+
+/**
+ * Chorak baholari faqat huquqi borga ochiladi (fan ustoziga `403`).
+ * Shuning uchun chaqiruvchi `null` ni "koʻrsatma" deb tushunadi —
+ * ekranda xato emas, boʻlim umuman chizilmaydi.
+ */
+export async function fetchClassTermGrades(params: {
+  classId: string;
+  subjectId: string;
+  termId: string;
+}): Promise<ClassTermGradesOut> {
+  return withAuth<ClassTermGradesOut>(() =>
+    journalClassTermGrades({
+      path: { class_id: params.classId },
+      query: { subject_id: params.subjectId, term_id: params.termId },
+    }),
+  );
+}
+
+export async function finalizeTermGrades(params: {
+  classId: string;
+  subjectId: string;
+  termId: string;
+}): Promise<number> {
+  const r = await withAuth<FinalizeTermOut>(() =>
+    journalFinalizeTermGrades({
+      body: {
+        class_id: params.classId,
+        subject_id: params.subjectId,
+        term_id: params.termId,
+      },
+    }),
+  );
+  return r.saved;
+}
+
+/** JUR-04: sabab MAJBURIY — serverda ham tekshiriladi. */
+export async function setTermGrade(params: {
+  studentId: string;
+  subjectId: string;
+  termId: string;
+  value: number;
+  reason: string;
+}): Promise<TermGradeOut> {
+  return withAuth<TermGradeOut>(() =>
+    journalSetTermGrade({
+      body: {
+        student_id: params.studentId,
+        subject_id: params.subjectId,
+        term_id: params.termId,
+        value: params.value,
+        reason: params.reason,
+      },
+    }),
+  );
+}
+
+export async function fetchStudentTermGrades(
+  studentId: string,
+  termId?: string,
+): Promise<StudentTermGradeOut[]> {
+  return withAuth<StudentTermGradeOut[]>(() =>
+    journalStudentTermGrades({
+      path: { student_id: studentId },
+      query: termId ? { term_id: termId } : {},
+    }),
+  );
+}
+
+/** Joriy oʻquv yilining choraklari — chorak tanlagichi uchun. */
+export async function fetchCurrentTerms(): Promise<TermOut[]> {
+  const year = await withAuth<AcademicYearOut>(() => academicCurrentYear());
+  return withAuth<TermOut[]>(() => academicTerms({ path: { year_id: year.id } }));
 }

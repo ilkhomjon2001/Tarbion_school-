@@ -6,7 +6,8 @@ import { ParentShell } from "@/components/parent/ParentShell";
 import { messageOf } from "@/components/shared/LiveSession";
 import { GRADE_KIND_LABELS } from "@/lib/labels";
 import { useChild } from "@/lib/parent/useChild";
-import { fetchSubjectGrades } from "@/lib/student/api";
+import { fetchSubjectGrades, fetchTermGrades } from "@/lib/student/api";
+import type { StudentTermGradeOut } from "@/lib/api/types.gen";
 import type { SubjectGradeSummary } from "@/lib/types";
 
 /**
@@ -19,8 +20,13 @@ import type { SubjectGradeSummary } from "@/lib/types";
  * `journal` endpointlaridan oʻqiydi, kim qaysi oʻquvchini koʻrishini
  * server hal qiladi (X-1) — bu yerda faqat farzand tanlanadi.
  *
- * Imtihonlar va chorak bahosi boʻlimlari hozircha YOʻQ: ular backend'da
- * yozilmagan (imtihon moduli, T-031) — soxta natija koʻrsatilmaydi.
+ * Chorak bahosi (JUR-04) alohida boʻlimda — faqat YAKUNLANGANLARI
+ * koʻrinadi. Yakunlanmagan chorakning oraliq koʻrsatkichi oilaga
+ * berilmaydi: u har baho qoʻyilganda siljiydi va rasmiy baho deb
+ * tushunilib qolardi. Bu qoida serverda.
+ *
+ * Imtihonlar boʻlimi hozircha YOʻQ — backend'da yozilmagan, soxta
+ * natija koʻrsatilmaydi.
  */
 
 const GRADE_TONE = (value: number) =>
@@ -30,20 +36,41 @@ const GRADE_TONE = (value: number) =>
       ? "bg-warning-tint text-warning"
       : "bg-danger-tint text-danger";
 
+/** Chorak nomi boʻyicha guruhlaydi — tartib serverdan keladi. */
+function CHORAKLAR(
+  rows: StudentTermGradeOut[],
+): Array<[string, StudentTermGradeOut[]]> {
+  const map = new Map<string, StudentTermGradeOut[]>();
+  for (const r of rows) {
+    const bor = map.get(r.term_name);
+    if (bor) bor.push(r);
+    else map.set(r.term_name, [r]);
+  }
+  return [...map.entries()];
+}
+
 export default function ParentGradesPage() {
   const [child, setChild] = useChild();
   const [subjects, setSubjects] = useState<SubjectGradeSummary[] | null>(null);
+  const [terms, setTerms] = useState<StudentTermGradeOut[]>([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!child.id) return;
     let alive = true;
     setSubjects(null);
+    setTerms([]);
     setError("");
     void (async () => {
       try {
-        const grades = await fetchSubjectGrades(child.id);
-        if (alive) setSubjects(grades);
+        const [grades, chorak] = await Promise.all([
+          fetchSubjectGrades(child.id),
+          fetchTermGrades(child.id),
+        ]);
+        if (alive) {
+          setSubjects(grades);
+          setTerms(chorak);
+        }
       } catch (err) {
         if (alive) setError(messageOf(err));
       }
@@ -81,6 +108,38 @@ export default function ParentGradesPage() {
           {graded.length} ta fan boʻyicha baho bor
         </p>
       </div>
+
+      {terms.length > 0 && (
+        <section className="mb-5">
+          <h2 className="mb-2.5 text-sm font-semibold">Chorak baholari</h2>
+          <ul className="space-y-2">
+            {CHORAKLAR(terms).map(([chorak, qatorlar]) => (
+              <li key={chorak} className="rounded-xl border border-border bg-surface p-4">
+                <p className="mb-2.5 text-sm font-medium">{chorak}</p>
+                <ul className="flex flex-wrap gap-2">
+                  {qatorlar.map((t) => (
+                    <li
+                      key={`${t.term_id}-${t.subject_id}`}
+                      className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5"
+                    >
+                      <span className="text-sm">{t.subject_name}</span>
+                      <span
+                        className={`num inline-flex h-7 w-7 items-center justify-center rounded-lg text-sm font-bold ${GRADE_TONE(t.value)}`}
+                      >
+                        {t.value}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-xs text-foreground-muted">
+            Chorak bahosi vaznlar boʻyicha hisoblanadi va chorak yakunlangach
+            koʻrinadi. Savolingiz boʻlsa sinf rahbariga murojaat qiling.
+          </p>
+        </section>
+      )}
 
       {subjects === null ? (
         <p className="text-sm text-foreground-muted">Yuklanmoqda…</p>

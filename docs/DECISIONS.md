@@ -1145,3 +1145,24 @@ Muhim farq: hujjat **jonli** — shartnoma summasi oʻzgarsa sahifa ham
 oʻzgaradi. Qogʻozdagi imzolangan nusxa esa oʻzgarmaydi, shuning uchun
 sahifada «imzolangan qogʻoz nusxa asl hisoblanadi» deb yozib
 qoʻyilgan.
+
+## Chorak bahosi saqlanadi, har safar qayta hisoblanmaydi (T-031, JUR-04)
+
+Chorak yakunlangach baho hujjatga aylanadi — tabelga, hisobotga va
+oilaga ketadi. Agar u har soʻrovda qayta hisoblansa, keyin kimdir eski
+darsning bahosini tuzatganda chorak bahosi oʻz-oʻzidan siljib ketardi.
+Shuning uchun `term_grades` da yakunlangani saqlanadi, `computed_value`
+esa yonida qoladi: «avtomatik 3 chiqqan edi, rahbar 4 qildi» savoliga
+javob shu ikki ustunda.
+
+Yaxlitlash yuqoriga (4.5 → 5). Python `round()` bank yaxlitlashini
+qiladi va `round(4.5)` 4 chiqarardi — bu oʻquvchining zarariga.
+
+## Chorak bahosini fan ustozi tuzatmaydi (T-031)
+
+TZ JUR-04 «ustoz qoʻlda tuzata oladi» deydi, loyiha egasining 4-qoidasi
+esa «chorak bahosi fan ustoziga koʻrinmaydi». Egasining qarori
+(5-sentabr 2026): 4-qoida saqlanadi. Tuzatish sinf rahbari, oʻquv
+boʻlimi va administrator qoʻlida; fan ustozi soʻrasa `403`. Direktor
+roʻyxatda yoʻq — u maʼlumot kiritmaydi, shuning uchun `is_staff_wide`
+ga tayanib boʻlmaydi (u direktorni ham ichiga oladi).

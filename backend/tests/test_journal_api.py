@@ -29,6 +29,7 @@ from app.models import (
     SchoolClass,
     Student,
     Subject,
+    Term,
     User,
 )
 
@@ -68,6 +69,16 @@ async def world(session: AsyncSession) -> dict[str, object]:
         name="2026-2027", starts_on=date(2026, 8, 1), ends_on=date(2027, 5, 25), is_current=True
     )
     session.add(year)
+    await session.flush()
+
+    chorak = Term(
+        academic_year_id=year.id,
+        index=1,
+        name="1-chorak",
+        starts_on=date(2026, 9, 1),
+        ends_on=date(2026, 11, 5),
+    )
+    session.add(chorak)
     await session.flush()
 
     math = Subject(name="Matematika", short_name="Mat")
@@ -141,6 +152,7 @@ async def world(session: AsyncSession) -> dict[str, object]:
         "lesson": dars,
         "ozga_lesson": ozga,
         "eski_lesson": eski,
+        "term": chorak,
     }
 
 
@@ -531,3 +543,346 @@ async def test_begona_otaona_reytingni_kora_olmaydi(client: AsyncClient, world: 
         f"/api/v1/journal/students/{world['ali'].id}/rating", headers=_auth(token)
     )
     assert r.status_code == 403, r.text
+
+
+# ─────────────────────── Chorak bahosi (JUR-04) ───────────────────────
+
+
+async def _baho(
+    session: AsyncSession,
+    world: dict,
+    student,
+    *,
+    value: int,
+    weight: int = 1,
+    lesson=None,
+    max_value: int = 5,
+) -> Grade:
+    """Jurnalga toʻgʻridan-toʻgʻri baho qoʻyadi — vaznni sinash uchun.
+
+    API orqali bitta darsga bitta baho qoʻyiladi (Y7 unikal indeksi),
+    vaznli oʻrtachani sinash uchun esa bir nechta baho kerak.
+    """
+    g = Grade(
+        student_id=student.id,
+        subject_id=world["math"].id,
+        lesson_id=lesson.id if lesson is not None else None,
+        teacher_id=world["ustoz"].id,
+        value=value,
+        max_value=max_value,
+        weight=weight,
+    )
+    session.add(g)
+    await session.flush()
+    return g
+
+
+async def test_chorak_bahosi_vaznlar_boyicha_hisoblanadi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """JUR-03 → JUR-04: nazorat ishi vazni joriy bahodan ogʻirroq."""
+    # 3 (vazn 1) va 5 (vazn 3) → (3 + 15) / 4 = 4.5 → 5
+    await _baho(session, world, world["ali"], value=3, weight=1, lesson=world["lesson"])
+    await _baho(session, world, world["ali"], value=5, weight=3)
+    await session.commit()
+
+    token = await _token(client, "jr.rahbar")
+    r = await client.get(
+        f"/api/v1/journal/classes/{world['class'].id}/term-grades",
+        params={"subject_id": str(world["math"].id), "term_id": str(world["term"].id)},
+        headers=_auth(token),
+    )
+    assert r.status_code == 200, r.text
+    qator = next(x for x in r.json()["rows"] if x["student_id"] == str(world["ali"].id))
+    assert qator["computed"] == 5
+    assert qator["final"] is None  # hali yakunlanmagan
+
+
+async def test_yarim_baho_yuqoriga_yaxlitlanadi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """4.5 → 5. `round()` bank yaxlitlashi qilib 4 chiqarardi."""
+    await _baho(session, world, world["ali"], value=4, lesson=world["lesson"])
+    await _baho(session, world, world["ali"], value=5)
+    await session.commit()
+
+    token = await _token(client, "jr.rahbar")
+    r = await client.get(
+        f"/api/v1/journal/classes/{world['class'].id}/term-grades",
+        params={"subject_id": str(world["math"].id), "term_id": str(world["term"].id)},
+        headers=_auth(token),
+    )
+    qator = next(x for x in r.json()["rows"] if x["student_id"] == str(world["ali"].id))
+    assert qator["computed"] == 5
+
+
+async def test_chorakdan_tashqaridagi_baho_hisobga_olinmaydi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Chorak 1-sentabrda boshlanadi; eski dars 29-avgustda."""
+    await _baho(session, world, world["ali"], value=2, lesson=world["eski_lesson"])
+    await _baho(session, world, world["ali"], value=5, lesson=world["lesson"])
+    await session.commit()
+
+    token = await _token(client, "jr.rahbar")
+    r = await client.get(
+        f"/api/v1/journal/classes/{world['class'].id}/term-grades",
+        params={"subject_id": str(world["math"].id), "term_id": str(world["term"].id)},
+        headers=_auth(token),
+    )
+    qator = next(x for x in r.json()["rows"] if x["student_id"] == str(world["ali"].id))
+    assert qator["computed"] == 5  # 2 qoʻshilganda 3.5 chiqardi
+
+
+async def test_bahosiz_oquvchining_chorak_bahosi_yoq(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Baho yoʻqligi «2» degani emas — `None` qaytadi."""
+    await _baho(session, world, world["ali"], value=5, lesson=world["lesson"])
+    await session.commit()
+
+    token = await _token(client, "jr.rahbar")
+    r = await client.get(
+        f"/api/v1/journal/classes/{world['class'].id}/term-grades",
+        params={"subject_id": str(world["math"].id), "term_id": str(world["term"].id)},
+        headers=_auth(token),
+    )
+    qator = next(x for x in r.json()["rows"] if x["student_id"] == str(world["vali"].id))
+    assert qator["computed"] is None
+
+
+async def test_fan_ustoziga_chorak_bahosi_korinmaydi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """4-qoida: fan ustozi chorak bahosini soʻrasa `403`, `404` emas (X-3)."""
+    await _baho(session, world, world["ali"], value=5, lesson=world["lesson"])
+    await session.commit()
+
+    token = await _token(client, "jr.ustoz")
+    r = await client.get(
+        f"/api/v1/journal/classes/{world['class'].id}/term-grades",
+        params={"subject_id": str(world["math"].id), "term_id": str(world["term"].id)},
+        headers=_auth(token),
+    )
+    assert r.status_code == 403
+
+
+async def test_sinf_rahbari_chorakni_yakunlaydi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    await _baho(session, world, world["ali"], value=5, lesson=world["lesson"])
+    await _baho(session, world, world["vali"], value=4, lesson=world["lesson"])
+    await session.commit()
+
+    token = await _token(client, "jr.rahbar")
+    r = await client.post(
+        "/api/v1/journal/term-grades/finalize",
+        headers=_auth(token),
+        json={
+            "class_id": str(world["class"].id),
+            "subject_id": str(world["math"].id),
+            "term_id": str(world["term"].id),
+        },
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["saved"] == 2
+
+    r = await client.get(
+        f"/api/v1/journal/classes/{world['class'].id}/term-grades",
+        params={"subject_id": str(world["math"].id), "term_id": str(world["term"].id)},
+        headers=_auth(token),
+    )
+    baholar = {x["student_id"]: x["final"] for x in r.json()["rows"]}
+    assert baholar[str(world["ali"].id)] == 5
+    assert baholar[str(world["vali"].id)] == 4
+
+
+async def test_fan_ustozi_chorakni_yakunlay_olmaydi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    await _baho(session, world, world["ali"], value=5, lesson=world["lesson"])
+    await session.commit()
+
+    token = await _token(client, "jr.ustoz")
+    r = await client.post(
+        "/api/v1/journal/term-grades/finalize",
+        headers=_auth(token),
+        json={
+            "class_id": str(world["class"].id),
+            "subject_id": str(world["math"].id),
+            "term_id": str(world["term"].id),
+        },
+    )
+    assert r.status_code == 403
+
+
+async def test_qolda_tuzatish_sababsiz_otmaydi(client: AsyncClient, world: dict) -> None:
+    """JUR-04 ning oʻzagi: sabab boʻlmasa tuzatish yoʻq."""
+    token = await _token(client, "jr.rahbar")
+    r = await client.post(
+        "/api/v1/journal/term-grades",
+        headers=_auth(token),
+        json={
+            "student_id": str(world["ali"].id),
+            "subject_id": str(world["math"].id),
+            "term_id": str(world["term"].id),
+            "value": 5,
+            "reason": "",
+        },
+    )
+    assert r.status_code == 422
+
+
+async def test_qolda_tuzatilganda_avtomatik_qiymat_saqlanadi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """«Avtomatik 3 chiqqan edi, rahbar 4 qildi» savoliga javob qolsin."""
+    await _baho(session, world, world["ali"], value=3, lesson=world["lesson"])
+    await session.commit()
+
+    token = await _token(client, "jr.rahbar")
+    r = await client.post(
+        "/api/v1/journal/term-grades",
+        headers=_auth(token),
+        json={
+            "student_id": str(world["ali"].id),
+            "subject_id": str(world["math"].id),
+            "term_id": str(world["term"].id),
+            "value": 4,
+            "reason": "Olimpiadada 2-oʻrin",
+        },
+    )
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert data["value"] == 4
+    assert data["computed_value"] == 3
+    assert data["is_manual"] is True
+    assert data["reason"] == "Olimpiadada 2-oʻrin"
+
+
+async def test_qayta_yakunlash_qolda_tuzatilganga_tegmaydi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    await _baho(session, world, world["ali"], value=3, lesson=world["lesson"])
+    await session.commit()
+    token = await _token(client, "jr.rahbar")
+
+    await client.post(
+        "/api/v1/journal/term-grades",
+        headers=_auth(token),
+        json={
+            "student_id": str(world["ali"].id),
+            "subject_id": str(world["math"].id),
+            "term_id": str(world["term"].id),
+            "value": 5,
+            "reason": "Chorak nazorat ishi aʼlo",
+        },
+    )
+    await client.post(
+        "/api/v1/journal/term-grades/finalize",
+        headers=_auth(token),
+        json={
+            "class_id": str(world["class"].id),
+            "subject_id": str(world["math"].id),
+            "term_id": str(world["term"].id),
+        },
+    )
+
+    r = await client.get(
+        f"/api/v1/journal/classes/{world['class'].id}/term-grades",
+        params={"subject_id": str(world["math"].id), "term_id": str(world["term"].id)},
+        headers=_auth(token),
+    )
+    qator = next(x for x in r.json()["rows"] if x["student_id"] == str(world["ali"].id))
+    assert qator["final"] == 5  # 3 ga qaytmadi
+    assert qator["is_manual"] is True
+
+
+async def test_chorak_bahosi_auditga_tushadi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """JUR-07 — eski va yangi qiymat bilan."""
+    await _baho(session, world, world["ali"], value=3, lesson=world["lesson"])
+    await session.commit()
+    token = await _token(client, "jr.rahbar")
+
+    await client.post(
+        "/api/v1/journal/term-grades",
+        headers=_auth(token),
+        json={
+            "student_id": str(world["ali"].id),
+            "subject_id": str(world["math"].id),
+            "term_id": str(world["term"].id),
+            "value": 4,
+            "reason": "Yakuniy suhbat natijasi",
+        },
+    )
+
+    rows = (
+        (
+            await session.execute(
+                select(AuditLog).where(AuditLog.object_type == "term_grade")
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert len(rows) == 1
+    assert rows[0].new_value["value"] == 4
+    assert rows[0].new_value["reason"] == "Yakuniy suhbat natijasi"
+
+
+async def test_begona_otaona_chorak_bahosini_kora_olmaydi(
+    client: AsyncClient, world: dict
+) -> None:
+    """X-1: URL dagi `student_id` ni oʻzgartirib boshqa oilaning bahosi."""
+    token = await _token(client, "jr.otaona")
+    r = await client.get(
+        f"/api/v1/journal/students/{world['ali'].id}/term-grades",
+        headers=_auth(token),
+    )
+    assert r.status_code == 403
+
+
+async def test_yakunlanmagan_chorak_oilaga_korinmaydi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    """Oraliq koʻrsatkich rasmiy baho deb tushunilmasin."""
+    await _baho(session, world, world["ali"], value=5, lesson=world["lesson"])
+    await session.commit()
+
+    token = await _token(client, "jr.rahbar")
+    r = await client.get(
+        f"/api/v1/journal/students/{world['ali'].id}/term-grades",
+        headers=_auth(token),
+    )
+    assert r.status_code == 200, r.text
+    assert r.json() == []
+
+
+async def test_yakunlangan_chorak_oilaga_korinadi(
+    client: AsyncClient, world: dict, session: AsyncSession
+) -> None:
+    await _baho(session, world, world["ali"], value=5, lesson=world["lesson"])
+    await session.commit()
+    token = await _token(client, "jr.rahbar")
+
+    await client.post(
+        "/api/v1/journal/term-grades/finalize",
+        headers=_auth(token),
+        json={
+            "class_id": str(world["class"].id),
+            "subject_id": str(world["math"].id),
+            "term_id": str(world["term"].id),
+        },
+    )
+
+    r = await client.get(
+        f"/api/v1/journal/students/{world['ali'].id}/term-grades",
+        headers=_auth(token),
+    )
+    data = r.json()
+    assert len(data) == 1
+    assert data[0]["value"] == 5
+    assert data[0]["term_name"] == "1-chorak"
+    assert data[0]["subject_name"] == "Matematika"

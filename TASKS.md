@@ -689,8 +689,18 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
   - Frontend: ⬜ yoʻq — backend ishi
 - [ ] T-030 · Jurnal ekrani (sinf × fan × sana) — JUR-01
   - Frontend: ✅ tayyor — `/teacher/jurnal`
-- [ ] T-031 · Chorak bahosini hisoblash va qo'lda tuzatish — JUR-04
-  - Frontend: 🟡 qisman — `GradeBook.tsx` da chorak ustuni bor, qoʻlda tuzatish yoʻq
+- [x] T-031 · Chorak bahosini hisoblash va qo'lda tuzatish — JUR-04
+  - Backend: ✅ `term_grades` jadvali, `/api/v1/journal/term-grades{,/finalize}`
+    va `classes/{id}/term-grades`. Vaznli oʻrtacha, 4.5 → 5 (yuqoriga).
+    Chorak sanalari boʻyicha kesiladi. Yakunlangan baho SAQLANADI —
+    keyin eski dars bahosi tuzatilsa chorak bahosi siljib ketmasin.
+    `computed_value` yonida qoladi. 14 ta test
+  - Kim tuzatadi: sinf rahbari, oʻquv boʻlimi, administrator — egasining
+    qarori (5-sentabr 2026). FAN USTOZI koʻrmaydi ham, tuzatmaydi ham
+    (4-qoida); soʻrasa `403`. Sabab MAJBURIY, auditga tushadi (JUR-07)
+  - Frontend: ✅ `/teacher/jurnal` → «Chorak baholari» paneli (hisoblangan
+    va yakunlangan ustunlari, «Chorakni yakunlash», sabab bilan tuzatish).
+    `/ota-ona/baholar` va `/student/grades` da yakunlangan baholar
 - [x] T-032 · Uy vazifasi: berish va topshirish — UYV-01, UYV-02 · backend tayyor
   - Frontend: ✅ tayyor — `/teacher/vazifa`, `/student/homework`
 - [x] T-033 · Uy vazifasini tekshirish va qaytarish — UYV-03, UYV-06 · backend tayyor
@@ -702,8 +712,8 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
     `student_id`, seed'da oʻquvchi hisoblari
 - [~] T-035 · Ota-ona kabineti: baholar va uy vazifasi — OTA-04, OTA-05
   - Frontend: ✅ API'GA ULANDI (1-sentyabr) — `/ota-ona/baholar` jurnal
-    API'sidan oʻqiydi (qatlam oʻquvchi kabineti bilan umumiy). Imtihon va
-    chorak bahosi boʻlimlari backend chiqqach qaytariladi (T-031)
+    API'sidan oʻqiydi (qatlam oʻquvchi kabineti bilan umumiy). Chorak
+    bahosi boʻlimi qoʻshildi (T-031). Imtihon boʻlimi backend chiqqach
 - [~] T-036 · Murojaatlar moduli — MUR-01…MUR-04
   - Backend: ✅ `appeals` + `appeal_messages` + `appeal_notes`, 13 endpoint, 43 test
   - Frontend: ✅ ota-ona, administrator va rahbariyat sahifalari BAZADAN oʻqiydi

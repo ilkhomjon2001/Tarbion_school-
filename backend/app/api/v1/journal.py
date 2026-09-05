@@ -8,6 +8,7 @@ farzandini koʻradi.
 
 import uuid
 from datetime import date
+from typing import Annotated
 
 from fastapi import APIRouter, Query, Request, Response, status
 
@@ -16,6 +17,9 @@ from app.core.db import SessionDep
 from app.schemas.journal import (
     ClassJournalOut,
     ClassJournalRowOut,
+    ClassTermGradesOut,
+    FinalizeTermIn,
+    FinalizeTermOut,
     GradeOut,
     GradeSubmissionIn,
     HomeworkCreateIn,
@@ -28,9 +32,13 @@ from app.schemas.journal import (
     StudentHomeworkOut,
     StudentRatingOut,
     StudentSubjectGradesOut,
+    StudentTermGradeOut,
     SubmissionListOut,
     SubmissionOut,
     SubmitIn,
+    TermGradeOut,
+    TermGradeRowOut,
+    TermGradeSetIn,
 )
 from app.services import grade_service, homework_service
 
@@ -440,3 +448,119 @@ async def submit(
         max_score=r.max_score,
         teacher_comment=r.teacher_comment,
     )
+
+
+# ─────────────────────── Chorak bahosi (JUR-04) ───────────────────────
+
+
+@router.get("/classes/{class_id}/term-grades", response_model=ClassTermGradesOut)
+async def class_term_grades(
+    class_id: uuid.UUID,
+    session: SessionDep,
+    user: CurrentUserDep,
+    subject_id: Annotated[uuid.UUID, Query()],
+    term_id: Annotated[uuid.UUID, Query()],
+) -> ClassTermGradesOut:
+    """Sinf × fan × chorak kesimidagi chorak baholari.
+
+    Fan ustozi `403` oladi — chorak bahosi unga koʻrinmaydi (4-qoida).
+    """
+    data = await grade_service.class_term_grades(
+        session, user, class_id=class_id, subject_id=subject_id, term_id=term_id
+    )
+    return ClassTermGradesOut(
+        class_id=data.class_id,
+        subject_id=data.subject_id,
+        term_id=data.term_id,
+        term_name=data.term_name,
+        can_edit=data.can_edit,
+        rows=[
+            TermGradeRowOut(
+                student_id=r.student_id,
+                full_name=r.full_name,
+                computed=r.computed,
+                final=r.final,
+                max_value=r.max_value,
+                is_manual=r.is_manual,
+                reason=r.reason,
+            )
+            for r in data.rows
+        ],
+    )
+
+
+@router.post("/term-grades/finalize", response_model=FinalizeTermOut)
+async def finalize_term_grades(
+    payload: FinalizeTermIn,
+    session: SessionDep,
+    user: CurrentUserDep,
+    request: Request,
+) -> FinalizeTermOut:
+    """Sinf boʻyicha chorak bahosini yakunlaydi.
+
+    Qoʻlda tuzatilganlarga tegmaydi — takroriy yakunlash xavfsiz.
+    """
+    saved = await grade_service.finalize_term_grades(
+        session,
+        user,
+        class_id=payload.class_id,
+        subject_id=payload.subject_id,
+        term_id=payload.term_id,
+        ip=_client_ip(request),
+    )
+    return FinalizeTermOut(saved=saved)
+
+
+@router.post("/term-grades", response_model=TermGradeOut)
+async def set_term_grade(
+    payload: TermGradeSetIn,
+    session: SessionDep,
+    user: CurrentUserDep,
+    request: Request,
+) -> TermGradeOut:
+    """Chorak bahosini sabab bilan qoʻlda tuzatadi (JUR-04)."""
+    tg = await grade_service.set_term_grade(
+        session,
+        user,
+        student_id=payload.student_id,
+        subject_id=payload.subject_id,
+        term_id=payload.term_id,
+        value=payload.value,
+        reason=payload.reason,
+        ip=_client_ip(request),
+    )
+    return TermGradeOut(
+        student_id=tg.student_id,
+        subject_id=tg.subject_id,
+        term_id=tg.term_id,
+        value=tg.value,
+        computed_value=tg.computed_value,
+        max_value=tg.max_value,
+        is_manual=tg.is_manual,
+        reason=tg.reason,
+    )
+
+
+@router.get("/students/{student_id}/term-grades", response_model=list[StudentTermGradeOut])
+async def student_term_grades(
+    student_id: uuid.UUID,
+    session: SessionDep,
+    user: CurrentUserDep,
+    term_id: Annotated[uuid.UUID | None, Query()] = None,
+) -> list[StudentTermGradeOut]:
+    """Oʻquvchining yakunlangan chorak baholari — ota-ona va oʻquvchi uchun."""
+    rows = await grade_service.student_term_grades(
+        session, user, student_id, term_id=term_id
+    )
+    return [
+        StudentTermGradeOut(
+            subject_id=r.subject_id,
+            subject_name=r.subject_name,
+            term_id=r.term_id,
+            term_name=r.term_name,
+            value=r.value,
+            max_value=r.max_value,
+            is_manual=r.is_manual,
+        )
+        for r in rows
+    ]

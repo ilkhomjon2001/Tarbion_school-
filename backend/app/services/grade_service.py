@@ -34,10 +34,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import (
     ConflictError,
     EditWindowClosedError,
+    NotFoundError,
     PermissionDeniedError,
     ValidationError,
 )
-from app.core.timeutil import utcnow
+from app.core.timeutil import to_display, utcnow
 from app.models import (
     SCALE_MAX,
     AttendanceRecord,
@@ -49,9 +50,12 @@ from app.models import (
     Lesson,
     NotificationKind,
     Permission,
+    RoleName,
     ScheduleEntry,
     Student,
     Subject,
+    Term,
+    TermGrade,
 )
 from app.services import attendance_service, audit_service, notifications_service
 from app.services.access import (
@@ -792,3 +796,439 @@ async def student_rating(
     return StudentRating(
         rank=rank, total_students=total, average=mine, attendance_percent=stat.percent
     )
+
+
+# ─────────────────────── Chorak bahosi (JUR-04) ───────────────────────
+
+
+@dataclass(frozen=True, slots=True)
+class TermGradeRow:
+    student_id: uuid.UUID
+    full_name: str
+    #: Joriy baholardan vaznlar boʻyicha hisoblangani. Baho yoʻq boʻlsa `None`.
+    computed: int | None
+    #: Yakunlangan chorak bahosi. Hali yakunlanmagan boʻlsa `None`.
+    final: int | None
+    max_value: int
+    is_manual: bool
+    reason: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class ClassTermGrades:
+    class_id: uuid.UUID
+    subject_id: uuid.UUID
+    term_id: uuid.UUID
+    term_name: str
+    rows: list[TermGradeRow]
+    #: Chorak bahosini yakunlash/tuzatish huquqi bormi (4-qoida).
+    can_edit: bool
+
+
+async def _can_set_term_grade(
+    session: AsyncSession, user: CurrentUser, class_id: uuid.UUID
+) -> bool:
+    """Chorak bahosini yakunlash va tuzatish huquqi.
+
+    Egasining 4-qoidasi saqlanadi: FAN USTOZI chorak bahosini na koʻradi,
+    na tuzatadi. Tuzatish sinf rahbari va oʻquv boʻlimi qoʻlida.
+
+    Direktor bu roʻyxatda YOʻQ — u maʼlumot kiritmaydi (CLAUDE.md),
+    shuning uchun `is_staff_wide` ga tayanib boʻlmaydi: u direktorni ham
+    ichiga oladi.
+    """
+    if user.has(
+        RoleName.ADMIN.value,
+        RoleName.SUPERADMIN.value,
+        RoleName.ACADEMIC.value,
+    ):
+        return True
+    return class_id in await homeroom_class_ids(session, user.id)
+
+
+async def _term(session: AsyncSession, term_id: uuid.UUID) -> Term:
+    term = await session.get(Term, term_id)
+    if term is None or term.is_archived:
+        raise NotFoundError("Chorak topilmadi.")
+    return term
+
+
+def _grade_day(g: Grade, lesson_date: date | None) -> date:
+    """Baho qaysi kunga tegishli.
+
+    Dars bahosi — dars kuniga. Uy vazifasi bahosida dars boʻlmasligi
+    mumkin, unda yozilgan kun olinadi va u MAHALLIY kunda hisoblanadi
+    (CLAUDE.md 3-qoida), aks holda kechqurun qoʻyilgan baho ertangi
+    chorakka tushib qolardi.
+    """
+    if lesson_date is not None:
+        return lesson_date
+    return to_display(g.created_at).date()
+
+
+async def _computed_for_class(
+    session: AsyncSession,
+    *,
+    student_ids: list[uuid.UUID],
+    subject_id: uuid.UUID,
+    term: Term,
+) -> dict[uuid.UUID, int]:
+    """Chorak ichidagi baholardan vaznli oʻrtacha (JUR-03 → JUR-04).
+
+    Natija BUTUN songa yaxlitlanadi: chorak bahosi tabelga "4,17" boʻlib
+    tushmaydi. Yaxlitlash yuqoriga: 4.5 → 5. Python `round` bu yerda
+    ishlatilmaydi — u bank yaxlitlashini qiladi va `round(4.5)` 4 chiqadi,
+    bu esa oʻquvchining zarariga.
+    """
+    if not student_ids:
+        return {}
+
+    rows = (
+        await session.execute(
+            select(Grade, Lesson.lesson_date)
+            .join(Lesson, Lesson.id == Grade.lesson_id, isouter=True)
+            .where(
+                Grade.student_id.in_(student_ids),
+                Grade.subject_id == subject_id,
+                Grade.is_archived.is_(False),
+            )
+        )
+    ).all()
+
+    yigindi: dict[uuid.UUID, list[float]] = {}
+    for g, kun in rows:
+        if not (term.starts_on <= _grade_day(g, kun) <= term.ends_on):
+            continue
+        pair = yigindi.setdefault(g.student_id, [0.0, 0.0])
+        pair[0] += _normalized(g) * g.weight
+        pair[1] += g.weight
+
+    return {
+        sid: int((jami / vazn) + 0.5)
+        for sid, (jami, vazn) in yigindi.items()
+        if vazn > 0
+    }
+
+
+async def _stored_term_grades(
+    session: AsyncSession,
+    *,
+    student_ids: list[uuid.UUID],
+    subject_id: uuid.UUID,
+    term_id: uuid.UUID,
+) -> dict[uuid.UUID, TermGrade]:
+    """Yakunlangan chorak baholari — oʻquvchi boʻyicha kalitlangan."""
+    if not student_ids:
+        return {}
+    rows = (
+        (
+            await session.execute(
+                select(TermGrade).where(
+                    TermGrade.student_id.in_(student_ids),
+                    TermGrade.subject_id == subject_id,
+                    TermGrade.term_id == term_id,
+                    TermGrade.is_archived.is_(False),
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return {tg.student_id: tg for tg in rows}
+
+
+async def class_term_grades(
+    session: AsyncSession,
+    user: CurrentUser,
+    *,
+    class_id: uuid.UUID,
+    subject_id: uuid.UUID,
+    term_id: uuid.UUID,
+) -> ClassTermGrades:
+    """Sinf × fan kesimidagi chorak baholari (JUR-04).
+
+    Fan ustoziga BERILMAYDI (4-qoida) — u `403` oladi. Koʻra oladigan:
+    sinf rahbari, oʻquv boʻlimi, administrator, direktor.
+    """
+    if not await _can_see_average(session, user, class_id):
+        raise PermissionDeniedError("Chorak bahosini koʻrishga ruxsatingiz yoʻq.")
+
+    term = await _term(session, term_id)
+
+    students = (
+        (
+            await session.execute(
+                select(Student)
+                .where(Student.class_id == class_id, Student.is_archived.is_(False))
+                .order_by(Student.last_name, Student.first_name)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    ids = [s.id for s in students]
+
+    hisoblangan = await _computed_for_class(
+        session, student_ids=ids, subject_id=subject_id, term=term
+    )
+
+    saqlangan = await _stored_term_grades(
+        session, student_ids=ids, subject_id=subject_id, term_id=term_id
+    )
+
+    return ClassTermGrades(
+        class_id=class_id,
+        subject_id=subject_id,
+        term_id=term_id,
+        term_name=term.name,
+        rows=[
+            TermGradeRow(
+                student_id=s.id,
+                full_name=f"{s.last_name} {s.first_name}".strip(),
+                computed=hisoblangan.get(s.id),
+                final=saqlangan[s.id].value if s.id in saqlangan else None,
+                max_value=saqlangan[s.id].max_value if s.id in saqlangan else SCALE_MAX[
+                    GradingScale.FIVE.value
+                ],
+                is_manual=saqlangan[s.id].is_manual if s.id in saqlangan else False,
+                reason=saqlangan[s.id].reason if s.id in saqlangan else None,
+            )
+            for s in students
+        ],
+        can_edit=await _can_set_term_grade(session, user, class_id),
+    )
+
+
+async def finalize_term_grades(
+    session: AsyncSession,
+    user: CurrentUser,
+    *,
+    class_id: uuid.UUID,
+    subject_id: uuid.UUID,
+    term_id: uuid.UUID,
+    ip: str | None = None,
+) -> int:
+    """Sinf boʻyicha chorak bahosini yakunlaydi — nechta yozuv qoʻyilgani qaytadi.
+
+    Qoʻlda tuzatilgan bahoga TEGILMAYDI: ustoz sabab bilan qoʻygan
+    bahoni qayta yakunlash yuvib yuborsa, JUR-04 maʼnosini yoʻqotardi.
+    Baho qoʻyilmagan oʻquvchi ham tashlab ketiladi — chorak bahosi
+    yoʻqligi "2" degani emas.
+    """
+    if not await _can_set_term_grade(session, user, class_id):
+        raise PermissionDeniedError("Chorak bahosini yakunlashga ruxsatingiz yoʻq.")
+
+    term = await _term(session, term_id)
+    ids = list(
+        (
+            await session.execute(
+                select(Student.id).where(
+                    Student.class_id == class_id, Student.is_archived.is_(False)
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    hisoblangan = await _computed_for_class(
+        session, student_ids=ids, subject_id=subject_id, term=term
+    )
+    saqlangan = await _stored_term_grades(
+        session, student_ids=ids, subject_id=subject_id, term_id=term_id
+    )
+
+    scale = SCALE_MAX[GradingScale.FIVE.value]
+    qoyildi = 0
+    for student_id, qiymat in hisoblangan.items():
+        mavjud = saqlangan.get(student_id)
+        if mavjud is not None and mavjud.is_manual:
+            continue
+
+        if mavjud is None:
+            yozuv = TermGrade(
+                student_id=student_id,
+                subject_id=subject_id,
+                term_id=term_id,
+                value=qiymat,
+                computed_value=qiymat,
+                max_value=scale,
+                is_manual=False,
+                set_by_id=user.id,
+            )
+            session.add(yozuv)
+            await session.flush()
+            audit_service.record(
+                session,
+                object_type="term_grade",
+                object_id=yozuv.id,
+                action=AuditAction.CREATE,
+                new={"student_id": student_id, "value": qiymat, "term_id": term_id},
+                actor_id=user.id,
+                ip=ip,
+            )
+            qoyildi += 1
+        elif mavjud.value != qiymat:
+            eski = mavjud.value
+            mavjud.value = qiymat
+            mavjud.computed_value = qiymat
+            mavjud.set_by_id = user.id
+            audit_service.record(
+                session,
+                object_type="term_grade",
+                object_id=mavjud.id,
+                action=AuditAction.UPDATE,
+                old={"value": eski},
+                new={"value": qiymat},
+                actor_id=user.id,
+                ip=ip,
+            )
+            qoyildi += 1
+
+    await session.commit()
+    return qoyildi
+
+
+async def set_term_grade(
+    session: AsyncSession,
+    user: CurrentUser,
+    *,
+    student_id: uuid.UUID,
+    subject_id: uuid.UUID,
+    term_id: uuid.UUID,
+    value: int,
+    reason: str,
+    ip: str | None = None,
+) -> TermGrade:
+    """Chorak bahosini qoʻlda tuzatadi — sabab MAJBURIY (JUR-04).
+
+    Avtomatik hisoblangan qiymat `computed_value` da qoladi: "nega
+    4 emas 5?" savoliga javob shu ikki ustunda turadi.
+    """
+    student = await session.get(Student, student_id)
+    if student is None or student.is_archived:
+        raise NotFoundError("Oʻquvchi topilmadi.")
+    if student.class_id is None or not await _can_set_term_grade(
+        session, user, student.class_id
+    ):
+        raise PermissionDeniedError("Chorak bahosini tuzatishga ruxsatingiz yoʻq.")
+
+    sabab = reason.strip()
+    if not sabab:
+        raise ValidationError("Tuzatish sababini yozing.")
+
+    scale = SCALE_MAX[GradingScale.FIVE.value]
+    if not 0 <= value <= scale:
+        raise ValidationError(f"Baho 0 va {scale} orasida boʻlsin.")
+
+    term = await _term(session, term_id)
+    hisoblangan = (
+        await _computed_for_class(
+            session, student_ids=[student_id], subject_id=subject_id, term=term
+        )
+    ).get(student_id)
+
+    mavjud = (
+        await _stored_term_grades(
+            session, student_ids=[student_id], subject_id=subject_id, term_id=term_id
+        )
+    ).get(student_id)
+
+    if mavjud is None:
+        mavjud = TermGrade(
+            student_id=student_id,
+            subject_id=subject_id,
+            term_id=term_id,
+            value=value,
+            computed_value=hisoblangan,
+            max_value=scale,
+            is_manual=True,
+            reason=sabab,
+            set_by_id=user.id,
+        )
+        session.add(mavjud)
+        await session.flush()
+        audit_service.record(
+            session,
+            object_type="term_grade",
+            object_id=mavjud.id,
+            action=AuditAction.CREATE,
+            new={"value": value, "reason": sabab, "computed": hisoblangan},
+            actor_id=user.id,
+            ip=ip,
+        )
+    else:
+        eski = {"value": mavjud.value, "reason": mavjud.reason}
+        mavjud.value = value
+        mavjud.reason = sabab
+        mavjud.is_manual = True
+        mavjud.computed_value = (
+            mavjud.computed_value if mavjud.computed_value is not None else hisoblangan
+        )
+        mavjud.set_by_id = user.id
+        audit_service.record(
+            session,
+            object_type="term_grade",
+            object_id=mavjud.id,
+            action=AuditAction.UPDATE,
+            old=eski,
+            new={"value": value, "reason": sabab},
+            actor_id=user.id,
+            ip=ip,
+        )
+
+    await session.commit()
+    await session.refresh(mavjud)
+    return mavjud
+
+
+@dataclass(frozen=True, slots=True)
+class StudentTermGrade:
+    subject_id: uuid.UUID
+    subject_name: str
+    term_id: uuid.UUID
+    term_name: str
+    value: int
+    max_value: int
+    is_manual: bool
+
+
+async def student_term_grades(
+    session: AsyncSession,
+    user: CurrentUser,
+    student_id: uuid.UUID,
+    *,
+    term_id: uuid.UUID | None = None,
+) -> list[StudentTermGrade]:
+    """Oʻquvchining chorak baholari — ota-ona va oʻquvchi kabineti uchun.
+
+    Faqat YAKUNLANGAN baho qaytadi. Yakunlanmagan chorakning "oraliq"
+    koʻrsatkichi oilaga koʻrsatilmaydi: u har baho qoʻyilganda oʻzgarib
+    turadi va rasmiy baho deb tushunilib qolardi.
+
+    Kirish nazorati `access.py` da — ota-ona faqat oʻz farzandini (X-1).
+    """
+    await assert_can_view_student(session, user, student_id)
+
+    stmt = (
+        select(TermGrade, Subject.name, Term.name, Term.index)
+        .join(Subject, Subject.id == TermGrade.subject_id)
+        .join(Term, Term.id == TermGrade.term_id)
+        .where(TermGrade.student_id == student_id, TermGrade.is_archived.is_(False))
+        .order_by(Term.index, Subject.name)
+    )
+    if term_id is not None:
+        stmt = stmt.where(TermGrade.term_id == term_id)
+
+    return [
+        StudentTermGrade(
+            subject_id=tg.subject_id,
+            subject_name=fan,
+            term_id=tg.term_id,
+            term_name=chorak,
+            value=tg.value,
+            max_value=tg.max_value,
+            is_manual=tg.is_manual,
+        )
+        for tg, fan, chorak, _ in (await session.execute(stmt)).all()
+    ]

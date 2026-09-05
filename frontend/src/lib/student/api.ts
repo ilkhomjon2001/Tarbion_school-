@@ -18,6 +18,7 @@ import {
   attendanceStats,
   authMe,
   journalStudentGrades,
+  journalStudentTermGrades,
   journalStudentHomework,
   journalSubmit,
   parentChildAttendance,
@@ -41,6 +42,7 @@ import type {
   ScheduleEntryOut,
   StudentHomeworkOut,
   StudentSubjectGradesOut,
+  StudentTermGradeOut,
   TestOut,
   UserOut,
 } from "@/lib/api/types.gen";
@@ -276,6 +278,22 @@ export async function fetchSubjectGrades(
     average: r.average ?? 0,
     entries: r.grades.map((g) => toGradeEntry(r.subject_name, g)),
   }));
+}
+
+
+/**
+ * Chorak baholari (JUR-04) — faqat YAKUNLANGANLARI.
+ *
+ * Oraliq koʻrsatkich oilaga koʻrsatilmaydi: u har baho qoʻyilganda
+ * siljiydi va rasmiy chorak bahosi deb tushunilib qolardi. Bu qoida
+ * serverda — bu yerda takrorlanmaydi.
+ */
+export async function fetchTermGrades(
+  studentId: string,
+): Promise<StudentTermGradeOut[]> {
+  return withAuth<StudentTermGradeOut[]>(() =>
+    journalStudentTermGrades({ path: { student_id: studentId } }),
+  );
 }
 
 // ─────────────────────────── Testlar ───────────────────────────
