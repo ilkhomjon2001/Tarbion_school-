@@ -870,10 +870,17 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
   - Frontend: ✅ `/rahbar/hisobotlar` da uchta eksport tugmasi
 - [ ] T-054 · Ikki bosqichli tasdiqlash — AUT-09
   - Frontend: ⬜ yoʻq
-- [~] T-055 · Foydalanuvchi va administrator qo'llanmalari — NFR-16
-  - Ustoz qoʻllanmasi: ✅ `docs/USTOZ-QOLLANMA.md`
-  - Administrator, ota-ona va oʻquvchi qoʻllanmalari: qolgan
-  - Frontend: ⬜ yoʻq
+- [x] T-055 · Foydalanuvchi va administrator qo'llanmalari — NFR-16
+  - `docs/USTOZ-QOLLANMA.md` — chorak bahosi, sababli qoldirish
+    arizalari, savollarni Excelʼdan yuklash va metodik baza qidiruvi
+    boʻlimlari qoʻshildi
+  - `docs/OTA-ONA-QOLLANMA.md` — kirish, farzand tanlash, davomat va
+    ariza, baholar, toʻlov, shartnoma, Telegram
+  - `docs/OQUVCHI-QOLLANMA.md` — jadval, uy vazifasi, testlar, reyting
+  - `docs/ADMIN-QOLLANMA.md` — ishga tushirish tartibi, huquqlar, vasiy
+    biriktirish, jadval istisnolari, toʻlov va storno, metodik baza,
+    eksport va audit
+  - Frontend: ⬜ — qoʻllanmalar `docs/` da, saytga joylash alohida ish
 - [ ] T-056 · Yakuniy qabul va topshirish
   - Frontend: ⬜ yoʻq
 

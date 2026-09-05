@@ -80,6 +80,29 @@ bosib baho qoʻyasiz.
 Baho oʻzgartirilsa **eski qiymat ham saqlanadi** (audit). Bu tekshiruv
 emas — kelajakda «bahom oʻzgargan» degan savol chiqsa, javob topiladi.
 
+### Chorak bahosi
+
+Chorak bahosi joriy baholardan **vaznlar boʻyicha** hisoblanadi: nazorat
+ishi joriy bahodan ogʻirroq turadi. Yarim ball yuqoriga yaxlitlanadi
+(4.5 → 5).
+
+Fan ustozi chorak bahosini **koʻrmaydi**. Bu ataylab: uni koʻrgan ustoz
+bilmasdan oʻsha koʻrsatkichga qarab baho qoʻya boshlaydi. Chorak bahosi
+sinf rahbari, oʻquv boʻlimi va oilaga tegishli.
+
+**Sinf rahbari** jurnal sahifasining pastida «Chorak baholari» panelini
+koʻradi:
+
+- **Hisoblangan** ustuni — joriy baholardan chiqqan qiymat, jonli.
+- **Chorak bahosi** ustuni — yakunlangani. «Chorakni yakunlash» tugmasi
+  hisoblangan qiymatni chorak bahosi qilib yozadi.
+- **«Tuzatish»** — sabab bilan qoʻlda oʻzgartirish. Sabab majburiy va u
+  audit jurnalida qoladi.
+
+Takroriy yakunlash xavfsiz: qoʻlda tuzatilgan bahoga tegilmaydi.
+
+Chorak bahosi oilaga **faqat yakunlangandan keyin** koʻrinadi.
+
 ---
 
 ## 5. Uy vazifasi
@@ -101,8 +124,25 @@ Sinf rahbari oʻz sinfi boʻyicha kengaytirilgan huquqqa ega:
 
 - sinfning **barcha** darslari boʻyicha davomatni koʻradi (faqat oʻzi
   oʻqitadiganini emas);
+- **chorak bahosini** yakunlaydi va sabab bilan tuzatadi;
+- **sababli qoldirish arizalarini** koʻrib chiqadi (pastda);
 - `Tarbiya` boʻlimida oʻquvchi haqida qayd qoldiradi;
 - ota-onalarning murojaatlari birinchi navbatda unga tushadi.
+
+### Sababli qoldirish arizalari
+
+`Sababli qoldirish` boʻlimida vasiy yuborgan arizalar chiqadi: sanalar,
+sabab va ilova (shifokor maʼlumotnomasi boʻlishi mumkin).
+
+Ilovani ochish uchun tugmani bosing — havola **15 daqiqa** amal qiladi.
+Muddat oʻtsa qayta bosing.
+
+**Tasdiqlansa** oʻsha kunlardagi darslar «sababli» boʻladi — 24 soatlik
+oyna yopiq boʻlsa ham. Ustoz «keldi» degan darsga tegilmaydi: bola
+darsda boʻlgan.
+
+**Rad etishda sabab majburiy.** «Rad etildi» degan javob oilaga nima
+qilish kerakligini aytmaydi.
 
 ---
 
@@ -126,6 +166,62 @@ belgilagan davomat uchun bildirishnoma yuborilmaydi.
 
 ---
 
+## 9. Testlar
+
+`Testlar` boʻlimida test tuzasiz: sinf, fan, nomi, davomiyligi, necha
+marta ishlash mumkinligi va ochilish/yopilish vaqti.
+
+Test **qoralama** boʻlib yaratiladi. Savollarni qoralamada kiritasiz,
+keyin **«Eʼlon qilish»** ni bosasiz — shundan keyin savollar
+oʻzgartirilmaydi. Sabab: bir xil testni ikki oʻquvchi ikki xil koʻrmasin.
+
+### Savollarni Excelʼdan yuklash
+
+Bittalab kiritish oʻrniga:
+
+1. **«Shablonni yuklab olish»** — boʻsh Excel fayl.
+2. Har qatorga bitta savol yozing. Toʻgʻri variantni **«+»** bilan
+   boshlang: `+ Toshkent`.
+3. **«Toʻldirilgan faylni yuklash»**.
+
+Savol turini yozmaysiz — u toʻgʻri javoblar sonidan chiqadi: bittasi
+belgilangan boʻlsa «bitta javob», bir nechtasi belgilangan boʻlsa
+«bir nechta javob».
+
+Buzuq qator butun importni toʻxtatmaydi: u tashlab ketiladi va **qaysi
+qator, nima uchun** deb yoziladi. Shu roʻyxatni oʻqib chiqing —
+tashlangan savollar jimgina yoʻqolmasin.
+
+Savollar mavjudlariga **qoʻshiladi**, ularni almashtirmaydi.
+
+---
+
+## 10. Dars rejasi — metodik baza
+
+`Dars rejasi` boʻlimida oʻquv boʻlimi joriy qilgan rejalar turadi:
+fan → yil → sinf → chorak → dars.
+
+Dars kartochkasida mavzu, maqsad, lugʻat, nazariy va amaliy qism, uy
+vazifasi, **kutilayotgan natija**, **kerakli jihozlar**, **baholash
+mezoni**, video havola va ilova fayllar boʻladi.
+
+### Qidiruv
+
+Sahifaning yuqorisidagi qidiruv **uch narsa** boʻyicha ishlaydi: mavzu
+nomi, atama va jihoz nomi. Har natijada «nima boʻyicha topildi» yozib
+qoʻyiladi — «multimetr» deb qidirganda mavzu nomida bu soʻz umuman
+boʻlmasligi mumkin.
+
+Natijani bossangiz oʻsha fan/sinfga oʻtasiz.
+
+### Oʻz rejangizni qoʻshish
+
+Reja qoʻsha olasiz, lekin u **qoralama** boʻlib tugʻiladi va nashrdan
+oldin oʻquv boʻlimi tasdiqlaydi. Bu sozlama — maktab uni oʻchirib
+qoʻysa, oʻz rejangizni oʻzingiz joriy qilasiz.
+
+---
+
 ## Tez-tez beriladigan savollar
 
 **Jadvalda darsim notoʻgʻri koʻrsatilgan.**
@@ -139,6 +235,18 @@ darslardagi davomat buzilmaydi.
 **Telefondan ishlaydimi?**
 Ha. Sayt 360px kenglikdan boshlab moʻljallangan, alohida ilova kerak
 emas.
+
+**Chorak bahosini koʻra olmayapman.**
+Bu xato emas — chorak bahosi fan ustoziga koʻrsatilmaydi. Sinf rahbari,
+oʻquv boʻlimi va oila koʻradi.
+
+**Bugungi darsim jadvalda «bekor qilingan» deb turibdi.**
+Administrator uni bekor qilgan (ADM-10) — sabab oʻsha yerda yozilgan.
+Bunday darsga davomat ham, baho ham olinmaydi.
+
+**Darsimga boshqa ustoz qoʻyilgan.**
+Bir kunlik almashtirish. Jadvalingiz oʻzgarmagan — keyingi haftadan
+dars yana sizda.
 
 **Boshqa sinfning oʻquvchisini koʻra olmayapman.**
 Bu xato emas. Har ustoz faqat oʻzi dars beradigan sinflarni koʻradi,
