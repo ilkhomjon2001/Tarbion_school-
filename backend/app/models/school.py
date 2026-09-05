@@ -21,8 +21,22 @@ from app.models.base import Entity
 
 
 class GuardianRelation(enum.StrEnum):
+    """Oʻquvchi bilan qarindoshlik.
+
+    `PARENT` — «ota yoki ona, aniqlashtirilmagan». U ATAYLAB bor:
+    maktab koʻpincha kim ota kim ona ekanini alohida yozib oʻtirmaydi
+    va bunday holatda `GUARDIAN` deb belgilash yolgʻon boʻlardi —
+    u aynan «ota-ona EMAS» degan maʼnoni bildiradi (bobo, xola,
+    qonuniy vakil).
+
+    Ekranda: Otasi · Onasi · Ota-onasi · Qonuniy vakili.
+    """
+
     FATHER = "father"
     MOTHER = "mother"
+    #: Ota yoki ona — qaysi biri ekani koʻrsatilmagan.
+    PARENT = "parent"
+    #: Ota-ona EMAS: bobo/buvi, qarindosh yoki tayinlangan vakil.
     GUARDIAN = "guardian"
 
 

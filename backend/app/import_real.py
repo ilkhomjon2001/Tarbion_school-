@@ -387,7 +387,10 @@ async def run(xlsx: Path, creds_path: Path, do_wipe: bool) -> None:
                 Guardian(
                     student_id=st.id,
                     user_id=parent.id,
-                    relation="guardian",
+                    # «Ota yoki ona, aniqlashtirilmagan». Ilgari bu yerda
+                    # "guardian" turgan va u NOTOʻGʻRI edi: u aynan
+                    # «ota-ona emas» degan maʼnoni bildiradi.
+                    relation="parent",
                     is_primary=True,
                 )
             )

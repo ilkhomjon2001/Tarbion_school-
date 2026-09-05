@@ -1302,3 +1302,22 @@ OʻZGARMAGANI va nega:
   qarab oʻzgartirilmaydi.
 - **Ishlab chiquvchi hujjatlari** (CLAUDE.md, TASKS.md, XAVFSIZLIK.md,
   DECISIONS.md) va kod izohlari — ular TZ atamasiga tayanadi.
+
+## Qarindoshlikda «parent» turi qoʻshildi (2026-09-05)
+
+Oʻquvchilar Excel'dan ommaviy import qilinganda qarindoshlik
+soʻralmagan va hammasiga `guardian` qoʻyilgan. Interfeys atamasi
+«ota-ona» ga oʻtgach bu koʻzga tashlandi: `guardian` aynan «ota-ona
+EMAS» degani (bobo, xola, tayinlangan vakil), yaʼni 98 ta oilaga
+notoʻgʻri qarindoshlik yozilgan boʻlib chiqdi.
+
+`PARENT = "parent"` — «ota yoki ona, qaysi biri koʻrsatilmagan».
+Import sukuti aynan shu boʻlishi kerak edi va `import_real.py` ham
+oʻzgartirildi.
+
+Maʼlumot migratsiyasi (`c0444b24db6a`) barcha `guardian` qatorlarini
+`parent` ga koʻchiradi. Bu xavfsiz, chunki `guardian` ni hech kim
+ATAYLAB tanlamagan edi: 100 ta yozuvdan 98 tasi import sukuti,
+2 tasi `father`.
+
+Sxema oʻzgarmadi — ustun `String(20)`, DB enum emas.

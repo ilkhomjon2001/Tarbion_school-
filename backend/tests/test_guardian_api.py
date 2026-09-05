@@ -531,3 +531,37 @@ async def test_ikkinchi_farzand_ikkalasini_ham_koradi(
     for student in (world["ali"], world["vali"]):
         r = await client.get(f"/api/v1/school/students/{student.id}", headers=_auth(ota))
         assert r.status_code == 200, f"{student.first_name} koʻrinmadi: {r.text}"
+
+
+async def test_ota_ona_turi_qabul_qilinadi(client: AsyncClient, world: dict) -> None:
+    """«parent» — ota yoki ona, qaysi biri koʻrsatilmagan.
+
+    Bu tur ATAYLAB bor: maktab koʻpincha kim ota kim ona ekanini
+    alohida yozib oʻtirmaydi va bunday holatda `guardian` deb
+    belgilash yolgʻon boʻlardi — u aynan «ota-ona EMAS» degani.
+    """
+    token = await _token(client, "gd.sa")
+    r = await client.post(
+        f"/api/v1/school/students/{world['ali'].id}/guardians",
+        headers=_auth(token),
+        json={
+            "last_name": "Aliyev",
+            "first_name": "Otabek",
+            "relation": "parent",
+            "is_primary": True,
+        },
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["guardian"]["relation"] == "parent"
+
+
+async def test_nomalum_qarindoshlik_turi_rad_etiladi(
+    client: AsyncClient, world: dict
+) -> None:
+    token = await _token(client, "gd.sa")
+    r = await client.post(
+        f"/api/v1/school/students/{world['ali'].id}/guardians",
+        headers=_auth(token),
+        json={"last_name": "Aliyev", "first_name": "Otabek", "relation": "qoʻshni"},
+    )
+    assert r.status_code == 422

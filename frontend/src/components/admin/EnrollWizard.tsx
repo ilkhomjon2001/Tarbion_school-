@@ -37,6 +37,9 @@ const MONTHS_IN_YEAR = 9;
 const RELATIONS: { id: string; label: string }[] = [
   { id: "father", label: "Ota" },
   { id: "mother", label: "Ona" },
+  // «Ota yoki ona, qaysi biri koʻrsatilmagan» — maktab koʻpincha buni
+  // alohida yozib oʻtirmaydi va majburlashning maʼnosi yoʻq.
+  { id: "parent", label: "Ota-ona" },
   { id: "guardian", label: "Qonuniy vakil" },
 ];
 

@@ -50,6 +50,7 @@ import {
 const RELATION_LABELS: Record<string, string> = {
   father: "Otasi",
   mother: "Onasi",
+  parent: "Ota-onasi",
   guardian: "Qonuniy vakili",
 };
 

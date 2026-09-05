@@ -59,6 +59,7 @@ export function dayStatus(day: DayAttendance): AttendanceStatus {
 const RELATION_UZ: Record<string, string> = {
   father: "Otasi",
   mother: "Onasi",
+  parent: "Ota-onasi",
   guardian: "Qonuniy vakili",
   grandparent: "Bobosi/buvisi",
   other: "Qarindoshi",

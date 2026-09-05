@@ -32,6 +32,7 @@ import { KIND_LABELS, TONE_LABELS } from "@/lib/wellbeing/api";
 const RELATION_LABELS: Record<string, string> = {
   father: "Otasi",
   mother: "Onasi",
+  parent: "Ota-onasi",
   guardian: "Qonuniy vakili",
 };
 

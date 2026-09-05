@@ -26,6 +26,7 @@ import { apiXato, fetchContract, type ContractOut } from "@/lib/school/api";
 const RELATION_LABELS: Record<string, string> = {
   father: "otasi",
   mother: "onasi",
+  parent: "ota-onasi",
   guardian: "qonuniy vakili",
 };
 
