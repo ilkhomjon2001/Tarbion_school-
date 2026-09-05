@@ -131,6 +131,29 @@ class Lesson(Entity):
     ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     topic: Mapped[str | None] = mapped_column(String(200))
+
+    # ── ADM-10: muayyan sanaga jadval istisnosi ──
+    #
+    # Bekor qilingan dars ARXIVLANMAYDI. Sabab: generatsiya
+    # `is_archived = false` boʻyicha tekshiradi, arxivlangani esa slotni
+    # boʻshatadi (Y4) va keyingi generatsiya darsni QAYTA yaratardi.
+    # Shuning uchun dars joyida qoladi, faqat «bekor qilingan» deb
+    # belgilanadi — davomat ham, baho ham olinmaydi.
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cancel_reason: Mapped[str | None] = mapped_column(String(300))
+
+    #: Ustoz vaqtincha almashtirilganmi. `teacher_id` ning oʻzi jadvaldan
+    #: farq qilishi bilan ham bilinardi, lekin jadval keyin oʻzgarsa bu
+    #: taqqoslash yolgʻon gapira boshlaydi — shuning uchun aniq bayroq.
+    is_substituted: Mapped[bool] = mapped_column(
+        default=False, server_default="false", nullable=False
+    )
+    #: Almashtirish yoki koʻchirish izohi — jadvalda koʻrinadi.
+    exception_note: Mapped[str | None] = mapped_column(String(300))
+
+    @property
+    def is_cancelled(self) -> bool:
+        return self.cancelled_at is not None
     # Davomat belgilanganmi — ustoz bosh sahifasida "22/25 belgilangan"
     # koʻrsatish uchun. Har safar COUNT qilmaslik uchun shu yerda saqlanadi.
     attendance_marked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

@@ -169,7 +169,11 @@ async def _assert_can_edit(session: AsyncSession, user: CurrentUser, lesson: Les
     Ustoz oʻtgan haftaning bahosini "tuzatib" qoʻya olmaydi — bu jurnal
     ishonchliligining asosi. Administrator `attendance.edit_closed`
     huquqi bilan tuzatadi va bu auditga tushadi.
+
+    ADM-10: bekor qilingan darsga baho ham qoʻyilmaydi — dars oʻtmagan.
     """
+    if lesson.cancelled_at is not None:
+        raise ValidationError("Bu dars bekor qilingan — baho qoʻyilmaydi.")
     if attendance_service.can_teacher_edit(lesson):
         return
     if await has_permission(session, user, Permission.ATTENDANCE_EDIT_CLOSED):

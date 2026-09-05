@@ -1207,3 +1207,16 @@ boʻlgan, uni «sababli» qilish davomatni yolgʻon qilardi.
 Ariza avval MUROJAAT sifatida ketardi (alohida jadval yoʻq edi). Endi
 oʻz moduli bor: murojaat yozishma uchun, ariza esa davomatni
 oʻzgartiradigan hujjat — ikkalasining hayot sikli boshqa.
+
+## Jadval istisnosi uchun alohida jadval yaratilmadi (T-039, ADM-10)
+
+Istisno KONKRET darsga tegishli — «5-sentabr 3-para», dushanbaning
+hamma 3-parasi emas. `lessons` esa allaqachon sana boʻyicha yozuv.
+Alohida `schedule_exceptions` jadvali boʻlganda har dars koʻrsatilganda
+qoʻshimcha JOIN kerak boʻlardi va «qaysi ustoz haqiqatda dars berdi»
+degan savolga ikkita manba javob berardi.
+
+Bekor qilingan dars ARXIVLANMAYDI. Generatsiya `is_archived = false`
+boʻyicha tekshiradi va arxivlangani slotni boʻshatadi (Y4) — keyingi
+generatsiya darsni qayta yaratib qoʻyardi. Shuning uchun dars joyida
+qoladi, faqat `cancelled_at` qoʻyiladi.

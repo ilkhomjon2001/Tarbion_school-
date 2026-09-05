@@ -127,6 +127,14 @@ class DayLessonOut(BaseModel):
     #: DAV-03 oynasi ochiqmi. Yopiq ustun faqat oʻqiladi.
     editable: bool
 
+    # ── ADM-10: jadval istisnosi ──
+    #: Bekor qilingan darsga davomat olinmaydi.
+    is_cancelled: bool = False
+    cancel_reason: str | None = None
+    #: Ustoz vaqtincha almashtirilganmi.
+    is_substituted: bool = False
+    exception_note: str | None = None
+
 
 class DayStudentOut(BaseModel):
     """Qator boshidagi oʻquvchi. Shaxsiy maʼlumot yoʻq (X-6)."""

@@ -755,8 +755,21 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
     ilova havolasi soʻralganda olinadi (X-7)
 - [ ] T-038 · 2-bosqich xabarnomalari — Ilova B (2-bosqich qatorlari)
   - Frontend: ⬜ yoʻq
-- [ ] T-039 · Jadval istisnolari (dars almashtirish) — ADM-10
-  - Frontend: ⬜ yoʻq
+- [x] T-039 · Jadval istisnolari (dars almashtirish) — ADM-10
+  - Alohida jadval YOʻQ: istisno konkret darsga tegishli va `lessons`
+    ning oʻzi sana boʻyicha yozuv. `lessons` ga toʻrtta ustun qoʻshildi
+  - Uch amal: bekor qilish (sabab majburiy), ustozni vaqtincha
+    almashtirish (jadval tegilmaydi), boshqa paraga koʻchirish (vaqt
+    qoʻngʻiroqdan qayta hisoblanadi — DAV-03 oynasi toʻgʻri sanalsin)
+  - Bekor qilingan dars ARXIVLANMAYDI: arxivlangani slotni boʻshatadi
+    (Y4) va keyingi generatsiya darsni qayta yaratardi. Bunday darsga
+    davomat ham, baho ham olinmaydi
+  - ADM-09 toʻqnashuv nazorati: band ustozni almashtirib boʻlmaydi,
+    band paraga koʻchirib boʻlmaydi. Huquq: `schedule.manage`. 11 ta test
+  - Backend: `/api/v1/schedule/exceptions`,
+    `/schedule/lessons/{id}/{cancel,restore,substitute,move}`
+  - Frontend: ✅ `/admin/malumotnomalar` → «Jadval istisnolari» yorligʻi.
+    Kunlik davomat ekranida ham bekor qilingan dars ajratib koʻrsatiladi
 - [ ] T-040 · 2-bosqich qabuliga tayyorlash
   - Frontend: ⬜ yoʻq
 

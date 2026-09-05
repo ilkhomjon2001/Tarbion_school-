@@ -109,7 +109,18 @@ async def _assert_can_edit(session: AsyncSession, user: CurrentUser, lesson: Les
     birigina bu huquqni berishi mumkin.
 
     Superadminda bu huquq avtomatik bor (`has_permission` ga qara).
+
+    ADM-10: bekor qilingan darsga davomat OLINMAYDI — dars oʻtmagan,
+    demak «keldi/kelmadi» degan savolning oʻzi yoʻq. Bu tekshiruv
+    huquqdan oldin turadi: administrator ham bekor qilingan darsga
+    davomat yozmasin, avval bekor qilishni qaytarsin.
     """
+    if lesson.cancelled_at is not None:
+        raise ValidationError(
+            "Bu dars bekor qilingan — davomat olinmaydi. "
+            "Kerak boʻlsa administrator bekor qilishni qaytaradi."
+        )
+
     if can_teacher_edit(lesson):
         return
 

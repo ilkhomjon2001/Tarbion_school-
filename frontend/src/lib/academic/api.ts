@@ -28,17 +28,30 @@ import {
   academicTerms,
   academicYears,
   attendanceGenerateTermLessons,
+  scheduleCancelLesson,
+  scheduleListExceptions,
+  scheduleMoveLesson,
+  scheduleRestoreLesson,
+  scheduleSubstituteTeacher,
 } from "@/lib/api/sdk.gen";
 import type {
   AcademicYearOut,
   BellOut,
   GenerationOut,
   HolidayOut,
+  LessonExceptionOut,
   TermOut,
 } from "@/lib/api/types.gen";
 import { withAuth } from "@/lib/session";
 
-export type { AcademicYearOut, BellOut, GenerationOut, HolidayOut, TermOut };
+export type {
+  AcademicYearOut,
+  BellOut,
+  GenerationOut,
+  HolidayOut,
+  LessonExceptionOut,
+  TermOut,
+};
 
 // ─────────────────────────── Oʻquv yili ───────────────────────────
 
@@ -236,4 +249,58 @@ export function useAcademicCalendar(): AcademicCalendar {
   }, [tick]);
 
   return { year, terms, holidays, bells, loading, error, reload };
+}
+
+
+// ─────────────── Jadval istisnolari (ADM-10) ───────────────
+//
+// Istisno KONKRET darsga tegishli, jadval yozuviga emas: «5-sentabr
+// 3-para» oʻzgaradi, dushanbaning hamma 3-parasi emas.
+
+export async function fetchScheduleExceptions(
+  dateFrom: string,
+  dateTo: string,
+): Promise<LessonExceptionOut[]> {
+  return withAuth<LessonExceptionOut[]>(() =>
+    scheduleListExceptions({ query: { date_from: dateFrom, date_to: dateTo } }),
+  );
+}
+
+/** Sabab majburiy — serverda ham tekshiriladi. */
+export async function cancelLesson(lessonId: string, reason: string): Promise<void> {
+  await withAuth(() =>
+    scheduleCancelLesson({ path: { lesson_id: lessonId }, body: { reason } }),
+  );
+}
+
+export async function restoreLesson(lessonId: string): Promise<void> {
+  await withAuth(() => scheduleRestoreLesson({ path: { lesson_id: lessonId } }));
+}
+
+/** Jadval TEGILMAYDI — almashtirish bitta sanaga tegishli. */
+export async function substituteTeacher(
+  lessonId: string,
+  teacherId: string,
+  note?: string,
+): Promise<void> {
+  await withAuth(() =>
+    scheduleSubstituteTeacher({
+      path: { lesson_id: lessonId },
+      body: { teacher_id: teacherId, note: note ?? null },
+    }),
+  );
+}
+
+export async function moveLesson(
+  lessonId: string,
+  period: number,
+  room?: string | null,
+  note?: string,
+): Promise<void> {
+  await withAuth(() =>
+    scheduleMoveLesson({
+      path: { lesson_id: lessonId },
+      body: { period, room: room ?? null, note: note ?? null },
+    }),
+  );
 }

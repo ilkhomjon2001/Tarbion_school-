@@ -25,12 +25,21 @@ import uuid
 from dataclasses import dataclass
 from datetime import date, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import NotFoundError, ValidationError
-from app.core.timeutil import combine_local
-from app.models import AuditAction, Holiday, Lesson, Permission, ScheduleEntry
+from app.core.exceptions import ConflictError, NotFoundError, ValidationError
+from app.core.timeutil import combine_local, utcnow
+from app.models import (
+    AuditAction,
+    Holiday,
+    Lesson,
+    Permission,
+    ScheduleEntry,
+    SchoolClass,
+    Subject,
+    User,
+)
 from app.services import academic_service, audit_service
 from app.services.access import CurrentUser
 from app.services.permissions import assert_permission
@@ -212,3 +221,325 @@ async def generate_term(
         year_id=term.academic_year_id,
         ip=ip,
     )
+
+
+# ─────────────── Jadval istisnolari (ADM-10) ───────────────
+
+
+@dataclass(frozen=True, slots=True)
+class LessonException:
+    lesson_id: uuid.UUID
+    lesson_date: date
+    period: int
+    class_name: str
+    subject_name: str
+    teacher_name: str
+    room: str | None
+    is_cancelled: bool
+    cancel_reason: str | None
+    is_substituted: bool
+    exception_note: str | None
+
+
+async def _lesson_for_exception(session: AsyncSession, lesson_id: uuid.UUID) -> Lesson:
+    lesson = await session.get(Lesson, lesson_id)
+    if lesson is None or lesson.is_archived:
+        raise NotFoundError("Dars topilmadi.")
+    return lesson
+
+
+async def _assert_teacher_free(
+    session: AsyncSession,
+    *,
+    teacher_id: uuid.UUID,
+    day: date,
+    period: int,
+    except_lesson_id: uuid.UUID,
+) -> None:
+    """ADM-09: bitta ustoz bir vaqtda ikki joyda dars bera olmaydi.
+
+    Bekor qilingan dars hisobga OLINMAYDI — u oʻtmaydi, demak ustoz
+    band emas.
+    """
+    band = (
+        await session.execute(
+            select(Lesson.id).where(
+                Lesson.teacher_id == teacher_id,
+                Lesson.lesson_date == day,
+                Lesson.period == period,
+                Lesson.id != except_lesson_id,
+                Lesson.is_archived.is_(False),
+                Lesson.cancelled_at.is_(None),
+            )
+        )
+    ).first()
+    if band is not None:
+        raise ConflictError("Bu ustozning shu kuni shu parada boshqa darsi bor.")
+
+
+async def cancel_lesson(
+    session: AsyncSession,
+    actor: CurrentUser,
+    *,
+    lesson_id: uuid.UUID,
+    reason: str,
+    ip: str | None = None,
+) -> Lesson:
+    """ADM-10: darsni bekor qiladi. Sabab majburiy.
+
+    Dars oʻchirilmaydi va arxivlanmaydi — u jadvalda «bekor qilingan»
+    boʻlib turadi. Shunda oila «dars nega yoʻq edi?» degan savolga
+    javob topadi va keyingi generatsiya darsni qayta yaratmaydi.
+    """
+    await assert_permission(session, actor, Permission.SCHEDULE_MANAGE)
+    lesson = await _lesson_for_exception(session, lesson_id)
+
+    sabab = reason.strip()
+    if len(sabab) < 3:
+        raise ValidationError("Bekor qilish sababini yozing.")
+    if lesson.cancelled_at is not None:
+        raise ConflictError("Bu dars allaqachon bekor qilingan.")
+
+    lesson.cancelled_at = utcnow()
+    lesson.cancel_reason = sabab
+
+    audit_service.record(
+        session,
+        object_type="lesson",
+        object_id=lesson.id,
+        action=AuditAction.UPDATE,
+        old={"cancelled": False},
+        new={"cancelled": True, "reason": sabab},
+        actor_id=actor.id,
+        ip=ip,
+    )
+    await session.commit()
+    await session.refresh(lesson)
+    return lesson
+
+
+async def restore_lesson(
+    session: AsyncSession,
+    actor: CurrentUser,
+    *,
+    lesson_id: uuid.UUID,
+    ip: str | None = None,
+) -> Lesson:
+    """Bekor qilishni orqaga qaytaradi — xato bosilgan boʻlsa."""
+    await assert_permission(session, actor, Permission.SCHEDULE_MANAGE)
+    lesson = await _lesson_for_exception(session, lesson_id)
+    if lesson.cancelled_at is None:
+        raise ConflictError("Bu dars bekor qilinmagan.")
+
+    # Ustoz oraliqda boshqa joyga qoʻyilgan boʻlishi mumkin.
+    await _assert_teacher_free(
+        session,
+        teacher_id=lesson.teacher_id,
+        day=lesson.lesson_date,
+        period=lesson.period,
+        except_lesson_id=lesson.id,
+    )
+
+    lesson.cancelled_at = None
+    lesson.cancel_reason = None
+    audit_service.record(
+        session,
+        object_type="lesson",
+        object_id=lesson.id,
+        action=AuditAction.UPDATE,
+        old={"cancelled": True},
+        new={"cancelled": False},
+        actor_id=actor.id,
+        ip=ip,
+    )
+    await session.commit()
+    await session.refresh(lesson)
+    return lesson
+
+
+async def substitute_teacher(
+    session: AsyncSession,
+    actor: CurrentUser,
+    *,
+    lesson_id: uuid.UUID,
+    teacher_id: uuid.UUID,
+    note: str | None = None,
+    ip: str | None = None,
+) -> Lesson:
+    """ADM-10: ustozni SHU DARSGA vaqtincha almashtiradi.
+
+    Jadval (`schedule_entries`) tegilmaydi — almashtirish bitta sanaga
+    tegishli. Davomat va baho darsga bogʻlangani uchun (T-013), yangi
+    ustoz shu darsning davomatini oʻzi belgilaydi.
+    """
+    await assert_permission(session, actor, Permission.SCHEDULE_MANAGE)
+    lesson = await _lesson_for_exception(session, lesson_id)
+
+    if lesson.cancelled_at is not None:
+        raise ConflictError("Bekor qilingan darsga ustoz tayinlanmaydi.")
+
+    yangi = await session.get(User, teacher_id)
+    if yangi is None or yangi.is_archived:
+        raise NotFoundError("Ustoz topilmadi.")
+    if not yangi.is_active:
+        raise ValidationError("Faolsizlantirilgan xodimga dars berib boʻlmaydi.")
+
+    if lesson.teacher_id == teacher_id:
+        raise ConflictError("Bu dars allaqachon shu ustozda.")
+
+    await _assert_teacher_free(
+        session,
+        teacher_id=teacher_id,
+        day=lesson.lesson_date,
+        period=lesson.period,
+        except_lesson_id=lesson.id,
+    )
+
+    eski_id = lesson.teacher_id
+    lesson.teacher_id = teacher_id
+    lesson.is_substituted = True
+    lesson.exception_note = (note or "").strip() or None
+
+    audit_service.record(
+        session,
+        object_type="lesson",
+        object_id=lesson.id,
+        action=AuditAction.UPDATE,
+        old={"teacher_id": eski_id},
+        new={"teacher_id": teacher_id, "note": lesson.exception_note},
+        actor_id=actor.id,
+        ip=ip,
+    )
+    await session.commit()
+    await session.refresh(lesson)
+    return lesson
+
+
+async def move_lesson(
+    session: AsyncSession,
+    actor: CurrentUser,
+    *,
+    lesson_id: uuid.UUID,
+    period: int,
+    room: str | None = None,
+    note: str | None = None,
+    ip: str | None = None,
+) -> Lesson:
+    """ADM-10: darsni shu kunning boshqa parasiga koʻchiradi.
+
+    Vaqt qoʻngʻiroqlar jadvalidan QAYTA hisoblanadi — aks holda
+    DAV-03 ning 24 soatlik oynasi eski paraning vaqtidan sanalardi.
+    """
+    await assert_permission(session, actor, Permission.SCHEDULE_MANAGE)
+    lesson = await _lesson_for_exception(session, lesson_id)
+
+    if lesson.cancelled_at is not None:
+        raise ConflictError("Bekor qilingan darsni koʻchirib boʻlmaydi.")
+    if period == lesson.period:
+        raise ConflictError("Dars allaqachon shu parada.")
+
+    cls = await session.get(SchoolClass, lesson.class_id)
+    if cls is None:
+        raise NotFoundError("Sinf topilmadi.")
+
+    bells = {b.period: b for b in await academic_service.list_bells(session, cls.academic_year_id)}
+    bell = bells.get(period)
+    if bell is None:
+        raise ValidationError(f"{period}-para uchun qoʻngʻiroq vaqti belgilanmagan.")
+
+    # Sinf band emasmi. Bazadagi qisman-unique indeks ham ushlab qoladi,
+    # lekin tushunarli xato matni shu yerda tugʻiladi.
+    band = (
+        await session.execute(
+            select(Lesson.id).where(
+                Lesson.class_id == lesson.class_id,
+                Lesson.lesson_date == lesson.lesson_date,
+                Lesson.period == period,
+                Lesson.id != lesson.id,
+                Lesson.is_archived.is_(False),
+            )
+        )
+    ).first()
+    if band is not None:
+        raise ConflictError("Bu sinfda shu para band.")
+
+    await _assert_teacher_free(
+        session,
+        teacher_id=lesson.teacher_id,
+        day=lesson.lesson_date,
+        period=period,
+        except_lesson_id=lesson.id,
+    )
+
+    eski = {"period": lesson.period, "room": lesson.room}
+    lesson.period = period
+    if room is not None:
+        lesson.room = room.strip() or None
+    lesson.starts_at = combine_local(lesson.lesson_date, bell.starts_at)
+    lesson.ends_at = combine_local(lesson.lesson_date, bell.ends_at)
+    lesson.exception_note = (note or "").strip() or lesson.exception_note
+
+    audit_service.record(
+        session,
+        object_type="lesson",
+        object_id=lesson.id,
+        action=AuditAction.UPDATE,
+        old=eski,
+        new={"period": period, "room": lesson.room},
+        actor_id=actor.id,
+        ip=ip,
+    )
+    await session.commit()
+    await session.refresh(lesson)
+    return lesson
+
+
+async def list_exceptions(
+    session: AsyncSession,
+    actor: CurrentUser,
+    *,
+    date_from: date,
+    date_to: date,
+) -> list[LessonException]:
+    """Oraliqdagi istisnolar — bekor qilingan va almashtirilgan darslar."""
+    await assert_permission(session, actor, Permission.SCHEDULE_MANAGE)
+    if date_to < date_from:
+        raise ValidationError("Tugash sanasi boshlanishidan keyin boʻlsin.")
+
+    rows = (
+        (
+            await session.execute(
+                select(Lesson, SchoolClass.name, Subject.name, User.last_name, User.first_name)
+                .join(SchoolClass, SchoolClass.id == Lesson.class_id)
+                .join(Subject, Subject.id == Lesson.subject_id)
+                .join(User, User.id == Lesson.teacher_id)
+                .where(
+                    Lesson.lesson_date.between(date_from, date_to),
+                    Lesson.is_archived.is_(False),
+                    or_(
+                        Lesson.cancelled_at.is_not(None),
+                        Lesson.is_substituted.is_(True),
+                    ),
+                )
+                .order_by(Lesson.lesson_date, Lesson.period)
+            )
+        )
+        .all()
+    )
+
+    return [
+        LessonException(
+            lesson_id=lesson.id,
+            lesson_date=lesson.lesson_date,
+            period=lesson.period,
+            class_name=sinf,
+            subject_name=fan,
+            teacher_name=f"{familiya} {ism}".strip(),
+            room=lesson.room,
+            is_cancelled=lesson.cancelled_at is not None,
+            cancel_reason=lesson.cancel_reason,
+            is_substituted=lesson.is_substituted,
+            exception_note=lesson.exception_note,
+        )
+        for lesson, sinf, fan, familiya, ism in rows
+    ]

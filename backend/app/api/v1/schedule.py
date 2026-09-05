@@ -5,18 +5,24 @@ Yozish `schedule.manage` huquqini talab qiladi.
 """
 
 import uuid
+from datetime import date
+from typing import Annotated
 
-from fastapi import APIRouter, Request, Response, status
+from fastapi import APIRouter, Query, Request, Response, status
 
 from app.api.v1.deps import CurrentUserDep
 from app.core.db import SessionDep
 from app.schemas.schedule import (
+    LessonCancelIn,
+    LessonExceptionOut,
+    LessonMoveIn,
+    LessonSubstituteIn,
     ScheduleEntryIn,
     ScheduleEntryOut,
     ScheduleEntryUpdateIn,
     TeacherLoadOut,
 )
-from app.services import schedule_service
+from app.services import lesson_service, schedule_service
 
 router = APIRouter(prefix="/schedule", tags=["schedule"])
 
@@ -126,3 +132,113 @@ async def teacher_load(user: CurrentUserDep, session: SessionDep) -> list[Teache
         )
         for r in rows
     ]
+
+
+# ─────────────── Jadval istisnolari (ADM-10) ───────────────
+#
+# Istisno KONKRET darsga tegishli, jadval yozuviga emas: «5-sentabr
+# 3-para» oʻzgaradi, dushanbaning hamma 3-parasi emas. Shuning uchun
+# yoʻl `/schedule/lessons/{lesson_id}/...`.
+
+
+@router.get("/exceptions", response_model=list[LessonExceptionOut])
+async def list_exceptions(
+    session: SessionDep,
+    user: CurrentUserDep,
+    date_from: Annotated[date, Query()],
+    date_to: Annotated[date, Query()],
+) -> list[LessonExceptionOut]:
+    """Oraliqdagi bekor qilingan va ustozi almashtirilgan darslar."""
+    rows = await lesson_service.list_exceptions(
+        session, user, date_from=date_from, date_to=date_to
+    )
+    return [
+        LessonExceptionOut(
+            lesson_id=r.lesson_id,
+            lesson_date=r.lesson_date,
+            period=r.period,
+            class_name=r.class_name,
+            subject_name=r.subject_name,
+            teacher_name=r.teacher_name,
+            room=r.room,
+            is_cancelled=r.is_cancelled,
+            cancel_reason=r.cancel_reason,
+            is_substituted=r.is_substituted,
+            exception_note=r.exception_note,
+        )
+        for r in rows
+    ]
+
+
+@router.post("/lessons/{lesson_id}/cancel", status_code=status.HTTP_204_NO_CONTENT)
+async def cancel_lesson(
+    lesson_id: uuid.UUID,
+    payload: LessonCancelIn,
+    session: SessionDep,
+    user: CurrentUserDep,
+    request: Request,
+) -> Response:
+    """Darsni bekor qiladi. Dars oʻchirilmaydi — «bekor qilingan» boʻlib qoladi."""
+    await lesson_service.cancel_lesson(
+        session,
+        user,
+        lesson_id=lesson_id,
+        reason=payload.reason,
+        ip=_client_ip(request),
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/lessons/{lesson_id}/restore", status_code=status.HTTP_204_NO_CONTENT)
+async def restore_lesson(
+    lesson_id: uuid.UUID,
+    session: SessionDep,
+    user: CurrentUserDep,
+    request: Request,
+) -> Response:
+    """Bekor qilishni qaytaradi."""
+    await lesson_service.restore_lesson(
+        session, user, lesson_id=lesson_id, ip=_client_ip(request)
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/lessons/{lesson_id}/substitute", status_code=status.HTTP_204_NO_CONTENT)
+async def substitute_teacher(
+    lesson_id: uuid.UUID,
+    payload: LessonSubstituteIn,
+    session: SessionDep,
+    user: CurrentUserDep,
+    request: Request,
+) -> Response:
+    """Ustozni SHU darsga vaqtincha almashtiradi — jadval tegilmaydi."""
+    await lesson_service.substitute_teacher(
+        session,
+        user,
+        lesson_id=lesson_id,
+        teacher_id=payload.teacher_id,
+        note=payload.note,
+        ip=_client_ip(request),
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/lessons/{lesson_id}/move", status_code=status.HTTP_204_NO_CONTENT)
+async def move_lesson(
+    lesson_id: uuid.UUID,
+    payload: LessonMoveIn,
+    session: SessionDep,
+    user: CurrentUserDep,
+    request: Request,
+) -> Response:
+    """Darsni shu kunning boshqa parasiga koʻchiradi."""
+    await lesson_service.move_lesson(
+        session,
+        user,
+        lesson_id=lesson_id,
+        period=payload.period,
+        room=payload.room,
+        note=payload.note,
+        ip=_client_ip(request),
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

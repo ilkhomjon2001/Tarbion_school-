@@ -1660,6 +1660,22 @@ export type DayLessonOut = {
      * Editable
      */
     editable: boolean;
+    /**
+     * Is Cancelled
+     */
+    is_cancelled?: boolean;
+    /**
+     * Cancel Reason
+     */
+    cancel_reason?: string | null;
+    /**
+     * Is Substituted
+     */
+    is_substituted?: boolean;
+    /**
+     * Exception Note
+     */
+    exception_note?: string | null;
 };
 
 /**
@@ -3343,6 +3359,68 @@ export type LessonAttendanceOut = {
 };
 
 /**
+ * LessonCancelIn
+ *
+ * Sabab majburiy: «dars boʻlmadi» oʻzi oilaga javob emas.
+ */
+export type LessonCancelIn = {
+    /**
+     * Reason
+     */
+    reason: string;
+};
+
+/**
+ * LessonExceptionOut
+ */
+export type LessonExceptionOut = {
+    /**
+     * Lesson Id
+     */
+    lesson_id: string;
+    /**
+     * Lesson Date
+     */
+    lesson_date: string;
+    /**
+     * Period
+     */
+    period: number;
+    /**
+     * Class Name
+     */
+    class_name: string;
+    /**
+     * Subject Name
+     */
+    subject_name: string;
+    /**
+     * Teacher Name
+     */
+    teacher_name: string;
+    /**
+     * Room
+     */
+    room: string | null;
+    /**
+     * Is Cancelled
+     */
+    is_cancelled: boolean;
+    /**
+     * Cancel Reason
+     */
+    cancel_reason: string | null;
+    /**
+     * Is Substituted
+     */
+    is_substituted: boolean;
+    /**
+     * Exception Note
+     */
+    exception_note: string | null;
+};
+
+/**
  * LessonGradesIn
  */
 export type LessonGradesIn = {
@@ -3403,6 +3481,24 @@ export type LessonJournalOut = {
 };
 
 /**
+ * LessonMoveIn
+ */
+export type LessonMoveIn = {
+    /**
+     * Period
+     */
+    period: number;
+    /**
+     * Room
+     */
+    room?: string | null;
+    /**
+     * Note
+     */
+    note?: string | null;
+};
+
+/**
  * LessonStatusOut
  */
 export type LessonStatusOut = {
@@ -3422,6 +3518,20 @@ export type LessonStatusOut = {
      * Note
      */
     note: string | null;
+};
+
+/**
+ * LessonSubstituteIn
+ */
+export type LessonSubstituteIn = {
+    /**
+     * Teacher Id
+     */
+    teacher_id: string;
+    /**
+     * Note
+     */
+    note?: string | null;
 };
 
 /**
@@ -11950,6 +12060,162 @@ export type ScheduleTeacherLoadResponses = {
 };
 
 export type ScheduleTeacherLoadResponse = ScheduleTeacherLoadResponses[keyof ScheduleTeacherLoadResponses];
+
+export type ScheduleListExceptionsData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Date From
+         */
+        date_from: string;
+        /**
+         * Date To
+         */
+        date_to: string;
+    };
+    url: '/api/v1/schedule/exceptions';
+};
+
+export type ScheduleListExceptionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ScheduleListExceptionsError = ScheduleListExceptionsErrors[keyof ScheduleListExceptionsErrors];
+
+export type ScheduleListExceptionsResponses = {
+    /**
+     * Response Schedule List Exceptions
+     *
+     * Successful Response
+     */
+    200: Array<LessonExceptionOut>;
+};
+
+export type ScheduleListExceptionsResponse = ScheduleListExceptionsResponses[keyof ScheduleListExceptionsResponses];
+
+export type ScheduleCancelLessonData = {
+    body: LessonCancelIn;
+    path: {
+        /**
+         * Lesson Id
+         */
+        lesson_id: string;
+    };
+    query?: never;
+    url: '/api/v1/schedule/lessons/{lesson_id}/cancel';
+};
+
+export type ScheduleCancelLessonErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ScheduleCancelLessonError = ScheduleCancelLessonErrors[keyof ScheduleCancelLessonErrors];
+
+export type ScheduleCancelLessonResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type ScheduleCancelLessonResponse = ScheduleCancelLessonResponses[keyof ScheduleCancelLessonResponses];
+
+export type ScheduleRestoreLessonData = {
+    body?: never;
+    path: {
+        /**
+         * Lesson Id
+         */
+        lesson_id: string;
+    };
+    query?: never;
+    url: '/api/v1/schedule/lessons/{lesson_id}/restore';
+};
+
+export type ScheduleRestoreLessonErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ScheduleRestoreLessonError = ScheduleRestoreLessonErrors[keyof ScheduleRestoreLessonErrors];
+
+export type ScheduleRestoreLessonResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type ScheduleRestoreLessonResponse = ScheduleRestoreLessonResponses[keyof ScheduleRestoreLessonResponses];
+
+export type ScheduleSubstituteTeacherData = {
+    body: LessonSubstituteIn;
+    path: {
+        /**
+         * Lesson Id
+         */
+        lesson_id: string;
+    };
+    query?: never;
+    url: '/api/v1/schedule/lessons/{lesson_id}/substitute';
+};
+
+export type ScheduleSubstituteTeacherErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ScheduleSubstituteTeacherError = ScheduleSubstituteTeacherErrors[keyof ScheduleSubstituteTeacherErrors];
+
+export type ScheduleSubstituteTeacherResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type ScheduleSubstituteTeacherResponse = ScheduleSubstituteTeacherResponses[keyof ScheduleSubstituteTeacherResponses];
+
+export type ScheduleMoveLessonData = {
+    body: LessonMoveIn;
+    path: {
+        /**
+         * Lesson Id
+         */
+        lesson_id: string;
+    };
+    query?: never;
+    url: '/api/v1/schedule/lessons/{lesson_id}/move';
+};
+
+export type ScheduleMoveLessonErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ScheduleMoveLessonError = ScheduleMoveLessonErrors[keyof ScheduleMoveLessonErrors];
+
+export type ScheduleMoveLessonResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type ScheduleMoveLessonResponse = ScheduleMoveLessonResponses[keyof ScheduleMoveLessonResponses];
 
 export type NotificationsListNotificationsData = {
     body?: never;

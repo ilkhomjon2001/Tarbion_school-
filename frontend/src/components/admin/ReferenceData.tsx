@@ -22,6 +22,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AcademicCalendarTab } from "@/components/admin/AcademicCalendarTab";
 import { ConfirmArchiveButton } from "@/components/admin/ConfirmArchiveButton";
 import { ScheduleBoard } from "@/components/admin/ScheduleBoard";
+import { ScheduleExceptions } from "@/components/admin/ScheduleExceptions";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -48,7 +49,14 @@ import {
   type SubjectOut,
 } from "@/lib/school/api";
 
-type Tab = "classes" | "subjects" | "rooms" | "calendar" | "schedule" | "menu";
+type Tab =
+  | "classes"
+  | "subjects"
+  | "rooms"
+  | "calendar"
+  | "schedule"
+  | "exceptions"
+  | "menu";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "classes", label: "Sinflar" },
@@ -56,6 +64,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "rooms", label: "Xonalar" },
   { id: "calendar", label: "Oʻquv yili" },
   { id: "schedule", label: "Dars jadvali" },
+  { id: "exceptions", label: "Jadval istisnolari" },
   { id: "menu", label: "Oshxona" },
 ];
 
@@ -149,6 +158,7 @@ export function ReferenceData() {
 
       {tab === "calendar" && <AcademicCalendarTab />}
       {tab === "schedule" && <ScheduleBoard />}
+      {tab === "exceptions" && <ScheduleExceptions />}
       {tab === "menu" && <CafeteriaMenuTab />}
 
       {(tab === "classes" || tab === "subjects") && !dir.loading && !dir.error && (

@@ -358,6 +358,10 @@ async def class_day(
                 ends_at=dl.lesson.ends_at,
                 topic=dl.lesson.topic,
                 editable=dl.editable,
+                is_cancelled=dl.lesson.cancelled_at is not None,
+                cancel_reason=dl.lesson.cancel_reason,
+                is_substituted=dl.lesson.is_substituted,
+                exception_note=dl.lesson.exception_note,
             )
             for dl in d.lessons
         ],
