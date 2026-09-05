@@ -88,6 +88,22 @@ class Settings(BaseSettings):
     #: Oldin bu yerda 10 turgan edi — hujjatga tayanmagan taxmin.
     payment_due_day: int = 5
 
+    # --- Fayl saqlash (MET-03, DAV-04, UYV-01) ---
+    #
+    # Fayl BAZADA saqlanmaydi (CLAUDE.md 10-qoida) — diskda yotadi,
+    # bazada faqat kalit va metama'lumot. Serverning oʻz diski
+    # tanlandi (egasining qarori, 5-sentabr 2026): maʼlumot
+    # Oʻzbekistonda qoladi va zaxira skriptiga qoʻshiladi.
+    #
+    # Katalog ilova ishga tushganda yaratiladi. Ishlab chiqarishda
+    # `/opt/tarbion/files`, ishlab chiqishda repo yonida.
+    file_storage_dir: str = "var/files"
+    #: Bitta fayl hajmi — MET-03: 200 MB gacha.
+    file_max_bytes: int = 200 * 1024 * 1024
+    #: Imzolangan havola muddati. X-7: havolaning oʻzi kalit,
+    #: shuning uchun qisqa va uzaytirilmaydi.
+    file_url_ttl_seconds: int = 900
+
     # --- Cookie ---
     refresh_cookie_name: str = "tarbion_rt"
     # Ishlab chiqarishda majburiy True (NFR-07: barcha aloqa HTTPS).

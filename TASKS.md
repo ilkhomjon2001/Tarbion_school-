@@ -677,8 +677,25 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
 
 - [ ] T-024 · Metodik baza ierarxiyasi va dars kartochkasi — MET-01, MET-02
   - Frontend: ✅ tayyor — `/teacher/jadval` → fan boʻyicha baza brauzeri, `lib/teacher/plan-data.ts`
-- [ ] T-025 · R2 fayl yuklash va presigned URL — MET-03, NFR-11
-  - Frontend: ⬜ yoʻq
+- [x] T-025 · Fayl yuklash va imzolangan havola — MET-03, NFR-11
+  - R2 EMAS, serverning oʻz diski — egasining qarori (5-sentabr 2026).
+    Maʼlumot Oʻzbekistonda qoladi, qoʻshimcha hisob kerak emas
+  - Backend: ✅ `stored_files` jadvali (faqat metamaʼlumot — baytlar
+    diskda, CLAUDE.md 10-qoida), `services/storage.py`,
+    `POST /api/v1/files` va `GET /files/{id}/download?exp&sig`
+  - X-7: yuklab olish TOKENSIZ, imzo bilan — HMAC(jwt_secret,
+    "id.muddat"), 15 daqiqa, uzaytirilmaydi. «Istalgan faylga havola
+    ber» endpointi ATAYLAB yoʻq: havolani faylni ilova qilgan modul
+    beradi, u oldin oʻz kirish tekshiruvini qiladi (X-1)
+  - Tur roʻyxati YOPIQ (MET-03): pdf, doc(x), ppt(x), xls(x), jpg, png,
+    mp4. `.svg` va `.html` ataylab yoʻq — saqlangan XSS. Tur
+    kengaytmadan aniqlanadi, brauzer sarlavhasidan emas. 200 MB gacha
+  - Zaxira: `backup.sh` endi fayllarni ham oladi (alohida
+    `tarbion-files-*.tar.gz.age`), R2/Telegramga yuboradi va rotatsiya
+    qiladi — aks holda baza tiklanib, ilovalar yoʻqolardi (X-12)
+  - 10 ta test: qalbaki imzo, muddati oʻtgan havola, boshqa faylning
+    imzosi, `../` li nom, ruxsatsiz tur
+  - Frontend: ⬜ — foydalanuvchi ekranlari T-024 va T-037 bilan keladi
 - [ ] T-026 · Metodik bazada qidiruv va filtr — MET-05
   - Frontend: 🟡 qisman — sinf boʻyicha filtr bor, toʻliq qidiruv yoʻq
 - [ ] T-027 · Reja tasdiqlash oqimi va versiyalar — MET-06, MET-07

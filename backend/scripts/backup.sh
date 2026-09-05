@@ -26,6 +26,9 @@
 #     BACKUP_AGE_RECIPIENT  — age ochiq kaliti (age1...)
 #     BACKUP_DIR            — lokal papka (sukut: /var/backups/tarbion)
 #     BACKUP_KEEP_DAYS      — necha kun saqlanadi (sukut: 30)
+#     FILE_STORAGE_DIR      — yuklangan fayllar papkasi (T-025).
+#                             Zaxiraga qoʻshiladi; boʻsh boʻlsa oʻtkazib
+#                             yuboriladi, lekin bu yozib qoldiriladi
 #     R2_BUCKET, R2_ENDPOINT, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 #
 # Cron:
@@ -44,6 +47,12 @@ BACKUP_KEEP_DAYS="${BACKUP_KEEP_DAYS:-30}"
 SANA="$(date -u +%Y%m%d-%H%M%S)"
 NOM="tarbion-${SANA}.sql.gz.age"
 YOL="${BACKUP_DIR}/${NOM}"
+# Yuklangan fayllar alohida arxivda: baza tez tiklanadi, fayllar esa
+# katta va kamdan-kam oʻzgaradi — ikkalasini bitta quvurga qoʻshish
+# tiklashni sekinlashtirardi.
+FILE_STORAGE_DIR="${FILE_STORAGE_DIR:-/opt/tarbion/var/files}"
+FAYL_NOM="tarbion-files-${SANA}.tar.gz.age"
+FAYL_YOL="${BACKUP_DIR}/${FAYL_NOM}"
 
 xato() {
     echo "XATO: $*" >&2
@@ -91,6 +100,25 @@ xabar "shifrlandi: $OLCHAM"
 BAYT="$(stat -c%s "$YOL" 2>/dev/null || stat -f%z "$YOL")"
 [ "$BAYT" -gt 1024 ] || xato "zaxira juda kichik ($BAYT bayt) — tekshiring"
 
+# ─────────────── Yuklangan fayllar (T-025, MET-03) ───────────────
+#
+# Fayl bazada emas, diskda yotadi (CLAUDE.md 10-qoida). Demak faqat
+# `pg_dump` olingan zaxira TOʻLIQ EMAS: baza tiklanadi, lekin dars
+# kartochkasidagi ilova va ariza fayli yoʻqoladi.
+#
+# Papka boʻsh boʻlishi normal (hali fayl yuklanmagan) — bu holda
+# arxiv yasalmaydi, lekin logda iz qoladi.
+
+FAYL_ARXIVI=""
+if [ -d "$FILE_STORAGE_DIR" ] && [ -n "$(ls -A "$FILE_STORAGE_DIR" 2>/dev/null)" ]; then
+    tar -czf - -C "$FILE_STORAGE_DIR" . | age --encrypt --recipient "$BACKUP_AGE_RECIPIENT" --output "$FAYL_YOL"
+    chmod 600 "$FAYL_YOL"
+    FAYL_ARXIVI="$FAYL_YOL"
+    xabar "fayllar shifrlandi: $(du -h "$FAYL_YOL" | cut -f1) ($FILE_STORAGE_DIR)"
+else
+    xabar "yuklangan fayl yoʻq — fayl arxivi oʻtkazib yuborildi ($FILE_STORAGE_DIR)"
+fi
+
 # ─────────────────── Boshqa joyga nusxa (X-12) ───────────────────
 #
 # Zaxira faqat oʻzi himoya qilayotgan mashinada tursa — u zaxira emas.
@@ -130,6 +158,15 @@ Shifrlangan (age). Ochish uchun maxfiy kalit kerak."
     if printf '%s' "$JAVOB" | grep -q '"ok":true'; then
         xabar "Telegramga yuborildi"
         NUSXA=$((NUSXA + 1))
+
+        # Fayl arxivi — alohida hujjat. Bot 50 MB gacha yuboradi;
+        # undan kattasi Telegramga sigʻmaydi va bu YIQITADI, chunki
+        # jimgina oʻtib ketsa fayllar bir joyda qolib ketardi (X-12).
+        if [ -n "$FAYL_ARXIVI" ]; then
+            F_JAVOB="$(curl --silent --show-error --max-time 600                 --form "chat_id=${BACKUP_TELEGRAM_CHAT_ID}"                 --form "document=@${FAYL_ARXIVI}"                 --form "caption=Tarbion yuklangan fayllar · $(TZ=Asia/Tashkent date '+%Y-%m-%d %H:%M')"                 "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" || true)"
+            printf '%s' "$F_JAVOB" | grep -q '"ok":true'                 || xato "fayl arxivini Telegramga yuborib boʻlmadi: $(printf '%s' "$F_JAVOB" | head -c 300)"
+            xabar "fayl arxivi Telegramga yuborildi"
+        fi
     else
         # Javobda token yoʻq (u URL da edi), lekin chat_id boʻlishi
         # mumkin — u maxfiy emas. Xato matni kerak: «yuborilmadi»
@@ -147,6 +184,7 @@ fi
 # ─────────────────────── Eskilarini tozalash ───────────────────────
 
 find "$BACKUP_DIR" -name 'tarbion-*.sql.gz.age' -mtime "+${BACKUP_KEEP_DAYS}" -delete
+find "$BACKUP_DIR" -name 'tarbion-files-*.tar.gz.age' -mtime "+${BACKUP_KEEP_DAYS}" -delete
 QOLGAN="$(find "$BACKUP_DIR" -name 'tarbion-*.sql.gz.age' | wc -l)"
 xabar "lokal zaxiralar: $QOLGAN ta (saqlash muddati ${BACKUP_KEEP_DAYS} kun)"
 

@@ -1166,3 +1166,28 @@ esa «chorak bahosi fan ustoziga koʻrinmaydi». Egasining qarori
 boʻlimi va administrator qoʻlida; fan ustozi soʻrasa `403`. Direktor
 roʻyxatda yoʻq — u maʼlumot kiritmaydi, shuning uchun `is_staff_wide`
 ga tayanib boʻlmaydi (u direktorni ham ichiga oladi).
+
+## Fayllar Cloudflare R2 da emas, serverning diskida (T-025)
+
+Egasining qarori (5-sentabr 2026). Sabablar: R2 da Oʻzbekiston
+mintaqasi yoʻq — fayl chet elda turardi; hisob va kalit kerak emas;
+mavjud `backup.sh` allaqachon serverdan nusxa oladi.
+
+Almashtirish qimmat emas: `storage.py` da faqat `save()` va
+`read_bytes()` S3 chaqiruviga oʻtadi, qolgan hamma joy `file_id`
+bilan ishlaydi.
+
+Oqibati: zaxira endi ikki qismli. Faqat `pg_dump` olingan zaxira
+TOʻLIQ EMAS — baza tiklanadi, ilovalar yoʻqoladi. `backup.sh` ga
+`tarbion-files-*.tar.gz.age` qoʻshildi.
+
+## Fayl havolasi imzolanadi, token bilan emas (T-025, X-7)
+
+Brauzer `<img src>` va `<a href>` ga `Authorization` sarlavhasini
+qoʻsha olmaydi, shuning uchun yuklab olish endpointi tokensiz.
+Himoya HMAC imzoda: `HMAC-SHA256(jwt_secret, "<file_id>.<muddat>")`,
+15 daqiqa.
+
+«Bu faylga havola ber» degan umumiy endpoint ATAYLAB yozilmadi — u
+boʻlsa har kim istalgan `file_id` ga havola olardi. Havolani faylni
+ilova qilgan modul beradi, u oldin oʻz kirish tekshiruvini qiladi.

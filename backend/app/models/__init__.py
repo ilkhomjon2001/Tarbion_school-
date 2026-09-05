@@ -58,6 +58,7 @@ from app.models.exams import (
     LessonPlan,
     PlanStatus,
 )
+from app.models.files import StoredFile
 from app.models.homework import (
     SCALE_MAX,
     SUBMISSION_LABELS_UZ,
@@ -266,6 +267,7 @@ __all__ = [
     "ScheduleEntry",
     "SchoolClass",
     "SchoolSettings",
+    "StoredFile",
     "Student",
     "Subject",
     "SUBMISSION_LABELS_UZ",

@@ -24,6 +24,7 @@ from app.api.v1 import curriculum as curriculum_router
 from app.api.v1 import director as director_router
 from app.api.v1 import documents as documents_router
 from app.api.v1 import exams as exams_router
+from app.api.v1 import files as files_router
 from app.api.v1 import hr as hr_router
 from app.api.v1 import journal as journal_router
 from app.api.v1 import notifications as notifications_router
@@ -117,6 +118,7 @@ app.include_router(hr_router.router, prefix="/api/v1")
 app.include_router(crm_router.router, prefix="/api/v1")
 app.include_router(curriculum_router.router, prefix="/api/v1")
 app.include_router(exams_router.router, prefix="/api/v1")
+app.include_router(files_router.router, prefix=API_V1)
 app.include_router(payments_router.router, prefix="/api/v1")
 app.include_router(academic_router.router, prefix=API_V1)
 app.include_router(director_router.router, prefix=API_V1)

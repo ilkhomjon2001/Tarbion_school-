@@ -101,3 +101,7 @@ maxfiy/
 # Telegram task inbox (tools/task_inbox.py) - xom guruh xabarlari.
 # Curated tasklar TASKS.md ga kochiriladi, xomi repoda saqlanmaydi.
 tools/inbox/
+
+# T-025: yuklangan fayllar diskda — repoga tushmaydi
+backend/var/
+var/files/
