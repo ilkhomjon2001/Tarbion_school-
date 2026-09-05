@@ -112,6 +112,12 @@ export const SECTIONS: Section[] = [
   { id: "/admin/baza", label: "Maʼlumot bazasi", cabinet: "admin" },
   { id: "/admin/audit", label: "Audit jurnali", cabinet: "admin" },
   {
+    id: "/admin/foydalanuvchilar",
+    label: "Foydalanuvchilar",
+    cabinet: "admin",
+    superadminOnly: true,
+  },
+  {
     id: "/admin/sozlamalar",
     label: "Sozlamalar",
     cabinet: "admin",

@@ -19,6 +19,8 @@ from app.models import Permission
 from app.schemas.access import (
     PermissionOut,
     SectionOut,
+    SetPasswordIn,
+    SetPasswordOut,
     SetPermissionsIn,
     SetSectionsIn,
     UserAccessOut,
@@ -160,5 +162,60 @@ async def set_permissions(
         user_id=user_id,
         wanted=payload.permissions,
         ip=_client_ip(request),
+    )
+    return _to_out(a)
+
+
+@router.post("/users/{user_id}/password", response_model=SetPasswordOut)
+async def set_password(
+    user_id: uuid.UUID,
+    payload: SetPasswordIn,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> SetPasswordOut:
+    """Foydalanuvchiga yangi parol oʻrnatadi. FAQAT super administrator.
+
+    `new_password` berilmasa server oʻzi oʻqishga oson parol yasaydi.
+    Parol javobda BIR MARTA qaytadi va hech qayerda saqlanmaydi (X-10).
+    """
+    login, parol = await access_admin.set_password(
+        session,
+        actor=user,
+        user_id=user_id,
+        new_password=payload.new_password,
+        ip=_client_ip(request),
+    )
+    return SetPasswordOut(login=login, new_password=parol)
+
+
+@router.post("/users/{user_id}/archive", response_model=UserAccessOut)
+async def archive_user(
+    user_id: uuid.UUID,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> UserAccessOut:
+    """Hisobni arxivlaydi. FAQAT super administrator.
+
+    Arxivlangan odam login qila olmaydi, faol sessiyalari bekor qilinadi.
+    Oʻzini va boshqa super administratorni arxivlab boʻlmaydi.
+    """
+    a = await access_admin.archive_user(
+        session, actor=user, user_id=user_id, ip=_client_ip(request)
+    )
+    return _to_out(a)
+
+
+@router.post("/users/{user_id}/unarchive", response_model=UserAccessOut)
+async def unarchive_user(
+    user_id: uuid.UUID,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+) -> UserAccessOut:
+    """Hisobni arxivdan chiqaradi. FAQAT super administrator."""
+    a = await access_admin.unarchive_user(
+        session, actor=user, user_id=user_id, ip=_client_ip(request)
     )
     return _to_out(a)

@@ -391,6 +391,7 @@ PAROL_QAYTARADIGAN_SXEMALAR = {
     "StaffCreatedOut",  # yangi xodim: boshlangʻich parol
     "GuardianCreatedOut",  # yangi vasiy: boshlangʻich parol
     "PasswordResetOut",  # administrator parolni qayta tiklaydi
+    "SetPasswordOut",  # superadmin parol oʻrnatadi: yangi parol bir marta
 }
 
 _PAROL_MAYDONLARI = ("password", "parol", "hash")

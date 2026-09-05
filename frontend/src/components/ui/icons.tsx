@@ -290,6 +290,16 @@ export function ArchiveIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function KeyIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <circle cx="7.5" cy="15.5" r="4" />
+      <path d="m10.4 12.6 8.1-8.1" />
+      <path d="M15.5 7.5 18 10M18.5 4.5 21 7" />
+    </Icon>
+  );
+}
+
 export function PencilIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

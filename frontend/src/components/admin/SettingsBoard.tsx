@@ -1,7 +1,7 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AccessCenter } from "@/components/admin/AccessCenter";
 import { StaffBoard } from "@/components/admin/StaffBoard";
 import { ListSkeleton } from "@/components/ui/Skeleton";
 import {
@@ -11,21 +11,20 @@ import {
 import type { SchoolSettingsOut } from "@/lib/api/types.gen";
 import { withAuth } from "@/lib/session";
 
-type Tab = "staff" | "users" | "school";
+type Tab = "staff" | "school";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "staff", label: "Xodimlar" },
-  { id: "users", label: "Kirish huquqlari" },
   { id: "school", label: "Maktab" },
 ];
 
 /**
  * Sozlamalar — faqat super administrator uchun.
  *
- * «Xodimlar» va «Kirish huquqlari» HAQIQIY API bilan ishlaydi (T-005).
- * «Maktab» bandi (nom, toʻlov qoidalari) hali serverda yoʻq — demo
- * forma oʻrniga halol boʻsh holat. Boʻlim yashirish HIMOYA EMAS —
- * har bir endpoint huquqni serverda tekshiradi (CLAUDE.md 7-qoida).
+ * Kirish huquqlari (AccessCenter) endi alohida «Foydalanuvchilar»
+ * boʻlimida — /admin/foydalanuvchilar. Bu yerda dublikat yoʻq, faqat
+ * havola. Boʻlim yashirish HIMOYA EMAS — har bir endpoint huquqni
+ * serverda tekshiradi (CLAUDE.md 7-qoida).
  */
 export function SettingsBoard() {
   const [tab, setTab] = useState<Tab>("staff");
@@ -35,7 +34,15 @@ export function SettingsBoard() {
       <div>
         <h1 className="text-h2 font-bold text-foreground">Sozlamalar</h1>
         <p className="text-sm text-foreground-muted">
-          Xodim hisoblari, kirish huquqlari va maktabning umumiy parametrlari
+          Xodim hisoblari va maktabning umumiy parametrlari. Parol, arxiv va
+          kirish huquqlari —{" "}
+          <Link
+            href="/admin/foydalanuvchilar"
+            className="focus-ring rounded text-brand-dark underline-offset-2 hover:underline"
+          >
+            Foydalanuvchilar boʻlimida
+          </Link>
+          .
         </p>
       </div>
 
@@ -63,13 +70,7 @@ export function SettingsBoard() {
       </div>
 
       {tab === "staff" && <StaffBoard />}
-      {tab === "users" && <AccessCenter />}
       {tab === "school" && <SchoolTab />}
-
-      <p className="rounded-lg bg-warning-tint px-3 py-2 text-xs text-warning">
-        Boʻlimni yashirish — qulaylik, himoya emas. Haqiqiy tekshiruv serverda:
-        yashiringan boʻlim manzilini qoʻlda yozgan odam ham maʼlumotni ololmaydi.
-      </p>
     </div>
   );
 }

@@ -162,6 +162,27 @@ def generate_initial_password() -> str:
     return generate_numeric_code(INITIAL_PASSWORD_DIGITS)
 
 
+#: Superadmin beradigan parol alifbosi. Oʻxshash belgilar ATAYLAB yoʻq:
+#: 0/O, 1/l/i — telefonda ogʻzaki aytilganda yoki qogʻozga yozilganda
+#: adashtiradi.
+_READABLE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"
+
+#: "tarb-" prefiksi bilan birga jami 10 belgi.
+_READABLE_SUFFIX_LENGTH = 5
+
+
+def generate_readable_password() -> str:
+    """Superadmin parol almashtirganda beriladigan 10 belgili parol.
+
+    "tarb-x7k2m" uslubida: prefiks tanish va aytishga oson, qolgan
+    qismi tasodifiy. 31^5 ≈ 28 mln variant — boshlangʻich 5 xonali
+    paroldan ancha kuchli; himoya baribir `login_attempts` bloklashiga
+    ham tayanadi (5 urinish → 15 daqiqa).
+    """
+    tana = "".join(secrets.choice(_READABLE_ALPHABET) for _ in range(_READABLE_SUFFIX_LENGTH))
+    return f"tarb-{tana}"
+
+
 def validate_new_password(password: str) -> None:
     """Foydalanuvchi o'zi tanlagan parolni tekshiradi.
 

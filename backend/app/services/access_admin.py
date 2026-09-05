@@ -24,15 +24,26 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.exceptions import NotFoundError, PermissionDeniedError, ValidationError
+from app.core.exceptions import (
+    ConflictError,
+    NotFoundError,
+    PermissionDeniedError,
+    ValidationError,
+)
 from app.core.sections import (
     cabinet_of,
     effective_sections,
     role_default_sections,
     unknown_sections,
 )
+from app.core.security import (
+    generate_readable_password,
+    hash_password,
+    validate_new_password,
+)
+from app.core.timeutil import utcnow
 from app.models import AuditAction, Permission, RoleName, User
-from app.services import audit_service, permissions
+from app.services import audit_service, permissions, user_service
 from app.services.access import CurrentUser
 
 
@@ -192,6 +203,147 @@ async def set_permissions(
         action=AuditAction.UPDATE,
         old={"permissions": sorted(hozirgi)},
         new={"permissions": sorted(kerakli)},
+        actor_id=actor.id,
+        ip=ip,
+    )
+    await session.commit()
+    return await get_access(session, user_id)
+
+
+def _assert_superadmin(actor: CurrentUser) -> None:
+    """Parol va arxiv — KUCHLI amallar, faqat super administrator uchun.
+
+    `_assert_can_manage` dan ataylab foydalanilmaydi: u `permissions.grant`
+    huquqi bor administratorga ham yoʻl qoʻyadi. Boshqaning parolini
+    almashtira oladigan odam esa istalgan hisobni (superadminnikidan
+    tashqari) egallab oladi — bunday kuch huquq orqali berilmaydi.
+    """
+    if not permissions.is_superadmin(actor):
+        raise PermissionDeniedError("Bu amal uchun ruxsatingiz yoʻq.")
+
+
+async def set_password(
+    session: AsyncSession,
+    *,
+    actor: CurrentUser,
+    user_id: uuid.UUID,
+    new_password: str | None = None,
+    ip: str | None = None,
+) -> tuple[str, str]:
+    """Super administrator foydalanuvchiga yangi parol oʻrnatadi.
+
+    Qaytaradi: `(login, yangi parol)`. Parol FAQAT shu javobda bir marta
+    koʻrinadi — hech qayerda saqlanmaydi, auditga ham tushmaydi (X-10).
+
+    `new_password=None` — server oʻzi 10 belgili oʻqishga oson parol
+    yasaydi. `must_change_password` ga TEGILMAYDI — u loyihada
+    oʻchirilgan (DECISIONS.md, 2026-09-02).
+    """
+    _assert_superadmin(actor)
+    user = await _load_user(session, user_id)
+
+    if new_password is not None:
+        validate_new_password(new_password)
+        parol = new_password
+    else:
+        parol = generate_readable_password()
+
+    user.password_hash = hash_password(parol)
+
+    # AUT-08 ruhida: parol oʻzgardi — barcha qurilmalardagi sessiya oʻladi.
+    # Hisob egallangan boʻlsa oʻgʻrining refresh tokeni ishlamasin.
+    await user_service.revoke_all_sessions(session, user.id, reason="password_set_by_admin")
+
+    # Auditga faqat FAKT yoziladi — eski/yangi qiymatsiz (X-10).
+    audit_service.record(
+        session,
+        object_type="user",
+        object_id=user.id,
+        action=AuditAction.UPDATE,
+        new={"password_set_by_superadmin": True},
+        actor_id=actor.id,
+        ip=ip,
+    )
+    await session.commit()
+    return user.login, parol
+
+
+async def archive_user(
+    session: AsyncSession,
+    *,
+    actor: CurrentUser,
+    user_id: uuid.UUID,
+    ip: str | None = None,
+) -> UserAccess:
+    """Hisobni arxivlaydi. Oʻchirish yoʻq (CLAUDE.md 1-qoida).
+
+    Arxivlangan odam login qila olmaydi (`auth_service.authenticate`
+    tekshiradi) va faol sessiyalari shu yerning oʻzida bekor qilinadi —
+    aks holda 30 kunlik refresh token bilan ishlashda davom etardi.
+    """
+    _assert_superadmin(actor)
+
+    if user_id == actor.id:
+        # Superadmin oʻzini arxivlab, tizimni egasiz qoldirmasin.
+        raise ConflictError("Oʻz hisobingizni arxivlab boʻlmaysiz.")
+
+    user = await _load_user(session, user_id)
+
+    if RoleName.SUPERADMIN.value in set(user.role_names):
+        raise ConflictError("Boshqa super administratorni arxivlab boʻlmaydi.")
+
+    if user.is_archived:
+        return await get_access(session, user_id)
+
+    user.is_archived = True
+    user.archived_at = utcnow()
+    user.is_active = False
+
+    await user_service.revoke_all_sessions(session, user.id, reason="archived")
+
+    audit_service.record(
+        session,
+        object_type="user",
+        object_id=user.id,
+        action=AuditAction.ARCHIVE,
+        old={"is_archived": False},
+        new={"is_archived": True},
+        actor_id=actor.id,
+        ip=ip,
+    )
+    await session.commit()
+    return await get_access(session, user_id)
+
+
+async def unarchive_user(
+    session: AsyncSession,
+    *,
+    actor: CurrentUser,
+    user_id: uuid.UUID,
+    ip: str | None = None,
+) -> UserAccess:
+    """Hisobni arxivdan chiqaradi — odam yana kira oladi.
+
+    Parol oʻzgarmaydi: arxivlash sessiyalarni bekor qilgan, shuning
+    uchun odam eski paroli bilan qaytadan kiradi.
+    """
+    _assert_superadmin(actor)
+    user = await _load_user(session, user_id)
+
+    if not user.is_archived:
+        return await get_access(session, user_id)
+
+    user.is_archived = False
+    user.archived_at = None
+    user.is_active = True
+
+    audit_service.record(
+        session,
+        object_type="user",
+        object_id=user.id,
+        action=AuditAction.UNARCHIVE,
+        old={"is_archived": True},
+        new={"is_archived": False},
         actor_id=actor.id,
         ip=ip,
     )

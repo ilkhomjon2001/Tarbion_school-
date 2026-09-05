@@ -20,6 +20,7 @@ class AuditAction:
     CREATE = "create"
     UPDATE = "update"
     ARCHIVE = "archive"
+    UNARCHIVE = "unarchive"
     LOGIN = "login"
     LOGOUT = "logout"
 

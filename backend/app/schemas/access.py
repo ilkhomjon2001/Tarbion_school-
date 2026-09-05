@@ -54,3 +54,20 @@ class SetPermissionsIn(BaseModel):
     """Toʻliq roʻyxat — qoʻshish/olib tashlash emas."""
 
     permissions: list[str] = Field(default_factory=list, max_length=50)
+
+
+class SetPasswordIn(BaseModel):
+    """`None` (yoki umuman berilmasa) — server oʻzi oʻqishga oson parol yasaydi."""
+
+    new_password: str | None = Field(default=None, max_length=128)
+
+
+class SetPasswordOut(BaseModel):
+    """Yangi parol FAQAT shu javobda bir marta koʻrinadi (X-10).
+
+    U hech qayerda saqlanmaydi — auditga ham, logga ham tushmaydi.
+    Super administrator uni egasiga oʻzi yetkazadi.
+    """
+
+    login: str
+    new_password: str

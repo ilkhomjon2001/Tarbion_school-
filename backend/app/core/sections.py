@@ -114,6 +114,7 @@ SECTIONS: list[Section] = [
     Section("/admin/sorovnomalar", "Soʻrovnomalar", "admin"),
     Section("/admin/baza", "Maʼlumot bazasi", "admin"),
     Section("/admin/audit", "Audit jurnali", "admin"),
+    Section("/admin/foydalanuvchilar", "Foydalanuvchilar", "admin", superadmin_only=True),
     Section("/admin/sozlamalar", "Sozlamalar", "admin", locked=True, superadmin_only=True),
 ]
 

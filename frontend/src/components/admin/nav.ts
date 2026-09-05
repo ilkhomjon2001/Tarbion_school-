@@ -6,6 +6,7 @@ import {
   ClockIcon,
   GraduationCapIcon,
   GridIcon,
+  KeyIcon,
   MessageSquareIcon,
   PhoneIcon,
   SettingsIcon,
@@ -38,6 +39,7 @@ export const ADMIN_NAV = [
   { href: "/admin/sorovnomalar", label: "Soʻrovnomalar", icon: BarChartIcon },
   { href: "/admin/baza", label: "Maʼlumot bazasi", icon: BookOpenIcon },
   { href: "/admin/audit", label: "Audit jurnali", icon: ClockIcon },
+  { href: "/admin/foydalanuvchilar", label: "Foydalanuvchilar", icon: KeyIcon },
   { href: "/admin/sozlamalar", label: "Sozlamalar", icon: SettingsIcon },
 ] as const;
 
