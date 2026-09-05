@@ -12,8 +12,8 @@ import io
 from datetime import date, timedelta
 
 import pytest
-from openpyxl import Workbook, load_workbook
 from httpx import AsyncClient
+from openpyxl import Workbook, load_workbook
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
