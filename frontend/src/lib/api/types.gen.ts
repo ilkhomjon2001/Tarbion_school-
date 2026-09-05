@@ -983,6 +983,16 @@ export type BodyFilesUpload = {
 };
 
 /**
+ * Body_tests_import_questions
+ */
+export type BodyTestsImportQuestions = {
+    /**
+     * File
+     */
+    file: Blob | File;
+};
+
+/**
  * CafeteriaMenuIn
  *
  * Haftalik menyu — kun (1–7, satr koʻrinishida) → taomlar.
@@ -4167,6 +4177,25 @@ export type QuestionForStudentOut = {
      * Options
      */
     options: Array<OptionForStudentOut>;
+};
+
+/**
+ * QuestionImportOut
+ *
+ * TST-06: nechta savol qoʻshildi va nima tashlandi.
+ *
+ * Ogohlantirish YOʻQOLMASIN: 60 ta savolli fayldan 3 tasi tashlansa
+ * va bu jimgina oʻtsa, ustoz testni toʻliq deb oʻylaydi.
+ */
+export type QuestionImportOut = {
+    /**
+     * Added
+     */
+    added: number;
+    /**
+     * Warnings
+     */
+    warnings: Array<string>;
 };
 
 /**
@@ -13138,6 +13167,50 @@ export type TestsStudentAttemptsResponses = {
 };
 
 export type TestsStudentAttemptsResponse = TestsStudentAttemptsResponses[keyof TestsStudentAttemptsResponses];
+
+export type TestsQuestionTemplateData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/tests/questions/template';
+};
+
+export type TestsQuestionTemplateResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type TestsImportQuestionsData = {
+    body: BodyTestsImportQuestions;
+    path: {
+        /**
+         * Test Id
+         */
+        test_id: string;
+    };
+    query?: never;
+    url: '/api/v1/tests/{test_id}/questions/import';
+};
+
+export type TestsImportQuestionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TestsImportQuestionsError = TestsImportQuestionsErrors[keyof TestsImportQuestionsErrors];
+
+export type TestsImportQuestionsResponses = {
+    /**
+     * Successful Response
+     */
+    201: QuestionImportOut;
+};
+
+export type TestsImportQuestionsResponse = TestsImportQuestionsResponses[keyof TestsImportQuestionsResponses];
 
 export type ServiceHealthData = {
     body?: never;

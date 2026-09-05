@@ -20,11 +20,13 @@ Beshta qoida modulni belgilaydi:
    oʻtgan urinishlar oʻsha savollarga bogʻlangan.
 """
 
+import io
 import random
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
 
+from openpyxl import Workbook, load_workbook
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -903,3 +905,224 @@ async def student_attempts(
         )
     ).all()
     return [_attempt_row(a, s.full_name) for a, s in rows]
+
+
+# ─────────────── Savollarni Excel'dan import (TST-06) ───────────────
+
+#: Shablon ustunlari. Tartib MUHIM — import shu tartibda oʻqiydi.
+QUESTION_COLUMNS = [
+    ("Savol", "Savol matni (majburiy)"),
+    ("Ball", "Butun son, sukut boʻyicha 1"),
+    ("Variant 1", "Toʻgʻri variantni «+» bilan boshlang: «+ Toshkent»"),
+    ("Variant 2", "Kamida ikkita variant boʻlsin"),
+    ("Variant 3", "Boʻsh qoldirilsa oʻtkazib yuboriladi"),
+    ("Variant 4", ""),
+    ("Variant 5", ""),
+    ("Variant 6", ""),
+]
+
+#: Toʻgʻri javob belgisi. `+` tanlangan, chunki u Excel katakchasida
+#: koʻzga tashlanadi va formulaga aylanib ketmaydi (`=` dan farqli).
+CORRECT_MARK = "+"
+
+
+def build_question_template() -> bytes:
+    """Savollar uchun boʻsh Excel shablon (TST-06).
+
+    Savol turi ustuni ATAYLAB yoʻq: u toʻgʻri javoblar sonidan
+    kelib chiqadi — bitta boʻlsa «single», bir nechta boʻlsa
+    «multiple». Foydalanuvchi bir joyda «multiple» deb yozib,
+    boshqa joyda bitta javob belgilab qoʻyishi eng koʻp uchraydigan
+    xato edi.
+    """
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Savollar"
+    ws.append([c[0] for c in QUESTION_COLUMNS])
+    ws.append([
+        "Oʻzbekiston poytaxti qaysi shahar?",
+        1,
+        f"{CORRECT_MARK} Toshkent",
+        "Samarqand",
+        "Buxoro",
+        "Xiva",
+        "",
+        "",
+    ])
+    ws.append([
+        "Qaysilari suyuqlik? (bir nechta javob)",
+        2,
+        f"{CORRECT_MARK} Suv",
+        f"{CORRECT_MARK} Sut",
+        "Temir",
+        "Yogʻoch",
+        "",
+        "",
+    ])
+    for i, _ in enumerate(QUESTION_COLUMNS, start=1):
+        ws.column_dimensions[chr(64 + i)].width = 34
+
+    y = wb.create_sheet("Yoʻriqnoma")
+    y.column_dimensions["A"].width = 90
+    y.append(["Savollar shabloni — toʻldirish qoidalari"])
+    y.append([""])
+    for nom, izoh in QUESTION_COLUMNS:
+        if izoh:
+            y.append([f"• {nom}: {izoh}"])
+    y.append([""])
+    y.append([f"Toʻgʻri variant «{CORRECT_MARK}» belgisi bilan boshlanadi."])
+    y.append(["Savol turi avtomatik: bitta toʻgʻri javob — «Bitta javob»,"])
+    y.append(["bir nechtasi — «Bir nechta javob»."])
+    y.append(["Hamma variant toʻgʻri boʻlsa savol qabul qilinmaydi."])
+    y.append(["Import faqat QORALAMA testga qilinadi."])
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+@dataclass(frozen=True, slots=True)
+class QuestionImportResult:
+    added: int
+    warnings: list[str]
+
+
+def _parse_questions_xlsx(data: bytes) -> tuple[list[dict], list[str]]:
+    """Shablonni oʻqiydi. Buzuq qatorni TASHLAB ketadi, xato bermaydi.
+
+    Sabab: 60 ta savolli fayldagi bitta buzuq qator butun importni
+    toʻxtatsa, foydalanuvchi qaysi qator ekanini topolmay qiynaladi.
+    Har tashlangan qator ogohlantirishda nomi bilan qaytadi.
+    """
+    try:
+        wb = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+    except Exception as e:  # noqa: BLE001 — foydalanuvchi fayli, har xil buzilishi mumkin
+        raise ValidationError("Fayl ochilmadi — .xlsx shablon yuklang.") from e
+
+    ws = wb["Savollar"] if "Savollar" in wb.sheetnames else wb.active
+    warnings: list[str] = []
+    savollar: list[dict] = []
+
+    for idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+        if row is None or all(v is None or str(v).strip() == "" for v in row):
+            continue
+
+        qiymatlar = (list(row) + [None] * len(QUESTION_COLUMNS))[: len(QUESTION_COLUMNS)]
+        matn, ball_raw = qiymatlar[0], qiymatlar[1]
+        xom_variantlar = qiymatlar[2:]
+
+        if matn is None or not str(matn).strip():
+            warnings.append(f"{idx}-qator: savol matni boʻsh — oʻtkazib yuborildi.")
+            continue
+
+        try:
+            ball = int(ball_raw) if ball_raw is not None else 1
+        except (TypeError, ValueError):
+            warnings.append(f"{idx}-qator: ball son emas — 1 deb olindi.")
+            ball = 1
+        if ball < 1:
+            warnings.append(f"{idx}-qator: ball 1 dan kichik — 1 deb olindi.")
+            ball = 1
+
+        variantlar: list[OptionInput] = []
+        for xom in xom_variantlar:
+            if xom is None or not str(xom).strip():
+                continue
+            matn_v = str(xom).strip()
+            togri = matn_v.startswith(CORRECT_MARK)
+            if togri:
+                matn_v = matn_v[len(CORRECT_MARK) :].strip()
+            if not matn_v:
+                continue
+            variantlar.append(OptionInput(text=matn_v, is_correct=togri))
+
+        togri_soni = sum(1 for v in variantlar if v.is_correct)
+        # Tur toʻgʻri javoblar sonidan kelib chiqadi — foydalanuvchi
+        # uni alohida yozmaydi va shu bilan ziddiyat ham chiqmaydi.
+        kind = (
+            QuestionKind.MULTIPLE.value if togri_soni > 1 else QuestionKind.SINGLE.value
+        )
+
+        try:
+            _validate_options(kind, variantlar)
+        except ValidationError as e:
+            warnings.append(f"{idx}-qator: {e.message}")
+            continue
+
+        savollar.append(
+            {
+                "text": str(matn).strip(),
+                "kind": kind,
+                "points": ball,
+                "options": variantlar,
+            }
+        )
+
+    if not savollar:
+        raise ValidationError("Faylda birorta ham yaroqli savol topilmadi.")
+    return savollar, warnings
+
+
+async def import_questions(
+    session: AsyncSession,
+    user: CurrentUser,
+    test_id: uuid.UUID,
+    *,
+    data: bytes,
+    ip: str | None = None,
+) -> QuestionImportResult:
+    """TST-06: savollarni Excel shablonidan ommaviy import qiladi.
+
+    Import faqat QORALAMA testga — `add_question` bilan bir xil qoida.
+    Savollar mavjudlariga QOʻSHILADI, ularni almashtirmaydi: fayl ikki
+    marta yuklansa savollar ikkilanadi, lekin «hammasini oʻchirib
+    qayta yozish» xatosi qaytarib boʻlmaydigan yoʻqotish boʻlardi.
+    """
+    test = await _load_for_teacher(session, user, test_id)
+    await _assert_draft(test)
+
+    savollar, warnings = _parse_questions_xlsx(data)
+
+    mavjud = await session.scalar(
+        select(func.count(TestQuestion.id)).where(
+            TestQuestion.test_id == test_id, TestQuestion.is_archived.is_(False)
+        )
+    )
+    joriy = mavjud or 0
+    if joriy + len(savollar) > MAX_QUESTIONS:
+        raise ValidationError(
+            f"Testda {MAX_QUESTIONS} tadan koʻp savol boʻlmaydi. "
+            f"Hozir {joriy} ta bor, faylda {len(savollar)} ta."
+        )
+
+    for n, s in enumerate(savollar, start=1):
+        question = TestQuestion(
+            test_id=test_id,
+            position=joriy + n,
+            text=s["text"],
+            kind=s["kind"],
+            points=s["points"],
+        )
+        session.add(question)
+        await session.flush()
+        for i, o in enumerate(s["options"], start=1):
+            session.add(
+                TestOption(
+                    question_id=question.id,
+                    position=i,
+                    text=o.text,
+                    is_correct=o.is_correct,
+                )
+            )
+
+    audit_service.record(
+        session,
+        object_type="test",
+        object_id=test_id,
+        action=AuditAction.UPDATE,
+        new={"imported_questions": len(savollar)},
+        actor_id=user.id,
+        ip=ip,
+    )
+    await session.commit()
+    return QuestionImportResult(added=len(savollar), warnings=warnings)

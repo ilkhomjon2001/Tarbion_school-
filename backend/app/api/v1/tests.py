@@ -11,17 +11,20 @@ himoya ikki qatlamda (X-5).
 """
 
 import uuid
+from typing import Annotated
 
-from fastapi import APIRouter, Request, Response, status
+from fastapi import APIRouter, File, Request, Response, UploadFile, status
 
 from app.api.v1.deps import CurrentUserDep
 from app.core.db import SessionDep
+from app.core.exceptions import ValidationError
 from app.schemas.tests import (
     AttemptOut,
     AttemptStartOut,
     OptionForStudentOut,
     OptionOut,
     QuestionForStudentOut,
+    QuestionImportOut,
     QuestionIn,
     QuestionOut,
     SubmitAttemptIn,
@@ -32,6 +35,10 @@ from app.schemas.tests import (
 from app.services import test_service
 
 router = APIRouter(prefix="/tests", tags=["tests"])
+
+XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+#: Savollar fayli — matn, 2 MB dan katta boʻlishi shubhali.
+MAX_QUESTION_UPLOAD = 2 * 1024 * 1024
 
 
 def _client_ip(request: Request) -> str | None:
@@ -285,3 +292,46 @@ async def student_attempts(
     """Oʻquvchining natijalari (TST-05). Ota-ona faqat oʻz farzandiniki."""
     rows = await test_service.student_attempts(session, user, student_id)
     return [_attempt_out(a) for a in rows]
+
+
+# ─────────────── Savollarni Excel'dan import (TST-06) ───────────────
+
+
+@router.get("/questions/template")
+async def question_template(user: CurrentUserDep) -> Response:
+    """Savollar uchun boʻsh Excel shablon.
+
+    Savol turi ustuni ATAYLAB yoʻq — u toʻgʻri javoblar sonidan
+    kelib chiqadi (yoʻriqnoma varagʻida yozilgan).
+    """
+    return Response(
+        content=test_service.build_question_template(),
+        media_type=XLSX_MIME,
+        headers={"Content-Disposition": 'attachment; filename="savollar-shablon.xlsx"'},
+    )
+
+
+@router.post("/{test_id}/questions/import", response_model=QuestionImportOut, status_code=201)
+async def import_questions(
+    test_id: uuid.UUID,
+    request: Request,
+    user: CurrentUserDep,
+    session: SessionDep,
+    file: Annotated[UploadFile, File()],
+) -> QuestionImportOut:
+    """Savollarni shablondan ommaviy import qiladi.
+
+    Savollar mavjudlariga QOʻSHILADI. Buzuq qator butun importni
+    toʻxtatmaydi — u tashlanadi va ogohlantirishda qaytadi.
+    """
+    data = await file.read()
+    if len(data) > MAX_QUESTION_UPLOAD:
+        raise ValidationError("Fayl 2 MB dan oshmasin.")
+    natija = await test_service.import_questions(
+        session,
+        user,
+        test_id,
+        data=data,
+        ip=request.client.host if request.client else None,
+    )
+    return QuestionImportOut(added=natija.added, warnings=natija.warnings)

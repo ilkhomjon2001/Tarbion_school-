@@ -133,3 +133,14 @@ class AnswerIn(BaseModel):
 
 class SubmitAttemptIn(BaseModel):
     answers: list[AnswerIn]
+
+
+class QuestionImportOut(BaseModel):
+    """TST-06: nechta savol qoʻshildi va nima tashlandi.
+
+    Ogohlantirish YOʻQOLMASIN: 60 ta savolli fayldan 3 tasi tashlansa
+    va bu jimgina oʻtsa, ustoz testni toʻliq deb oʻylaydi.
+    """
+
+    added: int
+    warnings: list[str]

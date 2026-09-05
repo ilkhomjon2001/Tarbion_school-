@@ -8,9 +8,11 @@ Eng muhim testlar:
   · savol ham, test ham OʻCHMAYDI — arxivlanadi (1-qoida)
 """
 
+import io
 from datetime import date, timedelta
 
 import pytest
+from openpyxl import Workbook, load_workbook
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -694,3 +696,169 @@ async def test_ota_ona_farzand_nomidan_test_yecha_olmaydi(
         f"/api/v1/tests/{t['id']}/students/{world['ali'].id}/start", headers=_auth(ustoz)
     )
     assert r.status_code == 403, r.text
+
+
+# ─────────────── Savollarni Excel'dan import (TST-06) ───────────────
+
+
+def _savollar_xlsx(rows: list[list]) -> bytes:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Savollar"
+    ws.append([
+        "Savol", "Ball",
+        "Variant 1", "Variant 2", "Variant 3",
+        "Variant 4", "Variant 5", "Variant 6",
+    ])
+    for r in rows:
+        ws.append(r)
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+async def _import_savollar(client: AsyncClient, token: str, test_id: str, rows: list[list]):
+    return await client.post(
+        f"/api/v1/tests/{test_id}/questions/import",
+        headers=_auth(token),
+        files={
+            "file": (
+                "savollar.xlsx",
+                _savollar_xlsx(rows),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+    )
+
+
+async def test_savollar_shabloni_yuklanadi(client: AsyncClient, world: dict) -> None:
+    t = await _token(client, "ts.ustoz")
+    r = await client.get("/api/v1/tests/questions/template", headers=_auth(t))
+    assert r.status_code == 200, r.text
+    wb = load_workbook(io.BytesIO(r.content))
+    assert "Savollar" in wb.sheetnames
+    assert "Yoʻriqnoma" in wb.sheetnames
+
+
+async def test_savollar_import_qilinadi(client: AsyncClient, world: dict) -> None:
+    t = await _token(client, "ts.ustoz")
+    test = await _create_test(client, t, world)
+
+    r = await _import_savollar(
+        client,
+        t,
+        test["id"],
+        [
+            ["Poytaxt qaysi shahar?", 1, "+ Toshkent", "Samarqand", "Buxoro", "", "", ""],
+            ["2 + 2 = ?", 2, "+ 4", "5", "3", "", "", ""],
+        ],
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["added"] == 2
+
+    savollar = await client.get(
+        f"/api/v1/tests/{test['id']}/questions", headers=_auth(t)
+    )
+    rows = savollar.json()
+    assert len(rows) == 2
+    assert rows[0]["points"] == 1
+    assert rows[1]["points"] == 2
+
+
+async def test_tur_togri_javoblar_sonidan_aniqlanadi(
+    client: AsyncClient, world: dict
+) -> None:
+    """Foydalanuvchi turni yozmaydi — ziddiyat chiqmasin."""
+    t = await _token(client, "ts.ustoz")
+    test = await _create_test(client, t, world)
+
+    await _import_savollar(
+        client,
+        t,
+        test["id"],
+        [
+            ["Bitta javob", 1, "+ A", "B", "C", "", "", ""],
+            ["Bir nechta javob", 1, "+ A", "+ B", "C", "", "", ""],
+        ],
+    )
+    rows = (
+        await client.get(f"/api/v1/tests/{test['id']}/questions", headers=_auth(t))
+    ).json()
+    assert rows[0]["kind"] == "single"
+    assert rows[1]["kind"] == "multiple"
+
+
+async def test_buzuq_qator_importni_toxtatmaydi(
+    client: AsyncClient, world: dict
+) -> None:
+    """60 ta savolli fayldagi bitta xato butun ishni yoʻqqa chiqarmasin."""
+    t = await _token(client, "ts.ustoz")
+    test = await _create_test(client, t, world)
+
+    r = await _import_savollar(
+        client,
+        t,
+        test["id"],
+        [
+            ["Yaxshi savol", 1, "+ A", "B", "", "", "", ""],
+            ["Toʻgʻri javobsiz", 1, "A", "B", "", "", "", ""],
+            ["Bitta variant", 1, "+ A", "", "", "", "", ""],
+            ["Hammasi toʻgʻri", 1, "+ A", "+ B", "", "", "", ""],
+            ["", 1, "+ A", "B", "", "", "", ""],
+        ],
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["added"] == 1
+    # Har tashlangan qator sababi bilan qaytadi.
+    assert len(r.json()["warnings"]) == 4
+
+
+async def test_yaroqli_savol_yoq_bolsa_xato(client: AsyncClient, world: dict) -> None:
+    t = await _token(client, "ts.ustoz")
+    test = await _create_test(client, t, world)
+
+    r = await _import_savollar(
+        client, t, test["id"], [["Toʻgʻri javobsiz", 1, "A", "B", "", "", "", ""]]
+    )
+    assert r.status_code == 422
+
+
+async def test_savollar_mavjudlariga_qoshiladi(client: AsyncClient, world: dict) -> None:
+    """Almashtirish EMAS: «hammasini oʻchirib qayta yozish» qaytarilmas yoʻqotish."""
+    t = await _token(client, "ts.ustoz")
+    test = await _create_test(client, t, world)
+    await _add_question(client, t, test["id"])
+
+    await _import_savollar(
+        client, t, test["id"], [["Yangi savol", 1, "+ A", "B", "", "", "", ""]]
+    )
+    rows = (
+        await client.get(f"/api/v1/tests/{test['id']}/questions", headers=_auth(t))
+    ).json()
+    assert len(rows) == 2
+
+
+async def test_elon_qilingan_testga_import_qilinmaydi(
+    client: AsyncClient, world: dict
+) -> None:
+    """`add_question` bilan bir xil qoida — oʻquvchi ishlayotgan test oʻzgarmasin."""
+    t = await _token(client, "ts.ustoz")
+    test = await _create_test(client, t, world)
+    await _add_question(client, t, test["id"])
+    await _publish(client, t, test["id"])
+
+    r = await _import_savollar(
+        client, t, test["id"], [["Yangi savol", 1, "+ A", "B", "", "", "", ""]]
+    )
+    assert r.status_code in (409, 422)
+
+
+async def test_begona_ustoz_import_qila_olmaydi(client: AsyncClient, world: dict) -> None:
+    t = await _token(client, "ts.ustoz")
+    test = await _create_test(client, t, world)
+
+    begona = await _token(client, "ts.begona")
+    r = await _import_savollar(
+        client, begona, test["id"], [["Savol", 1, "+ A", "B", "", "", "", ""]]
+    )
+    assert r.status_code == 403

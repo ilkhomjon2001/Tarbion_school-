@@ -15,6 +15,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { QuestionImport } from "@/components/teacher/QuestionImport";
 import { TeacherShell } from "@/components/teacher/TeacherShell";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -354,6 +355,16 @@ function QuestionsPanel({ test, onChanged }: { test: TestOut; onChanged: () => v
           qoralamaga qaytaring — aks holda bir xil testni ikki oʻquvchi ikki xil koʻrardi.
         </p>
       )}
+
+      {/* TST-06: ommaviy import — bittalab kiritishdan tez. */}
+      <QuestionImport
+        testId={test.id}
+        disabled={!tahrirlanadi}
+        onImported={() => {
+          void load();
+          onChanged();
+        }}
+      />
 
       {rows.length === 0 ? (
         <p className="rounded-lg bg-surface-muted px-3 py-4 text-center text-sm text-foreground-muted">

@@ -725,8 +725,13 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
     «oldingi versiyaga qaytarish» alohida amal emas: oʻsha versiyani
     qayta joriy qilish yetadi
   - 14 ta test. Frontend: ✅ arxivdagi rejada «Qayta joriy qilish»
-- [ ] T-028 · Ustoz kabineti: yuklama va sinflar — MET-09
-  - Frontend: ✅ tayyor — `/rahbar/ustozlar/[id]` → «Sinflari» va «Statistika»
+- [x] T-028 · Ustoz kabineti: yuklama va sinflar — MET-09
+  - TZ aynan «ustozning SHAXSIY kabinetida» deydi. Rahbariyat koʻrinishi
+    (`/rahbar/ustozlar/[id]`) bor edi, ustozning oʻzi esa «menda haftada
+    nechta soat?» degan savolga javob topa olmasdi
+  - Frontend: ✅ `/teacher` bosh sahifasidagi yon panelda «Haftalik
+    yuklama» — jami soat, sinf soni va sinf × fan kesimi. Yangi endpoint
+    kerak emas: `useMyTeaching` jadval yozuvlaridan sanaydi
 - [x] T-029 · Baholar jurnali: model va API — JUR-01, JUR-02, JUR-03 · backend tayyor (`/api/v1/journal`)
   - Frontend: ⬜ yoʻq — backend ishi
 - [ ] T-030 · Jurnal ekrani (sinf × fan × sana) — JUR-01
@@ -812,8 +817,19 @@ Batafsil tavsiflar 1-bosqich qabulidan keyin yoziladi. Hozircha doira:
     natijani server hisoblaydi
 - [~] T-044 · Test natijalari tahlili — TST-05 · ustoz uchun natijalar jadvali tayyor
   - Frontend: 🟡 qisman — natija koʻrsatiladi, tahlil kesimlari yoʻq
-- [ ] T-045 · Savollarni Excel'dan import — TST-06
-  - Frontend: ⬜ yoʻq
+- [x] T-045 · Savollarni Excel'dan import — TST-06
+  - `GET /tests/questions/template` va
+    `POST /tests/{id}/questions/import`. 8 ta test
+  - Savol turi ustuni ATAYLAB yoʻq — u toʻgʻri javoblar sonidan kelib
+    chiqadi. «multiple deb yozib bitta javob belgilash» eng koʻp
+    uchraydigan xato edi. Toʻgʻri variant «+» bilan boshlanadi
+  - Buzuq qator importni TOʻXTATMAYDI — tashlanadi va sababi bilan
+    ogohlantirishda qaytadi: 60 ta savolli fayldagi bitta xato butun
+    ishni yoʻqqa chiqarmasin
+  - Savollar mavjudlariga QOʻSHILADI, almashtirmaydi. Import faqat
+    qoralama testga — `add_question` bilan bir xil qoida
+  - Frontend: ✅ `/teacher/test` → savollar boʻlimida import paneli,
+    tashlangan qatorlar roʻyxati bilan
 - [x] T-046 · To'lov: shartnoma va to'lov jadvali — TOL-01, TOL-02 —
   shartnoma (standart 2.3 mln/oy — shartnoma 3.1-bandi), chegirma,
   oylik hisoblash (sentabr–may,

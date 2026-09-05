@@ -1247,3 +1247,21 @@ Reja joriy qilinganda eskisi `arxiv` holatiga oʻtadi — oʻchirilmaydi
 (CLAUDE.md 1-qoida). Demak «oldingi versiyaga qaytarish» aynan oʻsha
 versiyani qayta joriy qilish. Alohida `restore` endpointi yozilsa,
 bir xil ishni ikki yoʻl bilan qiladigan ikkita kod boʻlardi.
+
+## Savol shablonida «tur» ustuni yoʻq (T-045, TST-06)
+
+Savol turi (bitta javob / bir nechta javob) toʻgʻri javoblar sonidan
+kelib chiqadi. Ustun boʻlganda foydalanuvchi bir joyda «multiple» deb
+yozib, oʻsha qatorda bitta javob belgilab qoʻyardi — bu import
+xatolarining eng koʻp uchraydigan sababi. Ustun boʻlmasa ziddiyatning
+oʻzi tugʻilmaydi.
+
+## Buzuq qator importni toʻxtatmaydi (T-045)
+
+60 ta savolli fayldagi bitta xato butun ishni yoʻqqa chiqarsa,
+foydalanuvchi qaysi qator ekanini topolmay qiynaladi. Buzuq qator
+tashlanadi va sababi bilan `warnings` da qaytadi; interfeys uni
+roʻyxat qilib koʻrsatadi — jimgina tashlash undan ham yomon boʻlardi.
+
+Savollar mavjudlariga QOʻSHILADI. «Hammasini oʻchirib qayta yozish»
+tez tuyuladi, lekin xato bosilganda qaytarib boʻlmaydigan yoʻqotish.

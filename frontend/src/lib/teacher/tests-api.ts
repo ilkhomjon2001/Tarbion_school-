@@ -18,6 +18,7 @@
 
 import {
   testsAddQuestion,
+  testsImportQuestions,
   testsArchiveQuestion,
   testsArchiveTest,
   testsAvailable,
@@ -34,12 +35,24 @@ import type {
   AttemptOut,
   AttemptStartOut,
   QuestionForStudentOut,
+  QuestionImportOut,
   QuestionOut,
   TestOut,
 } from "@/lib/api/types.gen";
-import { withAuth } from "@/lib/session";
+import { getToken, withAuth } from "@/lib/session";
 
-export type { AttemptOut, AttemptStartOut, QuestionForStudentOut, QuestionOut, TestOut };
+//: Shablon `fetch` bilan olinadi: generatsiya qilingan SDK binary
+//: javobni tiplay olmaydi va `Blob` oʻrniga `unknown` qaytaradi.
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+export type {
+  AttemptOut,
+  AttemptStartOut,
+  QuestionForStudentOut,
+  QuestionImportOut,
+  QuestionOut,
+  TestOut,
+};
 
 export const TEST_STATUS_LABELS: Record<string, string> = {
   draft: "Qoralama",
@@ -191,4 +204,41 @@ export function toLocalInput(d: Date): string {
 
 export function localInputToIso(value: string): string {
   return new Date(value).toISOString();
+}
+
+
+// ─────────────── Savollarni Excel'dan import (TST-06) ───────────────
+
+/**
+ * Shablonni yuklab olish.
+ *
+ * `filesDownload` dan farqli oʻlaroq bu fayl imzolangan havola emas —
+ * u har kim uchun bir xil boʻsh shablon, maxfiy maʼlumot yoʻq.
+ */
+export async function downloadQuestionTemplate(): Promise<void> {
+  const r = await fetch(`${API_BASE}/api/v1/tests/questions/template`, {
+    headers: { Authorization: `Bearer ${getToken() ?? ""}` },
+  });
+  if (!r.ok) throw new Error("Shablonni yuklab boʻlmadi.");
+  const url = URL.createObjectURL(await r.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "savollar-shablon.xlsx";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Savollarni import qiladi.
+ *
+ * `warnings` ni KOʻRSATISH shart: buzuq qator importni toʻxtatmaydi
+ * va jimgina tashlanadi — ustoz testni toʻliq deb oʻylab qolmasin.
+ */
+export async function importQuestions(
+  testId: string,
+  file: File,
+): Promise<QuestionImportOut> {
+  return withAuth<QuestionImportOut>(() =>
+    testsImportQuestions({ path: { test_id: testId }, body: { file } }),
+  );
 }

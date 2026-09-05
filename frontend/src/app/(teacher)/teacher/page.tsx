@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { MyLoad } from "@/components/teacher/MyLoad";
 import { TeacherShell } from "@/components/teacher/TeacherShell";
 import { TodaySummary } from "@/components/teacher/TodaySummary";
 import { todayLabel } from "@/lib/teacher/me";
@@ -153,6 +154,9 @@ export default function TeacherTodayPage() {
               </div>
             </div>
           )}
+
+          {/* MET-09: haftalik yuklama va biriktirilgan sinflar. */}
+          <MyLoad />
         </aside>
       </div>
     </TeacherShell>
